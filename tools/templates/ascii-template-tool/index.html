@@ -171,9 +171,14 @@ input[type=range]::-moz-range-thumb{width:9px;height:9px;background:var(--ac);bo
   <label class="uz"><input type="file" id="aFile" accept="image/*" onchange="aLoad(this)"><span id="aUL">+ UPLOAD IMAGE</span></label>
   <img id="aIT" class="thumb" alt=""><video id="aVT2" class="thumb" muted playsinline loop></video>
   <div id="aMC" style="margin-top:9px;display:none">
+    <div class="btns" style="margin-bottom:8px">
+      <button class="btn" onclick="aFitCover()">COVER</button>
+      <button class="btn" onclick="aFitContain()">CONTAIN</button>
+      <button class="btn" onclick="aFit11()">1:1 PX</button>
+    </div>
     <div class="row"><span class="lbl">Pos X</span><input type="range" id="slAX" min="0" max="100" value="50" step="1" oninput="v('vAX',this.value,'%');A.d=1;go()"><span class="val" id="vAX">50%</span></div>
     <div class="row"><span class="lbl">Pos Y</span><input type="range" id="slAY" min="0" max="100" value="50" step="1" oninput="v('vAY',this.value,'%');A.d=1;go()"><span class="val" id="vAY">50%</span></div>
-    <div class="row"><span class="lbl">Scale</span><input type="range" id="slAS" min="5" max="400" value="100" step="1" oninput="v('vAS',this.value,'%');A.d=1;go()"><span class="val" id="vAS">100%</span></div>
+    <div class="row"><span class="lbl">Scale</span><input type="range" id="slAS" min="1" max="800" value="100" step="1" oninput="v('vAS',this.value,'%');A.d=1;go()"><span class="val" id="vAS">100%</span></div>
     <div class="row"><span class="lbl">Rotation</span><input type="range" id="slAR" min="0" max="360" value="0" step="1" oninput="v('vAR',this.value,'°');A.d=1;go()"><span class="val" id="vAR">0°</span></div>
     <button class="cb" onclick="aRem()">REMOVE SOURCE</button>
   </div>
@@ -451,10 +456,18 @@ function getAFrame(){
   if(!A.isVid&&!A.d&&A.cache)return A.cache;
   const W=CW(),H=CH();
   octx.clearRect(0,0,W,H);octx.filter=`brightness(${A.bri}%) contrast(${A.con}%)`;
-  octx.save();octx.translate((A.ix/100)*W,(A.iy/100)*H);octx.rotate(A.rot*Math.PI/180);
+  octx.save();
   const nW=A.isVid?A.vid.videoWidth:A.img.naturalWidth,nH=A.isVid?A.vid.videoHeight:A.img.naturalHeight;
-  const dw=W*(A.sc/100),dh=nW?dw*(nH/nW):dw;
-  octx.drawImage(src,-dw/2,-dh/2,dw,dh);octx.restore();octx.filter='none';
+  // Scale is absolute: 100% = image at original pixel size.
+  // Use cover scale as the baseline so "FIT COVER" = scale 100 when image fills canvas.
+  const coverSc=Math.max(W/nW,H/nH);
+  const sc=(A.sc/100)*coverSc;
+  const dw=nW*sc,dh=nH*sc;
+  // Position: 0%=left/top edge aligned, 50%=centered (default), 100%=right/bottom edge aligned
+  const ox=(W-dw)*(A.ix/100);
+  const oy=(H-dh)*(A.iy/100);
+  octx.rotate(A.rot*Math.PI/180);
+  octx.drawImage(src,ox,oy,dw,dh);octx.restore();octx.filter='none';
   if(A.gam!==1){const id=octx.getImageData(0,0,W,H),d=id.data,g=1/A.gam;for(let i=0;i<d.length;i+=4){d[i]=Math.pow(d[i]/255,g)*255|0;d[i+1]=Math.pow(d[i+1]/255,g)*255|0;d[i+2]=Math.pow(d[i+2]/255,g)*255|0;}octx.putImageData(id,0,0);}
   const data=octx.getImageData(0,0,W,H);
   if(!A.isVid){A.cache=data;A.d=0;}
@@ -619,9 +632,42 @@ function aSetSrc(t){A.isVid=t==='vid';stopAR();gI('aSI').classList.toggle('on',!
 function aLoad(input){const file=input.files[0];if(!file)return;
   if(A.isVid){const url=URL.createObjectURL(file),v2=document.createElement('video');v2.muted=A.muted;v2.loop=A.loop;v2.playsInline=true;
     v2.onloadedmetadata=()=>{A.vid=v2;A.vR=true;gI('aMC').style.display='block';gI('aUL').textContent='+ '+file.name.toUpperCase().slice(0,20);const t=gI('aVT2');t.src=url;t.style.display='block';gI('avc').classList.add('show');fitC();startAR();};v2.src=url;}
-  else{const img=new Image();img.onload=()=>{A.img=img;A.d=1;gI('aMC').style.display='block';gI('aUL').textContent='+ '+file.name.toUpperCase().slice(0,20);const t=gI('aIT');t.src=img.src;t.style.display='block';go();};img.src=URL.createObjectURL(file);}
+  else{const img=new Image();img.onload=()=>{A.img=img;A.d=1;gI('aMC').style.display='block';gI('aUL').textContent='+ '+file.name.toUpperCase().slice(0,20);const t=gI('aIT');t.src=img.src;t.style.display='block';aFitCover();};img.src=URL.createObjectURL(file);}
 }
 function aRem(){stopAR();if(A.vid){A.vid.pause();A.vid.src='';A.vid=null;}A.vR=false;A.img=null;A.cache=null;A.d=1;gI('aMC').style.display='none';gI('aIT').style.display='none';gI('aVT2').style.display='none';gI('aVT2').src='';gI('avc').classList.remove('show');gI('aUL').textContent=A.isVid?'+ UPLOAD VIDEO':'+ UPLOAD IMAGE';gI('aFile').value='';fitC();go();}
+
+function _aNatural(){
+  if(A.img)return{nW:A.img.naturalWidth,nH:A.img.naturalHeight};
+  if(A.vid)return{nW:A.vid.videoWidth,nH:A.vid.videoHeight};
+  return null;
+}
+function _aSetSliders(sc,ix,iy){
+  gI('slAS').value=Math.round(sc);v('vAS',Math.round(sc),'%');
+  gI('slAX').value=ix;v('vAX',ix,'%');
+  gI('slAY').value=iy;v('vAY',iy,'%');
+  A.d=1;go();
+}
+// COVER: fills canvas, 100% = cover fit, centered
+function aFitCover(){ _aSetSliders(100,50,50); }
+// CONTAIN: whole image visible inside canvas
+function aFitContain(){
+  const n=_aNatural();if(!n)return;
+  const W=CW(),H=CH();
+  const coverSc=Math.max(W/n.nW,H/n.nH);
+  const containSc=Math.min(W/n.nW,H/n.nH);
+  // express containSc as % of coverSc
+  const pct=(containSc/coverSc)*100;
+  _aSetSliders(pct,50,50);
+}
+// 1:1: one image pixel = one canvas pixel
+function aFit11(){
+  const n=_aNatural();if(!n)return;
+  const W=CW(),H=CH();
+  const coverSc=Math.max(W/n.nW,H/n.nH);
+  // 1:1 means sc factor = 1, express as % of coverSc
+  const pct=(1/coverSc)*100;
+  _aSetSliders(pct,50,50);
+}
 function sCh(ch){gI('charSet').value=ch;A.chars=ch;go();}
 gI('charSet').addEventListener('input',()=>{A.chars=gI('charSet').value;go();});
 function aMode(m){A.mode=m;A.cur=null;gI('aMV').classList.toggle('on',m==='view');gI('aME').classList.toggle('on',m==='edit');gI('aEH').style.display=m==='edit'?'block':'none';cv.style.cursor=m==='edit'?'text':'crosshair';rAscii();}
