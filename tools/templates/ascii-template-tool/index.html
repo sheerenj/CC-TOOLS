@@ -8,618 +8,1078 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#080000;--panel:#0e0000;--border:#2a0000;--border2:#400000;--accent:#ff1f1f;--accent2:#c01010;--accent3:#7a0a0a;--text:#ff3838;--dim:#7a2020;--dim2:#4a1010;--mono:'Roboto Mono','Courier New',monospace;}
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--mono)}
+:root{--bg:#080000;--panel:#0e0000;--p2:#120000;--bd:#220000;--bd2:#3a0000;--ac:#ff1f1f;--ac2:#c01010;--ac3:#7a0a0a;--tx:#ff3838;--dm:#7a2020;--dm2:#4a1010;--mn:'Roboto Mono','Courier New',monospace}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:var(--mn)}
 .app{display:flex;flex-direction:column;height:100vh}
-.header{display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--panel);height:38px;gap:16px}
-.header-title{font-size:9px;font-weight:700;letter-spacing:.3em;color:var(--accent);white-space:nowrap}
-.header-sub{font-size:7px;letter-spacing:.25em;color:var(--dim);margin-left:auto;white-space:nowrap}
-.tabs{display:flex;border:1px solid var(--border2)}
-.tab{padding:6px 18px;font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.2em;background:transparent;border:none;color:var(--dim);cursor:pointer;transition:.15s;text-transform:uppercase}
-.tab:not(:last-child){border-right:1px solid var(--border2)}
-.tab.on{background:var(--accent);color:#000}
-.tab:hover:not(.on){color:var(--text)}
-.workspace{display:flex;flex:1;overflow:hidden}
-.canvas-area{flex:1;display:flex;align-items:center;justify-content:center;background:var(--bg);overflow:hidden;position:relative;flex-direction:column;gap:10px}
-.canvas-bg{position:absolute;inset:0;background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:20px 20px;opacity:.4}
-.canvas-wrap{position:relative;z-index:1;line-height:0;box-shadow:0 0 0 1px var(--border2)}
+.hdr{display:flex;align-items:stretch;border-bottom:1px solid var(--bd);flex-shrink:0;background:var(--panel);height:36px}
+.brand{display:flex;align-items:center;padding:0 14px;font-size:9px;font-weight:700;letter-spacing:.35em;color:var(--ac);border-right:1px solid var(--bd);flex-shrink:0}
+.tabs{display:flex;align-items:stretch;flex:1}
+.tab{padding:0 16px;background:transparent;border:none;border-right:1px solid var(--bd);color:var(--dm);font-family:var(--mn);font-size:8px;font-weight:700;letter-spacing:.2em;cursor:pointer;transition:.15s;text-transform:uppercase}
+.tab.on{background:var(--bg);color:var(--ac)}
+.tab:hover:not(.on){color:var(--tx)}
+.hsub{display:flex;align-items:center;padding:0 14px;font-size:7px;letter-spacing:.3em;color:var(--dm2);border-left:1px solid var(--bd);margin-left:auto;flex-shrink:0}
+.ws{display:flex;flex:1;overflow:hidden}
+.ca{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);overflow:hidden;position:relative;gap:10px}
+.cbg{position:absolute;inset:0;background-image:radial-gradient(var(--bd) 1px,transparent 1px);background-size:20px 20px;opacity:.5}
+.cw{position:relative;z-index:1;line-height:0;box-shadow:0 0 0 1px var(--bd2)}
 #c{display:block}
-.vid-controls{position:relative;z-index:2;display:none;flex-direction:column;gap:6px;width:100%;max-width:700px;padding:0 20px}
-.vid-controls.show{display:flex}
-.tl-wrap{position:relative;height:20px;cursor:pointer}
-.tl-bg{position:absolute;top:9px;left:0;right:0;height:2px;background:var(--border2)}
-.tl-fill{position:absolute;top:9px;left:0;height:2px;background:var(--accent);width:0%;pointer-events:none}
-.tl-thumb{position:absolute;top:5px;width:10px;height:10px;background:var(--accent);margin-left:-5px;pointer-events:none}
-.tl-input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
-.vid-btns{display:flex;align-items:center;gap:6px}
-.vbtn{background:transparent;border:1px solid var(--border2);color:var(--dim);font-family:var(--mono);font-size:7px;font-weight:700;letter-spacing:.15em;padding:4px 9px;cursor:pointer;transition:.15s;white-space:nowrap}
-.vbtn:hover{border-color:var(--accent3);color:var(--text)}
-.vbtn.on{background:var(--accent);border-color:var(--accent);color:#000}
-.vid-time{font-size:7px;letter-spacing:.1em;color:var(--dim);margin-left:auto}
-.sidebar{width:270px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
-.sidebar::-webkit-scrollbar{width:3px}
-.sidebar::-webkit-scrollbar-thumb{background:var(--border2)}
-.sec{border-bottom:1px solid var(--border);padding:12px 14px}
-.sec-title{font-size:8px;font-weight:700;letter-spacing:.35em;color:var(--accent3);margin-bottom:10px;text-transform:uppercase}
-.row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.vc{position:relative;z-index:2;display:none;flex-direction:column;gap:5px;width:100%;max-width:720px;padding:0 18px}
+.vc.show{display:flex}
+.tl{position:relative;height:20px;cursor:pointer}
+.tl-bg{position:absolute;top:9px;left:0;right:0;height:2px;background:var(--bd2)}
+.tl-f{position:absolute;top:9px;left:0;height:2px;background:var(--ac);width:0%;pointer-events:none}
+.tl-th{position:absolute;top:5px;width:10px;height:10px;background:var(--ac);margin-left:-5px;pointer-events:none}
+.tl-in{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.vbtns{display:flex;align-items:center;gap:5px}
+.vb{background:transparent;border:1px solid var(--bd2);color:var(--dm);font-family:var(--mn);font-size:7px;font-weight:700;letter-spacing:.12em;padding:4px 8px;cursor:pointer;transition:.15s;white-space:nowrap}
+.vb:hover{border-color:var(--ac3);color:var(--tx)}
+.vb.on{background:var(--ac);border-color:var(--ac);color:#000}
+.vt{font-size:7px;letter-spacing:.1em;color:var(--dm);margin-left:auto}
+.sb{width:272px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--bd);overflow-y:auto;display:flex;flex-direction:column}
+.sb::-webkit-scrollbar{width:3px}
+.sb::-webkit-scrollbar-thumb{background:var(--bd2)}
+.sec{border-bottom:1px solid var(--bd);padding:11px 12px}
+.st{font-size:7px;font-weight:700;letter-spacing:.4em;color:var(--ac3);margin-bottom:8px;text-transform:uppercase}
+.row{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
 .row:last-child{margin-bottom:0}
-.lbl{font-size:8px;letter-spacing:.15em;color:var(--dim);flex-shrink:0;width:68px;text-transform:uppercase}
-.val{font-size:8px;color:var(--accent);letter-spacing:.1em;width:36px;text-align:right;flex-shrink:0}
-input[type=range]{-webkit-appearance:none;appearance:none;flex:1;margin:0 6px;height:1px;background:var(--border2);outline:none;cursor:pointer}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:9px;background:var(--accent);cursor:pointer;border-radius:0}
-input[type=range]::-moz-range-thumb{width:9px;height:9px;background:var(--accent);border:none;border-radius:0;cursor:pointer}
+.lbl{font-size:7px;letter-spacing:.12em;color:var(--dm);flex-shrink:0;width:62px;text-transform:uppercase}
+.val{font-size:7px;color:var(--ac);letter-spacing:.1em;width:34px;text-align:right;flex-shrink:0}
+input[type=range]{-webkit-appearance:none;appearance:none;flex:1;margin:0 5px;height:1px;background:var(--bd2);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:9px;background:var(--ac);cursor:pointer;border-radius:0}
+input[type=range]::-moz-range-thumb{width:9px;height:9px;background:var(--ac);border:none;border-radius:0;cursor:pointer}
 .btns{display:flex}
-.btn{flex:1;padding:7px 0;font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.12em;background:transparent;border:1px solid var(--border2);color:var(--dim);cursor:pointer;text-transform:uppercase;transition:.15s all}
+.btn{flex:1;padding:6px 0;font-family:var(--mn);font-size:7px;font-weight:700;letter-spacing:.1em;background:transparent;border:1px solid var(--bd2);color:var(--dm);cursor:pointer;text-transform:uppercase;transition:.15s}
 .btn:not(:last-child){border-right:none}
-.btn.on{background:var(--accent);border-color:var(--accent);color:#000}
-.btn:hover:not(.on){border-color:var(--accent3);color:var(--text)}
-.upload-zone{border:1px dashed var(--border2);padding:12px;text-align:center;cursor:pointer;font-size:8px;letter-spacing:.2em;color:var(--dim);transition:.15s all;display:block}
-.upload-zone:hover{border-color:var(--accent2);color:var(--text)}
-.upload-zone input{display:none}
-.char-input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--accent);font-family:var(--mono);font-size:13px;padding:5px 8px;letter-spacing:.2em;outline:none;margin-bottom:8px}
-.char-input:focus{border-color:var(--accent3)}
-.tog-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.tog-row:last-child{margin-bottom:0}
-.tog-lbl{font-size:8px;letter-spacing:.15em;color:var(--dim);text-transform:uppercase;flex:1}
-.tog{width:26px;height:13px;background:var(--border2);cursor:pointer;position:relative;flex-shrink:0}
-.tog.on{background:var(--accent)}
+.btn.on{background:var(--ac);border-color:var(--ac);color:#000}
+.btn:hover:not(.on){border-color:var(--ac3);color:var(--tx)}
+.uz{border:1px dashed var(--bd2);padding:12px;text-align:center;cursor:pointer;font-size:7px;letter-spacing:.2em;color:var(--dm);transition:.15s;display:block}
+.uz:hover{border-color:var(--ac2);color:var(--tx)}
+.uz input{display:none}
+.chin{width:100%;background:var(--bg);border:1px solid var(--bd2);color:var(--ac);font-family:var(--mn);font-size:12px;padding:5px 7px;letter-spacing:.16em;outline:none;margin-bottom:7px}
+.chin:focus{border-color:var(--ac3)}
+.tr{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.tr:last-child{margin-bottom:0}
+.trl{font-size:7px;letter-spacing:.12em;color:var(--dm);text-transform:uppercase;flex:1}
+.tog{width:26px;height:13px;background:var(--bd2);cursor:pointer;position:relative;flex-shrink:0}
+.tog.on{background:var(--ac)}
 .tog::after{content:'';position:absolute;top:2px;left:2px;width:9px;height:9px;background:#000;transition:.15s left}
 .tog.on::after{left:15px}
-.export-btn{width:100%;padding:10px;background:transparent;border:1px solid var(--accent2);color:var(--accent);font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;cursor:pointer;transition:.15s all;margin-top:8px}
-.export-btn:hover{background:var(--accent);color:#000}
-.clear-btn{width:100%;padding:7px;background:transparent;border:1px solid var(--border);color:var(--dim);font-family:var(--mono);font-size:8px;letter-spacing:.2em;cursor:pointer;margin-top:6px;transition:.15s}
-.clear-btn:hover{border-color:var(--border2);color:var(--text)}
-.statusbar{padding:5px 14px;font-size:7px;letter-spacing:.2em;color:var(--dim2);border-top:1px solid var(--border);background:var(--panel);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
-.color-row{display:flex;align-items:center;gap:8px}
-.swatch{width:18px;height:18px;border:1px solid var(--border2);cursor:pointer;flex-shrink:0;position:relative}
-.swatch input[type=color]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border:none;padding:0}
-.hex-lbl{font-size:8px;color:var(--dim);letter-spacing:.1em}
-.thumb{width:100%;height:50px;object-fit:contain;margin-top:8px;border:1px solid var(--border);background:#000;display:none}
-.preset-btns{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
-.preset{padding:3px 7px;font-family:var(--mono);font-size:7px;letter-spacing:.1em;background:transparent;border:1px solid var(--border2);color:var(--dim);cursor:pointer;transition:.15s}
-.preset:hover{border-color:var(--accent3);color:var(--text)}
-.prog-bar{width:100%;height:2px;background:var(--border2);margin-top:6px;display:none}
-.prog-fill{height:100%;background:var(--accent);width:0%}
-.note{font-size:7px;color:var(--dim2);letter-spacing:.1em;line-height:1.8;margin-top:6px}
-.rec-dot{display:inline-block;width:6px;height:6px;background:var(--accent);border-radius:50%;margin-right:5px;animation:blink .7s step-end infinite;vertical-align:middle}
+.eb{width:100%;padding:10px;background:transparent;border:1px solid var(--ac2);color:var(--ac);font-family:var(--mn);font-size:8px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;cursor:pointer;transition:.15s;margin-top:7px}
+.eb:hover{background:var(--ac);color:#000}
+.cb{width:100%;padding:6px;background:transparent;border:1px solid var(--bd);color:var(--dm);font-family:var(--mn);font-size:7px;letter-spacing:.18em;cursor:pointer;margin-top:5px;transition:.15s}
+.cb:hover{border-color:var(--bd2);color:var(--tx)}
+.stbar{padding:5px 12px;font-size:7px;letter-spacing:.16em;color:var(--dm2);border-top:1px solid var(--bd);background:var(--panel);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+.cr{display:flex;align-items:center;gap:6px}
+.sw{width:17px;height:17px;border:1px solid var(--bd2);cursor:pointer;flex-shrink:0;position:relative}
+.sw input[type=color]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border:none;padding:0}
+.hl{font-size:7px;color:var(--dm);letter-spacing:.1em}
+.thumb{width:100%;height:50px;object-fit:contain;margin-top:7px;border:1px solid var(--bd);background:#000;display:none}
+.pbt{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+.pb{padding:3px 6px;font-family:var(--mn);font-size:6px;letter-spacing:.1em;background:transparent;border:1px solid var(--bd2);color:var(--dm);cursor:pointer;transition:.15s}
+.pb:hover{border-color:var(--ac3);color:var(--tx)}
+.pal{display:flex;flex-wrap:wrap;gap:3px;margin-top:7px}
+.ps{width:21px;height:21px;border:1px solid var(--bd2);cursor:pointer;flex-shrink:0;position:relative;transition:.1s border-color}
+.ps:hover{border-color:var(--tx)}
+.ps.act{border-color:#fff;border-width:2px}
+.ps-none{background:repeating-conic-gradient(#1a0000 0%25%,#2a0000 0%50%) 0 0/8px 8px}
+.ps-none::after{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--ac);transform:rotate(-45deg)}
+.tbts{display:flex;gap:3px;margin-bottom:7px}
+.tb{flex:1;padding:6px 0;font-family:var(--mn);font-size:7px;font-weight:700;letter-spacing:.1em;background:transparent;border:1px solid var(--bd2);color:var(--dm);cursor:pointer;text-transform:uppercase;transition:.15s}
+.tb.on{background:var(--ac);border-color:var(--ac);color:#000}
+.tb:hover:not(.on){border-color:var(--ac3);color:var(--tx)}
+.hint{font-size:7px;letter-spacing:.1em;color:var(--dm2);line-height:1.9}
+/* film layer list */
+.ll{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.li{display:flex;align-items:center;gap:5px;padding:5px 7px;cursor:pointer;border:1px solid var(--bd);transition:.15s}
+.li.sel{border-color:var(--ac2);background:var(--p2)}
+.li:hover:not(.sel){border-color:var(--bd2)}
+.lsw{width:11px;height:11px;flex-shrink:0;border:1px solid rgba(255,255,255,.15)}
+.lnm{font-size:7px;letter-spacing:.12em;color:var(--dm);flex:1;text-transform:uppercase}
+.li.sel .lnm{color:var(--tx)}
+.lch{font-size:6px;letter-spacing:.1em;color:var(--dm2);background:var(--bd);padding:1px 4px;margin-right:4px}
+.li.sel .lch{color:var(--ac3);background:var(--bd2)}
+.chg{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px;margin-bottom:4px}
+.chb{padding:4px 7px;font-family:var(--mn);font-size:7px;letter-spacing:.1em;background:transparent;border:1px solid var(--bd2);color:var(--dm);cursor:pointer;transition:.15s;text-transform:uppercase}
+.chb:hover{border-color:var(--ac3);color:var(--tx)}
+.chb.on{background:var(--ac);border-color:var(--ac);color:#000}
+.note{font-size:7px;color:var(--dm2);letter-spacing:.1em;line-height:1.8;margin-top:5px}
+.rd{display:inline-block;width:6px;height:6px;background:var(--ac);border-radius:50%;margin-right:4px;animation:blink .7s step-end infinite;vertical-align:middle}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-.swatches-grid{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
-.pswatch{width:24px;height:24px;border:1px solid var(--border2);cursor:pointer;transition:.1s;position:relative;flex-shrink:0}
-.pswatch.active{outline:2px solid var(--accent);outline-offset:2px}
-.mode-hint{font-size:7px;letter-spacing:.12em;color:var(--dim2);line-height:1.8;margin-top:8px}
+.prog{width:100%;height:2px;background:var(--bd2);margin-top:5px;display:none}
+.pf{height:100%;background:var(--ac);width:0%;transition:width .3s}
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="header">
-    <div class="header-title">ASCII BRAND STUDIO</div>
-    <div class="tabs">
-      <button class="tab on" id="tabAscii" onclick="setTab('ascii')">ASCII</button>
-      <button class="tab" id="tabLayout" onclick="setTab('layout')">LAYOUT</button>
-    </div>
-    <div class="header-sub">PHOTO BOOTH CO.</div>
+<div class="hdr">
+  <div class="brand">ASCII BRAND STUDIO</div>
+  <div class="tabs">
+    <button class="tab on" id="tabA" onclick="switchTab('ascii')">ASCII HALFTONE</button>
+    <button class="tab" id="tabL" onclick="switchTab('layout')">TEXT LAYOUT</button>
+    <button class="tab" id="tabF" onclick="switchTab('film')">FILM LAB</button>
   </div>
-  <div class="workspace">
-    <div class="canvas-area" id="canvasArea">
-      <div class="canvas-bg"></div>
-      <div class="canvas-wrap"><canvas id="c"></canvas></div>
-      <div class="vid-controls" id="vidControls">
-        <div class="tl-wrap">
-          <div class="tl-bg"></div><div class="tl-fill" id="tlFill"></div><div class="tl-thumb" id="tlThumb"></div>
-          <input type="range" class="tl-input" id="tlInput" min="0" max="1000" value="0" step="1" oninput="seekVid(this.value)" onmousedown="scrubbing=true" onmouseup="scrubbing=false">
-        </div>
-        <div class="vid-btns">
-          <button class="vbtn" id="btnPlay" onclick="togglePlay()">&#9654; PLAY</button>
-          <button class="vbtn" onclick="restartVid()">&#10227; RESTART</button>
-          <button class="vbtn on" id="btnLoop" onclick="toggleLoop()">&#8635; LOOP</button>
-          <button class="vbtn" id="btnMute" onclick="toggleMute()">&#9834; MUTE</button>
-          <span class="vid-time" id="vidTime">0:00 / 0:00</span>
-        </div>
-      </div>
-    </div>
-    <div class="sidebar">
-      <div class="sec">
-        <div class="sec-title">Format</div>
-        <div class="btns">
-          <button class="btn on" id="fmtA" onclick="setFmt('1080x1350')">1080x1350</button>
-          <button class="btn" id="fmtB" onclick="setFmt('1080x1920')">1080x1920</button>
-        </div>
-      </div>
-      <div id="paneAscii">
-        <div class="sec"><div class="sec-title">Grid</div>
-          <div class="row"><span class="lbl">Cell size</span><input type="range" id="aCell" min="6" max="56" value="18" step="1" oninput="v('vaCell',this.value,'px');Ago()"><span class="val" id="vaCell">18px</span></div>
-        </div>
-        <div class="sec"><div class="sec-title">Margins (cells)</div>
-          <div class="row"><span class="lbl">Top</span><input type="range" id="aMT" min="0" max="30" value="0" step="1" oninput="v('vaMT',this.value,'');Ago()"><span class="val" id="vaMT">0</span></div>
-          <div class="row"><span class="lbl">Bottom</span><input type="range" id="aMB" min="0" max="30" value="0" step="1" oninput="v('vaMB',this.value,'');Ago()"><span class="val" id="vaMB">0</span></div>
-          <div class="row"><span class="lbl">Left</span><input type="range" id="aML" min="0" max="30" value="0" step="1" oninput="v('vaML',this.value,'');Ago()"><span class="val" id="vaML">0</span></div>
-          <div class="row"><span class="lbl">Right</span><input type="range" id="aMR" min="0" max="30" value="0" step="1" oninput="v('vaMR',this.value,'');Ago()"><span class="val" id="vaMR">0</span></div>
-        </div>
-        <div class="sec"><div class="sec-title">Source</div>
-          <div class="btns" style="margin-bottom:10px">
-            <button class="btn on" id="aSrcImg" onclick="setSrc('a','image')">IMAGE</button>
-            <button class="btn" id="aSrcVid" onclick="setSrc('a','video')">VIDEO</button>
-          </div>
-          <label class="upload-zone"><input type="file" id="aFile" accept="image/*" onchange="loadMedia('a',this)"><span id="aUpLbl">+ UPLOAD IMAGE</span></label>
-          <img id="aImgThumb" class="thumb" alt=""><video id="aVidThumb" class="thumb" muted playsinline loop></video>
-          <div id="aMediaCtrls" style="margin-top:10px;display:none">
-            <div class="row"><span class="lbl">Pos X</span><input type="range" id="aIX" min="0" max="100" value="50" step="1" oninput="v('vaIX',this.value,'%');Ago()"><span class="val" id="vaIX">50%</span></div>
-            <div class="row"><span class="lbl">Pos Y</span><input type="range" id="aIY" min="0" max="100" value="50" step="1" oninput="v('vaIY',this.value,'%');Ago()"><span class="val" id="vaIY">50%</span></div>
-            <div class="row"><span class="lbl">Scale</span><input type="range" id="aIS" min="5" max="400" value="100" step="1" oninput="v('vaIS',this.value,'%');Ago()"><span class="val" id="vaIS">100%</span></div>
-            <div class="row"><span class="lbl">Rotation</span><input type="range" id="aIR" min="0" max="360" value="0" step="1" oninput="v('vaIR',this.value,'deg');Ago()"><span class="val" id="vaIR">0deg</span></div>
-            <button class="clear-btn" onclick="removeMedia('a')">REMOVE SOURCE</button>
-          </div>
-        </div>
-        <div class="sec"><div class="sec-title">Adjustments</div>
-          <div class="row"><span class="lbl">Brightness</span><input type="range" id="aBri" min="0" max="300" value="100" step="1" oninput="v('vaBri',this.value,'%');A.imgDirty=true;Ago()"><span class="val" id="vaBri">100%</span></div>
-          <div class="row"><span class="lbl">Contrast</span><input type="range" id="aCon" min="0" max="500" value="100" step="1" oninput="v('vaCon',this.value,'%');A.imgDirty=true;Ago()"><span class="val" id="vaCon">100%</span></div>
-          <div class="row"><span class="lbl">Gamma</span><input type="range" id="aGam" min="10" max="400" value="100" step="1" oninput="v('vaGam',(this.value/100).toFixed(1),'');A.imgDirty=true;Ago()"><span class="val" id="vaGam">1.0</span></div>
-          <div class="tog-row" style="margin-top:4px"><span class="tog-lbl">Invert halftone</span><div class="tog" id="togInvert" onclick="toggleA('invert')"></div></div>
-        </div>
-        <div class="sec"><div class="sec-title">Characters</div>
-          <input class="char-input" id="aChars" value=" -()[]/|\">
-          <div class="preset-btns">
-            <button class="preset" onclick="setChars(' -/|\\')">CROSS</button>
-            <button class="preset" onclick="setChars(' .-+|/\\#@')">CLASSIC</button>
-            <button class="preset" onclick="setChars(' ()[]{}/\\|')">BRACKETS</button>
-            <button class="preset" onclick="setChars(' .:-=+*#%@')">DENSE</button>
-            <button class="preset" onclick="setChars(' -()[]/|\\')">DEFAULT</button>
-          </div>
-        </div>
-        <div class="sec"><div class="sec-title">Appearance</div>
-          <div class="tog-row"><span class="tog-lbl">Char color</span><div class="color-row"><div class="swatch" id="aFgSw" style="background:#ff1f1f"><input type="color" id="aColor" value="#ff1f1f" oninput="setAColor(this.value)"></div><span class="hex-lbl" id="aColorLbl">#FF1F1F</span></div></div>
-          <div class="tog-row"><span class="tog-lbl">BG color</span><div class="color-row"><div class="swatch" id="aBgSw" style="background:#0a0000"><input type="color" id="aBgColor" value="#0a0000" oninput="setABg(this.value)"></div><span class="hex-lbl" id="aBgLbl">#0A0000</span></div></div>
-        </div>
-        <div class="sec"><div class="sec-title">Text Edit Mode</div>
-          <div class="btns">
-            <button class="btn on" id="aModeView" onclick="setAMode('view')">VIEW</button>
-            <button class="btn" id="aModeEdit" onclick="setAMode('edit')">TEXT EDIT</button>
-          </div>
-          <div id="aEditHint" style="margin-top:8px;font-size:7px;letter-spacing:.15em;color:var(--dim2);line-height:1.8;display:none">CLICK CELL > TYPE — ARROWS: NAVIGATE<br>BACKSPACE: DELETE — ESC: EXIT</div>
-          <button class="clear-btn" onclick="A.textGrid={};Ago()">CLEAR ALL TEXT</button>
-        </div>
-        <div class="sec"><div class="sec-title">Export</div>
-          <button class="export-btn" id="aBtnPNG" onclick="exportPNG('a')">&#8595; EXPORT PNG</button>
-          <button class="export-btn" id="aBtnVid" style="display:none" onclick="exportVideo('a')">&#9679; RECORD WEBM</button>
-          <div class="prog-bar" id="aProgBar"><div class="prog-fill" id="aProgFill"></div></div>
-          <div class="note" id="aNote" style="display:none"></div>
-          <div class="note">WEBM EXPORT: CONVERT TO MP4 WITH HANDBRAKE/FFMPEG.</div>
-        </div>
-      </div>
-      <div id="paneLayout" style="display:none">
-        <div class="sec"><div class="sec-title">Grid</div>
-          <div class="row"><span class="lbl">Cell size</span><input type="range" id="lCell" min="6" max="80" value="28" step="1" oninput="v('vlCell',this.value,'px');Lgo()"><span class="val" id="vlCell">28px</span></div>
-          <div class="tog-row" style="margin-top:6px"><span class="tog-lbl">Show grid lines</span><div class="tog on" id="togShowGrid" onclick="toggleL('showGrid')"></div></div>
-          <div class="row" style="margin-top:8px"><span class="lbl">Grid opacity</span><input type="range" id="lGridOp" min="0" max="100" value="20" step="1" oninput="v('vlGridOp',this.value,'%');Lgo()"><span class="val" id="vlGridOp">20%</span></div>
-        </div>
-        <div class="sec"><div class="sec-title">Margins (cells)</div>
-          <div class="row"><span class="lbl">Top</span><input type="range" id="lMT" min="0" max="30" value="0" step="1" oninput="v('vlMT',this.value,'');Lgo()"><span class="val" id="vlMT">0</span></div>
-          <div class="row"><span class="lbl">Bottom</span><input type="range" id="lMB" min="0" max="30" value="0" step="1" oninput="v('vlMB',this.value,'');Lgo()"><span class="val" id="vlMB">0</span></div>
-          <div class="row"><span class="lbl">Left</span><input type="range" id="lML" min="0" max="30" value="0" step="1" oninput="v('vlML',this.value,'');Lgo()"><span class="val" id="vlML">0</span></div>
-          <div class="row"><span class="lbl">Right</span><input type="range" id="lMR" min="0" max="30" value="0" step="1" oninput="v('vlMR',this.value,'');Lgo()"><span class="val" id="vlMR">0</span></div>
-        </div>
-        <div class="sec"><div class="sec-title">Background</div>
-          <div class="btns" style="margin-bottom:10px">
-            <button class="btn on" id="lSrcImg" onclick="setSrc('l','image')">IMAGE</button>
-            <button class="btn" id="lSrcVid" onclick="setSrc('l','video')">VIDEO</button>
-          </div>
-          <label class="upload-zone"><input type="file" id="lFile" accept="image/*" onchange="loadMedia('l',this)"><span id="lUpLbl">+ UPLOAD IMAGE</span></label>
-          <img id="lImgThumb" class="thumb" alt=""><video id="lVidThumb" class="thumb" muted playsinline loop></video>
-          <div id="lMediaCtrls" style="margin-top:10px;display:none">
-            <div class="row"><span class="lbl">Pos X</span><input type="range" id="lIX" min="0" max="100" value="50" step="1" oninput="v('vlIX',this.value,'%');Lgo()"><span class="val" id="vlIX">50%</span></div>
-            <div class="row"><span class="lbl">Pos Y</span><input type="range" id="lIY" min="0" max="100" value="50" step="1" oninput="v('vlIY',this.value,'%');Lgo()"><span class="val" id="vlIY">50%</span></div>
-            <div class="row"><span class="lbl">Scale</span><input type="range" id="lIS" min="5" max="400" value="100" step="1" oninput="v('vlIS',this.value,'%');Lgo()"><span class="val" id="vlIS">100%</span></div>
-            <div class="row"><span class="lbl">Rotation</span><input type="range" id="lIR" min="0" max="360" value="0" step="1" oninput="v('vlIR',this.value,'deg');Lgo()"><span class="val" id="vlIR">0deg</span></div>
-            <button class="clear-btn" onclick="removeMedia('l')">REMOVE BACKGROUND</button>
-          </div>
-          <div class="tog-row" style="margin-top:8px"><span class="tog-lbl">Canvas BG</span><div class="color-row"><div class="swatch" id="lBgSw" style="background:#0a0000"><input type="color" id="lBgColor" value="#0a0000" oninput="setLBg(this.value)"></div><span class="hex-lbl" id="lBgLbl">#0A0000</span></div></div>
-        </div>
-        <div class="sec"><div class="sec-title">Cell Paint</div>
-          <div class="swatches-grid" id="swatchGrid"></div>
-          <div class="row">
-            <span class="lbl">Custom</span>
-            <div class="color-row" style="flex:1;justify-content:flex-end">
-              <div class="swatch" id="pSwatchEl" style="background:#ff1f1f"><input type="color" id="paintColor" value="#ff1f1f" oninput="setPaintColor(this.value)"></div>
-              <span class="hex-lbl" id="pColorLbl">#FF1F1F</span>
-            </div>
-          </div>
-          <div class="row" style="margin-top:8px"><span class="lbl">Opacity</span><input type="range" id="paintOp" min="5" max="100" value="90" step="1" oninput="v('vPaintOp',this.value,'%')"><span class="val" id="vPaintOp">90%</span></div>
-        </div>
-        <div class="sec"><div class="sec-title">Mode</div>
-          <div class="btns">
-            <button class="btn on" id="lModePaint" onclick="setLMode('paint')">PAINT</button>
-            <button class="btn" id="lModeText" onclick="setLMode('text')">TEXT</button>
-            <button class="btn" id="lModeErase" onclick="setLMode('erase')">ERASE</button>
-          </div>
-          <div id="lModeHint" class="mode-hint">CLICK OR DRAG CELLS TO FILL WITH COLOR</div>
-        </div>
-        <div class="sec"><div class="sec-title">Text Style</div>
-          <div class="tog-row"><span class="tog-lbl">Text color</span><div class="color-row"><div class="swatch" id="lTextSw" style="background:#ff1f1f"><input type="color" id="lTextColor" value="#ff1f1f" oninput="setLColor(this.value)"></div><span class="hex-lbl" id="lTextLbl">#FF1F1F</span></div></div>
-          <div class="row" style="margin-top:8px"><span class="lbl">Font size</span><input type="range" id="lFontSz" min="10" max="100" value="60" step="1" oninput="v('vlFont',this.value,'%');Lgo()"><span class="val" id="vlFont">60%</span></div>
-          <button class="clear-btn" onclick="clearLText()">CLEAR TEXT ONLY</button>
-          <button class="clear-btn" onclick="clearLCells()">CLEAR ALL CELLS</button>
-        </div>
-        <div class="sec"><div class="sec-title">Export</div>
-          <button class="export-btn" id="lBtnPNG" onclick="exportPNG('l')">&#8595; EXPORT PNG</button>
-          <button class="export-btn" id="lBtnVid" style="display:none" onclick="exportVideo('l')">&#9679; RECORD WEBM</button>
-          <div class="prog-bar" id="lProgBar"><div class="prog-fill" id="lProgFill"></div></div>
-          <div class="note" id="lNote" style="display:none"></div>
-          <div class="note">WEBM EXPORT: CONVERT TO MP4 WITH HANDBRAKE/FFMPEG.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="statusbar" id="status">READY — SELECT ASCII OR LAYOUT TAB TO BEGIN</div>
+  <div class="hsub">PHOTO BOOTH CO.</div>
 </div>
+<div class="ws">
+<div class="ca" id="ca">
+  <div class="cbg"></div>
+  <div class="cw"><canvas id="c"></canvas></div>
+  <!-- ASCII video controls -->
+  <div class="vc" id="avc">
+    <div class="tl"><div class="tl-bg"></div><div class="tl-f" id="aTf"></div><div class="tl-th" id="aTth"></div><input class="tl-in" type="range" id="aTin" min="0" max="1000" value="0" oninput="aSeek(this.value)" onmousedown="aSc=1" onmouseup="aSc=0"></div>
+    <div class="vbtns"><button class="vb" id="aBp" onclick="aPlay()">&#9654; PLAY</button><button class="vb" onclick="aRestart()">&#10227; RESTART</button><button class="vb on" id="aBl" onclick="aLoopT()">&#8635; LOOP</button><button class="vb" id="aBm" onclick="aMuteT()">&#9834; MUTE</button><span class="vt" id="aVT">0:00 / 0:00</span></div>
+  </div>
+  <!-- Layout video controls -->
+  <div class="vc" id="lvc">
+    <div class="tl"><div class="tl-bg"></div><div class="tl-f" id="lTf"></div><div class="tl-th" id="lTth"></div><input class="tl-in" type="range" id="lTin" min="0" max="1000" value="0" oninput="lSeek(this.value)" onmousedown="lSc=1" onmouseup="lSc=0"></div>
+    <div class="vbtns"><button class="vb" id="lBp" onclick="lPlay()">&#9654; PLAY</button><button class="vb" onclick="lRestart()">&#10227; RESTART</button><button class="vb on" id="lBl" onclick="lLoopT()">&#8635; LOOP</button><button class="vb" id="lBm" onclick="lMuteT()">&#9834; MUTE</button><span class="vt" id="lVT">0:00 / 0:00</span></div>
+  </div>
+  <!-- Film video controls -->
+  <div class="vc" id="fvc">
+    <div class="tl"><div class="tl-bg"></div><div class="tl-f" id="fTf"></div><div class="tl-th" id="fTth"></div><input class="tl-in" type="range" id="fTin" min="0" max="1000" value="0" oninput="fSeek(this.value)" onmousedown="fSc=1" onmouseup="fSc=0"></div>
+    <div class="vbtns"><button class="vb" id="fBp" onclick="fPlay()">&#9654; PLAY</button><button class="vb" onclick="fRestart()">&#10227; RESTART</button><button class="vb on" id="fBl" onclick="fLoopT()">&#8635; LOOP</button><button class="vb" id="fBm" onclick="fMuteT()">&#9834; MUTE</button><span class="vt" id="fVT">0:00 / 0:00</span></div>
+  </div>
+</div>
+
+<div class="sb">
+<!-- ── SHARED: FORMAT ── -->
+<div class="sec">
+  <div class="st">Format</div>
+  <div class="btns"><button class="btn on" id="fmtA" onclick="setFmt('1350')">1080×1350</button><button class="btn" id="fmtB" onclick="setFmt('1920')">1080×1920</button><button class="btn" id="fmtC" onclick="setFmt('custom')">CUSTOM</button></div>
+  <div id="customDims" style="display:none;margin-top:9px">
+    <div class="row"><span class="lbl">Width px</span><input type="number" id="dimW" value="1080" min="100" max="8000" step="1" style="flex:1;margin:0 5px;background:var(--bg);border:1px solid var(--bd2);color:var(--ac);font-family:var(--mn);font-size:11px;padding:3px 5px;outline:none;width:0" oninput="applyDim()"><span class="val" id="vDimW">1080</span></div>
+    <div class="row"><span class="lbl">Height px</span><input type="number" id="dimH" value="1080" min="100" max="8000" step="1" style="flex:1;margin:0 5px;background:var(--bg);border:1px solid var(--bd2);color:var(--ac);font-family:var(--mn);font-size:11px;padding:3px 5px;outline:none;width:0" oninput="applyDim()"><span class="val" id="vDimH">1080</span></div>
+  </div>
+</div>
+<!-- ── SHARED: GRID ── -->
+<div class="sec">
+  <div class="st">Grid</div>
+  <div class="row"><span class="lbl">Cell size</span><input type="range" id="slC" min="6" max="56" value="18" step="1" oninput="v('vC',this.value,'px');go()"><span class="val" id="vC">18px</span></div>
+</div>
+
+<!-- ══ ASCII SECTIONS ══ -->
+<div class="sec as">
+  <div class="st">Margins (cells)</div>
+  <div class="row"><span class="lbl">Top</span><input type="range" id="slMT" min="0" max="30" value="0" step="1" oninput="v('vMT',this.value,'');go()"><span class="val" id="vMT">0</span></div>
+  <div class="row"><span class="lbl">Bottom</span><input type="range" id="slMB" min="0" max="30" value="0" step="1" oninput="v('vMB',this.value,'');go()"><span class="val" id="vMB">0</span></div>
+  <div class="row"><span class="lbl">Left</span><input type="range" id="slML" min="0" max="30" value="0" step="1" oninput="v('vML',this.value,'');go()"><span class="val" id="vML">0</span></div>
+  <div class="row"><span class="lbl">Right</span><input type="range" id="slMR" min="0" max="30" value="0" step="1" oninput="v('vMR',this.value,'');go()"><span class="val" id="vMR">0</span></div>
+</div>
+<div class="sec as">
+  <div class="st">Source</div>
+  <div class="btns" style="margin-bottom:8px"><button class="btn on" id="aSI" onclick="aSetSrc('img')">IMAGE</button><button class="btn" id="aSV" onclick="aSetSrc('vid')">VIDEO</button></div>
+  <label class="uz"><input type="file" id="aFile" accept="image/*" onchange="aLoad(this)"><span id="aUL">+ UPLOAD IMAGE</span></label>
+  <img id="aIT" class="thumb" alt=""><video id="aVT2" class="thumb" muted playsinline loop></video>
+  <div id="aMC" style="margin-top:9px;display:none">
+    <div class="row"><span class="lbl">Pos X</span><input type="range" id="slAX" min="0" max="100" value="50" step="1" oninput="v('vAX',this.value,'%');A.d=1;go()"><span class="val" id="vAX">50%</span></div>
+    <div class="row"><span class="lbl">Pos Y</span><input type="range" id="slAY" min="0" max="100" value="50" step="1" oninput="v('vAY',this.value,'%');A.d=1;go()"><span class="val" id="vAY">50%</span></div>
+    <div class="row"><span class="lbl">Scale</span><input type="range" id="slAS" min="5" max="400" value="100" step="1" oninput="v('vAS',this.value,'%');A.d=1;go()"><span class="val" id="vAS">100%</span></div>
+    <div class="row"><span class="lbl">Rotation</span><input type="range" id="slAR" min="0" max="360" value="0" step="1" oninput="v('vAR',this.value,'°');A.d=1;go()"><span class="val" id="vAR">0°</span></div>
+    <button class="cb" onclick="aRem()">REMOVE SOURCE</button>
+  </div>
+</div>
+<div class="sec as">
+  <div class="st">Adjustments</div>
+  <div class="row"><span class="lbl">Brightness</span><input type="range" id="slBri" min="0" max="300" value="100" step="1" oninput="v('vBri',this.value,'%');A.d=1;go()"><span class="val" id="vBri">100%</span></div>
+  <div class="row"><span class="lbl">Contrast</span><input type="range" id="slCon" min="0" max="500" value="100" step="1" oninput="v('vCon',this.value,'%');A.d=1;go()"><span class="val" id="vCon">100%</span></div>
+  <div class="row"><span class="lbl">Gamma</span><input type="range" id="slGam" min="10" max="400" value="100" step="1" oninput="v('vGam',(this.value/100).toFixed(1),'');A.d=1;go()"><span class="val" id="vGam">1.0</span></div>
+  <div class="tr" style="margin-top:5px"><span class="trl">Invert halftone</span><div class="tog" id="togAInv" onclick="A.inv=!A.inv;this.classList.toggle('on',A.inv);A.d=1;go()"></div></div>
+</div>
+<div class="sec as">
+  <div class="st">Characters</div>
+  <input class="chin" id="charSet" value=" -()[]/|\">
+  <div class="pbt">
+    <button class="pb" onclick="sCh(' -/|\\')">CROSS</button>
+    <button class="pb" onclick="sCh(' .-+|/\\#@')">CLASSIC</button>
+    <button class="pb" onclick="sCh(' ()[]{}/\\|')">BRACKETS</button>
+    <button class="pb" onclick="sCh(' .:-=+*#%@')">DENSE</button>
+    <button class="pb" onclick="sCh(' -()[]/|\\')">RESET</button>
+  </div>
+</div>
+<div class="sec as">
+  <div class="st">Appearance</div>
+  <div class="tr"><span class="trl">Char color</span><div class="cr"><div class="sw" id="aFgS" style="background:#ff1f1f"><input type="color" id="aFgP" value="#ff1f1f" oninput="A.col=this.value;gI('aFgS').style.background=this.value;gI('aFgH').textContent=this.value.toUpperCase();go()"></div><span class="hl" id="aFgH">#FF1F1F</span></div></div>
+  <div class="tr" style="margin-top:6px"><span class="trl">BG color</span><div class="cr"><div class="sw" id="aBgS" style="background:#0a0000"><input type="color" id="aBgP" value="#0a0000" oninput="A.bg=this.value;gI('aBgS').style.background=this.value;gI('aBgH').textContent=this.value.toUpperCase();go()"></div><span class="hl" id="aBgH">#0A0000</span></div></div>
+  <div class="tr" style="margin-top:6px"><span class="trl">Transparent BG</span><div class="tog" id="togABgT" onclick="A.bgTransp=!A.bgTransp;this.classList.toggle('on',A.bgTransp);gI('aBgS').style.opacity=A.bgTransp?0.2:1;go()"></div></div>
+  <div class="note" style="margin-top:4px">TRANSPARENT BG APPLIES TO PNG + SVG EXPORT</div>
+</div>
+<div class="sec as">
+  <div class="st">Text Edit</div>
+  <div class="btns"><button class="btn on" id="aMV" onclick="aMode('view')">VIEW</button><button class="btn" id="aME" onclick="aMode('edit')">EDIT</button></div>
+  <div id="aEH" class="hint" style="margin-top:7px;display:none">CLICK CELL → TYPE<br>ARROWS: NAVIGATE<br>ESC: DESELECT</div>
+  <button class="cb" onclick="A.tg={};go()">CLEAR ALL TEXT</button>
+</div>
+
+<!-- ══ LAYOUT SECTIONS ══ -->
+<div class="sec ls" style="display:none">
+  <div class="st">Background</div>
+  <div class="btns" style="margin-bottom:8px"><button class="btn on" id="lSI" onclick="lSetSrc('img')">IMAGE</button><button class="btn" id="lSV" onclick="lSetSrc('vid')">VIDEO</button></div>
+  <label class="uz"><input type="file" id="lFile" accept="image/*" onchange="lLoad(this)"><span id="lUL">+ UPLOAD IMAGE</span></label>
+  <img id="lIT" class="thumb" alt=""><video id="lVT2" class="thumb" muted playsinline loop></video>
+  <div id="lMC" style="margin-top:9px;display:none">
+    <div class="row"><span class="lbl">Pan X</span><input type="range" id="slLX" min="0" max="100" value="50" step="1" oninput="v('vLX',this.value,'%');if(!L.isVid)lRen()"><span class="val" id="vLX">50%</span></div>
+    <div class="row"><span class="lbl">Pan Y</span><input type="range" id="slLY" min="0" max="100" value="50" step="1" oninput="v('vLY',this.value,'%');if(!L.isVid)lRen()"><span class="val" id="vLY">50%</span></div>
+    <div class="row"><span class="lbl">Zoom</span><input type="range" id="slLZ" min="100" max="400" value="100" step="1" oninput="v('vLZ',this.value,'%');if(!L.isVid)lRen()"><span class="val" id="vLZ">100%</span></div>
+    <button class="cb" onclick="lRem()">REMOVE BG</button>
+  </div>
+  <div class="tr" style="margin-top:8px"><span class="trl">Canvas BG</span><div class="cr"><div class="sw" id="lBgS" style="background:#000000"><input type="color" id="lBgP" value="#000000" oninput="L.bgCol=this.value;gI('lBgS').style.background=this.value;if(!L.isVid)lRen()"></div><span class="hl">#000000</span></div></div>
+</div>
+<div class="sec ls" style="display:none">
+  <div class="st">Cell Style</div>
+  <div class="tr"><span class="trl">Fill color</span><div class="cr"><div class="sw" id="lFiS" style="background:#ff1f1f"><input type="color" id="lFiP" value="#ff1f1f" oninput="setLFill(this.value)"></div><span class="hl" id="lFiH">#FF1F1F</span></div></div>
+  <div class="row" style="margin-top:5px"><span class="lbl">Opacity</span><input type="range" id="slLOp" min="0" max="100" value="90" step="1" oninput="v('vLOp',this.value,'%');L.fillOp=+this.value"><span class="val" id="vLOp">90%</span></div>
+  <div class="pal" id="lpal"></div>
+  <div class="tr" style="margin-top:7px"><span class="trl">Text color</span><div class="cr"><div class="sw" id="lTxS" style="background:#ffffff"><input type="color" id="lTxP" value="#ffffff" oninput="L.textCol=this.value;gI('lTxS').style.background=this.value"></div><span class="hl">#FFFFFF</span></div></div>
+  <button class="cb" onclick="L.g={};if(!L.isVid)lRen()">CLEAR ALL CELLS</button>
+</div>
+<div class="sec ls" style="display:none">
+  <div class="st">Tools</div>
+  <div class="tbts"><button class="tb on" id="ltxt" onclick="lTool('text')">TEXT</button><button class="tb" id="lpnt" onclick="lTool('paint')">PAINT</button><button class="tb" id="lers" onclick="lTool('erase')">ERASE</button></div>
+  <div class="hint" id="lTH">CLICK CELL → TYPE<br>ARROWS: NAVIGATE<br>ESC: DESELECT</div>
+  <div class="tr" style="margin-top:8px"><span class="trl">Grid lines</span><div class="tog on" id="togLGL" onclick="L.gl=!L.gl;this.classList.toggle('on',L.gl);if(!L.isVid)lRen()"></div></div>
+</div>
+
+<!-- ══ FILM LAB SECTIONS ══ -->
+<div class="sec fl" style="display:none">
+  <div class="st">Film Base</div>
+  <div class="tr"><span class="trl">Acetate color</span><div class="cr"><div class="sw" id="fBaSw" style="background:#080000"><input type="color" id="fBaP" value="#080000" oninput="F.base=this.value;gI('fBaSw').style.background=this.value;if(!F.vid)fRen()"></div><span class="hl" id="fBaH">#080000</span></div></div>
+  <div class="tr" style="margin-top:6px"><span class="trl">Contact print</span><div class="tog" id="togCP" onclick="F.cp=!F.cp;this.classList.toggle('on',F.cp);if(!F.vid)fRen()"></div></div>
+  <div class="note" style="margin-top:5px">INVERTS EMULSION LAYERS — OVERCOAT UNAFFECTED</div>
+</div>
+
+<div class="sec fl" style="display:none">
+  <div class="st">Emulsion Stack</div>
+  <div class="ll" id="layList"></div>
+  <div style="display:flex;gap:4px;margin-bottom:8px">
+    <button class="cb" style="margin:0;flex:1" onclick="addLayer()">+ ADD</button>
+    <button class="cb" style="margin:0;flex:1" onclick="removeLayer()">— REMOVE</button>
+  </div>
+  <label class="uz"><input type="file" id="fCMY" accept="image/*" onchange="cmySplit(this)"><span>⚗ CMY AUTO-SPLIT</span></label>
+  <div class="note">ONE IMAGE → THREE C/M/Y EMULSION LAYERS</div>
+</div>
+
+<div class="sec fl" style="display:none" id="fLaySec">
+  <div class="st" id="fLayT">LAYER 1</div>
+  <label class="uz" style="margin-bottom:5px"><input type="file" id="fLFile" accept="image/*" onchange="setLayImg(this)"><span id="fLUL">+ LAYER IMAGE</span></label>
+  <button class="cb" style="margin-top:0;margin-bottom:8px" onclick="clearLayImg()">REMOVE LAYER IMAGE</button>
+  <div class="st">Channel</div>
+  <div class="chg" id="chg">
+    <button class="chb on" id="chFull" onclick="setLayCh('full')">FULL</button>
+    <button class="chb" id="chC" onclick="setLayCh('C')">C</button>
+    <button class="chb" id="chM" onclick="setLayCh('M')">M</button>
+    <button class="chb" id="chY" onclick="setLayCh('Y')">Y</button>
+    <button class="chb" id="chR" onclick="setLayCh('R')">R</button>
+    <button class="chb" id="chG" onclick="setLayCh('G')">G</button>
+    <button class="chb" id="chB" onclick="setLayCh('B')">B</button>
+  </div>
+  <div class="st" style="margin-top:8px">Characters</div>
+  <input class="chin" id="fLCh" value=" -()[]/|\\" oninput="setLayChars(this.value)">
+  <div class="tr"><span class="trl">Color</span><div class="cr"><div class="sw" id="fLCS" style="background:#00eeff"><input type="color" id="fLCP" value="#00eeff" oninput="setLayCol(this.value)"></div><span class="hl" id="fLCH">#00EEFF</span></div></div>
+  <div class="st" style="margin-top:8px">Blend Mode</div>
+  <div class="btns">
+    <button class="btn on" id="blS" onclick="setLayBlend('screen')">SCREEN</button>
+    <button class="btn" id="blM" onclick="setLayBlend('multiply')">MULT</button>
+    <button class="btn" id="blO" onclick="setLayBlend('overlay')">OVER</button>
+    <button class="btn" id="blN" onclick="setLayBlend('normal')">NORM</button>
+  </div>
+  <div class="row" style="margin-top:8px"><span class="lbl">Opacity</span><input type="range" id="slFOp" min="0" max="100" value="100" step="1" oninput="v('vFOp',this.value,'%');setLayP('opacity',+this.value)"><span class="val" id="vFOp">100%</span></div>
+  <div class="row"><span class="lbl">Reg X</span><input type="range" id="slFDX" min="-20" max="20" value="0" step="1" oninput="v('vFDX',this.value,'');setLayP('dx',+this.value)"><span class="val" id="vFDX">0</span></div>
+  <div class="row"><span class="lbl">Reg Y</span><input type="range" id="slFDY" min="-20" max="20" value="0" step="1" oninput="v('vFDY',this.value,'');setLayP('dy',+this.value)"><span class="val" id="vFDY">0</span></div>
+  <div class="row"><span class="lbl">Brightness</span><input type="range" id="slFBri" min="0" max="300" value="100" step="1" oninput="v('vFBri',this.value,'%');setLayP('bri',+this.value)"><span class="val" id="vFBri">100%</span></div>
+  <div class="row"><span class="lbl">Contrast</span><input type="range" id="slFCon" min="0" max="500" value="150" step="1" oninput="v('vFCon',this.value,'%');setLayP('con',+this.value)"><span class="val" id="vFCon">150%</span></div>
+  <div class="row"><span class="lbl">Gamma</span><input type="range" id="slFGam" min="10" max="400" value="100" step="1" oninput="v('vFGam',(this.value/100).toFixed(1),'');setLayP('gam',+this.value/100)"><span class="val" id="vFGam">1.0</span></div>
+  <div class="tr"><span class="trl">Invert layer</span><div class="tog" id="togFI" onclick="toggleLayInv()"></div></div>
+</div>
+
+<div class="sec fl" style="display:none">
+  <div class="st">Shared Video</div>
+  <label class="uz"><input type="file" id="fVFile" accept="video/*" onchange="loadFVid(this)"><span id="fVUL">+ UPLOAD VIDEO</span></label>
+  <video id="fVT2" class="thumb" muted playsinline loop></video>
+  <button class="cb" onclick="removeFVid()">REMOVE VIDEO</button>
+  <div class="note">SHARED ACROSS LAYERS WITHOUT A PER-LAYER IMAGE</div>
+</div>
+
+<div class="sec fl" style="display:none">
+  <div class="st">Overcoat</div>
+  <div class="tbts"><button class="tb on" id="fttxt" onclick="fTool('text')">TEXT</button><button class="tb" id="ftpnt" onclick="fTool('paint')">PAINT</button><button class="tb" id="fters" onclick="fTool('erase')">ERASE</button></div>
+  <div class="hint" id="fTH">CLICK CELL → TYPE<br>ARROWS: NAVIGATE<br>ESC: DESELECT</div>
+  <div class="tr" style="margin-top:7px"><span class="trl">Fill color</span><div class="cr"><div class="sw" id="fFiS" style="background:#ff1f1f"><input type="color" id="fFiP" value="#ff1f1f" oninput="setFFill(this.value)"></div><span class="hl" id="fFiH">#FF1F1F</span></div></div>
+  <div class="row" style="margin-top:5px"><span class="lbl">Opacity</span><input type="range" id="slFFOp" min="0" max="100" value="90" step="1" oninput="v('vFFOp',this.value,'%');F.fillOp=+this.value"><span class="val" id="vFFOp">90%</span></div>
+  <div class="pal" id="fpal"></div>
+  <div class="tr" style="margin-top:7px"><span class="trl">Text color</span><div class="cr"><div class="sw" id="fTxS" style="background:#ffffff"><input type="color" id="fTxP" value="#ffffff" oninput="F.textCol=this.value;gI('fTxS').style.background=this.value"></div><span class="hl">#FFFFFF</span></div></div>
+  <div class="tr"><span class="trl">Grid lines</span><div class="tog on" id="togFGL" onclick="F.gl=!F.gl;this.classList.toggle('on',F.gl);if(!F.vid)fRen()"></div></div>
+  <button class="cb" onclick="F.oc={};if(!F.vid)fRen()">CLEAR OVERCOAT</button>
+</div>
+
+<!-- ── ASCII: FONT ── -->
+<div class="sec as">
+  <div class="st">Custom Font</div>
+  <label class="uz"><input type="file" id="fontFile" accept=".woff,.woff2,.ttf,.otf" onchange="loadFont(this)"><span id="fontLbl">+ UPLOAD FONT (WOFF/TTF)</span></label>
+  <div class="note" style="margin-top:5px">REPLACES ROBOTO MONO.<br>FOR GITHUB: SET FONT_URL AT TOP OF SCRIPT.</div>
+</div>
+
+<!-- ── SHARED: EXPORT ── -->
+<div class="sec">
+  <div class="st">Export</div>
+  <button class="eb" id="btnPNG" onclick="expPNG()">&#8595; EXPORT PNG</button>
+  <button class="eb" id="btnSVG" style="display:none" onclick="expSVG()">&#8595; EXPORT SVG (LIVE TEXT)</button>
+  <button class="eb" id="btnSVGO" style="display:none" onclick="expSVGOutlined()">&#8595; EXPORT SVG (OUTLINES)</button>
+  <button class="eb" id="btnTXT" style="display:none" onclick="expTXT()">&#8595; EXPORT TXT</button>
+  <button class="eb" id="btnVid" style="display:none" onclick="expVid()">&#9679; RECORD WEBM</button>
+  <div class="prog" id="prBar"><div class="pf" id="prFill"></div></div>
+  <div class="note" id="expN" style="display:none"></div>
+  <div class="note">SVG LIVE TEXT = EDITABLE, FONT REQUIRED<br>SVG OUTLINES = NO FONT NEEDED, ILLUSTRATOR-READY<br>TXT = PASTE INTO FIGMA AS TEXT<br>VIDEO = .WEBM &#8594; MP4 VIA HANDBRAKE</div>
+</div>
+</div><!-- /sb -->
+</div><!-- /ws -->
+<div class="stbar" id="stbar">READY</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
 <script>
-const canvas=document.getElementById('c');
-const ctx=canvas.getContext('2d');
-let off,octx,fontReady=false,rafId=null,renderTimer=null;
-let cellW=10.8,cellH=18,scrubbing=false,activeTab='ascii';
-let lPainting=false;
+/* ══════════════════════════════════════════
+   CORE
+══════════════════════════════════════════ */
+const cv=document.getElementById('c'),cx=cv.getContext('2d');
+let off,octx,fontReady=false,cW=10.8,cH=18,tab='ascii';
+let aSc=0,lSc=0,fSc=0;
 const gI=id=>document.getElementById(id);
-const v=(id,val,suf)=>gI(id).textContent=val+suf;
-let fmt='1080x1350';
-const CW=()=>1080;
-const CH=()=>fmt==='1080x1350'?1350:1920;
+const v=(id,val,s)=>gI(id).textContent=val+s;
+const SH={fmt:'1350',cellSize:18,cw:1080,ch:1080};
+const CW=()=>SH.fmt==='custom'?SH.cw:1080;
+const CH=()=>SH.fmt==='1350'?1350:SH.fmt==='1920'?1920:SH.ch;
+
+/* ASCII state */
+const A={isVid:false,img:null,vid:null,vR:false,raf:null,loop:true,muted:true,cache:null,d:true,ix:50,iy:50,sc:100,rot:0,bri:100,con:100,gam:1,inv:false,col:'#ff1f1f',bg:'#0a0000',bgTransp:false,mode:'view',tg:{},cur:null,mt:0,mb:0,ml:0,mr:0,chars:' -()[]/|\\'};
+/* Layout state */
+const L={isVid:false,img:null,vid:null,vR:false,raf:null,loop:true,muted:true,ix:50,iy:50,sc:100,fillCol:'#ff1f1f',fillOp:90,textCol:'#ffffff',bgCol:'#000000',gl:true,tool:'text',g:{},cur:null,painting:false};
+/* Film state */
+const F={vid:null,vR:false,raf:null,loop:true,muted:true,base:'#080000',cp:false,layers:[],selIdx:0,oc:{},fillCol:'#ff1f1f',fillOp:90,textCol:'#ffffff',gl:true,tool:'text',cur:null,painting:false};
+
+/* Film layer canvases (pre-allocated, reused) */
+let flc=[];
+function mkLC(){const c=document.createElement('canvas');c.width=CW();c.height=CH();return{c,x:c.getContext('2d',{willReadFrequently:true})};}
+function mkLayer(id,name,color,ch){return{id,name,color,channel:ch,active:true,img:null,imgName:'',chars:' -()[]/|\\',blend:'screen',opacity:100,dx:0,dy:0,bri:100,con:150,gam:1,inv:false};}
 
 function initCanvas(){
-  canvas.width=CW();canvas.height=CH();
+  cv.width=CW();cv.height=CH();
   off=document.createElement('canvas');off.width=CW();off.height=CH();
   octx=off.getContext('2d',{willReadFrequently:true});
-  fitCanvas();
+  flc.forEach(lc=>{lc.c.width=CW();lc.c.height=CH();});
+  fitC();mCell();
 }
-function fitCanvas(){
-  const area=gI('canvasArea');
-  const hasVid=(activeTab==='ascii'&&A.vidReady)||(activeTab==='layout'&&L.vidReady);
-  const aw=area.clientWidth-40,ah=area.clientHeight-(hasVid?80:40);
-  const s=Math.min(aw/CW(),ah/CH());
-  canvas.style.width=(CW()*s)+'px';canvas.style.height=(CH()*s)+'px';
+function fitC(){
+  const area=gI('ca');
+  const hasV=(tab==='ascii'&&A.isVid&&A.vR)||(tab==='layout'&&L.isVid&&L.vR)||(tab==='film'&&F.vR);
+  const s=Math.min((area.clientWidth-40)/CW(),(area.clientHeight-(hasV?82:40))/CH());
+  cv.style.width=CW()*s+'px';cv.style.height=CH()*s+'px';
 }
-function mCell(size){ctx.font=size+'px "Roboto Mono"';cellW=ctx.measureText('M').width;cellH=size;}
-function hexToRgba(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${a.toFixed(2)})`;}
-function setFmt(f){fmt=f;gI('fmtA').classList.toggle('on',f==='1080x1350');gI('fmtB').classList.toggle('on',f==='1080x1920');initCanvas();activeTab==='ascii'?Ago():Lgo();}
-function setTab(t){
-  activeTab=t;
-  gI('tabAscii').classList.toggle('on',t==='ascii');
-  gI('tabLayout').classList.toggle('on',t==='layout');
-  gI('paneAscii').style.display=t==='ascii'?'':'none';
-  gI('paneLayout').style.display=t==='layout'?'':'none';
-  stopLoop();
-  if(t==='ascii'){if(A.vidReady)startLoop();else{A.imgDirty=true;sched(renderASCII);}}
-  if(t==='layout'){if(L.vidReady)startLoop();else sched(renderLayout);}
-  fitCanvas();syncVidCtrl();
+function mCell(){cx.font=SH.cellSize+'px '+getActiveFontFamily();cW=cx.measureText('M').width;cH=SH.cellSize;}
+function syncSH(){SH.cellSize=+gI('slC').value;}
+function syncA(){
+  A.mt=+gI('slMT').value;A.mb=+gI('slMB').value;
+  A.ml=+gI('slML').value;A.mr=+gI('slMR').value;
+  A.ix=+gI('slAX').value;A.iy=+gI('slAY').value;
+  A.sc=+gI('slAS').value;A.rot=+gI('slAR').value;
+  A.bri=+gI('slBri').value;A.con=+gI('slCon').value;
+  A.gam=+gI('slGam').value/100;
+  A.chars=gI('charSet').value;
 }
-function startLoop(){
-  if(rafId)return;
-  function loop(){
-    const st=activeTab==='ascii'?A:L;
-    if(!st.vidReady){rafId=null;return;}
-    if(activeTab==='ascii')renderASCII();else renderLayout();
-    updateTL(st.vid);
-    rafId=requestAnimationFrame(loop);
+function go(){
+  syncSH();syncA();mCell();
+  if(tab==='ascii'){if(!A.isVid){A.d=1;clearTimeout(go._t);go._t=setTimeout(rAscii,10);}}
+  else if(tab==='layout'){if(!L.isVid){clearTimeout(go._t);go._t=setTimeout(lRen,10);}}
+  else{if(!F.vid){clearTimeout(go._t);go._t=setTimeout(fRen,10);}}
+}
+
+/* ══════════════════════════════════════════
+   TAB
+══════════════════════════════════════════ */
+function switchTab(t){
+  tab=t;
+  gI('tabA').classList.toggle('on',t==='ascii');
+  gI('tabL').classList.toggle('on',t==='layout');
+  gI('tabF').classList.toggle('on',t==='film');
+  document.querySelectorAll('.as').forEach(e=>e.style.display=t==='ascii'?'':'none');
+  document.querySelectorAll('.ls').forEach(e=>e.style.display=t==='layout'?'':'none');
+  document.querySelectorAll('.fl').forEach(e=>e.style.display=t==='film'?'':'none');
+  stopAR();stopLR();stopFR();
+  gI('avc').classList.remove('show');gI('lvc').classList.remove('show');gI('fvc').classList.remove('show');
+  if(t==='ascii'){
+    cv.style.cursor=A.mode==='edit'?'text':'crosshair';
+    if(A.isVid&&A.vR){gI('avc').classList.add('show');startAR();}else{fitC();rAscii();}
+    updEB(A.isVid);
+  }else if(t==='layout'){
+    cv.style.cursor=L.tool==='text'?'text':'crosshair';
+    if(L.isVid&&L.vR){gI('lvc').classList.add('show');startLR();}else{fitC();lRen();}
+    updEB(L.isVid);
+  }else{
+    cv.style.cursor=F.tool==='text'?'text':'crosshair';
+    if(F.vR){gI('fvc').classList.add('show');startFR();}else{fitC();fRen();}
+    updEB(F.vR);
   }
-  rafId=requestAnimationFrame(loop);
+  fitC();
 }
-function stopLoop(){if(rafId){cancelAnimationFrame(rafId);rafId=null;}}
-function sched(fn){clearTimeout(renderTimer);renderTimer=setTimeout(fn,12);}
-
-const A={cellSize:18,mt:0,mb:0,ml:0,mr:0,ix:50,iy:50,isc:100,ir:0,bri:100,con:100,gam:1.0,chars:' -()[]/|\\',invert:false,color:'#ff1f1f',bgColor:'#0a0000',textGrid:{},cursor:null,src:null,isVideo:false,vid:null,vidReady:false,loop:true,muted:true,imgCache:null,imgDirty:true,mode:'view'};
-const L={cellSize:28,mt:0,mb:0,ml:0,mr:0,ix:50,iy:50,isc:100,ir:0,color:'#ff1f1f',bgColor:'#0a0000',cells:{},cursor:null,paintColor:'#ff1f1f',paintOpacity:0.9,mode:'paint',showGrid:true,gridOpacity:0.2,fontSize:0.6,src:null,isVideo:false,vid:null,vidReady:false,loop:true,muted:true};
-
-function Ago(){
-  A.cellSize=+gI('aCell').value;A.mt=+gI('aMT').value;A.mb=+gI('aMB').value;A.ml=+gI('aML').value;A.mr=+gI('aMR').value;
-  A.ix=+gI('aIX').value;A.iy=+gI('aIY').value;A.isc=+gI('aIS').value;A.ir=+gI('aIR').value;
-  A.bri=+gI('aBri').value;A.con=+gI('aCon').value;A.gam=+gI('aGam').value/100;A.chars=gI('aChars').value;
-  if(activeTab==='ascii'){A.imgDirty=true;sched(renderASCII);}
+function updEB(isV){
+  gI('btnPNG').style.display=isV?'none':'';
+  gI('btnSVG').style.display=(!isV&&tab==='ascii')?'':'none';
+  gI('btnSVGO').style.display=(!isV&&tab==='ascii')?'':'none';
+  gI('btnTXT').style.display=(!isV&&tab==='ascii')?'':'none';
+  gI('btnVid').style.display=isV?'':'none';
 }
+function setFmt(h){
+  SH.fmt=h;
+  gI('fmtA').classList.toggle('on',h==='1350');
+  gI('fmtB').classList.toggle('on',h==='1920');
+  gI('fmtC').classList.toggle('on',h==='custom');
+  gI('customDims').style.display=h==='custom'?'block':'none';
+  if(h!=='custom'){initCanvas();A.d=1;go();}
+}
+function applyDim(){
+  const w=Math.max(100,Math.min(8000,parseInt(gI('dimW').value)||1080));
+  const h=Math.max(100,Math.min(8000,parseInt(gI('dimH').value)||1080));
+  SH.cw=w;SH.ch=h;
+  gI('vDimW').textContent=w;gI('vDimH').textContent=h;
+  initCanvas();A.d=1;go();
+}
+
+/* ══════════════════════════════════════════
+   ASCII RENDER
+══════════════════════════════════════════ */
 function getAFrame(){
-  const src=A.isVideo?A.vid:A.src;if(!src)return null;
-  if(!A.isVideo&&!A.imgDirty&&A.imgCache)return A.imgCache;
+  const src=A.isVid?A.vid:A.img;if(!src)return null;
+  if(!A.isVid&&!A.d&&A.cache)return A.cache;
   const W=CW(),H=CH();
   octx.clearRect(0,0,W,H);octx.filter=`brightness(${A.bri}%) contrast(${A.con}%)`;
-  octx.save();octx.translate((A.ix/100)*W,(A.iy/100)*H);octx.rotate(A.ir*Math.PI/180);
-  const nw=A.isVideo?A.vid.videoWidth:A.src.naturalWidth,nh=A.isVideo?A.vid.videoHeight:A.src.naturalHeight;
-  const dw=W*(A.isc/100),dh=nw?dw*(nh/nw):dw;
+  octx.save();octx.translate((A.ix/100)*W,(A.iy/100)*H);octx.rotate(A.rot*Math.PI/180);
+  const nW=A.isVid?A.vid.videoWidth:A.img.naturalWidth,nH=A.isVid?A.vid.videoHeight:A.img.naturalHeight;
+  const dw=W*(A.sc/100),dh=nW?dw*(nH/nW):dw;
   octx.drawImage(src,-dw/2,-dh/2,dw,dh);octx.restore();octx.filter='none';
-  if(A.gam!==1.0){const id=octx.getImageData(0,0,W,H),d=id.data,g=1/A.gam;for(let i=0;i<d.length;i+=4){d[i]=Math.pow(d[i]/255,g)*255|0;d[i+1]=Math.pow(d[i+1]/255,g)*255|0;d[i+2]=Math.pow(d[i+2]/255,g)*255|0;}octx.putImageData(id,0,0);}
-  const data=octx.getImageData(0,0,W,H);if(!A.isVideo){A.imgCache=data;A.imgDirty=false;}return data;
+  if(A.gam!==1){const id=octx.getImageData(0,0,W,H),d=id.data,g=1/A.gam;for(let i=0;i<d.length;i+=4){d[i]=Math.pow(d[i]/255,g)*255|0;d[i+1]=Math.pow(d[i+1]/255,g)*255|0;d[i+2]=Math.pow(d[i+2]/255,g)*255|0;}octx.putImageData(id,0,0);}
+  const data=octx.getImageData(0,0,W,H);
+  if(!A.isVid){A.cache=data;A.d=0;}
+  return data;
 }
-function lum(r,g,b){return 0.299*r+0.587*g+0.114*b}
-function charFor(bri){const ch=A.chars;if(!ch.length)return'';const b=A.invert?255-bri:bri;return ch[Math.round((b/255)*(ch.length-1))];}
-function renderASCII(){
+const lum=(r,g,b)=>0.299*r+0.587*g+0.114*b;
+function cFor(b,chars,inv){const ch=chars;if(!ch.length)return '';const bv=inv?255-b:b;return ch[Math.round((bv/255)*(ch.length-1))];}
+
+function rAscii(exp=false){
   if(!fontReady)return;
-  const cs=A.cellSize;mCell(cs);
-  const W=CW(),H=CH(),cols=Math.floor(W/cellW),rows=Math.floor(H/cellH);
-  ctx.fillStyle=A.bgColor;ctx.fillRect(0,0,W,H);
+  const W=CW(),H=CH(),cols=Math.floor(W/cW),rows=Math.floor(H/cH);
+  cx.clearRect(0,0,W,H);
+  if(!A.bgTransp){cx.fillStyle=A.bg;cx.fillRect(0,0,W,H);}
   const id=getAFrame();
-  ctx.font=cs+'px "Roboto Mono"';ctx.textBaseline='top';
-  for(let row=0;row<rows;row++){
-    for(let col=0;col<cols;col++){
-      if(row<A.mt||row>=rows-A.mb||col<A.ml||col>=cols-A.mr)continue;
-      const x=col*cellW,y=row*cellH,key=row+','+col;
-      if(A.textGrid[key]!==undefined){ctx.fillStyle=A.color;ctx.fillText(A.textGrid[key],x,y);continue;}
-      if(id){const px=Math.floor(x+cellW/2),py=Math.floor(y+cellH/2);if(px>=0&&px<W&&py>=0&&py<H){const i=(py*W+px)*4,ch2=charFor(lum(id.data[i],id.data[i+1],id.data[i+2]));if(ch2&&ch2!==' '){ctx.fillStyle=A.color;ctx.fillText(ch2,x,y);}}}
-    }
+  cx.font=SH.cellSize+'px '+getActiveFontFamily();cx.textBaseline='top';
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    if(r<A.mt||r>=rows-A.mb||c<A.ml||c>=cols-A.mr)continue;
+    const x=c*cW,y=r*cH,k=r+','+c;
+    if(A.tg[k]!==undefined){cx.fillStyle=A.col;cx.fillText(A.tg[k],x,y);continue;}
+    if(id){const px=Math.floor(x+cW/2),py=Math.floor(y+cH/2);
+      if(px>=0&&px<W&&py>=0&&py<H){const i=(py*W+px)*4,ch=cFor(lum(id.data[i],id.data[i+1],id.data[i+2]),A.chars,A.inv);
+        if(ch&&ch!==' '){cx.fillStyle=A.col;cx.fillText(ch,x,y);}}}
   }
-  if(A.mode==='edit'&&A.cursor){const{row,col}=A.cursor;ctx.fillStyle='rgba(255,50,50,0.22)';ctx.fillRect(col*cellW,row*cellH,cellW,cellH);ctx.fillStyle=A.color;ctx.fillRect(col*cellW,row*cellH+cellH-1.5,cellW,1.5);}
-  setSt(`${W}x${H} — GRID ${cols}x${rows} — ASCII`+(A.cursor?` — [${A.cursor.col},${A.cursor.row}]`:'')+(Object.keys(A.textGrid).length?` — ${Object.keys(A.textGrid).length} TEXT`:''));
+  if(!exp&&A.mode==='edit'&&A.cur){const{r,c}=A.cur;cx.fillStyle='rgba(255,50,50,0.2)';cx.fillRect(c*cW,r*cH,cW,cH);cx.fillStyle=A.col;cx.fillRect(c*cW,r*cH+cH-1.5,cW,1.5);}
+  setSt();
 }
-function setAColor(h){A.color=h;gI('aFgSw').style.background=h;gI('aColorLbl').textContent=h.toUpperCase();Ago();}
-function setABg(h){A.bgColor=h;gI('aBgSw').style.background=h;gI('aBgLbl').textContent=h.toUpperCase();Ago();}
-function toggleA(k){A[k]=!A[k];const el=gI('tog'+k.charAt(0).toUpperCase()+k.slice(1));if(el)el.classList.toggle('on',A[k]);A.imgDirty=true;Ago();}
-function setChars(c){gI('aChars').value=c;A.chars=c;Ago();}
-function setAMode(m){A.mode=m;A.cursor=null;gI('aModeView').classList.toggle('on',m==='view');gI('aModeEdit').classList.toggle('on',m==='edit');gI('aEditHint').style.display=m==='edit'?'block':'none';canvas.style.cursor=m==='edit'?'text':'crosshair';if(activeTab==='ascii')sched(renderASCII);}
 
-function Lgo(){
-  L.cellSize=+gI('lCell').value;L.mt=+gI('lMT').value;L.mb=+gI('lMB').value;L.ml=+gI('lML').value;L.mr=+gI('lMR').value;
-  L.ix=+gI('lIX').value;L.iy=+gI('lIY').value;L.isc=+gI('lIS').value;L.ir=+gI('lIR').value;
-  L.gridOpacity=+gI('lGridOp').value/100;L.fontSize=+gI('lFontSz').value/100;
-  if(activeTab==='layout')sched(renderLayout);
-}
-function renderLayout(){
+/* ══════════════════════════════════════════
+   LAYOUT RENDER
+══════════════════════════════════════════ */
+function h2r(hex,op){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${op/100})`;}
+
+function lRen(exp=false){
   if(!fontReady)return;
-  const cs=L.cellSize;mCell(cs);
-  const W=CW(),H=CH(),cols=Math.floor(W/cellW),rows=Math.floor(H/cellH);
-  ctx.fillStyle=L.bgColor;ctx.fillRect(0,0,W,H);
-  const bsrc=L.isVideo?L.vid:L.src;
-  if(bsrc){
-    ctx.save();ctx.translate((L.ix/100)*W,(L.iy/100)*H);ctx.rotate(L.ir*Math.PI/180);
-    const nw=L.isVideo?L.vid.videoWidth:L.src.naturalWidth,nh=L.isVideo?L.vid.videoHeight:L.src.naturalHeight;
-    const dw=W*(L.isc/100),dh=nw?dw*(nh/nw):dw;ctx.drawImage(bsrc,-dw/2,-dh/2,dw,dh);ctx.restore();
-  }
-  for(const key in L.cells){
-    const cell=L.cells[key];if(!cell.bg)continue;
-    const[row,col]=key.split(',').map(Number);
-    if(row<L.mt||row>=rows-L.mb||col<L.ml||col>=cols-L.mr)continue;
-    ctx.fillStyle=cell.bg;ctx.fillRect(col*cellW,row*cellH,cellW,cellH);
-  }
-  if(L.showGrid&&L.gridOpacity>0){
-    ctx.strokeStyle=`rgba(255,255,255,${L.gridOpacity})`;ctx.lineWidth=0.5;
-    const sc=L.ml,ec=cols-L.mr,sr=L.mt,er=rows-L.mb;
-    for(let c=sc;c<=ec;c++){ctx.beginPath();ctx.moveTo(c*cellW,sr*cellH);ctx.lineTo(c*cellW,er*cellH);ctx.stroke();}
-    for(let r=sr;r<=er;r++){ctx.beginPath();ctx.moveTo(sc*cellW,r*cellH);ctx.lineTo(ec*cellW,r*cellH);ctx.stroke();}
-  }
-  const fs=Math.max(4,Math.round(cs*L.fontSize));
-  ctx.font=fs+'px "Roboto Mono"';ctx.textBaseline='middle';
-  for(const key in L.cells){
-    const cell=L.cells[key];if(!cell.char)continue;
-    const[row,col]=key.split(',').map(Number);
-    if(row<L.mt||row>=rows-L.mb||col<L.ml||col>=cols-L.mr)continue;
-    ctx.fillStyle=L.color;
-    ctx.fillText(cell.char,col*cellW+(cellW-ctx.measureText(cell.char).width)/2,row*cellH+cellH/2);
-  }
-  if(L.mode==='text'&&L.cursor){
-    const{row,col}=L.cursor;
-    ctx.fillStyle='rgba(255,80,80,0.25)';ctx.fillRect(col*cellW,row*cellH,cellW,cellH);
-    ctx.fillStyle=L.color;ctx.fillRect(col*cellW,row*cellH+cellH-1.5,cellW,1.5);
-  }
-  setSt(`${W}x${H} — GRID ${cols}x${rows} — LAYOUT — ${Object.keys(L.cells).length} CELLS`+(L.cursor?` — [${L.cursor.col},${L.cursor.row}]`:''));
+  const W=CW(),H=CH(),cols=Math.floor(W/cW),rows=Math.floor(H/cH);
+  cx.fillStyle=L.bgCol;cx.fillRect(0,0,W,H);
+  const src=L.isVid?L.vid:L.img;
+  if(src){const nW=L.isVid?src.videoWidth:src.naturalWidth,nH=L.isVid?src.videoHeight:src.naturalHeight;
+    if(nW&&nH){const lz=+gI('slLZ').value/100,bs=Math.max(W/nW,H/nH)*lz,dw=nW*bs,dh=nH*bs;
+      const dx=-(dw-W)*(+gI('slLX').value/100),dy=-(dh-H)*(+gI('slLY').value/100);
+      cx.drawImage(src,dx,dy,dw,dh);}}
+  for(const[k,cell]of Object.entries(L.g)){if(!cell.bg)continue;const[r,c]=k.split(',').map(Number);if(r<0||r>=rows||c<0||c>=cols)continue;cx.fillStyle=cell.bg;cx.fillRect(c*cW,r*cH,cW,cH);}
+  cx.font=SH.cellSize+'px '+getActiveFontFamily();cx.textBaseline='top';
+  for(const[k,cell]of Object.entries(L.g)){if(!cell.text)continue;const[r,c]=k.split(',').map(Number);if(r<0||r>=rows||c<0||c>=cols)continue;cx.fillStyle=cell.fg||L.textCol;cx.fillText(cell.text,c*cW,r*cH);}
+  if(!exp&&L.gl){cx.strokeStyle='rgba(255,255,255,0.08)';cx.lineWidth=0.5;for(let c=0;c<=cols;c++){cx.beginPath();cx.moveTo(c*cW,0);cx.lineTo(c*cW,H);cx.stroke();}for(let r=0;r<=rows;r++){cx.beginPath();cx.moveTo(0,r*cH);cx.lineTo(W,r*cH);cx.stroke();}}
+  if(!exp&&L.cur){const{r,c}=L.cur;cx.fillStyle='rgba(255,255,255,0.13)';cx.fillRect(c*cW,r*cH,cW,cH);cx.strokeStyle='rgba(255,255,255,0.55)';cx.lineWidth=1;cx.strokeRect(c*cW+.5,r*cH+.5,cW-1,cH-1);cx.fillStyle='rgba(255,255,255,0.8)';cx.fillRect(c*cW,r*cH+cH-1.5,cW,1.5);}
+  setSt();
 }
-function setLColor(h){L.color=h;gI('lTextSw').style.background=h;gI('lTextLbl').textContent=h.toUpperCase();Lgo();}
-function setLBg(h){L.bgColor=h;gI('lBgSw').style.background=h;gI('lBgLbl').textContent=h.toUpperCase();Lgo();}
-function setPaintColor(h){L.paintColor=h;gI('pSwatchEl').style.background=h;gI('pColorLbl').textContent=h.toUpperCase();gI('paintColor').value=h;}
-function toggleL(k){L[k]=!L[k];const el=gI('tog'+k.charAt(0).toUpperCase()+k.slice(1));if(el)el.classList.toggle('on',L[k]);Lgo();}
-function setLMode(m){
-  L.mode=m;L.cursor=null;
-  gI('lModePaint').classList.toggle('on',m==='paint');
-  gI('lModeText').classList.toggle('on',m==='text');
-  gI('lModeErase').classList.toggle('on',m==='erase');
-  const h={paint:'CLICK OR DRAG CELLS TO FILL WITH SELECTED COLOR',text:'CLICK CELL TO PLACE CURSOR — TYPE — ARROWS NAVIGATE — ESC EXIT',erase:'CLICK OR DRAG CELLS TO ERASE CELL BACKGROUNDS'};
-  gI('lModeHint').textContent=h[m];
-  canvas.style.cursor=m==='text'?'text':m==='erase'?'cell':'crosshair';
-  if(activeTab==='layout')sched(renderLayout);
-}
-function clearLText(){for(const k in L.cells){delete L.cells[k].char;if(!L.cells[k].bg)delete L.cells[k];}sched(renderLayout);}
-function clearLCells(){L.cells={};L.cursor=null;sched(renderLayout);}
 
-const SWATCHES=['#ff1f1f','#c01010','#500000','#000000','#1a1a1a','#ffffff','#eeeeee','#ffff00','#0066cc','#00ccaa','#ff6600','#cc00ff'];
-function buildSwatches(){
-  const grid=gI('swatchGrid');
-  SWATCHES.forEach(hex=>{
-    const d=document.createElement('div');d.className='pswatch';d.style.background=hex;d.title=hex;
-    d.onclick=()=>{setPaintColor(hex);document.querySelectorAll('.pswatch').forEach(s=>s.classList.remove('active'));d.classList.add('active');};
-    grid.appendChild(d);
+/* ══════════════════════════════════════════
+   FILM RENDER
+══════════════════════════════════════════ */
+function chanBri(r,g,b,ch,inv){
+  let bv;
+  switch(ch){case 'R':bv=r;break;case 'G':bv=g;break;case 'B':bv=b;break;case 'C':bv=255-r;break;case 'M':bv=255-g;break;case 'Y':bv=255-b;break;default:bv=lum(r,g,b);}
+  return inv?255-bv:bv;
+}
+
+function rFilmLayer(layer,lci){
+  const src=layer.img||(F.vid||null);if(!src)return null;
+  const lc=flc[lci];if(!lc)return null;
+  const W=CW(),H=CH(),ltx=lc.x;
+  // Draw source cover-fit with adjustments
+  const nW=(src.videoWidth||src.naturalWidth||W),nH=(src.videoHeight||src.naturalHeight||H);
+  const bs=Math.max(W/nW,H/nH),dw=nW*bs,dh=nH*bs,dx=(W-dw)/2,dy=(H-dh)/2;
+  ltx.clearRect(0,0,W,H);
+  ltx.filter=`brightness(${layer.bri}%) contrast(${layer.con}%)`;
+  ltx.drawImage(src,dx,dy,dw,dh);ltx.filter='none';
+  if(layer.gam!==1){const id=ltx.getImageData(0,0,W,H),d=id.data,g=1/layer.gam;for(let i=0;i<d.length;i+=4){d[i]=Math.pow(d[i]/255,g)*255|0;d[i+1]=Math.pow(d[i+1]/255,g)*255|0;d[i+2]=Math.pow(d[i+2]/255,g)*255|0;}ltx.putImageData(id,0,0);}
+  const pd=ltx.getImageData(0,0,W,H);
+  // ASCII to same canvas
+  ltx.clearRect(0,0,W,H);
+  ltx.font=SH.cellSize+'px '+getActiveFontFamily();ltx.textBaseline='top';ltx.fillStyle=layer.color;
+  const cols=Math.floor(W/cW),rows=Math.floor(H/cH);
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const x=c*cW,y=r*cH,px=Math.floor(x+cW/2),py=Math.floor(y+cH/2);
+    if(px>=0&&px<W&&py>=0&&py<H){const i=(py*W+px)*4,bv=chanBri(pd.data[i],pd.data[i+1],pd.data[i+2],layer.channel,layer.inv);
+      const ch=cFor(bv,layer.chars,false);if(ch&&ch!==' ')ltx.fillText(ch,x,y);}
+  }
+  return lc.c;
+}
+
+function fRen(exp=false){
+  if(!fontReady)return;
+  const W=CW(),H=CH();
+  // 1. Base
+  cx.fillStyle=F.base;cx.fillRect(0,0,W,H);
+  // 2. Emulsion layers
+  F.layers.forEach((layer,i)=>{
+    if(!layer.active)return;
+    const lc=rFilmLayer(layer,i);if(!lc)return;
+    cx.save();
+    cx.globalCompositeOperation=layer.blend;
+    cx.globalAlpha=layer.opacity/100;
+    cx.drawImage(lc,layer.dx*cW,layer.dy*cH);
+    cx.restore();
   });
-  grid.children[0].classList.add('active');
+  // 3. Contact print (invert emulsions, leave overcoat)
+  if(F.cp){cx.save();cx.globalCompositeOperation='difference';cx.fillStyle='#ffffff';cx.fillRect(0,0,W,H);cx.restore();}
+  // 4. Overcoat (text + cell fills on top)
+  const cols=Math.floor(W/cW),rows=Math.floor(H/cH);
+  for(const[k,cell]of Object.entries(F.oc)){if(!cell.bg)continue;const[r,c]=k.split(',').map(Number);if(r<0||r>=rows||c<0||c>=cols)continue;cx.fillStyle=cell.bg;cx.fillRect(c*cW,r*cH,cW,cH);}
+  cx.font=SH.cellSize+'px '+getActiveFontFamily();cx.textBaseline='top';
+  for(const[k,cell]of Object.entries(F.oc)){if(!cell.text)continue;const[r,c]=k.split(',').map(Number);if(r<0||r>=rows||c<0||c>=cols)continue;cx.fillStyle=cell.fg||F.textCol;cx.fillText(cell.text,c*cW,r*cH);}
+  // Grid lines
+  if(!exp&&F.gl){cx.strokeStyle='rgba(255,255,255,0.07)';cx.lineWidth=0.5;for(let c=0;c<=cols;c++){cx.beginPath();cx.moveTo(c*cW,0);cx.lineTo(c*cW,H);cx.stroke();}for(let r=0;r<=rows;r++){cx.beginPath();cx.moveTo(0,r*cH);cx.lineTo(W,r*cH);cx.stroke();}}
+  // Cursor
+  if(!exp&&F.cur){const{r,c}=F.cur;cx.fillStyle='rgba(255,255,255,0.13)';cx.fillRect(c*cW,r*cH,cW,cH);cx.strokeStyle='rgba(255,255,255,0.55)';cx.lineWidth=1;cx.strokeRect(c*cW+.5,r*cH+.5,cW-1,cH-1);cx.fillStyle='rgba(255,255,255,0.8)';cx.fillRect(c*cW,r*cH+cH-1.5,cW,1.5);}
+  setSt();
 }
 
-function setSrc(tab,type){
-  const st=tab==='a'?A:L;st.isVideo=type==='video';
-  gI(tab+'SrcImg').classList.toggle('on',!st.isVideo);gI(tab+'SrcVid').classList.toggle('on',st.isVideo);
-  gI(tab+'File').accept=st.isVideo?'video/*':'image/*';
-  gI(tab+'UpLbl').textContent=st.isVideo?'+ UPLOAD VIDEO':'+ UPLOAD IMAGE';
-  if(tab==='a'){gI('aBtnPNG').style.display=st.isVideo?'none':'';gI('aBtnVid').style.display=st.isVideo?'':'none';}
-  if(tab==='l'){gI('lBtnPNG').style.display=st.isVideo?'none':'';gI('lBtnVid').style.display=st.isVideo?'':'none';}
-  removeMedia(tab);
+function setSt(){
+  const W=CW(),H=CH(),cols=Math.floor(W/cW),rows=Math.floor(H/cH);
+  const tc=tab==='ascii'?Object.keys(A.tg).length:tab==='layout'?Object.values(L.g).filter(c=>c.text||c.bg).length:Object.values(F.oc).filter(c=>c.text||c.bg).length;
+  const cur=tab==='ascii'?A.cur:tab==='layout'?L.cur:F.cur;
+  gI('stbar').textContent=`${tab.toUpperCase()}  —  ${W}×${H}  —  GRID ${cols}×${rows}  —  CELL ${cW.toFixed(1)}×${cH}px`+(tc?`  —  ${tc} CELLS`:'')+( cur?`  —  [${cur.c},${cur.r}]`:'');
 }
-function loadMedia(tab,input){
+
+/* ══════════════════════════════════════════
+   VIDEO LOOPS
+══════════════════════════════════════════ */
+function startAR(){if(A.raf)return;function lp(){if(tab!=='ascii'||!A.vid){A.raf=null;return;}syncSH();syncA();mCell();A.d=1;rAscii();updAT();A.raf=requestAnimationFrame(lp);}A.raf=requestAnimationFrame(lp);}
+function stopAR(){if(A.raf){cancelAnimationFrame(A.raf);A.raf=null;}}
+function startLR(){if(L.raf)return;function lp(){if(tab!=='layout'||!L.vid){L.raf=null;return;}lRen();updLT();L.raf=requestAnimationFrame(lp);}L.raf=requestAnimationFrame(lp);}
+function stopLR(){if(L.raf){cancelAnimationFrame(L.raf);L.raf=null;}}
+function startFR(){if(F.raf)return;function lp(){if(tab!=='film'||!F.vid){F.raf=null;return;}syncSH();mCell();fRen();updFT();F.raf=requestAnimationFrame(lp);}F.raf=requestAnimationFrame(lp);}
+function stopFR(){if(F.raf){cancelAnimationFrame(F.raf);F.raf=null;}}
+
+/* timeline updaters */
+function mkTU(vid,Tf,Tth,Tin,VT,Bp){
+  if(!vid||!vid.duration)return;
+  const p=(vid.currentTime/vid.duration)*100;
+  gI(Tf).style.width=p+'%';gI(Tth).style.left=p+'%';
+  gI(Tin).value=Math.round((vid.currentTime/vid.duration)*1000);
+  const f=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
+  gI(VT).textContent=f(vid.currentTime)+' / '+f(vid.duration);
+  if(vid.paused){gI(Bp).textContent='▶ PLAY';gI(Bp).classList.remove('on');}
+}
+function updAT(){if(!aSc)mkTU(A.vid,'aTf','aTth','aTin','aVT','aBp');}
+function updLT(){if(!lSc)mkTU(L.vid,'lTf','lTth','lTin','lVT','lBp');}
+function updFT(){if(!fSc)mkTU(F.vid,'fTf','fTth','fTin','fVT','fBp');}
+
+/* video controls */
+function mkPlay(v,Bp){if(!v)return;if(v.paused){v.play();gI(Bp).textContent='⏸ PAUSE';gI(Bp).classList.add('on');}else{v.pause();gI(Bp).textContent='▶ PLAY';gI(Bp).classList.remove('on');}}
+function aPlay(){mkPlay(A.vid,'aBp');}function aRestart(){if(A.vid){A.vid.currentTime=0;A.vid.play();gI('aBp').textContent='⏸ PAUSE';gI('aBp').classList.add('on');}}
+function aLoopT(){A.loop=!A.loop;if(A.vid)A.vid.loop=A.loop;gI('aBl').classList.toggle('on',A.loop);}
+function aMuteT(){A.muted=!A.muted;if(A.vid)A.vid.muted=A.muted;gI('aBm').classList.toggle('on',!A.muted);gI('aBm').textContent=A.muted?'♪ MUTE':'♪ LIVE';}
+function aSeek(val){if(A.vid&&A.vid.duration)A.vid.currentTime=(val/1000)*A.vid.duration;}
+function lPlay(){mkPlay(L.vid,'lBp');}function lRestart(){if(L.vid){L.vid.currentTime=0;L.vid.play();gI('lBp').textContent='⏸ PAUSE';gI('lBp').classList.add('on');}}
+function lLoopT(){L.loop=!L.loop;if(L.vid)L.vid.loop=L.loop;gI('lBl').classList.toggle('on',L.loop);}
+function lMuteT(){L.muted=!L.muted;if(L.vid)L.vid.muted=L.muted;gI('lBm').classList.toggle('on',!L.muted);gI('lBm').textContent=L.muted?'♪ MUTE':'♪ LIVE';}
+function lSeek(val){if(L.vid&&L.vid.duration)L.vid.currentTime=(val/1000)*L.vid.duration;}
+function fPlay(){mkPlay(F.vid,'fBp');}function fRestart(){if(F.vid){F.vid.currentTime=0;F.vid.play();gI('fBp').textContent='⏸ PAUSE';gI('fBp').classList.add('on');}}
+function fLoopT(){F.loop=!F.loop;if(F.vid)F.vid.loop=F.loop;gI('fBl').classList.toggle('on',F.loop);}
+function fMuteT(){F.muted=!F.muted;if(F.vid)F.vid.muted=F.muted;gI('fBm').classList.toggle('on',!F.muted);gI('fBm').textContent=F.muted?'♪ MUTE':'♪ LIVE';}
+function fSeek(val){if(F.vid&&F.vid.duration)F.vid.currentTime=(val/1000)*F.vid.duration;}
+
+/* ══════════════════════════════════════════
+   ASCII SOURCE
+══════════════════════════════════════════ */
+function aSetSrc(t){A.isVid=t==='vid';stopAR();gI('aSI').classList.toggle('on',!A.isVid);gI('aSV').classList.toggle('on',A.isVid);gI('aFile').accept=A.isVid?'video/*':'image/*';gI('aUL').textContent=A.isVid?'+ UPLOAD VIDEO':'+ UPLOAD IMAGE';if(tab==='ascii')updEB(A.isVid);aRem();}
+function aLoad(input){const file=input.files[0];if(!file)return;
+  if(A.isVid){const url=URL.createObjectURL(file),v2=document.createElement('video');v2.muted=A.muted;v2.loop=A.loop;v2.playsInline=true;
+    v2.onloadedmetadata=()=>{A.vid=v2;A.vR=true;gI('aMC').style.display='block';gI('aUL').textContent='+ '+file.name.toUpperCase().slice(0,20);const t=gI('aVT2');t.src=url;t.style.display='block';gI('avc').classList.add('show');fitC();startAR();};v2.src=url;}
+  else{const img=new Image();img.onload=()=>{A.img=img;A.d=1;gI('aMC').style.display='block';gI('aUL').textContent='+ '+file.name.toUpperCase().slice(0,20);const t=gI('aIT');t.src=img.src;t.style.display='block';go();};img.src=URL.createObjectURL(file);}
+}
+function aRem(){stopAR();if(A.vid){A.vid.pause();A.vid.src='';A.vid=null;}A.vR=false;A.img=null;A.cache=null;A.d=1;gI('aMC').style.display='none';gI('aIT').style.display='none';gI('aVT2').style.display='none';gI('aVT2').src='';gI('avc').classList.remove('show');gI('aUL').textContent=A.isVid?'+ UPLOAD VIDEO':'+ UPLOAD IMAGE';gI('aFile').value='';fitC();go();}
+function sCh(ch){gI('charSet').value=ch;A.chars=ch;go();}
+gI('charSet').addEventListener('input',()=>{A.chars=gI('charSet').value;go();});
+function aMode(m){A.mode=m;A.cur=null;gI('aMV').classList.toggle('on',m==='view');gI('aME').classList.toggle('on',m==='edit');gI('aEH').style.display=m==='edit'?'block':'none';cv.style.cursor=m==='edit'?'text':'crosshair';rAscii();}
+
+/* ══════════════════════════════════════════
+   LAYOUT SOURCE & TOOLS
+══════════════════════════════════════════ */
+const LTH={text:'CLICK CELL → TYPE<br>ARROWS: NAVIGATE<br>ESC: DESELECT',paint:'CLICK / DRAG TO PAINT CELLS',erase:'CLICK / DRAG TO ERASE CELLS'};
+function lSetSrc(t){L.isVid=t==='vid';stopLR();gI('lSI').classList.toggle('on',!L.isVid);gI('lSV').classList.toggle('on',L.isVid);gI('lFile').accept=L.isVid?'video/*':'image/*';gI('lUL').textContent=L.isVid?'+ UPLOAD VIDEO':'+ UPLOAD IMAGE';if(tab==='layout')updEB(L.isVid);lRem();}
+function lLoad(input){const file=input.files[0];if(!file)return;
+  if(L.isVid){const url=URL.createObjectURL(file),v2=document.createElement('video');v2.muted=L.muted;v2.loop=L.loop;v2.playsInline=true;
+    v2.onloadedmetadata=()=>{L.vid=v2;L.vR=true;gI('lMC').style.display='block';gI('lUL').textContent='+ '+file.name.toUpperCase().slice(0,20);const t=gI('lVT2');t.src=url;t.style.display='block';gI('lvc').classList.add('show');if(tab==='layout')updEB(true);fitC();startLR();};v2.src=url;}
+  else{const img=new Image();img.onload=()=>{L.img=img;gI('lMC').style.display='block';gI('lUL').textContent='+ '+file.name.toUpperCase().slice(0,20);const t=gI('lIT');t.src=img.src;t.style.display='block';if(tab==='layout')lRen();};img.src=URL.createObjectURL(file);}
+}
+function lRem(){stopLR();if(L.vid){L.vid.pause();L.vid.src='';L.vid=null;}L.vR=false;L.img=null;gI('lMC').style.display='none';gI('lIT').style.display='none';gI('lVT2').style.display='none';gI('lVT2').src='';gI('lvc').classList.remove('show');gI('lUL').textContent=L.isVid?'+ UPLOAD VIDEO':'+ UPLOAD IMAGE';gI('lFile').value='';fitC();if(tab==='layout')lRen();}
+function lTool(t){L.tool=t;L.cur=null;['text','paint','erase'].forEach(x=>gI('l'+x.slice(0,3)).classList.toggle('on',x===t));gI('lTH').innerHTML=LTH[t];cv.style.cursor=t==='text'?'text':'crosshair';if(tab==='layout'&&!L.isVid)lRen();}
+function setLFill(hex){L.fillCol=hex;gI('lFiS').style.background=hex||'transparent';gI('lFiH').textContent=(hex||'NONE').toUpperCase();updPal('lpal',L.fillCol);}
+
+/* ══════════════════════════════════════════
+   FILM LAYER MANAGEMENT
+══════════════════════════════════════════ */
+function initLayers(){
+  F.layers=[mkLayer(0,'CYAN','#00eeff','C'),mkLayer(1,'MAGENTA','#ff1f77','M'),mkLayer(2,'YELLOW','#ffee00','Y')];
+  flc=[mkLC(),mkLC(),mkLC()];
+}
+function buildLayList(){
+  const el=gI('layList');el.innerHTML='';
+  F.layers.forEach((l,i)=>{
+    const d=document.createElement('div');d.className='li'+(i===F.selIdx?' sel':'');d.onclick=()=>selLayer(i);
+    d.innerHTML=`<div class="lsw" style="background:${l.color}"></div><span class="lnm">${l.name}</span><span class="lch">${l.channel}</span><div class="tog${l.active?' on':''}" onclick="event.stopPropagation();toggleLayer(${i})"></div>`;
+    el.appendChild(d);
+  });
+}
+function selLayer(idx){F.selIdx=idx;buildLayList();updLayUI();if(!F.vid)fRen();}
+function toggleLayer(idx){F.layers[idx].active=!F.layers[idx].active;buildLayList();if(!F.vid)fRen();}
+function updLayUI(){
+  const l=F.layers[F.selIdx];if(!l)return;
+  gI('fLayT').textContent=l.name;
+  gI('fLUL').textContent=l.img?'✓ '+l.imgName.slice(0,20).toUpperCase():'+ LAYER IMAGE';
+  ['full','C','M','Y','R','G','B'].forEach(ch=>{const id='ch'+(ch==='full'?'Full':ch);const el=gI(id);if(el)el.classList.toggle('on',l.channel===ch);});
+  gI('fLCh').value=l.chars;
+  gI('fLCS').style.background=l.color;gI('fLCP').value=l.color;gI('fLCH').textContent=l.color.toUpperCase();
+  [['blS','screen'],['blM','multiply'],['blO','overlay'],['blN','normal']].forEach(([id,b])=>gI(id).classList.toggle('on',l.blend===b));
+  gI('slFOp').value=l.opacity;v('vFOp',l.opacity,'%');
+  gI('slFDX').value=l.dx;v('vFDX',l.dx,'');
+  gI('slFDY').value=l.dy;v('vFDY',l.dy,'');
+  gI('slFBri').value=l.bri;v('vFBri',l.bri,'%');
+  gI('slFCon').value=l.con;v('vFCon',l.con,'%');
+  gI('slFGam').value=Math.round(l.gam*100);v('vFGam',l.gam.toFixed(1),'');
+  gI('togFI').classList.toggle('on',l.inv);
+}
+function addLayer(){
+  if(F.layers.length>=5)return;
+  const cols=['#00eeff','#ff1f77','#ffee00','#ffffff','#ff7700'],chs=['C','M','Y','full','R'];
+  const i=F.layers.length;
+  F.layers.push(mkLayer(i,'LAYER '+(i+1),cols[i],chs[i]));
+  flc.push(mkLC());flc[flc.length-1].c.width=CW();flc[flc.length-1].c.height=CH();
+  buildLayList();selLayer(i);
+}
+function removeLayer(){
+  if(F.layers.length<=1)return;
+  F.layers.splice(F.selIdx,1);F.layers.forEach((l,i)=>l.id=i);
+  flc.pop();F.selIdx=Math.min(F.selIdx,F.layers.length-1);
+  buildLayList();updLayUI();if(!F.vid)fRen();
+}
+function setLayP(prop,val){const l=F.layers[F.selIdx];if(!l)return;l[prop]=val;if(!F.vid)fRen();}
+function setLayCh(ch){const l=F.layers[F.selIdx];if(!l)return;l.channel=ch;['full','C','M','Y','R','G','B'].forEach(c=>{const id='ch'+(c==='full'?'Full':c);const el=gI(id);if(el)el.classList.toggle('on',c===ch);});buildLayList();if(!F.vid)fRen();}
+function setLayCol(hex){const l=F.layers[F.selIdx];if(!l)return;l.color=hex;gI('fLCS').style.background=hex;gI('fLCH').textContent=hex.toUpperCase();buildLayList();if(!F.vid)fRen();}
+function setLayBlend(b){const l=F.layers[F.selIdx];if(!l)return;l.blend=b;[['blS','screen'],['blM','multiply'],['blO','overlay'],['blN','normal']].forEach(([id,bl])=>gI(id).classList.toggle('on',bl===b));if(!F.vid)fRen();}
+function setLayChars(ch){const l=F.layers[F.selIdx];if(!l)return;l.chars=ch;if(!F.vid)fRen();}
+function toggleLayInv(){const l=F.layers[F.selIdx];if(!l)return;l.inv=!l.inv;gI('togFI').classList.toggle('on',l.inv);if(!F.vid)fRen();}
+function setLayImg(input){const file=input.files[0];if(!file)return;const img=new Image();img.onload=()=>{const l=F.layers[F.selIdx];if(!l)return;l.img=img;l.imgName=file.name;gI('fLUL').textContent='✓ '+file.name.toUpperCase().slice(0,20);if(!F.vid)fRen();};img.src=URL.createObjectURL(file);}
+function clearLayImg(){const l=F.layers[F.selIdx];if(!l)return;l.img=null;l.imgName='';gI('fLUL').textContent='+ LAYER IMAGE';gI('fLFile').value='';if(!F.vid)fRen();}
+
+function cmySplit(input){
   const file=input.files[0];if(!file)return;
-  const st=tab==='a'?A:L,url=URL.createObjectURL(file),lbl=file.name.toUpperCase().slice(0,22);
-  if(st.isVideo){
-    const v2=document.createElement('video');v2.muted=st.muted;v2.loop=st.loop;v2.playsInline=true;
-    v2.onloadedmetadata=()=>{
-      st.vid=v2;st.vidReady=true;st.src=null;
-      gI(tab+'MediaCtrls').style.display='block';gI(tab+'UpLbl').textContent='+ '+lbl;
-      const vt=gI(tab+'VidThumb');vt.src=url;vt.style.display='block';
-      fitCanvas();if(activeTab===(tab==='a'?'ascii':'layout')){gI('vidControls').classList.add('show');startLoop();}
-    };v2.src=url;
+  const img=new Image();
+  img.onload=()=>{
+    while(F.layers.length>3)F.layers.pop();while(F.layers.length<3)F.layers.push(mkLayer(F.layers.length,'LAYER '+(F.layers.length+1),'#ffffff','full'));
+    while(flc.length<3)flc.push(mkLC());
+    [['CYAN','#00eeff','C'],['MAGENTA','#ff1f77','M'],['YELLOW','#ffee00','Y']].forEach(([name,col,ch],i)=>{
+      const l=F.layers[i];l.name=name;l.color=col;l.channel=ch;l.img=img;l.imgName=file.name;l.blend='screen';l.opacity=100;l.dx=0;l.dy=0;l.active=true;
+    });
+    F.base='#080000';gI('fBaP').value='#080000';gI('fBaSw').style.background='#080000';
+    buildLayList();selLayer(0);fRen();input.value='';
+  };
+  img.src=URL.createObjectURL(file);
+}
+
+/* film shared video */
+function loadFVid(input){
+  const file=input.files[0];if(!file)return;
+  const url=URL.createObjectURL(file),v2=document.createElement('video');
+  v2.muted=F.muted;v2.loop=F.loop;v2.playsInline=true;
+  v2.onloadedmetadata=()=>{F.vid=v2;F.vR=true;gI('fVUL').textContent='✓ '+file.name.toUpperCase().slice(0,20);const t=gI('fVT2');t.src=url;t.style.display='block';gI('fvc').classList.add('show');if(tab==='film')updEB(true);fitC();startFR();};
+  v2.src=url;
+}
+function removeFVid(){stopFR();if(F.vid){F.vid.pause();F.vid.src='';F.vid=null;}F.vR=false;gI('fVT2').style.display='none';gI('fVT2').src='';gI('fvc').classList.remove('show');gI('fVUL').textContent='+ UPLOAD VIDEO';gI('fVFile').value='';if(tab==='film')updEB(false);fitC();if(tab==='film')fRen();}
+
+/* film overcoat tools */
+const FTH={text:'CLICK CELL → TYPE<br>ARROWS: NAVIGATE<br>ESC: DESELECT',paint:'CLICK / DRAG TO PAINT CELLS',erase:'CLICK / DRAG TO ERASE CELLS'};
+function fTool(t){F.tool=t;F.cur=null;['text','paint','erase'].forEach(x=>gI('ft'+x.slice(0,3)).classList.toggle('on',x===t));gI('fTH').innerHTML=FTH[t];cv.style.cursor=t==='text'?'text':'crosshair';if(tab==='film'&&!F.vid)fRen();}
+function setFFill(hex){F.fillCol=hex;gI('fFiS').style.background=hex||'transparent';gI('fFiH').textContent=(hex||'NONE').toUpperCase();updPal('fpal',F.fillCol);}
+function applyFTool(r,c){
+  if(!validCell(r,c))return;const k=r+','+c;
+  if(F.tool==='paint'){if(!F.oc[k])F.oc[k]={text:'',bg:null,fg:F.textCol};F.oc[k].bg=F.fillCol?h2r(F.fillCol,F.fillOp):null;}
+  else if(F.tool==='erase')delete F.oc[k];
+}
+function applyLTool(r,c){
+  if(!validCell(r,c))return;const k=r+','+c;
+  if(L.tool==='paint'){if(!L.g[k])L.g[k]={text:'',bg:null,fg:L.textCol};L.g[k].bg=L.fillCol?h2r(L.fillCol,L.fillOp):null;}
+  else if(L.tool==='erase')delete L.g[k];
+}
+
+/* ══════════════════════════════════════════
+   PALETTE
+══════════════════════════════════════════ */
+const PAL=['#ffffff','#cccccc','#888888','#444444','#000000','#ff1f1f','#ff7700','#ffcc00','#00dd44','#00bbff','#0044ee','#cc00ff','#ff0077',null];
+function buildPal(elId,setFn){
+  const el=gI(elId);
+  PAL.forEach(col=>{const s=document.createElement('div');s.className='ps';if(!col){s.classList.add('ps-none');s.title='No fill';s.onclick=()=>setFn(null);}else{s.style.background=col;s.onclick=()=>setFn(col);}el.appendChild(s);});
+}
+function updPal(elId,active){const ch=gI(elId).children;PAL.forEach((c,i)=>ch[i].classList.toggle('act',c===active));}
+
+/* ══════════════════════════════════════════
+   CANVAS EVENTS
+══════════════════════════════════════════ */
+function cellFromEvt(e){const rect=cv.getBoundingClientRect();return{r:Math.floor(((e.clientY-rect.top)*(cv.height/rect.height))/cH),c:Math.floor(((e.clientX-rect.left)*(cv.width/rect.width))/cW)};}
+function validCell(r,c){return r>=0&&r<Math.floor(CH()/cH)&&c>=0&&c<Math.floor(CW()/cW);}
+
+cv.addEventListener('mousedown',e=>{
+  const{r,c}=cellFromEvt(e);if(!validCell(r,c))return;
+  if(tab==='ascii'){if(A.mode!=='edit')return;A.cur={r,c};rAscii();}
+  else if(tab==='layout'){
+    if(L.tool==='text'){L.cur={r,c};if(!L.isVid)lRen();}
+    else{L.painting=true;applyLTool(r,c);if(!L.isVid)lRen();}
   }else{
-    const img=new Image();img.onload=()=>{
-      st.src=img;st.vid=null;st.vidReady=false;if(tab==='a')st.imgDirty=true;
-      gI(tab+'MediaCtrls').style.display='block';gI(tab+'UpLbl').textContent='+ '+lbl;
-      const it=gI(tab+'ImgThumb');it.src=url;it.style.display='block';
-      if(activeTab===(tab==='a'?'ascii':'layout')){if(tab==='a')sched(renderASCII);else sched(renderLayout);}
-    };img.src=url;
+    if(F.tool==='text'){F.cur={r,c};if(!F.vid)fRen();}
+    else{F.painting=true;applyFTool(r,c);if(!F.vid)fRen();}
   }
-}
-function removeMedia(tab){
-  const st=tab==='a'?A:L;
-  if(activeTab===(tab==='a'?'ascii':'layout'))stopLoop();
-  if(st.vid){st.vid.pause();st.vid.src='';st.vid=null;}
-  st.src=null;st.vidReady=false;if(tab==='a'){st.imgCache=null;st.imgDirty=true;}
-  gI(tab+'MediaCtrls').style.display='none';
-  gI(tab+'ImgThumb').style.display='none';gI(tab+'VidThumb').style.display='none';gI(tab+'VidThumb').src='';
-  gI(tab+'UpLbl').textContent=st.isVideo?'+ UPLOAD VIDEO':'+ UPLOAD IMAGE';gI(tab+'File').value='';
-  if(activeTab===(tab==='a'?'ascii':'layout')){gI('vidControls').classList.remove('show');fitCanvas();}
-  if(tab==='a')sched(renderASCII);else sched(renderLayout);
-}
-
-function syncVidCtrl(){const st=activeTab==='ascii'?A:L;gI('vidControls').classList.toggle('show',st.vidReady);}
-function activeVid(){return activeTab==='ascii'?A.vid:L.vid;}
-function togglePlay(){const vid=activeVid();if(!vid)return;if(vid.paused){vid.play();gI('btnPlay').textContent='⏸ PAUSE';gI('btnPlay').classList.add('on');}else{vid.pause();gI('btnPlay').textContent='▶ PLAY';gI('btnPlay').classList.remove('on');}}
-function restartVid(){const vid=activeVid();if(!vid)return;vid.currentTime=0;vid.play();gI('btnPlay').textContent='⏸ PAUSE';gI('btnPlay').classList.add('on');}
-function toggleLoop(){const st=activeTab==='ascii'?A:L;st.loop=!st.loop;const vid=activeVid();if(vid)vid.loop=st.loop;gI('btnLoop').classList.toggle('on',st.loop);}
-function toggleMute(){const st=activeTab==='ascii'?A:L;st.muted=!st.muted;const vid=activeVid();if(vid)vid.muted=st.muted;gI('btnMute').classList.toggle('on',!st.muted);gI('btnMute').textContent=st.muted?'♪ MUTE':'♪ LIVE';}
-function seekVid(val){const vid=activeVid();if(!vid||!vid.duration)return;vid.currentTime=(val/1000)*vid.duration;}
-function updateTL(vid){
-  if(!vid||!vid.duration||scrubbing)return;
-  const pct=(vid.currentTime/vid.duration)*100;
-  gI('tlFill').style.width=pct+'%';gI('tlThumb').style.left=pct+'%';gI('tlInput').value=Math.round((vid.currentTime/vid.duration)*1000);
-  const ft=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
-  gI('vidTime').textContent=ft(vid.currentTime)+' / '+ft(vid.duration);
-  if(vid.paused){gI('btnPlay').textContent='▶ PLAY';gI('btnPlay').classList.remove('on');}
-}
-
-function cellAt(e){
-  const rect=canvas.getBoundingClientRect(),sx=canvas.width/rect.width,sy=canvas.height/rect.height;
-  const cx2=(e.clientX-rect.left)*sx,cy2=(e.clientY-rect.top)*sy;
-  const cs=activeTab==='ascii'?A.cellSize:L.cellSize;mCell(cs);
-  const col=Math.floor(cx2/cellW),row=Math.floor(cy2/cellH);
-  const cols=Math.floor(CW()/cellW),rows=Math.floor(CH()/cellH);
-  if(col<0||col>=cols||row<0||row>=rows)return null;
-  return{row,col,cols,rows};
-}
-
-canvas.addEventListener('click',e=>{
-  if(activeTab==='ascii'&&A.mode==='edit'){const c=cellAt(e);if(!c)return;A.cursor={row:c.row,col:c.col};sched(renderASCII);}
 });
-canvas.addEventListener('mousedown',e=>{
-  if(activeTab!=='layout')return;
-  e.preventDefault();const c=cellAt(e);if(!c)return;
-  if(L.mode==='text'){L.cursor={row:c.row,col:c.col};sched(renderLayout);return;}
-  lPainting=true;paintCell(c.row,c.col);
+cv.addEventListener('mousemove',e=>{
+  if(tab==='layout'&&L.painting){const{r,c}=cellFromEvt(e);applyLTool(r,c);if(!L.isVid)lRen();}
+  if(tab==='film'&&F.painting){const{r,c}=cellFromEvt(e);applyFTool(r,c);if(!F.vid)fRen();}
 });
-canvas.addEventListener('touchstart',e=>{
-  if(activeTab!=='layout'||L.mode==='text')return;
-  const t=e.touches[0],c=cellAt(t);if(!c)return;
-  lPainting=true;paintCell(c.row,c.col);
-},{passive:true});
-document.addEventListener('mousemove',e=>{if(!lPainting||activeTab!=='layout')return;const c=cellAt(e);if(c)paintCell(c.row,c.col);});
-document.addEventListener('mouseup',()=>{lPainting=false;});
-document.addEventListener('touchend',()=>{lPainting=false;});
-
-function paintCell(row,col){
-  mCell(L.cellSize);const cols=Math.floor(CW()/cellW),rows=Math.floor(CH()/cellH);
-  if(col<L.ml||col>=cols-L.mr||row<L.mt||row>=rows-L.mb)return;
-  const key=row+','+col;
-  if(!L.cells[key])L.cells[key]={};
-  if(L.mode==='erase'){delete L.cells[key].bg;if(!L.cells[key].char)delete L.cells[key];}
-  else{const op=+gI('paintOp').value/100;L.cells[key].bg=hexToRgba(L.paintColor,op);}
-  sched(renderLayout);
-}
+cv.addEventListener('mouseup',()=>{L.painting=false;F.painting=false;});
+cv.addEventListener('mouseleave',()=>{L.painting=false;F.painting=false;});
 
 document.addEventListener('keydown',e=>{
-  const inInput=e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA';
-  if(activeTab==='ascii'&&A.mode==='edit'&&A.cursor&&!inInput){
-    textKey(e,A.cursor,A.textGrid,Math.floor(CW()/cellW),Math.floor(CH()/A.cellSize),A.ml,
-      ()=>{A.cursor=null;sched(renderASCII);},()=>sched(renderASCII));
-  }
-  if(activeTab==='layout'&&L.mode==='text'&&L.cursor&&!inInput){
-    mCell(L.cellSize);layoutTextKey(e,L.cursor,Math.floor(CW()/cellW),Math.floor(CH()/cellH),L.ml);
-  }
+  if(e.target.tagName==='INPUT')return;
+  if(tab==='ascii'&&A.mode==='edit'&&A.cur)kGrid(e,A.tg,A.cur,'ascii',rAscii,()=>A.ml||0);
+  else if(tab==='layout'&&L.tool==='text'&&L.cur)kGrid(e,L.g,L.cur,'layout',()=>{if(!L.isVid)lRen();},()=>0);
+  else if(tab==='film'&&F.tool==='text'&&F.cur)kGrid(e,F.oc,F.cur,'film',()=>{if(!F.vid)fRen();},()=>0);
 });
 
-function textKey(e,cursor,grid,cols,rows,ml,desel,redraw){
-  const nav=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab','Backspace','Enter'];
-  if(nav.includes(e.key))e.preventDefault();
-  const{row,col}=cursor,key=row+','+col;
-  if(e.key==='Escape'){desel();return;}
-  if(e.key==='Backspace'){if(grid[key]!==undefined)delete grid[key];else if(col>0){cursor.col--;delete grid[cursor.row+','+cursor.col];}redraw();return;}
-  if(e.key==='Delete'){delete grid[key];redraw();return;}
-  if(e.key==='ArrowRight'&&col<cols-1){cursor.col++;redraw();return;}
-  if(e.key==='ArrowLeft'&&col>0){cursor.col--;redraw();return;}
-  if(e.key==='ArrowDown'&&row<rows-1){cursor.row++;redraw();return;}
-  if(e.key==='ArrowUp'&&row>0){cursor.row--;redraw();return;}
-  if(e.key==='Enter'&&row<rows-1){cursor.row++;cursor.col=ml;redraw();return;}
-  if(e.key==='Tab'){if(col<cols-1)cursor.col++;redraw();return;}
-  if(e.key.length===1&&!e.ctrlKey&&!e.metaKey){grid[key]=e.key;if(col<cols-1)cursor.col++;else if(row<rows-1){cursor.row++;cursor.col=ml;}redraw();}
-}
-function layoutTextKey(e,cursor,cols,rows,ml){
-  const nav=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab','Backspace','Enter'];
-  if(nav.includes(e.key))e.preventDefault();
-  const{row,col}=cursor,key=row+','+col;
-  if(e.key==='Escape'){L.cursor=null;sched(renderLayout);return;}
-  if(!L.cells[key])L.cells[key]={};
+function kGrid(e,grid,cur,t,renderFn,startCol){
+  const cols=Math.floor(CW()/cW),rows=Math.floor(CH()/cH),k=cur.r+','+cur.c;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab','Backspace','Enter'].includes(e.key))e.preventDefault();
+  if(e.key==='Escape'){
+    if(t==='ascii')A.cur=null;else if(t==='layout')L.cur=null;else F.cur=null;
+    renderFn();return;
+  }
   if(e.key==='Backspace'){
-    if(L.cells[key].char){delete L.cells[key].char;if(!L.cells[key].bg)delete L.cells[key];}
-    else if(col>0){cursor.col--;const pk=cursor.row+','+cursor.col;if(L.cells[pk]){delete L.cells[pk].char;if(!L.cells[pk].bg)delete L.cells[pk];}}
-    sched(renderLayout);return;
+    const cell=grid[k];
+    if(t==='ascii'){if(cell!==undefined)delete grid[k];else if(cur.c>0){cur.c--;delete grid[cur.r+','+cur.c];}}
+    else{if(cell&&cell.text)cell.text='';else if(cur.c>0){cur.c--;const k2=cur.r+','+cur.c;if(grid[k2])grid[k2].text='';}}
+    renderFn();return;
   }
-  if(e.key==='Delete'){if(L.cells[key]){delete L.cells[key].char;if(!L.cells[key].bg)delete L.cells[key];}sched(renderLayout);return;}
-  if(e.key==='ArrowRight'&&col<cols-1){cursor.col++;sched(renderLayout);return;}
-  if(e.key==='ArrowLeft'&&col>0){cursor.col--;sched(renderLayout);return;}
-  if(e.key==='ArrowDown'&&row<rows-1){cursor.row++;sched(renderLayout);return;}
-  if(e.key==='ArrowUp'&&row>0){cursor.row--;sched(renderLayout);return;}
-  if(e.key==='Enter'&&row<rows-1){cursor.row++;cursor.col=ml;sched(renderLayout);return;}
-  if(e.key==='Tab'){if(col<cols-1)cursor.col++;sched(renderLayout);return;}
+  if(e.key==='Delete'){if(t==='ascii')delete grid[k];else{if(grid[k])grid[k].text='';}renderFn();return;}
+  if(e.key==='ArrowRight'&&cur.c<cols-1){cur.c++;renderFn();return;}
+  if(e.key==='ArrowLeft'&&cur.c>0){cur.c--;renderFn();return;}
+  if(e.key==='ArrowDown'&&cur.r<rows-1){cur.r++;renderFn();return;}
+  if(e.key==='ArrowUp'&&cur.r>0){cur.r--;renderFn();return;}
+  if(e.key==='Enter'&&cur.r<rows-1){cur.r++;cur.c=startCol();renderFn();return;}
+  if(e.key==='Tab'){if(cur.c<cols-1)cur.c++;renderFn();return;}
   if(e.key.length===1&&!e.ctrlKey&&!e.metaKey){
-    if(!L.cells[key])L.cells[key]={};L.cells[key].char=e.key;
-    if(col<cols-1)cursor.col++;else if(row<rows-1){cursor.row++;cursor.col=ml;}
-    sched(renderLayout);
+    if(t==='ascii'){grid[k]=e.key;}
+    else{if(!grid[k])grid[k]={text:'',bg:null,fg:t==='layout'?L.textCol:F.textCol};grid[k].text=e.key;grid[k].fg=t==='layout'?L.textCol:F.textCol;}
+    if(cur.c<cols-1)cur.c++;else if(cur.r<rows-1){cur.r++;cur.c=startCol();}
+    renderFn();
   }
 }
 
-function exportPNG(tab){
-  const savedA=A.cursor,savedL=L.cursor;A.cursor=null;L.cursor=null;
-  if(tab==='a')renderASCII();else renderLayout();
-  const a=document.createElement('a');
-  a.download=(tab==='a'?'ascii':'layout')+'-'+fmt+'-'+Date.now()+'.png';
-  a.href=canvas.toDataURL('image/png');a.click();
-  A.cursor=savedA;L.cursor=savedL;
-  if(tab==='a')sched(renderASCII);else sched(renderLayout);
+/* ══════════════════════════════════════════
+   FONT SYSTEM
+   To host a custom font on GitHub:
+   1. Commit your .woff2 file to the repo (e.g. /fonts/custom.woff2)
+   2. Set FONT_URL to its raw GitHub URL or relative path
+   3. Set FONT_NAME to whatever name you want to call it
+══════════════════════════════════════════ */
+const FONT_URL = '';   // e.g. 'fonts/MyFont.woff2' or full URL — leave empty to use Google Fonts
+const FONT_NAME = 'Roboto Mono';
+let customFontB64 = '';
+let activeFontName = FONT_NAME;
+let parsedFont = null;   // opentype.Font object for outline export
+
+function loadFont(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const b64=e.target.result;
+    customFontB64=b64;
+    activeFontName='CustomFont';
+    parsedFont=null; // will re-parse from arrayBuffer below
+    // Inject @font-face for canvas rendering
+    const styleId='customFontStyle';
+    let s=document.getElementById(styleId);
+    if(!s){s=document.createElement('style');s.id=styleId;document.head.appendChild(s);}
+    const fmt=file.name.endsWith('.woff2')?'woff2':file.name.endsWith('.woff')?'woff':'truetype';
+    s.textContent=`@font-face{font-family:'CustomFont';src:url('${b64}') format('${fmt}');font-weight:400;}`;
+    // Also parse with opentype.js for outline export
+    const base64Data=b64.split(',')[1];
+    const binary=atob(base64Data);
+    const buf=new ArrayBuffer(binary.length);
+    const view=new Uint8Array(buf);
+    for(let i=0;i<binary.length;i++)view[i]=binary.charCodeAt(i);
+    try{
+      parsedFont=opentype.parse(buf);
+      gI('fontLbl').textContent='✓ '+file.name.toUpperCase().slice(0,24)+' (OUTLINES READY)';
+    }catch(err){
+      gI('fontLbl').textContent='✓ '+file.name.toUpperCase().slice(0,24);
+      console.warn('opentype parse failed:',err);
+    }
+    mCell();A.d=1;go();
+  };
+  reader.readAsDataURL(file);
 }
 
-let mediaRecorder=null,recChunks=[],recDuration=0,recStart=0,recTick=null;
-function exportVideo(tab){
-  const st=tab==='a'?A:L;
-  if(!st.vid){showNote(tab,'LOAD A VIDEO FIRST.');return;}
-  if(mediaRecorder&&mediaRecorder.state==='recording'){stopRec(tab);return;}
+async function ensureParsedFont(){
+  if(parsedFont)return true;
+  // Try fetching Roboto Mono Regular TTF from jsdelivr
+  showN('FETCHING FONT FOR OUTLINE EXPORT...');
+  try{
+    const url='https://cdn.jsdelivr.net/gh/googlefonts/RobotoMono@main/fonts/ttf/RobotoMono-Regular.ttf';
+    const res=await fetch(url);
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const buf=await res.arrayBuffer();
+    parsedFont=opentype.parse(buf);
+    showN('FONT LOADED — GENERATING OUTLINES...');
+    return true;
+  }catch(err){
+    showN('UPLOAD A CUSTOM FONT FIRST — OUTLINED EXPORT REQUIRES THE FONT FILE');
+    return false;
+  }
+}
+
+function getActiveFontFamily(){
+  if(customFontB64) return `'CustomFont',monospace`;
+  if(FONT_URL) return `'${FONT_NAME}',monospace`;
+  return `'Roboto Mono',monospace`;
+}
+
+function getFontFaceForSVG(){
+  if(customFontB64){
+    const fmt=customFontB64.includes('woff2')?'woff2':customFontB64.includes('woff')?'woff':'truetype';
+    return `@font-face{font-family:'CustomFont';src:url('${customFontB64}') format('${fmt}');font-weight:400;}`;
+  }
+  if(FONT_URL) return `@font-face{font-family:'${FONT_NAME}';src:url('${FONT_URL}');font-weight:400;}`;
+  return `@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap');`;
+}
+
+/* ══════════════════════════════════════════
+   EXPORT
+══════════════════════════════════════════ */
+let MR=null,RC=[],RD=0,RS=0,RT=null,RVS=null;
+function expPNG(){
+  const sA=A.cur,sL=L.cur,sF=F.cur;A.cur=null;L.cur=null;F.cur=null;
+  if(tab==='ascii')rAscii(true);else if(tab==='layout')lRen(true);else fRen(true);
+  const a=document.createElement('a');a.download='ascii-'+tab+'-'+SH.fmt+'-'+Date.now()+'.png';a.href=cv.toDataURL('image/png');a.click();
+  A.cur=sA;L.cur=sL;F.cur=sF;
+  if(tab==='ascii')rAscii();else if(tab==='layout')lRen();else fRen();
+}
+
+function buildASCIIGrid(){
+  const W=CW(),H=CH(),cols=Math.floor(W/cW),rows=Math.floor(H/cH);
+  const id=getAFrame();
+  const grid=[];
+  for(let r=0;r<rows;r++){
+    let line='';
+    for(let c2=0;c2<cols;c2++){
+      if(r<A.mt||r>=rows-A.mb||c2<A.ml||c2>=cols-A.mr){line+=' ';continue;}
+      const x=c2*cW,y=r*cH,k=r+','+c2;
+      if(A.tg[k]!==undefined){line+=A.tg[k];continue;}
+      let ch=' ';
+      if(id){
+        const px=Math.floor(x+cW/2),py=Math.floor(y+cH/2);
+        if(px>=0&&px<W&&py>=0&&py<H){const i=(py*W+px)*4;ch=cFor(lum(id.data[i],id.data[i+1],id.data[i+2]),A.chars,A.inv)||' ';}
+      }
+      line+=ch;
+    }
+    grid.push(line);
+  }
+  return grid;
+}
+
+function expSVG(){
+  if(!fontReady)return;
+  const W=CW(),H=CH(),cols=Math.floor(W/cW),rows=Math.floor(H/cH);
+  const id=getAFrame();
+  // Escape only what XML strictly requires in text content
+  const escXML=s=>{
+    let o='';
+    for(const c of s){
+      if(c==='&')o+='&amp;';
+      else if(c==='<')o+='&lt;';
+      else if(c==='>')o+='&gt;';
+      else o+=c;
+    }
+    return o;
+  };
+  const byCol={};
+  for(let r=0;r<rows;r++){
+    for(let c2=0;c2<cols;c2++){
+      if(r<A.mt||r>=rows-A.mb||c2<A.ml||c2>=cols-A.mr)continue;
+      const x=c2*cW,y=r*cH,k=r+','+c2;
+      let ch='';
+      if(A.tg[k]!==undefined){ch=A.tg[k];}
+      else if(id){
+        const px=Math.floor(x+cW/2),py=Math.floor(y+cH/2);
+        if(px>=0&&px<W&&py>=0&&py<H){const i=(py*W+px)*4;ch=cFor(lum(id.data[i],id.data[i+1],id.data[i+2]),A.chars,A.inv);}
+      }
+      if(ch&&ch!==' '){
+        const safe=escXML(ch);
+        const ty=(y+cH*0.82).toFixed(1);
+        if(!byCol[A.col])byCol[A.col]=[];
+        byCol[A.col].push(`<text x="${x.toFixed(1)}" y="${ty}">${safe}</text>`);
+      }
+    }
+  }
+  const fontFace=getFontFaceForSVG();
+  const fontFamily=getActiveFontFamily();
+  const bgRect=A.bgTransp?'':(`<rect width="${W}" height="${H}" fill="${A.bg}"/>`);
+  const groups=Object.entries(byCol).map(([col,nodes])=>`<g fill="${col}">${nodes.join('')}</g>`);
+  // CDATA wrapper prevents & in font URLs from being treated as XML entities
+  const styleContent=`${fontFace}text{font-family:${fontFamily};font-size:${SH.cellSize}px;font-weight:400;}`;
+  const svg=[
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`,
+    `<defs><style><![CDATA[${styleContent}]]></style></defs>`,
+    bgRect,
+    ...groups,
+    `</svg>`
+  ].join('\n');
+  const blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='ascii-halftone-'+W+'x'+H+'-'+Date.now()+'.svg';
+  a.click();
+  showN('SVG SAVED — USE ILLUSTRATOR / INKSCAPE TO OUTLINE FONTS IF NEEDED');
+}
+
+async function expSVGOutlined(){
+  if(!fontReady)return;
+  if(typeof opentype==='undefined'){showN('OPENTYPE.JS NOT LOADED — CHECK YOUR CONNECTION');return;}
+  const ok=await ensureParsedFont();
+  if(!ok)return;
+
+  const W=CW(),H=CH(),cols=Math.floor(W/cW),rows=Math.floor(H/cH);
+  const id=getAFrame();
+  const fontSize=SH.cellSize;
+
+  // Collect all characters with positions
+  const glyphs=[]; // {ch, x, y, col: A.col}
+  for(let r=0;r<rows;r++){
+    for(let c2=0;c2<cols;c2++){
+      if(r<A.mt||r>=rows-A.mb||c2<A.ml||c2>=cols-A.mr)continue;
+      const x=c2*cW,y=r*cH,k=r+','+c2;
+      let ch='';
+      if(A.tg[k]!==undefined){ch=A.tg[k];}
+      else if(id){
+        const px=Math.floor(x+cW/2),py=Math.floor(y+cH/2);
+        if(px>=0&&px<W&&py>=0&&py<H){const i=(py*W+px)*4;ch=cFor(lum(id.data[i],id.data[i+1],id.data[i+2]),A.chars,A.inv);}
+      }
+      if(ch&&ch!==' ')glyphs.push({ch,x,y});
+    }
+  }
+
+  // Convert each glyph to a path using opentype.js
+  // opentype y = baseline = top + fontSize * ascender/unitsPerEm
+  const upm=parsedFont.unitsPerEm||1000;
+  const asc=parsedFont.ascender||800;
+  const baselineOffset=(asc/upm)*fontSize;
+
+  // Group paths by color (all same color A.col here, but future-proof)
+  const pathData=[];
+  for(const{ch,x,y} of glyphs){
+    try{
+      const path=parsedFont.getPath(ch,x,y+baselineOffset,fontSize);
+      const d=path.toPathData(2);
+      if(d&&d.trim()!=='')pathData.push(d);
+    }catch(e){/* skip unparseable glyph */}
+  }
+
+  const bgRect=A.bgTransp?'':(`<rect width="${W}" height="${H}" fill="${A.bg}"/>`);
+  const pathsEl=pathData.length
+    ?`<g fill="${A.col}">${pathData.map(d=>`<path d="${d}"/>`).join('')}</g>`
+    :'';
+
+  const svg=[
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`,
+    bgRect,
+    pathsEl,
+    `</svg>`
+  ].join('\n');
+
+  const blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='ascii-outlined-'+W+'x'+H+'-'+Date.now()+'.svg';
+  a.click();
+  showN('OUTLINED SVG SAVED — ALL GLYPHS CONVERTED TO PATHS, NO FONT NEEDED');
+}
+
+function expTXT(){
+  const lines=buildASCIIGrid();
+  const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='ascii-halftone-'+CW()+'x'+CH()+'-'+Date.now()+'.txt';
+  a.click();
+  showN('TXT SAVED — PASTE INTO FIGMA WITH A MONOSPACE FONT');
+}
+function expVid(){
+  RVS=tab==='ascii'?A.vid:tab==='layout'?L.vid:F.vid;
+  if(!RVS){showN('LOAD A VIDEO FIRST.');return;}
+  if(MR&&MR.state==='recording'){stopRec();return;}
   let opts={videoBitsPerSecond:8000000};
   for(const t of['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'])if(MediaRecorder.isTypeSupported(t)){opts.mimeType=t;break;}
-  recChunks=[];recDuration=st.vid.duration||10;
-  const stream=canvas.captureStream(30);
-  mediaRecorder=new MediaRecorder(stream,opts);
-  mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recChunks.push(e.data);};
-  mediaRecorder.onstop=()=>{
-    clearInterval(recTick);
-    const blob=new Blob(recChunks,{type:'video/webm'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(tab==='a'?'ascii':'layout')+'-'+fmt+'-'+Date.now()+'.webm';a.click();
-    gI(tab+'ProgBar').style.display='none';showNote(tab,'DONE — SAVED AS .WEBM');
-    gI(tab+'BtnVid').innerHTML='&#9679; RECORD WEBM';gI(tab+'BtnVid').style.borderColor='';mediaRecorder=null;
-  };
-  mediaRecorder.start(100);st.vid.currentTime=0;st.vid.play();
-  gI('btnPlay').textContent='⏸ PAUSE';gI('btnPlay').classList.add('on');
-  recStart=Date.now();
-  gI(tab+'ProgBar').style.display='block';gI(tab+'ProgFill').style.width='0%';
-  showNote(tab,'RECORDING... CLICK TO STOP.');
-  gI(tab+'BtnVid').innerHTML='<span class="rec-dot"></span>STOP RECORDING';gI(tab+'BtnVid').style.borderColor='var(--accent)';
-  recTick=setInterval(()=>{
-    if(!mediaRecorder||mediaRecorder.state!=='recording'){clearInterval(recTick);return;}
-    const elapsed=(Date.now()-recStart)/1000;gI(tab+'ProgFill').style.width=Math.min(100,(elapsed/recDuration)*100)+'%';
-    if(elapsed>=recDuration+0.3)stopRec(tab);
-  },200);
-  st.vid.onended=()=>{if(mediaRecorder&&mediaRecorder.state==='recording')stopRec(tab);};
+  const stream=cv.captureStream(30);RC=[];RD=RVS.duration||10;
+  MR=new MediaRecorder(stream,opts);
+  MR.ondataavailable=e=>{if(e.data.size>0)RC.push(e.data);};
+  MR.onstop=()=>{clearInterval(RT);const blob=new Blob(RC,{type:'video/webm'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ascii-'+tab+'-'+SH.fmt+'-'+Date.now()+'.webm';a.click();gI('prBar').style.display='none';showN('DONE — SAVED AS .WEBM');gI('btnVid').textContent='● RECORD WEBM';gI('btnVid').style.borderColor='';MR=null;};
+  MR.start(100);RVS.currentTime=0;RVS.play();RS=Date.now();
+  gI('prBar').style.display='block';gI('prFill').style.width='0%';showN('RECORDING... CLICK TO STOP.');
+  gI('btnVid').innerHTML='<span class="rd"></span>STOP REC';gI('btnVid').style.borderColor='var(--ac)';
+  RT=setInterval(()=>{if(!MR||MR.state!=='recording'){clearInterval(RT);return;}const el=(Date.now()-RS)/1000;gI('prFill').style.width=Math.min(100,(el/RD)*100)+'%';if(el>=RD+0.3)stopRec();},200);
+  RVS.onended=()=>{if(MR&&MR.state==='recording')stopRec();};
 }
-function stopRec(tab){if(mediaRecorder&&mediaRecorder.state==='recording'){mediaRecorder.stop();const st=tab==='a'?A:L;if(st.vid)st.vid.pause();}}
-function showNote(tab,msg){const n=gI(tab+'Note');n.textContent=msg;n.style.display='block';clearTimeout(n._t);n._t=setTimeout(()=>n.style.display='none',5000);}
-function setSt(msg){gI('status').textContent=msg;}
+function stopRec(){if(MR&&MR.state==='recording'){MR.stop();if(RVS)RVS.pause();}}
+function showN(msg){const n=gI('expN');n.textContent=msg;n.style.display='block';clearTimeout(n._t);n._t=setTimeout(()=>n.style.display='none',5000);}
 
-gI('aChars').addEventListener('input',Ago);
-window.addEventListener('resize',()=>{fitCanvas();if(activeTab==='ascii')sched(renderASCII);else sched(renderLayout);});
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+window.addEventListener('resize',()=>{fitC();if(tab==='ascii')rAscii();else if(tab==='layout')lRen();else fRen();});
 document.fonts.ready.then(()=>{
-  fontReady=true;initCanvas();buildSwatches();canvas.style.cursor='crosshair';
-  renderASCII();gI('btnLoop').classList.add('on');
+  fontReady=true;
+  initLayers();
+  initCanvas();
+  A.chars=gI('charSet').value;
+  buildPal('lpal',setLFill);
+  buildPal('fpal',setFFill);
+  buildLayList();updLayUI();
+  updEB(false);
+  rAscii();
+  gI('aBl').classList.add('on');gI('lBl').classList.add('on');gI('fBl').classList.add('on');
+  gI('togLGL').classList.add('on');gI('togFGL').classList.add('on');
 });
 </script>
 </body>
