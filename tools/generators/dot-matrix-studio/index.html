@@ -12,8 +12,7 @@
     --text-dim: #6b6b6b;
     --line: #e4e4e4;
     --line-2: #d4d4d4;
-    --accent: #d4fc4e;       /* neon highlighter */
-    --accent-dark: #000;
+    --accent: #d4fc4e;
     --canvas-bg: #0a0a0a;
     --radius-xl: 28px;
     --radius-lg: 20px;
@@ -47,7 +46,7 @@
   .brand .reg { font-size: 10px; font-weight: 700; vertical-align: super; margin-left: 2px; }
   .brand-sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; }
 
-  /* Mode tabs — pill */
+  /* Mode tabs */
   .mode-tabs { display: flex; background: #dcdcdc; border-radius: var(--radius-pill);
     padding: 4px; margin-bottom: 14px; }
   .mode-tabs button {
@@ -98,6 +97,13 @@
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
     background-repeat: no-repeat; background-position: right 14px center; padding-right: 32px; }
 
+  /* Number input */
+  input[type="number"] { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+    color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill); font-size: 13px;
+    outline: none; font-family: inherit; font-weight: 500; -moz-appearance: textfield; }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
   /* Buttons */
   button.btn { width: 100%; background: #000; color: #fff; border: none; padding: 10px 14px;
     border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; cursor: pointer;
@@ -107,9 +113,15 @@
   button.btn.ghost:hover { background: #f5f5f5; }
   button.btn.accent { background: var(--accent); color: #000; }
   button.btn.accent:hover { background: #c2ea3c; }
+  button.btn.rec { background: #e53535; color: #fff; }
+  button.btn.rec:hover { background: #c42b2b; }
 
   .btn-row { display: flex; gap: 8px; }
   .btn-row button { flex: 1; }
+
+  /* Size row */
+  .size-row { display: flex; gap: 8px; }
+  .size-row .control { flex: 1; margin-bottom: 0; }
 
   /* Palette */
   .palette-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
@@ -145,11 +157,15 @@
     white-space: nowrap; font-family: ui-monospace, "SF Mono", monospace; }
   .status-pill.ok { background: var(--accent); color: #000; }
   .status-pill.err { background: #ffe4e4; color: #b00; }
+  .status-pill.rec { background: #e53535; color: #fff; }
 
   /* Canvas area */
   #canvas-area { flex: 1; position: relative; display: flex; align-items: center; justify-content: center;
     background: var(--canvas-bg); overflow: hidden; }
-  #canvas { display: block; border-radius: 0; }
+  #canvas { display: block; box-shadow: 0 0 0 1px rgba(255,255,255,0.1); }
+  #canvas-area.pan-mode { cursor: grab; }
+  #canvas-area.pan-mode.dragging { cursor: grabbing; }
+
   #dropzone { position: absolute; inset: 14px; display: none; align-items: center; justify-content: center;
     background: rgba(212, 252, 78, 0.15); border: 2px dashed var(--accent); border-radius: var(--radius-xl);
     pointer-events: none; z-index: 10; }
@@ -158,17 +174,15 @@
     text-transform: uppercase; font-weight: 700;
     background: #000; padding: 8px 16px; border-radius: var(--radius-pill); }
 
-  /* Page number in corner, Hear The Youth style */
   .corner-brand { position: absolute; bottom: 18px; left: 18px; display: flex; align-items: center;
-    gap: 8px; z-index: 5; }
+    gap: 8px; z-index: 5; pointer-events: none; }
   .corner-brand .wm { color: rgba(255,255,255,0.55); font-size: 11px; font-weight: 800;
     letter-spacing: -0.01em; }
   .corner-page { position: absolute; bottom: 18px; right: 18px; color: rgba(255,255,255,0.4);
     font-size: 11px; font-variant-numeric: tabular-nums; z-index: 5;
-    font-family: ui-monospace, monospace; }
+    font-family: ui-monospace, monospace; pointer-events: none; }
 
-  /* Video preview — kept visible & decoded in the canvas area.
-     Without a visible element some browsers pause decoding. */
+  /* Video preview thumbnail */
   #video-preview-wrap { position: absolute; top: 14px; right: 14px; width: 160px;
     border-radius: 12px; overflow: hidden; z-index: 6; display: none;
     border: 1px solid rgba(255,255,255,0.15); background: #000;
@@ -184,7 +198,17 @@
     font-size: 9px; color: rgba(255,255,255,0.6); font-family: ui-monospace, monospace;
     text-transform: uppercase; letter-spacing: 0.1em; pointer-events: none; }
 
-  /* Mobile */
+  /* Rec indicator in canvas area */
+  #rec-indicator { position: absolute; top: 14px; left: 14px; display: none; align-items: center;
+    gap: 6px; background: rgba(0,0,0,0.7); border-radius: var(--radius-pill);
+    padding: 5px 10px; z-index: 7; pointer-events: none; }
+  #rec-indicator.active { display: flex; }
+  #rec-indicator .dot { width: 8px; height: 8px; border-radius: 50%; background: #e53535;
+    animation: blink 1s step-start infinite; }
+  #rec-indicator .label { color: #fff; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.08em; font-family: ui-monospace, monospace; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
   @media (max-width: 720px) {
     body { flex-direction: column; }
     #sidebar { width: 100%; height: 52vh; border-right: none; border-bottom: 1px solid var(--line); }
@@ -250,7 +274,7 @@
       <label>Falloff <span class="val" id="v-falloff">1.00</span></label>
       <input type="range" id="falloff" min="0.2" max="4" value="1" step="0.01">
     </div>
-    <div class="hint">Higher threshold = sparser, splash-like. Falloff shapes dot-size curve above threshold.</div>
+    <div class="hint">Higher threshold = sparser. Falloff shapes dot-size curve above threshold.</div>
   </div>
 
   <div class="section">
@@ -310,7 +334,7 @@
       <label>Color mode</label>
       <select id="color-mode">
         <option value="palette">Brightness → palette</option>
-        <option value="quantize">Sample & quantize colors</option>
+        <option value="quantize">Sample &amp; quantize colors</option>
         <option value="channel">CMY channel halftone</option>
       </select>
     </div>
@@ -334,15 +358,58 @@
       <label>Mirror</label>
       <div class="toggle-switch" id="mirror"></div>
     </div>
-    <div class="hint">Tip: MP4 (H.264) and WebM work best. Drag & drop a video onto the canvas to load.</div>
+
+    <div style="height:1px;background:var(--line);margin:12px 0"></div>
+
+    <div class="control">
+      <label>Zoom <span class="val" id="v-vzoom">1.0×</span></label>
+      <input type="range" id="vzoom" min="1" max="8" value="1" step="0.05">
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" id="reset-pan">Reset view</button>
+    </div>
+    <div class="hint">Scroll canvas to zoom · drag to pan.</div>
   </div>
 
+  <!-- Canvas size -->
+  <div class="section">
+    <div class="section-title">Canvas</div>
+    <div class="control">
+      <label>Size preset</label>
+      <select id="canvas-preset">
+        <option value="1920x1080">1920 × 1080 — 16:9</option>
+        <option value="1080x1920">1080 × 1920 — 9:16</option>
+        <option value="1080x1080">1080 × 1080 — 1:1</option>
+        <option value="1440x1080">1440 × 1080 — 4:3</option>
+        <option value="2560x1440">2560 × 1440 — QHD</option>
+        <option value="custom">Custom…</option>
+      </select>
+    </div>
+    <div id="custom-size-row" class="size-row" style="display:none;margin-bottom:10px">
+      <div class="control">
+        <label>Width</label>
+        <input type="number" id="canvas-w" value="1920" min="100" max="4096" step="2">
+      </div>
+      <div class="control">
+        <label>Height</label>
+        <input type="number" id="canvas-h" value="1080" min="100" max="4096" step="2">
+      </div>
+    </div>
+    <div class="status-pill ok" id="canvas-size-hint">1920 × 1080 px</div>
+  </div>
+
+  <!-- Export -->
   <div class="section">
     <div class="section-title">Export</div>
     <div class="btn-row">
       <button class="btn ghost" id="save-png">Save PNG</button>
       <button class="btn ghost" id="fullscreen">Fullscreen</button>
     </div>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn" id="record-btn">⏺ Record</button>
+    </div>
+    <div class="status-pill" id="record-status" style="display:none">Ready</div>
+    <div class="hint">Records as MP4 (or WebM if MP4 unsupported). Press stop to download.</div>
   </div>
 </aside>
 
@@ -354,6 +421,7 @@
     <div class="label">SOURCE</div>
     <div class="play-btn" id="play-btn">▶ TAP TO PLAY</div>
   </div>
+  <div id="rec-indicator"><div class="dot"></div><div class="label">REC</div></div>
   <div class="corner-brand"><div class="wm">HEAR THE YOUTH.®</div></div>
   <div class="corner-page" id="page-num">01</div>
 </main>
@@ -374,22 +442,132 @@
     threshold: 0.7, falloff: 1.0,
     speed: 1.0, scale: 1.0, complexity: 3, pattern: 'splash', contrastO: 1.0,
     contrast: 1.0, brightness: 0, chanOff: 0.3, invert: false, mirror: false,
-    colorMode: 'palette'
+    colorMode: 'palette',
+    canvasW: 1920, canvasH: 1080,
+    videoPanX: 0.5, videoPanY: 0.5, videoZoom: 1.0,
   };
 
   const video = document.getElementById('video-preview');
   let videoReady = false;
 
-  // ---------- Resize ----------
-  function resize() {
-    const rect = canvas.parentElement.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.floor(rect.width * dpr);
-    canvas.height = Math.floor(rect.height * dpr);
-    canvas.style.width = rect.width + 'px';
-    canvas.style.height = rect.height + 'px';
+  // ---------- Canvas size & resize ----------
+  function applyCanvasSize() {
+    const area = canvas.parentElement;
+    const areaW = area.clientWidth;
+    const areaH = area.clientHeight;
+    const scaleX = areaW / state.canvasW;
+    const scaleY = areaH / state.canvasH;
+    const scale = Math.min(scaleX, scaleY) * 0.97;
+    canvas.width = state.canvasW;
+    canvas.height = state.canvasH;
+    canvas.style.width = Math.round(state.canvasW * scale) + 'px';
+    canvas.style.height = Math.round(state.canvasH * scale) + 'px';
   }
-  window.addEventListener('resize', resize);
+  window.addEventListener('resize', applyCanvasSize);
+
+  // Canvas size controls
+  const canvasPreset = document.getElementById('canvas-preset');
+  const customSizeRow = document.getElementById('custom-size-row');
+  const canvasWInput = document.getElementById('canvas-w');
+  const canvasHInput = document.getElementById('canvas-h');
+  const canvasSizeHint = document.getElementById('canvas-size-hint');
+
+  function setCanvasSize(w, h) {
+    state.canvasW = w;
+    state.canvasH = h;
+    // Reset video pan when canvas aspect changes
+    state.videoPanX = 0.5;
+    state.videoPanY = 0.5;
+    state.videoZoom = 1.0;
+    syncZoomSlider();
+    canvasSizeHint.textContent = `${w} × ${h} px`;
+    applyCanvasSize();
+  }
+
+  canvasPreset.addEventListener('change', () => {
+    const v = canvasPreset.value;
+    if (v === 'custom') {
+      customSizeRow.style.display = 'flex';
+      setCanvasSize(parseInt(canvasWInput.value) || 1920, parseInt(canvasHInput.value) || 1080);
+    } else {
+      customSizeRow.style.display = 'none';
+      const [w, h] = v.split('x').map(Number);
+      canvasWInput.value = w;
+      canvasHInput.value = h;
+      setCanvasSize(w, h);
+    }
+  });
+
+  function onCustomSizeChange() {
+    const w = Math.max(100, Math.min(4096, parseInt(canvasWInput.value) || 1920));
+    const h = Math.max(100, Math.min(4096, parseInt(canvasHInput.value) || 1080));
+    setCanvasSize(w, h);
+  }
+  canvasWInput.addEventListener('change', onCustomSizeChange);
+  canvasHInput.addEventListener('change', onCustomSizeChange);
+
+  // ---------- Video pan/zoom ----------
+  function syncZoomSlider() {
+    const sl = document.getElementById('vzoom');
+    if (!sl) return;
+    sl.value = state.videoZoom;
+    const vEl = document.getElementById('v-vzoom');
+    if (vEl) vEl.textContent = state.videoZoom.toFixed(1) + '×';
+  }
+
+  document.getElementById('vzoom').addEventListener('input', e => {
+    state.videoZoom = parseFloat(e.target.value);
+    document.getElementById('v-vzoom').textContent = state.videoZoom.toFixed(1) + '×';
+  });
+
+  document.getElementById('reset-pan').addEventListener('click', () => {
+    state.videoPanX = 0.5;
+    state.videoPanY = 0.5;
+    state.videoZoom = 1.0;
+    syncZoomSlider();
+  });
+
+  // Drag to pan + scroll to zoom on canvas area
+  const area = document.getElementById('canvas-area');
+  let isDragging = false;
+  let dragStartX = 0, dragStartY = 0;
+  let panStartX = 0, panStartY = 0;
+
+  area.addEventListener('pointerdown', e => {
+    if (mode !== 'video') return;
+    if (e.target !== canvas && e.target !== area) return;
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    panStartX = state.videoPanX;
+    panStartY = state.videoPanY;
+    area.classList.add('dragging');
+    area.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+
+  area.addEventListener('pointermove', e => {
+    if (!isDragging) return;
+    const rect = canvas.getBoundingClientRect();
+    // How much did we move in video-source normalized coords?
+    const dx = (e.clientX - dragStartX) / rect.width / state.videoZoom;
+    const dy = (e.clientY - dragStartY) / rect.height / state.videoZoom;
+    state.videoPanX = Math.max(0, Math.min(1, panStartX - dx));
+    state.videoPanY = Math.max(0, Math.min(1, panStartY - dy));
+  });
+
+  area.addEventListener('pointerup', () => {
+    isDragging = false;
+    area.classList.remove('dragging');
+  });
+
+  area.addEventListener('wheel', e => {
+    if (mode !== 'video') return;
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.1 : 0.9;
+    state.videoZoom = Math.max(1, Math.min(8, state.videoZoom * factor));
+    syncZoomSlider();
+  }, { passive: false });
 
   // ---------- Event patterns ----------
   let events = [];
@@ -588,8 +766,8 @@
   // ---------- Render ----------
   const startT = performance.now();
   function render() {
-    const W = canvas.width;
-    const H = canvas.height;
+    const W = canvas.width;   // = state.canvasW
+    const H = canvas.height;  // = state.canvasH
     ctx.fillStyle = state.bg;
     ctx.fillRect(0, 0, W, H);
 
@@ -633,7 +811,7 @@
       return;
     }
 
-    // video mode
+    // ---------- Video mode ----------
     if (!videoReady || video.readyState < 2 || !video.videoWidth) {
       ctx.fillStyle = state.inactiveColor;
       if (inactiveR > 0.15) {
@@ -656,31 +834,42 @@
 
     const vw = video.videoWidth;
     const vh = video.videoHeight;
-    const sampledRows = Math.max(1, Math.round(cols * vh / vw));
+
+    // Dot grid fills the full canvas at canvas aspect ratio
+    const sampledRows = Math.max(1, Math.round(cols * H / W));
+
+    // Apply pan/zoom: sample a zoomed sub-region of the video
+    const Z = state.videoZoom;
+    const srcW = Math.round(vw / Z);
+    const srcH = Math.round(vh / Z);
+    // Center of the crop in video pixels, clamped so we don't read outside
+    const centerX = state.videoPanX * vw;
+    const centerY = state.videoPanY * vh;
+    const srcX = Math.max(0, Math.min(vw - srcW, Math.round(centerX - srcW / 2)));
+    const srcY = Math.max(0, Math.min(vh - srcH, Math.round(centerY - srcH / 2)));
+
     hidden.width = cols;
     hidden.height = sampledRows;
     hctx.save();
     if (state.mirror) { hctx.translate(cols, 0); hctx.scale(-1, 1); }
     try {
-      hctx.drawImage(video, 0, 0, cols, sampledRows);
-    } catch (e) { return; }
+      hctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, cols, sampledRows);
+    } catch (e) { hctx.restore(); return; }
     hctx.restore();
     let data;
     try { data = hctx.getImageData(0, 0, cols, sampledRows).data; } catch (e) { return; }
 
-    const cellV = Math.min(W / cols, H / sampledRows);
+    // Dot grid fills canvas exactly
+    const cellV = W / cols;
     const maxRV = cellV * 0.5 * state.maxSize;
-    const offX = (W - cellV * cols) / 2;
-    const offY = (H - cellV * sampledRows) / 2;
 
-    // inactive layer for video too (when inactive size > 0)
     if (inactiveR > 0.15) {
       ctx.fillStyle = state.inactiveColor;
       const iR = cellV * 0.5 * state.inactiveSize;
       for (let j = 0; j < sampledRows; j++) {
         for (let i = 0; i < cols; i++) {
-          const cx = offX + (i + 0.5) * cellV;
-          const cy = offY + (j + 0.5) * cellV;
+          const cx = (i + 0.5) * cellV;
+          const cy = (j + 0.5) * cellV;
           ctx.beginPath();
           ctx.arc(cx, cy, iR, 0, Math.PI * 2);
           ctx.fill();
@@ -705,8 +894,8 @@
             v = Math.pow(Math.max(0, Math.min(1, v)), 1 / state.contrast);
             if (state.invert) v = 1 - v;
             const r = v * maxRV;
-            const cx = offX + (i + 0.5) * cellV + dx;
-            const cy = offY + (j + 0.5) * cellV + dy;
+            const cx = (i + 0.5) * cellV + dx;
+            const cy = (j + 0.5) * cellV + dy;
             dot(cx, cy, r, chanColors[ch]);
           }
         }
@@ -722,8 +911,8 @@
           bri = Math.pow(Math.max(0, Math.min(1, bri)), 1 / state.contrast);
           if (state.invert) bri = 1 - bri;
           const r = bri * maxRV;
-          const cx = offX + (i + 0.5) * cellV;
-          const cy = offY + (j + 0.5) * cellV;
+          const cx = (i + 0.5) * cellV;
+          const cy = (j + 0.5) * cellV;
           const color = state.colorMode === 'palette'
             ? pickFromValue(bri)
             : quantize(r_, g_, b_);
@@ -793,6 +982,7 @@
     tabVideo.classList.remove('active');
     orgCtrls.style.display = '';
     vidCtrls.style.display = 'none';
+    area.classList.remove('pan-mode');
     const wrap = document.getElementById('video-preview-wrap');
     if (wrap) wrap.style.display = 'none';
   });
@@ -802,6 +992,7 @@
     tabOrganic.classList.remove('active');
     vidCtrls.style.display = '';
     orgCtrls.style.display = 'none';
+    area.classList.add('pan-mode');
     const wrap = document.getElementById('video-preview-wrap');
     if (wrap && video.src) { wrap.style.display = ''; wrap.classList.add('active'); }
     if (video.src && video.paused) video.play().catch(() => {});
@@ -873,7 +1064,7 @@
   fileInput.addEventListener('change', (e) => {
     const f = e.target.files && e.target.files[0];
     if (f) loadFile(f);
-    e.target.value = ''; // allow re-selecting same file
+    e.target.value = '';
   });
 
   function setStatus(msg, cls) {
@@ -923,13 +1114,12 @@
       const detail = err && err.message ? ` (${err.message})` : '';
       console.warn('[video] error attempt', loadAttempt, err, 'src:', (video.src || 'srcObject').slice(0, 20));
       setStatus(`Attempt ${loadAttempt + 1} failed: ${reason}${detail}`, 'err');
-      // Cascade to the next loader strategy
       if (lastLoadedFile) nextAttempt(lastLoadedFile);
     };
   }
 
   let lastLoadedFile = null;
-  let loadAttempt = 0; // 0: srcObject, 1: data URL, 2: blob URL, 3: give up
+  let loadAttempt = 0;
 
   function clearVideoSrc() {
     try { video.pause(); } catch (e) {}
@@ -942,7 +1132,7 @@
   }
 
   function loadAsSrcObject(file) {
-    setStatus(`Trying srcObject (modern Chromium)…`);
+    setStatus(`Trying srcObject…`);
     clearVideoSrc();
     try {
       attachVideoHandlers(file.name);
@@ -989,7 +1179,6 @@
     console.log('[video] moving to attempt', loadAttempt);
     if (loadAttempt === 1) return loadAsDataURL(file);
     if (loadAttempt === 2) return loadAsBlob(file);
-    // all attempts failed
     setStatus(`All loaders blocked by browser sandbox. See sidebar for fix.`, 'err');
     showSandboxHelp();
   }
@@ -1003,10 +1192,8 @@
       helpEl.style.cssText = 'margin-top:12px;padding:12px;background:#fff3cd;border:1px solid #f0d56b;border-radius:12px;font-size:12px;line-height:1.5;color:#5a4a00;';
       helpEl.innerHTML = `
         <strong style="display:block;margin-bottom:6px;">Video blocked by app sandbox</strong>
-        This viewer runs on the <code>about:</code> protocol, which Chromium blocks from loading any video source (blob, data, or file URL). Organic mode still works here.<br><br>
-        <strong>To use video mode:</strong><br>
-        Open the HTML file in a real browser: right-click <code>dot-matrix-studio.html</code> in Finder → <em>Open With</em> → Chrome/Safari/Brave. Video upload will work there.<br><br>
-        <strong>For the best performance</strong>, run a local server:
+        Open the HTML file in a real browser: right-click in Finder → <em>Open With</em> → Chrome/Safari/Brave.<br><br>
+        <strong>Best performance:</strong> run a local server:
         <div style="background:#222;color:#fff;padding:6px 8px;border-radius:6px;margin-top:4px;font-family:ui-monospace,monospace;font-size:11px;">python3 -m http.server 8080</div>
         then open <code>http://localhost:8080/dot-matrix-studio.html</code>
       `;
@@ -1025,6 +1212,12 @@
     }
 
     videoReady = false;
+    // Reset pan/zoom when a new video is loaded
+    state.videoPanX = 0.5;
+    state.videoPanY = 0.5;
+    state.videoZoom = 1.0;
+    syncZoomSlider();
+
     videoWrap.classList.add('active');
     videoWrap.style.display = '';
     videoWrap.classList.remove('needs-play');
@@ -1032,20 +1225,16 @@
 
     if (mode !== 'video') tabVideo.click();
 
-    // Reset
     video.onloadedmetadata = null;
     video.onloadeddata = null;
     video.oncanplay = null;
     video.onplaying = null;
     video.onerror = null;
 
-    // Chromium sandboxes <video> sources differently per page origin. Try a
-    // cascade of loaders: srcObject (bypasses URL scheme checks) -> data URL
-    // -> blob URL. The video.onerror handler advances to the next strategy.
     const proto = window.location.protocol;
     console.log('[video] page protocol:', proto);
     const isWeb = proto === 'http:' || proto === 'https:';
-    loadAttempt = isWeb ? 2 : 0; // on web, go straight to blob (fastest); else start with srcObject
+    loadAttempt = isWeb ? 2 : 0;
     if (loadAttempt === 0) loadAsSrcObject(file);
     else if (loadAttempt === 1) loadAsDataURL(file);
     else loadAsBlob(file);
@@ -1053,7 +1242,6 @@
 
   // Drag and drop
   const dropzone = document.getElementById('dropzone');
-  const area = document.getElementById('canvas-area');
   let dragCount = 0;
   area.addEventListener('dragenter', e => {
     e.preventDefault(); dragCount++; dropzone.classList.add('active');
@@ -1070,13 +1258,14 @@
     const f = e.dataTransfer.files && e.dataTransfer.files[0];
     if (f) loadFile(f);
   });
-  // Block default file-drop handling globally (so the browser doesn't navigate)
   window.addEventListener('dragover', e => e.preventDefault());
   window.addEventListener('drop', e => e.preventDefault());
 
-  // Click canvas area to resume video if paused
-  area.addEventListener('click', () => {
-    if (mode === 'video' && video.src && video.paused) video.play().catch(() => {});
+  // Click canvas area to resume paused video (only when not dragging)
+  area.addEventListener('click', e => {
+    if (mode === 'video' && video.src && video.paused && !isDragging) {
+      video.play().catch(() => {});
+    }
   });
 
   // Randomize
@@ -1101,6 +1290,7 @@
     }
     renderPalette();
   });
+
   function setRange(id, v, valId) {
     const el = document.getElementById(id);
     el.value = v;
@@ -1120,7 +1310,7 @@
     setRange('inactive-size', 0.12, 'v-inactive-size');
   });
 
-  // Export
+  // ---------- Export: PNG ----------
   document.getElementById('save-png').addEventListener('click', () => {
     const link = document.createElement('a');
     link.download = `hty-dot-matrix-${Date.now()}.png`;
@@ -1128,14 +1318,99 @@
     link.click();
   });
 
+  // ---------- Export: Record (MP4 / WebM) ----------
+  let mediaRecorder = null;
+  let recordChunks = [];
+  let recordStream = null;
+  let isRecording = false;
+  const recordBtn = document.getElementById('record-btn');
+  const recordStatus = document.getElementById('record-status');
+  const recIndicator = document.getElementById('rec-indicator');
+
+  function getSupportedMimeType() {
+    const types = [
+      'video/mp4; codecs="avc1.42E01E"',
+      'video/mp4',
+      'video/webm; codecs=vp9',
+      'video/webm; codecs=vp8',
+      'video/webm',
+    ];
+    return types.find(t => {
+      try { return MediaRecorder.isTypeSupported(t); } catch { return false; }
+    }) || '';
+  }
+
+  function startRecording() {
+    const mimeType = getSupportedMimeType();
+    recordStream = canvas.captureStream(30);
+    const opts = mimeType ? { mimeType, videoBitsPerSecond: 8_000_000 } : { videoBitsPerSecond: 8_000_000 };
+    try {
+      mediaRecorder = new MediaRecorder(recordStream, opts);
+    } catch (e) {
+      mediaRecorder = new MediaRecorder(recordStream);
+    }
+    recordChunks = [];
+    mediaRecorder.ondataavailable = e => {
+      if (e.data && e.data.size > 0) recordChunks.push(e.data);
+    };
+    mediaRecorder.onstop = () => {
+      const mime = mediaRecorder.mimeType || 'video/webm';
+      const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+      const blob = new Blob(recordChunks, { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `hty-dot-matrix-${Date.now()}.${ext}`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      recordChunks = [];
+      recordStatus.textContent = `Saved as .${ext}`;
+      recordStatus.className = 'status-pill ok';
+      setTimeout(() => { recordStatus.style.display = 'none'; }, 3000);
+    };
+    mediaRecorder.start(200);
+    const usedMime = mimeType || 'default';
+    recordStatus.textContent = `Recording… (${usedMime.split(';')[0]})`;
+    recordStatus.className = 'status-pill rec';
+    recordStatus.style.display = '';
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+    if (recordStream) {
+      recordStream.getTracks().forEach(t => t.stop());
+      recordStream = null;
+    }
+  }
+
+  recordBtn.addEventListener('click', () => {
+    if (!isRecording) {
+      isRecording = true;
+      recordBtn.textContent = '⏹ Stop';
+      recordBtn.classList.add('rec');
+      recIndicator.classList.add('active');
+      startRecording();
+    } else {
+      isRecording = false;
+      recordBtn.textContent = '⏺ Record';
+      recordBtn.classList.remove('rec');
+      recIndicator.classList.remove('active');
+      recordStatus.textContent = 'Saving…';
+      stopRecording();
+    }
+  });
+
+  // ---------- Fullscreen ----------
   document.getElementById('fullscreen').addEventListener('click', () => {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen();
     else document.exitFullscreen();
   });
-  document.addEventListener('fullscreenchange', () => setTimeout(resize, 50));
+  document.addEventListener('fullscreenchange', () => setTimeout(applyCanvasSize, 50));
 
   // Go
-  resize();
+  applyCanvasSize();
   loop();
 })();
 </script>
