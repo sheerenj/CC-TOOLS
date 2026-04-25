@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Strange Matter</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
+
+#c {
+  display: block;
+  width: 100vw; height: 100vh;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Scanlines + vignette — pure CSS, zero JS cost */
+#fx {
+  position: fixed; inset: 0; pointer-events: none; z-index: 10;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px, transparent 2px,
+      rgba(0,0,0,0.055) 2px, rgba(0,0,0,0.055) 3px
+    ),
+    radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(0,0,0,0.62) 100%);
+}
+
+/* HUD — fades in on mouse move, fades out after 3 s */
+#hud {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+  padding: 16px 22px 20px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.72));
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  opacity: 0; transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+#hud.show { opacity: 1; pointer-events: auto; }
+.hud-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; }
+.hud-left { display: flex; flex-direction: column; gap: 5px; }
+.hud-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.75); letter-spacing: 0.06em; }
+.hud-keys { color: rgba(255,255,255,0.27); margin-top: 2px; }
+.hud-right { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.srow { display: flex; align-items: center; gap: 10px; }
+.srow label { color: rgba(255,255,255,0.32); white-space: nowrap; }
+
+input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  width: 76px; height: 2px;
+  background: rgba(255,255,255,0.18); border-radius: 1px;
+  outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: rgba(255,255,255,0.65); cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div id="fx"></div>
+
+<div id="hud">
+  <div class="hud-row">
+    <div class="hud-left">
+      <div class="hud-name">Strange Matter</div>
+      <div id="hud-state" style="color:rgba(255,255,255,0.38)">initializing…</div>
+      <div class="hud-keys">
+        R — reseed &nbsp;·&nbsp; S — save PNG &nbsp;·&nbsp; SPACE — pause &nbsp;·&nbsp; click — perturb
+      </div>
+    </div>
+    <div class="hud-right">
+      <div class="srow">
+        <label>CHAOS</label>
+        <input type="range" id="sl-chaos" min="0" max="100" value="40" />
+      </div>
+      <div class="srow">
+        <label>COLOR SHIFT</label>
+        <input type="range" id="sl-drift" min="0" max="100" value="50" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+// ── canvas ────────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const dpr    = window.devicePixelRatio || 1;
+let CW, CH;
+
+function resizeCanvas() {
+  CW = window.innerWidth;
+  CH = window.innerHeight;
+  canvas.width  = Math.round(CW * dpr);
+  canvas.height = Math.round(CH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// ── seeded PRNG (xorshift32) ──────────────────────────────────────────────────
+let seed = (Math.random() * 0xffffffff) >>> 0;
+function rand() {
+  seed ^= seed << 13;
+  seed ^= seed >> 17;
+  seed ^= seed << 5;
+  return (seed >>> 0) / 0xffffffff;
+}
+
+// ── simulation grid ───────────────────────────────────────────────────────────
+const GW = 320, GH = 180, N = GW * GH;
+let U  = new Float32Array(N).fill(1);
+let V  = new Float32Array(N);
+let nU = new Float32Array(N);
+let nV = new Float32Array(N);
+
+// Precomputed row/col wrapping tables for hot loop
+const rowU = new Int32Array(GH); // (y-1)*GW
+const rowD = new Int32Array(GH); // (y+1)*GW
+for (let y = 0; y < GH; y++) {
+  rowU[y] = ((y === 0 ? GH - 1 : y - 1)) * GW;
+  rowD[y] = ((y === GH - 1 ? 0 : y + 1)) * GW;
+}
+const colL = new Int32Array(GW); // x-1
+const colR = new Int32Array(GW); // x+1
+for (let x = 0; x < GW; x++) {
+  colL[x] = x === 0 ? GW - 1 : x - 1;
+  colR[x] = x === GW - 1 ? 0 : x + 1;
+}
+
+// ── init ──────────────────────────────────────────────────────────────────────
+function initGrid() {
+  U.fill(1); V.fill(0);
+  const ns = 3 + (rand() * 7 | 0);
+  for (let i = 0; i < ns; i++) {
+    const cx = rand() * GW | 0, cy = rand() * GH | 0;
+    const r  = 3 + (rand() * 11 | 0);
+    for (let dy = -r; dy <= r; dy++)
+      for (let dx = -r; dx <= r; dx++) {
+        if (dx*dx + dy*dy > r*r) continue;
+        const idx = ((cy+dy+GH)%GH)*GW + (cx+dx+GW)%GW;
+        V[idx] = 1; U[idx] = 0;
+      }
+  }
+  for (let i = 0; i < N; i++) {
+    if (rand() < 0.004) { V[i] = rand() * 0.7 + 0.15; U[i] = 1 - V[i]; }
+  }
+}
+initGrid();
+
+// ── parameter zones ───────────────────────────────────────────────────────────
+// Known interesting regions of Gray-Scott (f, k) parameter space
+const ZONES = [
+  { f: 0.0545, k: 0.0620, name: 'coral'    },
+  { f: 0.0370, k: 0.0600, name: 'pulsars'  },
+  { f: 0.0293, k: 0.0570, name: 'solitons' },
+  { f: 0.0820, k: 0.0600, name: 'worms'    },
+  { f: 0.0220, k: 0.0590, name: 'spores'   },
+  { f: 0.0148, k: 0.0540, name: 'holes'    },
+  { f: 0.0460, k: 0.0630, name: 'spirals'  },
+  { f: 0.0625, k: 0.0609, name: 'chaos'    },
+  { f: 0.0118, k: 0.0475, name: 'flowers'  },
+];
+
+let zFrom = 0, zTo = 1, zT = 0;
+function smoothstep(t) { return t * t * (3 - 2 * t); }
+
+function currentFk() {
+  const a = ZONES[zFrom], b = ZONES[zTo];
+  const t = smoothstep(Math.max(0, Math.min(1, zT)));
+  // Gentle breathing oscillation on f — makes patterns pulse subtly
+  const breath = Math.sin(performance.now() * 0.00085) * 0.0012;
+  return {
+    f: a.f + (b.f - a.f) * t + breath,
+    k: a.k + (b.k - a.k) * t,
+  };
+}
+
+// ── color palettes ────────────────────────────────────────────────────────────
+// Each palette: [deep background, boundary/organism, hot core]
+const PALETTES = [
+  [[  4,  2, 16], [ 65, 12, 130], [185, 165,  18]], // mineral: void → deep violet → sulphur
+  [[  3, 16,  5], [ 28,105,  40], [215,  22,  72]], // biological: peat forest → emerald → arterial
+  [[ 20,  2,  2], [135, 22,  22], [255, 195,  42]], // ceremonial: dried blood → crimson → gold
+  [[  2,  2, 22], [  8,155, 185], [245,   0, 118]], // glitch: abyss → electric cyan → magenta
+  [[  9,  7,  2], [ 88, 55,   8], [ 52, 190,  95]], // fungal: peat → umber → bioluminescent
+  [[ 14,  0, 18], [160,  0,  90], [ 50, 255, 180]], // ultraviolet: void → deep magenta → acid mint
+];
+
+let pFrom = 0, pTo = 1, pT = 0;
+
+function lerpC(a, b, t) {
+  return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t];
+}
+
+function getPalette() {
+  const t  = smoothstep(Math.max(0, Math.min(1, pT)));
+  const pa = PALETTES[pFrom], pb = PALETTES[pTo];
+  return [lerpC(pa[0],pb[0],t), lerpC(pa[1],pb[1],t), lerpC(pa[2],pb[2],t)];
+}
+
+// Gradient-enhanced color: edges of organisms glow brighter (the "second algorithm layer")
+function cellRgb(i, pal) {
+  const v    = V[i];
+  const x    = i % GW, y = (i / GW) | 0;
+  const gx   = V[y*GW + colR[x]] - V[y*GW + colL[x]];
+  const gy   = V[rowD[y] + x]    - V[rowU[y] + x];
+  const grad = Math.sqrt(gx*gx + gy*gy); // magnitude of spatial gradient
+
+  // Boost signal: compress dark, spread interesting range, edge highlight
+  const vv = Math.min(1, Math.pow(v * 2.8, 0.72) + grad * 1.4);
+
+  let r, g, b;
+  if (vv <= 0.5) {
+    const t = vv * 2;
+    r = pal[0][0] + (pal[1][0]-pal[0][0]) * t;
+    g = pal[0][1] + (pal[1][1]-pal[0][1]) * t;
+    b = pal[0][2] + (pal[1][2]-pal[0][2]) * t;
+  } else {
+    const t = (vv - 0.5) * 2;
+    r = pal[1][0] + (pal[2][0]-pal[1][0]) * t;
+    g = pal[1][1] + (pal[2][1]-pal[1][1]) * t;
+    b = pal[1][2] + (pal[2][2]-pal[1][2]) * t;
+  }
+  return [r | 0, g | 0, b | 0];
+}
+
+// ── offscreen grid canvas ─────────────────────────────────────────────────────
+const gc = document.createElement('canvas');
+gc.width  = GW;
+gc.height = GH;
+const gx  = gc.getContext('2d');
+
+function render() {
+  const img  = gx.createImageData(GW, GH);
+  const data = img.data;
+  const pal  = getPalette();
+  for (let i = 0; i < N; i++) {
+    const [r, g, b] = cellRgb(i, pal);
+    const p = i << 2;
+    data[p]   = r;
+    data[p+1] = g;
+    data[p+2] = b;
+    data[p+3] = 255;
+  }
+  gx.putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(gc, 0, 0, CW, CH);
+}
+
+// ── Gray-Scott step ───────────────────────────────────────────────────────────
+const Du = 1.0, Dv = 0.5;
+
+function step(f, k) {
+  for (let y = 0; y < GH; y++) {
+    const rU = rowU[y], rD = rowD[y], rC = y * GW;
+    for (let x = 0; x < GW; x++) {
+      const cL = colL[x], cR = colR[x];
+      const i  = rC + x;
+      const u  = U[i], v = V[i];
+
+      // 9-point weighted Laplacian (Pearson 1993)
+      const lapU =
+        (U[rC+cL] + U[rC+cR] + U[rU+x] + U[rD+x]) * 0.2 +
+        (U[rU+cL] + U[rU+cR] + U[rD+cL] + U[rD+cR]) * 0.05 - u;
+      const lapV =
+        (V[rC+cL] + V[rC+cR] + V[rU+x] + V[rD+x]) * 0.2 +
+        (V[rU+cL] + V[rU+cR] + V[rD+cL] + V[rD+cR]) * 0.05 - v;
+
+      const uvv = u * v * v;
+      nU[i] = Math.max(0, Math.min(1, u + Du*lapU - uvv + f*(1-u)));
+      nV[i] = Math.max(0, Math.min(1, v + Dv*lapV + uvv - (f+k)*v));
+    }
+  }
+  let t = U; U = nU; nU = t;
+      t = V; V = nV; nV = t;
+}
+
+// ── perturbation ──────────────────────────────────────────────────────────────
+function perturb(gx2, gy2, radius, strength) {
+  const r2 = radius * radius;
+  for (let dy = -radius; dy <= radius; dy++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      const d2 = dx*dx + dy*dy;
+      if (d2 > r2) continue;
+      const x = (gx2 + dx + GW) % GW;
+      const y = (gy2 + dy + GH) % GH;
+      const i = y * GW + x;
+      const amt = strength * (1 - Math.sqrt(d2) / radius);
+      V[i] = Math.min(1, V[i] + amt);
+      U[i] = Math.max(0, 1 - V[i]);
+    }
+  }
+}
+
+// ── mouse ─────────────────────────────────────────────────────────────────────
+let mx = -1, my = -1;
+
+canvas.addEventListener('mousemove', e => {
+  mx = (e.clientX / CW * GW) | 0;
+  my = (e.clientY / CH * GH) | 0;
+});
+canvas.addEventListener('mouseleave', () => { mx = -1; my = -1; });
+canvas.addEventListener('click', e => {
+  perturb((e.clientX / CW * GW) | 0, (e.clientY / CH * GH) | 0, 13, 1.0);
+});
+
+// ── glitch events ─────────────────────────────────────────────────────────────
+let glitchIn = 7 + rand() * 15;
+
+function doGlitch() {
+  const r = rand();
+  if (r < 0.35) {
+    // Sudden zone teleport
+    zFrom = rand() * ZONES.length | 0;
+    zTo   = rand() * ZONES.length | 0;
+    zT    = 0;
+  } else if (r < 0.65) {
+    // Inject V chemical in random area
+    perturb(rand()*GW|0, rand()*GH|0, 6+(rand()*22|0), rand()*0.9+0.1);
+  } else if (r < 0.85) {
+    // Erase a region
+    const cx = rand()*GW|0, cy = rand()*GH|0, rad = 8+(rand()*28|0);
+    for (let dy=-rad; dy<=rad; dy++)
+      for (let dx=-rad; dx<=rad; dx++) {
+        if (dx*dx+dy*dy > rad*rad) continue;
+        const i = ((cy+dy+GH)%GH)*GW + (cx+dx+GW)%GW;
+        V[i] = 0; U[i] = 1;
+      }
+  } else {
+    // Palette jump
+    pFrom = pTo;
+    pTo   = rand() * PALETTES.length | 0;
+    pT    = 0;
+  }
+}
+
+// ── main loop ─────────────────────────────────────────────────────────────────
+let paused = false;
+let lastT  = performance.now();
+
+function frame(now) {
+  requestAnimationFrame(frame);
+
+  const elapsed = Math.min((now - lastT) / 1000, 0.05);
+  lastT = now;
+
+  if (!paused) {
+    const chaos = 0.2 + (document.getElementById('sl-chaos').value / 100) * 1.8;
+    const drift = 0.3 + (document.getElementById('sl-drift').value / 100) * 1.5;
+
+    // Zone interpolation
+    zT += 0.00025 * chaos;
+    if (zT >= 1) {
+      zFrom = zTo;
+      zTo   = rand() * ZONES.length | 0;
+      zT    = 0;
+    }
+
+    // Palette interpolation
+    pT += 0.00012 * drift;
+    if (pT >= 1) {
+      pFrom = pTo;
+      pTo   = rand() * PALETTES.length | 0;
+      pT    = 0;
+    }
+
+    // Glitch
+    glitchIn -= elapsed;
+    if (glitchIn <= 0) {
+      doGlitch();
+      glitchIn = (4 + rand() * 20) / chaos;
+    }
+
+    // Run simulation steps
+    const { f, k } = currentFk();
+    for (let s = 0; s < 5; s++) {
+      step(f, k);
+      if (mx >= 0 && my >= 0) perturb(mx, my, 2, 0.014);
+    }
+
+    // HUD state line
+    const fk = currentFk();
+    document.getElementById('hud-state').textContent =
+      `${ZONES[zFrom].name} → ${ZONES[zTo].name}   f:${fk.f.toFixed(4)}  k:${fk.k.toFixed(4)}   palette ${pFrom+1}→${pTo+1}`;
+  }
+
+  render();
+}
+
+requestAnimationFrame(frame);
+
+// ── keyboard ──────────────────────────────────────────────────────────────────
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space') {
+    e.preventDefault(); paused = !paused; showHud();
+  }
+  if (e.code === 'KeyR') {
+    seed = (Math.random() * 0xffffffff) >>> 0;
+    initGrid();
+    zFrom = rand() * ZONES.length  | 0;
+    zTo   = rand() * ZONES.length  | 0;
+    pFrom = rand() * PALETTES.length | 0;
+    pTo   = (pFrom + 1) % PALETTES.length;
+    zT = pT = 0;
+    glitchIn = 3 + rand() * 8;
+    showHud();
+  }
+  if (e.code === 'KeyS') {
+    const a = document.createElement('a');
+    a.download = `strange-matter-${Date.now()}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  }
+});
+
+// ── HUD ───────────────────────────────────────────────────────────────────────
+const hud = document.getElementById('hud');
+let hudTimer;
+function showHud() {
+  clearTimeout(hudTimer);
+  hud.classList.add('show');
+  hudTimer = setTimeout(() => hud.classList.remove('show'), 3000);
+}
+window.addEventListener('mousemove', showHud);
+
+})();
+</script>
+</body>
+</html>
