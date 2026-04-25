@@ -209,63 +209,24 @@
 
   <script>
     const OWNER = "sheerenj";
-    const REPO = "CC-TY";
+    const REPO  = "CC-TY";
     const BRANCH = "main";
-    const API_BASE = `https://api.github.com/repos/${OWNER}/${REPO}/contents/tools`;
     const SITE_BASE = `https://${OWNER}.github.io/${REPO}/tools`;
+    const TREE_API  = `https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${BRANCH}?recursive=1`;
 
-    const gallery = document.getElementById("gallery");
+    const gallery  = document.getElementById("gallery");
     const statusEl = document.getElementById("status");
 
     function prettifyName(slug) {
-      return slug
-        .replace(/[-_]+/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+      return slug.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
     }
 
     function titleCase(str) {
-      return str.replace(/\b\w/g, char => char.toUpperCase());
-    }
-
-    async function fetchJson(url) {
-      const res = await fetch(url, {
-        headers: { "Accept": "application/vnd.github+json" }
-      });
-      if (!res.ok) {
-        throw new Error(`GitHub API error: ${res.status}`);
-      }
-      return res.json();
-    }
-
-    async function getCategories() {
-      return fetchJson(API_BASE);
-    }
-
-    async function getToolsInCategory(categoryName) {
-      return fetchJson(`${API_BASE}/${encodeURIComponent(categoryName)}`);
-    }
-
-    async function folderHasIndex(categoryName, toolName) {
-      try {
-        const files = await fetchJson(`${API_BASE}/${encodeURIComponent(categoryName)}/${encodeURIComponent(toolName)}`);
-        return files.some(file => file.type === "file" && file.name.toLowerCase() === "index.html");
-      } catch {
-        return false;
-      }
-    }
-
-    async function folderHasPreview(categoryName, toolName) {
-      try {
-        const files = await fetchJson(`${API_BASE}/${encodeURIComponent(categoryName)}/${encodeURIComponent(toolName)}`);
-        return files.some(file => file.type === "file" && file.name.toLowerCase() === "preview.png");
-      } catch {
-        return false;
-      }
+      return str.replace(/\b\w/g, c => c.toUpperCase());
     }
 
     function makeCard({ category, slug, hasPreview }) {
-      const link = `${SITE_BASE}/${category}/${slug}/`;
+      const link    = `${SITE_BASE}/${category}/${slug}/`;
       const preview = `${SITE_BASE}/${category}/${slug}/preview.png`;
 
       const card = document.createElement("a");
@@ -276,53 +237,55 @@
 
       card.innerHTML = `
         <div class="thumb-wrap">
-          ${
-            hasPreview
-              ? `<img src="${preview}" alt="${titleCase(prettifyName(slug))} preview" onerror="this.remove(); this.nextElementSibling.classList.remove('hidden');">`
-              : ``
-          }
+          ${hasPreview
+            ? `<img src="${preview}" alt="${titleCase(prettifyName(slug))} preview"
+                onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">`
+            : ""}
           <div class="thumb-fallback ${hasPreview ? "hidden" : ""}">No Preview Yet</div>
         </div>
         <div class="card-body">
           <h2 class="tool-name">${titleCase(prettifyName(slug))}</h2>
           <div class="tool-meta">${titleCase(prettifyName(category))}</div>
-        </div>
-      `;
+        </div>`;
 
       return card;
     }
 
     async function loadGallery() {
       try {
-        const categories = await getCategories();
-        const categoryFolders = categories.filter(item => item.type === "dir");
+        const res = await fetch(TREE_API, {
+          headers: { "Accept": "application/vnd.github+json" }
+        });
+        if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+        const { tree, truncated } = await res.json();
 
-        const tools = [];
+        // Build lookup sets from all file paths in one pass
+        const indexPaths   = new Set();
+        const previewPaths = new Set();
 
-        for (const category of categoryFolders) {
-          const items = await getToolsInCategory(category.name);
-          const toolFolders = items.filter(item => item.type === "dir");
-
-          for (const tool of toolFolders) {
-            const hasIndex = await folderHasIndex(category.name, tool.name);
-            if (!hasIndex) continue;
-
-            const hasPreview = await folderHasPreview(category.name, tool.name);
-
-            tools.push({
-              category: category.name,
-              slug: tool.name,
-              hasPreview
-            });
+        for (const item of tree) {
+          if (item.type !== "blob") continue;
+          const parts = item.path.split("/");
+          // Expected: tools/{category}/{tool}/filename
+          if (parts.length === 4 && parts[0] === "tools") {
+            const name = parts[3].toLowerCase();
+            if (name === "index.html")  indexPaths.add(`${parts[1]}/${parts[2]}`);
+            if (name === "preview.png") previewPaths.add(`${parts[1]}/${parts[2]}`);
           }
         }
 
+        const tools = [];
+        for (const key of indexPaths) {
+          const [category, slug] = key.split("/");
+          tools.push({ category, slug, hasPreview: previewPaths.has(key) });
+        }
         tools.sort((a, b) => a.slug.localeCompare(b.slug));
 
         gallery.innerHTML = "";
         tools.forEach(tool => gallery.appendChild(makeCard(tool)));
 
-        statusEl.textContent = `${tools.length} tools loaded`;
+        const note = truncated ? " (tree truncated — some tools may be missing)" : "";
+        statusEl.textContent = `${tools.length} tools loaded${note}`;
       } catch (error) {
         console.error(error);
         statusEl.textContent = "Could not load tools from GitHub";
