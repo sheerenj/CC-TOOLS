@@ -1,7 +1,7 @@
 [
   { "category": "generators",  "slug": "ascii-art-generator",        "hasPreview": false },
   { "category": "generators",  "slug": "dot-matrix-studio",          "hasPreview": true  },
-  { "category": "generators",  "slug": "geometric-emblem-generator",  "hasPreview": false },
+  { "category": "generators",  "slug": "geometric-emblem-generator",  "hasPreview": true  },
   { "category": "image",       "slug": "BCA-halftone-lines-image",    "hasPreview": false },
   { "category": "templates",   "slug": "ascii-template-tool",         "hasPreview": false },
   { "category": "typography",  "slug": "experimental-type-tool",      "hasPreview": true  },
