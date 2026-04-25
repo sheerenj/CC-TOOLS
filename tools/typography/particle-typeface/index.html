@@ -9,47 +9,35 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #ececec;
-    --card: #ffffff;
-    --text: #000000;
-    --text-dim: #6b6b6b;
-    --line: #e4e4e4;
-    --line-2: #d4d4d4;
-    --accent: #d4fc4e;
-    --canvas-bg: #0a0a0a;
-    --radius-xl: 28px;
-    --radius-lg: 20px;
-    --radius-md: 14px;
-    --radius-pill: 999px;
+    --bg: #ececec; --card: #ffffff; --text: #000000; --text-dim: #6b6b6b;
+    --line: #e4e4e4; --line-2: #d4d4d4; --accent: #d4fc4e;
+    --radius-lg: 20px; --radius-md: 14px; --radius-pill: 999px;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; height: 100%; overflow: hidden;
     background: var(--bg); color: var(--text);
-    font-family: "Inter", -apple-system, "Helvetica Neue", sans-serif;
-    -webkit-font-smoothing: antialiased; }
+    font-family: "Inter", -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
   body { display: flex; height: 100vh; }
 
-  #sidebar {
-    width: 300px; flex-shrink: 0; background: var(--bg);
-    padding: 18px; overflow-y: auto; height: 100vh;
-    border-right: 1px solid var(--line);
-  }
+  #sidebar { width: 300px; flex-shrink: 0; background: var(--bg); padding: 18px;
+    overflow-y: auto; height: 100vh; border-right: 1px solid var(--line); }
   #sidebar::-webkit-scrollbar { width: 8px; }
   #sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 4px; }
-  #sidebar::-webkit-scrollbar-thumb:hover { background: #bababa; }
 
-  .brand-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 18px; padding: 0 4px; }
+  .brand-row { display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 18px; padding: 0 4px; }
   .brand { font-size: 19px; font-weight: 900; letter-spacing: -0.02em; }
   .brand .dot { display: inline-block; width: 6px; height: 6px; background: #000;
     border-radius: 50%; vertical-align: baseline; margin-left: 1px; margin-bottom: 1px; }
   .brand .reg { font-size: 10px; font-weight: 700; vertical-align: super; margin-left: 2px; }
-  .brand-sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; }
+  .brand-sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 0.12em; font-weight: 600; }
 
   .section { background: var(--card); border-radius: var(--radius-lg);
     padding: 16px 16px 18px; margin-bottom: 10px; }
   .section-title { display: inline-block; background: var(--accent); color: #000;
-    padding: 3px 7px; font-family: ui-monospace, "SF Mono", "Menlo", monospace;
-    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 3px 7px; font-family: ui-monospace, monospace; font-size: 10px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
     margin-bottom: 12px; border-radius: 3px; }
 
   .control { margin-bottom: 12px; }
@@ -57,23 +45,20 @@
   .control label { display: flex; justify-content: space-between; align-items: center;
     font-size: 12px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
   .control label .val { color: var(--text-dim); font-variant-numeric: tabular-nums;
-    font-size: 11px; font-family: ui-monospace, "SF Mono", monospace; }
+    font-size: 11px; font-family: ui-monospace, monospace; }
 
   input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
     background: #d4d4d4; border-radius: 2px; outline: none; cursor: pointer; }
-  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none;
-    width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer; border: none;
-    transition: transform 0.1s; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px;
+    border-radius: 50%; background: #000; cursor: pointer; border: none; transition: transform 0.1s; }
   input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
   input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%;
     background: #000; cursor: pointer; border: none; }
-  input[type="range"]:disabled { opacity: 0.35; cursor: default; }
-  input[type="range"]:disabled::-webkit-slider-thumb { cursor: default; transform: none; }
 
   input[type="text"] { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
     color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
-    font-size: 18px; font-weight: 700; letter-spacing: 0.05em;
-    outline: none; font-family: ui-monospace, "SF Mono", monospace; }
+    font-size: 18px; font-weight: 700; letter-spacing: 0.05em; outline: none;
+    font-family: ui-monospace, monospace; }
   input[type="text"]:focus { border-color: var(--line-2); background: #fff; }
 
   select { width: 100%; background: #f4f4f4; border: 1px solid var(--line); color: var(--text);
@@ -83,7 +68,7 @@
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
     background-repeat: no-repeat; background-position: right 14px center; padding-right: 32px; }
 
-  input[type="color"] { -webkit-appearance: none; appearance: none; border: 1px solid var(--line-2);
+  input[type="color"] { -webkit-appearance: none; border: 1px solid var(--line-2);
     background: transparent; width: 100%; height: 34px; border-radius: var(--radius-md);
     cursor: pointer; padding: 0; }
   input[type="color"]::-webkit-color-swatch-wrapper { padding: 3px; }
@@ -114,10 +99,8 @@
   button.btn.ghost:hover { background: #f5f5f5; }
   button.btn.accent { background: var(--accent); color: #000; }
   button.btn.accent:hover { background: #c2ea3c; }
-
-  .btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn-row { display: flex; gap: 8px; }
   .btn-row button.btn { margin-bottom: 0; }
-  .btn-row button.btn:last-of-type { margin-bottom: 0; }
 
   .upload-btn { display: block; width: 100%; padding: 9px 12px; background: #f4f4f4;
     border: 1px dashed var(--line-2); color: var(--text-dim); border-radius: var(--radius-pill);
@@ -129,24 +112,21 @@
 
   .status-pill { display: block; padding: 6px 10px; background: #f4f4f4;
     border-radius: var(--radius-pill); font-size: 11px; color: var(--text-dim);
-    margin-top: 8px; overflow: hidden; text-overflow: ellipsis;
-    white-space: nowrap; font-family: ui-monospace, "SF Mono", monospace; text-align: center; }
+    margin-top: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-family: ui-monospace, monospace; text-align: center; }
   .status-pill.ok { background: var(--accent); color: #000; }
 
-  #canvas-wrap { flex: 1; position: relative; overflow: hidden; background: var(--canvas-bg); }
+  #canvas-wrap { flex: 1; position: relative; overflow: hidden; background: #0a0a0a; }
   canvas { display: block; }
 
-  #preview-c {
-    display: block; width: 100%; height: 80px;
-    border-radius: var(--radius-md); margin-top: 10px;
-    background: #0a0a0a;
-  }
+  #preview-c { display: block; width: 100%; height: 80px; border-radius: var(--radius-md);
+    margin-top: 10px; background: #0a0a0a; }
 
   #timeline-section { display: none; }
+  .frame-count { font-size: 11px; color: var(--text-dim); font-family: ui-monospace, monospace; }
 </style>
 </head>
 <body>
-
 <div id="sidebar">
 
   <div class="brand-row">
@@ -159,7 +139,7 @@
     <div class="section-title">Text</div>
     <div class="control">
       <label>Content <span class="val">↵ to animate</span></label>
-      <input type="text" id="txt-input" value="A24" maxlength="12" autocomplete="off" />
+      <input type="text" id="txt-input" value="A24" maxlength="20" autocomplete="off" />
     </div>
     <div class="control">
       <label>Font size <span class="val" id="font-size-val">200</span></label>
@@ -171,6 +151,27 @@
       <div id="font-name"></div>
     </div>
     <canvas id="preview-c"></canvas>
+  </div>
+
+  <!-- Layout -->
+  <div class="section">
+    <div class="section-title">Layout</div>
+    <div class="control">
+      <label>Alignment</label>
+      <select id="text-align">
+        <option value="center" selected>Center</option>
+        <option value="left">Left</option>
+        <option value="right">Right</option>
+      </select>
+    </div>
+    <div class="control">
+      <label>Letter spacing <span class="val" id="letter-spacing-val">0</span> px</label>
+      <input type="range" id="letter-spacing" min="-20" max="150" value="0" step="1" />
+    </div>
+    <div class="control">
+      <label>Vertical position <span class="val" id="v-offset-val">0</span>%</label>
+      <input type="range" id="v-offset" min="-40" max="40" value="0" step="1" />
+    </div>
   </div>
 
   <!-- Motion -->
@@ -228,6 +229,10 @@
       <label>Target noise <span class="val" id="noise-val">3</span></label>
       <input type="range" id="noise" min="0" max="20" value="3" step="0.5" />
     </div>
+    <div class="control">
+      <label>Floaters <span class="val" id="floater-pct-val">15</span>%</label>
+      <input type="range" id="floater-pct" min="0" max="50" value="15" step="1" />
+    </div>
     <div class="toggle">
       <label>Outline only</label>
       <div class="toggle-switch" id="outline-toggle"></div>
@@ -251,12 +256,15 @@
     </div>
   </div>
 
-  <!-- Timeline (shown after first animation) -->
+  <!-- Timeline -->
   <div class="section" id="timeline-section">
     <div class="section-title">Timeline</div>
     <div class="control">
-      <label>Frame <span><span class="val" id="frame-val">1</span> / <span id="frame-total">—</span></span></label>
-      <input type="range" id="timeline-slider" min="0" value="0" disabled />
+      <label>
+        Frame
+        <span class="frame-count"><span id="frame-val">—</span> / <span id="frame-total">—</span></span>
+      </label>
+      <input type="range" id="timeline-slider" min="0" max="0" value="0" />
     </div>
     <div class="btn-row">
       <button class="btn ghost" id="btn-resume" style="font-size:12px">▶ Resume live</button>
@@ -272,28 +280,24 @@
     <button class="btn ghost" id="btn-scatter">⊹ Scatter</button>
     <button class="btn ghost" id="btn-png">↓ Export PNG</button>
     <button class="btn ghost" id="btn-svg">↓ Export SVG</button>
-    <div id="status" class="status-pill">Type text above and click Animate</div>
+    <div id="status" class="status-pill">Type text and click Animate</div>
   </div>
 
 </div>
 
-<div id="canvas-wrap">
-  <canvas id="c"></canvas>
-</div>
+<div id="canvas-wrap"><canvas id="c"></canvas></div>
 
 <script>
 (function () {
 
 const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-const wrap = document.getElementById('canvas-wrap');
-const dpr = window.devicePixelRatio || 1;
+const ctx    = canvas.getContext('2d');
+const wrap   = document.getElementById('canvas-wrap');
+const dpr    = window.devicePixelRatio || 1;
 
 let W, H;
-
 function resize() {
-  const cw = wrap.clientWidth;
-  const ch = wrap.clientHeight;
+  const cw = wrap.clientWidth, ch = wrap.clientHeight;
   W = cw; H = ch;
   canvas.width  = Math.round(cw * dpr);
   canvas.height = Math.round(ch * dpr);
@@ -304,41 +308,41 @@ function resize() {
 resize();
 window.addEventListener('resize', resize);
 
-// ── state ─────────────────────────────────────────────────
-let bgColor = '#0a0a0a';
-let dotColor = '#e0ddd5';
-let dots = [];
-let simMode = 'scatter'; // 'scatter' | 'animate'
-let rafId = null;
+// ── state ──────────────────────────────────────────────────
+let bgColor    = '#0a0a0a';
+let dotColor   = '#e0ddd5';
+let dots       = [];
+let simMode    = 'scatter';
+let rafId      = null;
 let customFont = null;
 let outlineOnly = false;
-let showGhost = false;
+let showGhost   = false;
 
-// ── frame recording ───────────────────────────────────────
-let frames = [];
-let recording = false;
+// ── frame recording ────────────────────────────────────────
+let frames        = [];
+let recording     = false;
 let animStartTime = 0;
-let lastCapture = 0;
-let scrubbing = false;
-let scrubSnapshot = null; // [{x,y,r}]
-const CAPTURE_INTERVAL = 50; // ms between frames (~20fps)
-const MAX_RECORD_MS = 8000;
+let lastCapture   = 0;
+let scrubbing     = false;
+let scrubSnap     = null;
+const CAPTURE_MS  = 50; // ~20fps
 
-// ── helpers ───────────────────────────────────────────────
+// ── helpers ────────────────────────────────────────────────
 const g  = id => parseFloat(document.getElementById(id).value);
 const gi = id => parseInt(document.getElementById(id).value);
 const gv = id => document.getElementById(id).value;
 
-// ── slider sync ───────────────────────────────────────────
-['font-size','dot-count','dot-size','dot-var','noise','speed','bounce','stagger'].forEach(id => {
-  const el  = document.getElementById(id);
+// ── slider sync ────────────────────────────────────────────
+['font-size','dot-count','dot-size','dot-var','noise','floater-pct',
+ 'speed','bounce','stagger','letter-spacing','v-offset'].forEach(id => {
+  const el = document.getElementById(id);
   const vEl = document.getElementById(id + '-val');
   if (!el || !vEl) return;
   vEl.textContent = el.value;
   el.addEventListener('input', () => { vEl.textContent = el.value; });
 });
 
-// ── toggles ───────────────────────────────────────────────
+// ── toggles ────────────────────────────────────────────────
 const outlineToggle = document.getElementById('outline-toggle');
 outlineToggle.addEventListener('click', () => {
   outlineOnly = !outlineOnly;
@@ -352,262 +356,230 @@ ghostToggle.addEventListener('click', () => {
   ghostToggle.classList.toggle('on', showGhost);
 });
 
-// ── color controls ────────────────────────────────────────
-document.getElementById('bg-color').addEventListener('input', e => { bgColor = e.target.value; updatePreview(); });
+// ── color controls ─────────────────────────────────────────
+document.getElementById('bg-color').addEventListener('input', e => { bgColor  = e.target.value; updatePreview(); });
 document.getElementById('dot-color').addEventListener('input', e => { dotColor = e.target.value; updatePreview(); });
 
-// ── dot factory ───────────────────────────────────────────
+// ── dot factory ────────────────────────────────────────────
 function newDot() {
   return {
     x: Math.random() * W, y: Math.random() * H,
     vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2,
     tx: 0, ty: 0, nx: 0, ny: 0,
     r: g('dot-size') * 0.5 + Math.random() * g('dot-var') * 0.5,
-    delay: 0, startTime: null
+    delay: 0, startTime: null, isFloater: false
   };
 }
-
-function initDots() {
-  dots = Array.from({ length: gi('dot-count') }, newDot);
-}
+function initDots() { dots = Array.from({ length: gi('dot-count') }, newDot); }
 initDots();
 
-// ── per-dot physics ───────────────────────────────────────
+// ── per-dot physics ────────────────────────────────────────
 function updateDot(d, now) {
   function wander() {
-    d.vx += (Math.random() - 0.5) * 0.08;
-    d.vy += (Math.random() - 0.5) * 0.08;
+    d.vx += (Math.random() - 0.5) * 0.08; d.vy += (Math.random() - 0.5) * 0.08;
     d.vx *= 0.97; d.vy *= 0.97;
     d.x += d.vx; d.y += d.vy;
     if (d.x < -20) d.x = W + 20; else if (d.x > W + 20) d.x = -20;
     if (d.y < -20) d.y = H + 20; else if (d.y > H + 20) d.y = -20;
   }
 
-  if (simMode === 'scatter' || !d.startTime) { wander(); return; }
+  if (simMode === 'scatter' || !d.startTime || d.isFloater) { wander(); return; }
   if (now - d.startTime < d.delay) { wander(); return; }
 
-  const style = gv('move-style');
-  const speed = g('speed');
-  const tx = d.tx + d.nx;
-  const ty = d.ty + d.ny;
+  const style  = gv('move-style');
+  const speed  = g('speed');
+  const tx = d.tx + d.nx, ty = d.ty + d.ny;
 
   if (style === 'glide') {
     const f = speed * 0.007;
-    d.x += (tx - d.x) * f;
-    d.y += (ty - d.y) * f;
+    d.x += (tx - d.x) * f; d.y += (ty - d.y) * f;
     d.vx = 0; d.vy = 0;
   } else if (style === 'spring') {
     const tension = speed * 0.004;
     const damping = 0.98 - (g('bounce') / 100) * 0.32;
-    d.vx += (tx - d.x) * tension;
-    d.vy += (ty - d.y) * tension;
+    d.vx += (tx - d.x) * tension; d.vy += (ty - d.y) * tension;
     d.vx *= damping; d.vy *= damping;
     d.x += d.vx; d.y += d.vy;
   } else {
-    d.vx += (Math.random() - 0.5) * 0.14;
-    d.vy += (Math.random() - 0.5) * 0.14;
+    d.vx += (Math.random() - 0.5) * 0.14; d.vy += (Math.random() - 0.5) * 0.14;
     const f = speed * 0.0025;
-    d.vx += (tx - d.x) * f;
-    d.vy += (ty - d.y) * f;
+    d.vx += (tx - d.x) * f; d.vy += (ty - d.y) * f;
     d.vx *= 0.97; d.vy *= 0.97;
     d.x += d.vx; d.y += d.vy;
   }
 }
 
-// ── ghost overlay ─────────────────────────────────────────
-function buildFontString(fontSize) {
-  return `bold ${fontSize}px Georgia, serif`;
+// ── unified text drawing ───────────────────────────────────
+// Draws text onto any canvas context at the specified size/layout.
+// mode: 'fill' | 'stroke'   color: css color string
+function drawTextOnCtx(cx, cW, cH, text, fontSize, ls, align, vOffsetPct, mode, color) {
+  if (!text) return;
+  const centerY = cH / 2 + (vOffsetPct / 100) * cH;
+
+  cx.save();
+
+  if (customFont) {
+    try {
+      const chars   = Array.from(text);
+      const fullBb  = customFont.getPath(text, 0, 0, fontSize).getBoundingBox();
+      const th      = fullBb.y2 - fullBb.y1;
+      const baselineY = centerY - th / 2 - fullBb.y1;
+
+      const advances = chars.map(ch => {
+        try { return customFont.charToGlyph(ch).advanceWidth * fontSize / customFont.unitsPerEm; }
+        catch(e) { return fontSize * 0.5; }
+      });
+      const totalW = advances.reduce((s, a, i) => s + a + (i < chars.length - 1 ? ls : 0), 0);
+
+      const startX = align === 'left'  ? 30
+                   : align === 'right' ? cW - totalW - 30
+                   : (cW - totalW) / 2;
+
+      if (mode === 'stroke') { cx.strokeStyle = color; cx.lineWidth = Math.max(1.5, fontSize * 0.035); }
+      else { cx.fillStyle = color; }
+
+      let curX = startX;
+      for (let i = 0; i < chars.length; i++) {
+        const path = new Path2D(customFont.getPath(chars[i], curX, baselineY, fontSize).toPathData());
+        mode === 'stroke' ? cx.stroke(path) : cx.fill(path);
+        curX += advances[i] + ls;
+      }
+      cx.restore(); return;
+    } catch(e) {}
+  }
+
+  // Canvas fallback — draw char-by-char for consistent letter spacing everywhere
+  cx.font = `bold ${fontSize}px Georgia, serif`;
+  cx.textBaseline = 'middle';
+  cx.textAlign = 'left';
+
+  const chars      = Array.from(text);
+  const charWidths = chars.map(ch => cx.measureText(ch).width);
+  const totalW     = charWidths.reduce((s, w) => s + w, 0) + ls * (chars.length - 1);
+
+  const startX = align === 'left'  ? 30
+               : align === 'right' ? cW - totalW - 30
+               : (cW - totalW) / 2;
+
+  if (mode === 'stroke') { cx.strokeStyle = color; cx.lineWidth = Math.max(1.5, fontSize * 0.04); }
+  else { cx.fillStyle = color; }
+
+  let curX = startX;
+  for (let i = 0; i < chars.length; i++) {
+    mode === 'stroke' ? cx.strokeText(chars[i], curX, centerY) : cx.fillText(chars[i], curX, centerY);
+    curX += charWidths[i] + ls;
+  }
+  cx.restore();
 }
 
+// Measures approximate text width/height at given fontSize + ls
+function measureText(text, fontSize, ls) {
+  if (customFont) {
+    try {
+      const chars    = Array.from(text);
+      const fullBb   = customFont.getPath(text, 0, 0, fontSize).getBoundingBox();
+      const advances = chars.map(ch => {
+        try { return customFont.charToGlyph(ch).advanceWidth * fontSize / customFont.unitsPerEm; }
+        catch(e) { return fontSize * 0.5; }
+      });
+      const w = advances.reduce((s, a, i) => s + a + (i < chars.length - 1 ? ls : 0), 0);
+      return { w, h: fullBb.y2 - fullBb.y1 };
+    } catch(e) {}
+  }
+  const tc = document.createElement('canvas').getContext('2d');
+  tc.font = `bold ${fontSize}px Georgia, serif`;
+  const cw = Array.from(text).map(ch => tc.measureText(ch).width);
+  return { w: cw.reduce((s, w) => s + w, 0) + ls * (text.length - 1), h: fontSize * 0.72 };
+}
+
+// ── ghost overlay ──────────────────────────────────────────
 function drawGhost() {
   const text = document.getElementById('txt-input').value.trim();
   if (!text) return;
-  const fontSize = gi('font-size');
   ctx.save();
   ctx.globalAlpha = 0.13;
-  ctx.fillStyle = dotColor;
-  if (customFont) {
-    try {
-      const path = getOpenTypePath(customFont, text, fontSize);
-      if (outlineOnly) {
-        ctx.strokeStyle = dotColor;
-        ctx.lineWidth = Math.max(2, fontSize * 0.03);
-        ctx.stroke(path);
-      } else {
-        ctx.fill(path);
-      }
-      ctx.restore(); return;
-    } catch (e) {}
-  }
-  ctx.font = buildFontString(fontSize);
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'center';
-  if (outlineOnly) {
-    ctx.strokeStyle = dotColor;
-    ctx.lineWidth = Math.max(2, fontSize * 0.04);
-    ctx.strokeText(text, W / 2, H / 2);
-  } else {
-    ctx.fillText(text, W / 2, H / 2);
-  }
+  drawTextOnCtx(ctx, W, H, text, gi('font-size'), g('letter-spacing'),
+    gv('text-align'), g('v-offset'), outlineOnly ? 'stroke' : 'fill', dotColor);
   ctx.restore();
 }
 
-// ── sidebar text preview ──────────────────────────────────
+// ── sidebar preview ────────────────────────────────────────
 function updatePreview() {
   const pc = document.getElementById('preview-c');
   const px = pc.getContext('2d');
   const pdpr = window.devicePixelRatio || 1;
-  const pW = pc.clientWidth || 260;
-  const pH = pc.clientHeight || 80;
-  pc.width  = Math.round(pW * pdpr);
-  pc.height = Math.round(pH * pdpr);
+  const pW = pc.clientWidth || 260, pH = pc.clientHeight || 80;
+  pc.width = Math.round(pW * pdpr); pc.height = Math.round(pH * pdpr);
   px.setTransform(pdpr, 0, 0, pdpr, 0, 0);
-
-  px.fillStyle = bgColor;
-  px.fillRect(0, 0, pW, pH);
+  px.fillStyle = bgColor; px.fillRect(0, 0, pW, pH);
 
   const text = document.getElementById('txt-input').value.trim() || 'HTY';
+  const fontSize = gi('font-size'), ls = g('letter-spacing');
   const PAD = 16;
-  const REF = 200;
-  px.fillStyle = dotColor;
+  const { w: textW, h: textH } = measureText(text, fontSize, ls);
+  const scale = Math.min((pW - PAD) / textW, (pH - PAD) / textH, 1);
 
-  if (customFont) {
-    try {
-      const bb0 = customFont.getPath(text, 0, 0, REF).getBoundingBox();
-      const scale = Math.min((pW - PAD) / (bb0.x2 - bb0.x1), (pH - PAD) / (bb0.y2 - bb0.y1));
-      const fs = REF * scale;
-      const bb = customFont.getPath(text, 0, 0, fs).getBoundingBox();
-      const offX = (pW - (bb.x2 - bb.x1)) / 2 - bb.x1;
-      const offY = (pH - (bb.y2 - bb.y1)) / 2 - bb.y1;
-      if (outlineOnly) {
-        px.strokeStyle = dotColor;
-        px.lineWidth = Math.max(1, fs * 0.03);
-        px.stroke(new Path2D(customFont.getPath(text, offX, offY, fs).toPathData()));
-      } else {
-        px.fill(new Path2D(customFont.getPath(text, offX, offY, fs).toPathData()));
-      }
-      return;
-    } catch (e) {}
-  }
-
-  px.font = buildFontString(REF);
-  const tw = px.measureText(text).width;
-  const scale = Math.min((pW - PAD) / tw, (pH - PAD) / (REF * 0.72));
-  const fs = Math.round(REF * scale);
-  px.font = buildFontString(fs);
-  px.textBaseline = 'middle';
-  px.textAlign = 'center';
-  if (outlineOnly) {
-    px.strokeStyle = dotColor;
-    px.lineWidth = Math.max(1, fs * 0.04);
-    px.strokeText(text, pW / 2, pH / 2);
-  } else {
-    px.fillText(text, pW / 2, pH / 2);
-  }
+  drawTextOnCtx(px, pW, pH, text, fontSize * scale, ls * scale,
+    'center', 0, outlineOnly ? 'stroke' : 'fill', dotColor);
 }
 
-// ── opentype helpers ──────────────────────────────────────
-function getOpenTypePath(font, text, fontSize) {
-  const bb = font.getPath(text, 0, 0, fontSize).getBoundingBox();
-  const offX = (W - (bb.x2 - bb.x1)) / 2 - bb.x1;
-  const offY = (H - (bb.y2 - bb.y1)) / 2 - bb.y1;
-  return new Path2D(font.getPath(text, offX, offY, fontSize).toPathData());
-}
-
-// ── glyph sampling ────────────────────────────────────────
+// ── glyph sampling ─────────────────────────────────────────
 function sampleGlyph(text, fontSize) {
   const oc = document.createElement('canvas');
   oc.width = W; oc.height = H;
   const ox = oc.getContext('2d');
+  drawTextOnCtx(ox, W, H, text, fontSize, g('letter-spacing'),
+    gv('text-align'), g('v-offset'), outlineOnly ? 'stroke' : 'fill', '#fff');
 
-  if (customFont) {
-    try {
-      const path = getOpenTypePath(customFont, text, fontSize);
-      if (outlineOnly) { ox.strokeStyle = '#fff'; ox.lineWidth = Math.max(2, fontSize * 0.03); ox.stroke(path); }
-      else { ox.fillStyle = '#fff'; ox.fill(path); }
-    } catch (e) { fallbackSample(ox, text, fontSize); }
-  } else {
-    fallbackSample(ox, text, fontSize);
-  }
-
-  const imgData = ox.getImageData(0, 0, W, H).data;
+  const data  = ox.getImageData(0, 0, W, H).data;
+  const floaterCount  = Math.round(gi('dot-count') * g('floater-pct') / 100);
+  const targetCount   = gi('dot-count') - floaterCount;
+  const step = Math.max(1, Math.floor(Math.sqrt((W * H) / (targetCount * 8))));
   const pts = [];
-  const count = gi('dot-count');
-  const step = Math.max(1, Math.floor(Math.sqrt((W * H) / (count * 8))));
   for (let y = 0; y < H; y += step)
     for (let x = 0; x < W; x += step)
-      if (imgData[(y * W + x) * 4 + 3] > 100) pts.push([x, y]);
+      if (data[(y * W + x) * 4 + 3] > 100) pts.push([x, y]);
   return pts;
 }
 
-function fallbackSample(ox, text, fontSize) {
-  ox.font = buildFontString(fontSize);
-  ox.textBaseline = 'middle'; ox.textAlign = 'center';
-  if (outlineOnly) { ox.strokeStyle = '#fff'; ox.lineWidth = Math.max(2, fontSize * 0.04); ox.strokeText(text, W/2, H/2); }
-  else { ox.fillStyle = '#fff'; ox.fillText(text, W/2, H/2); }
-}
-
-// ── frame recording ───────────────────────────────────────
-function captureFrame() {
-  return dots.map(d => ({ x: d.x, y: d.y, r: d.r }));
-}
-
+// ── render snapshot (for timeline scrubbing) ───────────────
 function renderSnapshot(snap) {
-  ctx.fillStyle = bgColor;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = bgColor; ctx.fillRect(0, 0, W, H);
   if (showGhost) drawGhost();
   ctx.fillStyle = dotColor;
-  snap.forEach(p => {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    ctx.fill();
-  });
+  snap.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); });
 }
 
-function showTimeline() {
-  const section = document.getElementById('timeline-section');
-  const slider  = document.getElementById('timeline-slider');
-  const total   = document.getElementById('frame-total');
-  section.style.display = 'block';
-  slider.max = frames.length - 1;
-  slider.value = frames.length - 1;
-  slider.disabled = false;
-  total.textContent = frames.length;
-  document.getElementById('frame-val').textContent = frames.length;
-}
-
-// ── render loop ───────────────────────────────────────────
+// ── render loop ────────────────────────────────────────────
 function startLoop() {
   if (rafId) cancelAnimationFrame(rafId);
   function frame(now) {
-    if (scrubbing && scrubSnapshot) {
-      renderSnapshot(scrubSnapshot);
-      rafId = requestAnimationFrame(frame);
-      return;
-    }
-
-    ctx.fillStyle = bgColor;
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = bgColor; ctx.fillRect(0, 0, W, H);
     if (showGhost) drawGhost();
     ctx.fillStyle = dotColor;
     dots.forEach(d => {
       updateDot(d, now);
-      ctx.beginPath();
-      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2); ctx.fill();
     });
 
-    // Record frames during animation
     if (recording && simMode === 'animate') {
       const elapsed = now - animStartTime;
-      if (elapsed <= MAX_RECORD_MS && now - lastCapture >= CAPTURE_INTERVAL) {
-        frames.push(captureFrame());
+      if (now - lastCapture >= CAPTURE_MS) {
+        frames.push(dots.map(d => ({ x: d.x, y: d.y, r: d.r })));
         lastCapture = now;
-        setStatus(`Recording… ${frames.length} frames`);
-      } else if (elapsed > MAX_RECORD_MS) {
+        const slider = document.getElementById('timeline-slider');
+        slider.max = frames.length - 1;
+        document.getElementById('frame-total').textContent = frames.length;
+        // Auto-follow latest frame unless user is scrubbing
+        if (!scrubbing) {
+          slider.value = frames.length - 1;
+          document.getElementById('frame-val').textContent = frames.length;
+        }
+      }
+      const recordUntil = Math.min(g('stagger') + 4000, 8000);
+      if (elapsed > recordUntil) {
         recording = false;
-        showTimeline();
-        setStatus(`${frames.length} frames recorded`);
+        setStatus(`${frames.length} frames recorded — scrub the timeline`);
       }
     }
 
@@ -616,49 +588,66 @@ function startLoop() {
   rafId = requestAnimationFrame(frame);
 }
 
-// ── scatter ───────────────────────────────────────────────
+// ── scatter ────────────────────────────────────────────────
 function scatter() {
-  simMode = 'scatter';
-  recording = false;
-  scrubbing = false;
-  dots.forEach(d => { d.startTime = null; });
+  simMode = 'scatter'; recording = false;
+  dots.forEach(d => { d.startTime = null; d.isFloater = false; });
   setStatus('Scattered');
 }
 
-// ── animate ───────────────────────────────────────────────
+// ── animate ────────────────────────────────────────────────
 function animate() {
-  const text     = document.getElementById('txt-input').value.trim() || 'HTY';
-  const fontSize = gi('font-size');
-  const count    = gi('dot-count');
+  const text      = document.getElementById('txt-input').value.trim() || 'HTY';
+  const fontSize  = gi('font-size');
+  const count     = gi('dot-count');
+  const floaterPct = g('floater-pct');
   setStatus('Sampling…');
 
   requestAnimationFrame(() => {
     const pts = sampleGlyph(text, fontSize);
-    if (!pts.length) { setStatus('No glyph pixels — try a larger font size'); return; }
+    if (!pts.length) { setStatus('No glyph pixels — try larger font size'); return; }
 
     while (dots.length < count) dots.push(newDot());
     dots.length = count;
+
+    // Pick random floater indices
+    const floaterCount = Math.round(count * floaterPct / 100);
+    const idx = Array.from({ length: count }, (_, i) => i);
+    for (let i = 0; i < floaterCount; i++) {
+      const j = i + Math.floor(Math.random() * (count - i));
+      [idx[i], idx[j]] = [idx[j], idx[i]];
+    }
+    const floaterSet = new Set(idx.slice(0, floaterCount));
 
     const now        = performance.now();
     const staggerMs  = g('stagger');
     const noiseAmt   = g('noise');
     const launchMode = gv('launch-mode');
 
-    dots.forEach(d => {
+    dots.forEach((d, i) => {
+      d.isFloater = floaterSet.has(i);
+      d.r = g('dot-size') * 0.5 + Math.random() * g('dot-var') * 0.5;
+
+      if (d.isFloater) {
+        d.startTime = null; // keeps wandering
+        // Floaters get slightly larger for visual distinction
+        d.r *= 1.2 + Math.random() * 0.6;
+        return;
+      }
+
       const [tx, ty] = pts[Math.floor(Math.random() * pts.length)];
       d.tx = tx; d.ty = ty;
       d.nx = (Math.random() - 0.5) * 2 * noiseAmt;
       d.ny = (Math.random() - 0.5) * 2 * noiseAmt;
       d.delay = Math.random() * staggerMs;
       d.startTime = now;
-      d.r = g('dot-size') * 0.5 + Math.random() * g('dot-var') * 0.5;
 
       if (launchMode !== 'current') {
         switch (launchMode) {
           case 'bottom': d.x = W*0.1+Math.random()*W*0.8; d.y = H+50+Math.random()*100; break;
           case 'top':    d.x = W*0.1+Math.random()*W*0.8; d.y = -50-Math.random()*100; break;
           case 'center': { const a=Math.random()*Math.PI*2, r=20+Math.random()*80;
-            d.x = W/2+Math.cos(a)*r; d.y = H/2+Math.sin(a)*r; break; }
+            d.x=W/2+Math.cos(a)*r; d.y=H/2+Math.sin(a)*r; break; }
           case 'sides':
             d.x = Math.random()>0.5 ? -60-Math.random()*80 : W+60+Math.random()*80;
             d.y = Math.random()*H; break;
@@ -668,90 +657,77 @@ function animate() {
       }
     });
 
-    // Start recording
-    frames = [];
-    scrubbing = false;
-    scrubSnapshot = null;
-    recording = true;
-    animStartTime = now;
-    lastCapture = 0;
-    document.getElementById('timeline-section').style.display = 'none';
-    document.getElementById('timeline-slider').disabled = true;
+    // Start recording — show timeline immediately
+    frames = []; scrubbing = false; scrubSnap = null;
+    recording = true; animStartTime = now; lastCapture = 0;
+    const ts = document.getElementById('timeline-section');
+    ts.style.display = 'block';
+    const slider = document.getElementById('timeline-slider');
+    slider.max = 0; slider.value = 0;
+    document.getElementById('frame-val').textContent = '—';
+    document.getElementById('frame-total').textContent = '—';
 
     simMode = 'animate';
-    setStatus(`Recording animation…`);
+    setStatus(`Animating "${text}"…`);
   });
 }
 
-// ── timeline scrubbing ────────────────────────────────────
+// ── timeline scrubbing ─────────────────────────────────────
 document.getElementById('timeline-slider').addEventListener('input', function () {
-  const idx = parseInt(this.value);
+  const idx = Math.min(parseInt(this.value), frames.length - 1);
+  if (idx < 0 || !frames[idx]) return;
   document.getElementById('frame-val').textContent = idx + 1;
-  if (!frames[idx]) return;
+
+  // Pause the live RAF so scrubbing is responsive
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  recording = false;
   scrubbing = true;
-  scrubSnapshot = frames[idx];
+  scrubSnap = frames[idx];
+  renderSnapshot(scrubSnap); // render immediately, don't wait for RAF
 });
 
 document.getElementById('btn-resume').addEventListener('click', () => {
-  if (scrubSnapshot) {
+  if (scrubSnap) {
     // Restore dot positions from scrubbed frame, continue physics from there
     dots.forEach((d, i) => {
-      if (scrubSnapshot[i]) {
-        d.x = scrubSnapshot[i].x;
-        d.y = scrubSnapshot[i].y;
-        d.r = scrubSnapshot[i].r;
-        d.vx = 0; d.vy = 0;
-      }
+      if (!scrubSnap[i]) return;
+      d.x = scrubSnap[i].x; d.y = scrubSnap[i].y;
+      d.r = scrubSnap[i].r; d.vx = 0; d.vy = 0;
     });
   }
-  scrubbing = false;
-  scrubSnapshot = null;
+  scrubbing = false; scrubSnap = null;
+  startLoop();
   setStatus('Resumed from frame ' + (parseInt(document.getElementById('timeline-slider').value) + 1));
 });
 
-document.getElementById('btn-frame-png').addEventListener('click', () => {
-  if (!scrubSnapshot) return;
-  renderSnapshot(scrubSnapshot);
+function exportFramePNG() {
+  if (!scrubSnap) return;
+  renderSnapshot(scrubSnap);
   const link = document.createElement('a');
   link.download = `particle-frame-${document.getElementById('timeline-slider').value}.png`;
-  link.href = canvas.toDataURL('image/png');
-  link.click();
+  link.href = canvas.toDataURL('image/png'); link.click();
   setStatus('Frame PNG exported');
-});
+}
 
-document.getElementById('btn-frame-svg').addEventListener('click', () => {
-  const snap = scrubSnapshot || captureFrame();
-  const circles = snap.map(p =>
-    `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="${p.r.toFixed(2)}"/>`
-  ).join('\n  ');
-  const svg = [
-    '<?xml version="1.0" encoding="UTF-8"?>',
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`,
-    `  <rect width="${W}" height="${H}" fill="${bgColor}"/>`,
-    `  <g fill="${dotColor}">\n  ${circles}\n  </g>`,
-    `</svg>`
-  ].join('\n');
-  const blob = new Blob([svg], { type: 'image/svg+xml' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `particle-frame-${document.getElementById('timeline-slider').value}.svg`;
-  a.click();
-  URL.revokeObjectURL(url);
+function exportFrameSVG() {
+  const snap = scrubSnap || dots.map(d => ({ x: d.x, y: d.y, r: d.r }));
+  saveSVG(snap, `particle-frame-${document.getElementById('timeline-slider').value}.svg`);
   setStatus('Frame SVG exported');
-});
+}
 
-// ── exports (live state) ──────────────────────────────────
+document.getElementById('btn-frame-png').addEventListener('click', exportFramePNG);
+document.getElementById('btn-frame-svg').addEventListener('click', exportFrameSVG);
+
+// ── live exports ───────────────────────────────────────────
 function exportPNG() {
   const link = document.createElement('a');
   link.download = 'particle-typeface.png';
-  link.href = canvas.toDataURL('image/png');
-  link.click();
+  link.href = canvas.toDataURL('image/png'); link.click();
   setStatus('PNG exported');
 }
 
-function exportSVG() {
-  const circles = dots.map(d =>
+function saveSVG(dotArr, filename) {
+  const circles = dotArr.map(d =>
     `<circle cx="${d.x.toFixed(2)}" cy="${d.y.toFixed(2)}" r="${d.r.toFixed(2)}"/>`
   ).join('\n  ');
   const svg = [
@@ -759,49 +735,56 @@ function exportSVG() {
     `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`,
     `  <rect width="${W}" height="${H}" fill="${bgColor}"/>`,
     `  <g fill="${dotColor}">\n  ${circles}\n  </g>`,
-    `</svg>`
+    '</svg>'
   ].join('\n');
   const blob = new Blob([svg], { type: 'image/svg+xml' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'particle-typeface.svg'; a.click();
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
+}
+
+function exportSVG() {
+  saveSVG(dots.map(d => ({ x: d.x, y: d.y, r: d.r })), 'particle-typeface.svg');
   setStatus('SVG exported');
 }
 
-// ── font upload ───────────────────────────────────────────
+// ── font upload ────────────────────────────────────────────
 document.getElementById('font-upload').addEventListener('change', e => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const file = e.target.files[0]; if (!file) return;
   if (typeof opentype === 'undefined') { setStatus('opentype.js not loaded'); return; }
   const reader = new FileReader();
   reader.onload = ev => {
     try {
       customFont = opentype.parse(ev.target.result);
       document.getElementById('font-name').textContent = '✓ ' + file.name;
-      setStatus('Font loaded: ' + file.name);
-      updatePreview();
-    } catch (err) { setStatus('Font error: ' + err.message); }
+      setStatus('Font loaded: ' + file.name); updatePreview();
+    } catch(err) { setStatus('Font error: ' + err.message); }
   };
   reader.readAsArrayBuffer(file);
 });
 
-// ── wiring ────────────────────────────────────────────────
+// ── wiring ─────────────────────────────────────────────────
 document.getElementById('btn-animate').addEventListener('click', animate);
 document.getElementById('btn-scatter').addEventListener('click', scatter);
 document.getElementById('btn-png').addEventListener('click', exportPNG);
 document.getElementById('btn-svg').addEventListener('click', exportSVG);
 document.getElementById('txt-input').addEventListener('input', updatePreview);
 document.getElementById('txt-input').addEventListener('keydown', e => { if (e.key === 'Enter') animate(); });
-document.getElementById('font-size').addEventListener('input', updatePreview);
+['font-size','letter-spacing','v-offset','text-align'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updatePreview);
+  document.getElementById(id).addEventListener('change', updatePreview);
+});
 
 function setStatus(msg) {
   const el = document.getElementById('status');
   el.textContent = msg;
-  el.classList.toggle('ok', msg.includes('→') || msg.includes('exported') || msg.includes('loaded') || msg.includes('recorded'));
+  el.classList.toggle('ok',
+    msg.includes('→') || msg.includes('exported') || msg.includes('loaded') ||
+    msg.includes('recorded') || msg.includes('Resumed'));
 }
 
-// ── boot ──────────────────────────────────────────────────
+// ── boot ───────────────────────────────────────────────────
 updatePreview();
 startLoop();
 
@@ -813,10 +796,9 @@ startLoop();
   const s = document.createElement('script');
   s.src = 'https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js';
   s.onload = () => console.log('opentype.js ready');
-  s.onerror = () => console.warn('opentype.js unavailable — custom fonts disabled');
+  s.onerror = () => console.warn('opentype.js unavailable');
   document.head.appendChild(s);
 })();
 </script>
-
 </body>
 </html>
