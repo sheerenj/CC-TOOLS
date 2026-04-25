@@ -842,7 +842,7 @@ function animate() {
       d.colorIdx  = pickColorIdx();
       d.r         = g('dot-size') * 0.5 + Math.random() * g('dot-var') * 0.5;
       d.isFloater = floaterSet.has(i);
-      if (d.isFloater) { d.startTime = null; d.r *= 1.2 + Math.random() * 0.6; return; }
+      if (d.isFloater) { d.startTime = null; return; }
 
       const [tx, ty] = pts[Math.floor(Math.random() * pts.length)];
       d.tx = tx; d.ty = ty;
