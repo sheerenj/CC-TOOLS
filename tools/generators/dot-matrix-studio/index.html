@@ -4,216 +4,60 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Hear The Youth — Dot Matrix Studio</title>
+<link rel="stylesheet" href="../../shared/hty-tools.css">
 <style>
-  :root {
-    --bg: #ececec;
-    --card: #ffffff;
-    --text: #000000;
-    --text-dim: #6b6b6b;
-    --line: #e4e4e4;
-    --line-2: #d4d4d4;
-    --accent: #d4fc4e;
-    --canvas-bg: #0a0a0a;
-    --radius-xl: 28px;
-    --radius-lg: 20px;
-    --radius-md: 14px;
-    --radius-pill: 999px;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden;
-    background: var(--bg); color: var(--text);
-    font-family: -apple-system, "Inter", "Helvetica Neue", BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
-    font-feature-settings: "ss01", "cv11"; }
-  body { display: flex; height: 100vh; }
+  /* ── Dot Matrix Studio — tool-specific styles only ──────────────────────── */
+  /* All shared brand/UI styles live in shared/hty-tools.css                  */
 
-  /* Sidebar */
-  #sidebar {
-    width: 340px; flex-shrink: 0; background: var(--bg);
-    padding: 18px; overflow-y: auto; height: 100vh;
-    border-right: 1px solid var(--line);
-  }
-  #sidebar::-webkit-scrollbar { width: 8px; }
-  #sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 4px; }
-  #sidebar::-webkit-scrollbar-thumb:hover { background: #bababa; }
-
-  /* Brand */
-  .brand-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 18px; padding: 0 4px; }
-  .brand { font-size: 19px; font-weight: 900; letter-spacing: -0.02em;
-    font-family: "Inter", -apple-system, sans-serif; font-stretch: 110%; }
-  .brand .dot { display: inline-block; width: 6px; height: 6px; background: #000; border-radius: 50%;
-    vertical-align: baseline; margin-left: 1px; margin-bottom: 1px; }
-  .brand .reg { font-size: 10px; font-weight: 700; vertical-align: super; margin-left: 2px; }
-  .brand-sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; }
-
-  /* Mode tabs */
-  .mode-tabs { display: flex; background: #dcdcdc; border-radius: var(--radius-pill);
-    padding: 4px; margin-bottom: 14px; }
-  .mode-tabs button {
-    flex: 1; padding: 9px 12px; background: transparent; border: none; border-radius: var(--radius-pill);
-    color: #333; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-    font-family: inherit;
-  }
-  .mode-tabs button.active { background: #000; color: #fff; }
-
-  /* Section card */
-  .section { background: var(--card); border-radius: var(--radius-lg);
-    padding: 16px 16px 18px; margin-bottom: 10px; }
-
-  .section-title { display: inline-block; background: var(--accent); color: #000;
-    padding: 3px 7px 3px 7px; font-family: ui-monospace, "SF Mono", "Menlo", monospace;
-    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-    margin-bottom: 12px; border-radius: 3px; }
-
-  .control { margin-bottom: 12px; }
-  .control:last-child { margin-bottom: 0; }
-  .control label { display: flex; justify-content: space-between; align-items: center;
-    font-size: 12px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
-  .control label .val { color: var(--text-dim); font-variant-numeric: tabular-nums; font-size: 11px;
-    font-family: ui-monospace, "SF Mono", monospace; }
-
-  /* Slider */
-  input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
-    background: #d4d4d4; border-radius: 2px; outline: none; cursor: pointer; }
-  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none;
-    width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer; border: none;
-    transition: transform 0.1s; }
-  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
-  input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%;
-    background: #000; cursor: pointer; border: none; }
-
-  /* Color picker */
-  input[type="color"] { -webkit-appearance: none; appearance: none; border: 1px solid var(--line-2);
-    background: transparent; width: 100%; height: 34px; border-radius: var(--radius-md);
-    cursor: pointer; padding: 0; }
-  input[type="color"]::-webkit-color-swatch-wrapper { padding: 3px; }
-  input[type="color"]::-webkit-color-swatch { border: none; border-radius: 10px; }
-
-  /* Select */
-  select { width: 100%; background: #f4f4f4; border: 1px solid var(--line); color: var(--text);
-    padding: 9px 12px; border-radius: var(--radius-pill); font-size: 13px; outline: none; cursor: pointer;
-    font-family: inherit; font-weight: 500;
-    appearance: none; -webkit-appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
-    background-repeat: no-repeat; background-position: right 14px center; padding-right: 32px; }
-
-  /* Number input */
-  input[type="number"] { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
-    color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill); font-size: 13px;
-    outline: none; font-family: inherit; font-weight: 500; -moz-appearance: textfield; }
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
-
-  /* Buttons */
-  button.btn { width: 100%; background: #000; color: #fff; border: none; padding: 10px 14px;
-    border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; cursor: pointer;
-    transition: all 0.15s; font-family: inherit; }
-  button.btn:hover { background: #222; }
-  button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line-2); }
-  button.btn.ghost:hover { background: #f5f5f5; }
-  button.btn.accent { background: var(--accent); color: #000; }
-  button.btn.accent:hover { background: #c2ea3c; }
-  button.btn.rec { background: #e53535; color: #fff; }
-  button.btn.rec:hover { background: #c42b2b; }
-
-  .btn-row { display: flex; gap: 8px; }
-  .btn-row button { flex: 1; }
-
-  /* Size row */
-  .size-row { display: flex; gap: 8px; }
-  .size-row .control { flex: 1; margin-bottom: 0; }
-
-  /* Palette */
-  .palette-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-  .swatch { position: relative; width: 38px; height: 38px; border-radius: 10px;
-    border: 1px solid var(--line-2); overflow: hidden; background: #fff; }
-  .swatch input { position: absolute; inset: 0; width: 100%; height: 100%;
-    border: none; cursor: pointer; padding: 0; }
-  .swatch .x { position: absolute; top: -5px; right: -5px; width: 18px; height: 18px;
-    background: #000; color: #fff; border-radius: 50%; font-size: 12px; line-height: 16px;
-    text-align: center; cursor: pointer; opacity: 0; transition: opacity 0.15s;
-    z-index: 2; font-weight: 600; }
-  .swatch:hover .x { opacity: 1; }
-  .add-swatch { width: 38px; height: 38px; border-radius: 10px; border: 1px dashed var(--line-2);
-    background: transparent; color: var(--text-dim); font-size: 20px; cursor: pointer;
-    font-family: inherit; }
-  .add-swatch:hover { border-color: #000; color: #000; }
-
-  /* Toggle */
-  .toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .toggle label { font-size: 12px; font-weight: 500; margin-bottom: 0; }
-  .toggle-switch { position: relative; width: 38px; height: 22px; background: #d4d4d4;
-    border-radius: 11px; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
-  .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px;
-    width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: all 0.2s;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-  .toggle-switch.on { background: #000; }
-  .toggle-switch.on::after { left: 18px; }
-
-  .hint { font-size: 11px; color: var(--text-dim); line-height: 1.5; margin-top: 6px; }
-  .status-pill { display: inline-block; padding: 4px 10px; background: #f4f4f4;
-    border-radius: var(--radius-pill); font-size: 11px; color: var(--text-dim);
-    margin-top: 8px; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
-    white-space: nowrap; font-family: ui-monospace, "SF Mono", monospace; }
-  .status-pill.ok { background: var(--accent); color: #000; }
-  .status-pill.err { background: #ffe4e4; color: #b00; }
-  .status-pill.rec { background: #e53535; color: #fff; }
-
-  /* Canvas area */
-  #canvas-area { flex: 1; position: relative; display: flex; align-items: center; justify-content: center;
-    background: var(--canvas-bg); overflow: hidden; }
   #canvas { display: block; box-shadow: 0 0 0 1px rgba(255,255,255,0.1); }
-  #canvas-area.pan-mode { cursor: grab; }
+  #canvas-area.pan-mode          { cursor: grab; }
   #canvas-area.pan-mode.dragging { cursor: grabbing; }
 
-  #dropzone { position: absolute; inset: 14px; display: none; align-items: center; justify-content: center;
-    background: rgba(212, 252, 78, 0.15); border: 2px dashed var(--accent); border-radius: var(--radius-xl);
-    pointer-events: none; z-index: 10; }
-  #dropzone.active { display: flex; }
-  #dropzone .msg { color: var(--accent); font-size: 14px; letter-spacing: 0.12em;
-    text-transform: uppercase; font-weight: 700;
-    background: #000; padding: 8px 16px; border-radius: var(--radius-pill); }
-
-  .corner-brand { position: absolute; bottom: 18px; left: 18px; display: flex; align-items: center;
-    gap: 8px; z-index: 5; pointer-events: none; }
-  .corner-brand .wm { color: rgba(255,255,255,0.55); font-size: 11px; font-weight: 800;
-    letter-spacing: -0.01em; }
-  .corner-page { position: absolute; bottom: 18px; right: 18px; color: rgba(255,255,255,0.4);
-    font-size: 11px; font-variant-numeric: tabular-nums; z-index: 5;
-    font-family: ui-monospace, monospace; pointer-events: none; }
-
-  /* Video preview thumbnail */
-  #video-preview-wrap { position: absolute; top: 14px; right: 14px; width: 160px;
-    border-radius: 12px; overflow: hidden; z-index: 6; display: none;
-    border: 1px solid rgba(255,255,255,0.15); background: #000;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
-  #video-preview-wrap.active { display: block; }
-  #video-preview { width: 100%; height: auto; display: block; opacity: 0.55; }
-  #video-preview-wrap .play-btn { position: absolute; inset: 0; display: none;
-    align-items: center; justify-content: center; background: rgba(0,0,0,0.6);
-    color: #fff; font-weight: 600; font-size: 12px; cursor: pointer;
-    text-transform: uppercase; letter-spacing: 0.1em; }
-  #video-preview-wrap.needs-play .play-btn { display: flex; }
-  #video-preview-wrap .label { position: absolute; top: 4px; left: 6px;
-    font-size: 9px; color: rgba(255,255,255,0.6); font-family: ui-monospace, monospace;
-    text-transform: uppercase; letter-spacing: 0.1em; pointer-events: none; }
-
-  /* Rec indicator in canvas area */
-  #rec-indicator { position: absolute; top: 14px; left: 14px; display: none; align-items: center;
-    gap: 6px; background: rgba(0,0,0,0.7); border-radius: var(--radius-pill);
-    padding: 5px 10px; z-index: 7; pointer-events: none; }
-  #rec-indicator.active { display: flex; }
-  #rec-indicator .dot { width: 8px; height: 8px; border-radius: 50%; background: #e53535;
-    animation: blink 1s step-start infinite; }
-  #rec-indicator .label { color: #fff; font-size: 11px; font-weight: 700;
-    letter-spacing: 0.08em; font-family: ui-monospace, monospace; }
-  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
-
-  @media (max-width: 720px) {
-    body { flex-direction: column; }
-    #sidebar { width: 100%; height: 52vh; border-right: none; border-bottom: 1px solid var(--line); }
-    #canvas-area { height: 48vh; }
+  #dropzone {
+    position: absolute; inset: 14px; display: none; align-items: center; justify-content: center;
+    background: rgba(212,252,78,0.15); border: 2px dashed var(--accent);
+    border-radius: var(--radius-xl); pointer-events: none; z-index: 10;
   }
+  #dropzone.active { display: flex; }
+  #dropzone .msg {
+    color: var(--accent); font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase;
+    font-weight: 700; background: #000; padding: 8px 16px; border-radius: var(--radius-pill);
+  }
+
+  #video-preview-wrap {
+    position: absolute; top: 14px; right: 14px; width: 160px; border-radius: 12px;
+    overflow: hidden; z-index: 6; display: none; border: 1px solid rgba(255,255,255,0.15);
+    background: #000; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+  #video-preview-wrap.active     { display: block; }
+  #video-preview                 { width: 100%; height: auto; display: block; opacity: 0.55; }
+  #video-preview-wrap .play-btn {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.6); color: #fff; font-weight: 600; font-size: 12px;
+    cursor: pointer; text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  #video-preview-wrap.needs-play .play-btn { display: flex; }
+  #video-preview-wrap .label {
+    position: absolute; top: 4px; left: 6px; font-size: 9px; color: rgba(255,255,255,0.6);
+    font-family: ui-monospace, monospace; text-transform: uppercase;
+    letter-spacing: 0.1em; pointer-events: none;
+  }
+
+  #rec-indicator {
+    position: absolute; top: 14px; left: 14px; display: none; align-items: center;
+    gap: 6px; background: rgba(0,0,0,0.7); border-radius: var(--radius-pill);
+    padding: 5px 10px; z-index: 7; pointer-events: none;
+  }
+  #rec-indicator.active { display: flex; }
+  #rec-indicator .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #e53535;
+    animation: blink 1s step-start infinite;
+  }
+  #rec-indicator .label {
+    color: #fff; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.08em; font-family: ui-monospace, monospace;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 </style>
 </head>
 <body>
