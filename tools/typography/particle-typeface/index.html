@@ -126,8 +126,7 @@
   .status-pill.ok { background: var(--accent); color: #000; }
 
   #canvas-wrap { flex: 1; position: relative; overflow: hidden; background: #1a1a1a; }
-  canvas { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    display: block; cursor: crosshair; }
+  #c { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: block; }
 
   #preview-c { display: block; width: 100%; height: 80px; border-radius: var(--radius-md);
     margin-top: 10px; background: #0a0a0a; }
@@ -195,15 +194,15 @@
       </select>
     </div>
     <div class="control">
-      <label>Letter spacing <span class="val" id="letter-spacing-val">0</span> px</label>
-      <input type="range" id="letter-spacing" min="-20" max="150" value="0" step="1" />
+      <label>Kerning <span class="val" id="letter-spacing-val">0</span> px</label>
+      <input type="range" id="letter-spacing" min="-100" max="100" value="0" step="1" />
     </div>
     <div class="control">
       <label>
-        Position
-        <button id="btn-reset-pos" style="background:none;border:none;font-size:11px;color:var(--text-dim);cursor:pointer;font-family:inherit;padding:0;font-weight:500">Reset center</button>
+        Text position
+        <button id="btn-reset-pos" style="background:none;border:none;font-size:11px;color:var(--text-dim);cursor:pointer;font-family:inherit;padding:0;font-weight:500">Reset</button>
       </label>
-      <div id="pos-display" style="font-size:11px;color:var(--text-dim);font-family:ui-monospace,monospace;text-align:center;padding:5px 0">drag on canvas to position</div>
+      <div id="pos-display" style="font-size:11px;color:var(--text-dim);font-family:ui-monospace,monospace;text-align:center;padding:4px 0">Drag the text on the canvas</div>
     </div>
   </div>
 
@@ -334,11 +333,9 @@
     <div class="section-title">Actions</div>
     <button class="btn accent" id="btn-animate">▶ Animate to text</button>
     <button class="btn ghost" id="btn-scatter">⊹ Scatter</button>
-    <div class="btn-row" style="margin-bottom:8px">
-      <button class="btn ghost" id="btn-png" style="font-size:12px">↓ PNG</button>
-      <button class="btn ghost" id="btn-svg" style="font-size:12px">↓ SVG</button>
-      <button class="btn ghost" id="btn-video" style="font-size:12px" disabled>↓ Video</button>
-    </div>
+    <button class="btn ghost" id="btn-png">↓ Export PNG</button>
+    <button class="btn ghost" id="btn-svg">↓ Export SVG</button>
+    <button class="btn ghost" id="btn-video" disabled>↓ Export Video</button>
     <div id="status" class="status-pill">Type text and click Animate</div>
   </div>
 
@@ -435,24 +432,52 @@ document.getElementById('ghost-toggle').addEventListener('click', function() {
   this.classList.toggle('on', showGhost);
 });
 
-// ── canvas drag for text positioning ──
-canvas.addEventListener('mousedown', e => { textDragging = true; applyDrag(e); });
-canvas.addEventListener('mousemove', e => { if (textDragging) applyDrag(e); });
-canvas.addEventListener('mouseup',   () => { textDragging = false; });
-canvas.addEventListener('mouseleave',() => { textDragging = false; });
+// ── canvas drag — grab the ghost text directly ──
+let dragOffsetX = 0, dragOffsetY = 0;
 
-function applyDrag(e) {
-  const p = cssToLogical(e);
-  textX = p.x; textY = p.y;
-  updatePosDisplay();
-  updatePreview();
-  if (scrubbing && scrubSnap) renderSnapshot(scrubSnap);
+function getTextHitArea() {
+  const text     = document.getElementById('txt-input').value.trim() || 'HTY';
+  const { x: ax, y: ay } = getAnchor();
+  const { w, h } = measureText(text, gi('font-size'), g('letter-spacing'));
+  const align    = gv('text-align');
+  const startX   = align === 'left' ? ax : align === 'right' ? ax - w : ax - w / 2;
+  const pad = Math.max(20, Math.min(w, h) * 0.15);
+  return { left: startX - pad, top: ay - h / 2 - pad, right: startX + w + pad, bottom: ay + h / 2 + pad };
 }
+
+function isOverText(lx, ly) {
+  const r = getTextHitArea();
+  return lx >= r.left && lx <= r.right && ly >= r.top && ly <= r.bottom;
+}
+
+canvas.addEventListener('mousedown', e => {
+  const pos = cssToLogical(e);
+  if (isOverText(pos.x, pos.y)) {
+    textDragging = true;
+    dragOffsetX  = pos.x - (textX ?? W / 2);
+    dragOffsetY  = pos.y - (textY ?? H / 2);
+    canvas.style.cursor = 'grabbing';
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const pos = cssToLogical(e);
+  if (textDragging) {
+    textX = pos.x - dragOffsetX;
+    textY = pos.y - dragOffsetY;
+    updatePosDisplay();
+    if (scrubbing && scrubSnap) renderSnapshot(scrubSnap);
+  } else {
+    canvas.style.cursor = isOverText(pos.x, pos.y) ? 'grab' : 'default';
+  }
+});
+
+canvas.addEventListener('mouseup',    () => { textDragging = false; canvas.style.cursor = 'default'; });
+canvas.addEventListener('mouseleave', () => { textDragging = false; canvas.style.cursor = 'default'; });
 
 document.getElementById('btn-reset-pos').addEventListener('click', () => {
   textX = W / 2; textY = H / 2;
   updatePosDisplay();
-  updatePreview();
   if (scrubbing && scrubSnap) renderSnapshot(scrubSnap);
 });
 
@@ -677,30 +702,14 @@ function measureText(text, fontSize, ls) {
   return { w: ws.reduce((s, w) => s + w, 0) + ls * (text.length - 1), h: fontSize * 0.72 };
 }
 
-function drawGhost() {
+function drawGhost(alpha) {
   const text = document.getElementById('txt-input').value.trim();
   if (!text) return;
   const { x, y } = getAnchor();
   ctx.save();
-  ctx.globalAlpha = 0.13;
+  ctx.globalAlpha = alpha ?? 0.13;
   drawTextOnCtx(ctx, text, gi('font-size'), g('letter-spacing'),
     gv('text-align'), x, y, outlineOnly ? 'stroke' : 'fill', colors[0].hex);
-  ctx.restore();
-}
-
-function drawAnchorIndicator() {
-  if (simMode !== 'scatter' && !scrubbing) return;
-  const { x, y } = getAnchor();
-  ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-  ctx.lineWidth   = 1;
-  ctx.setLineDash([4, 4]);
-  const s = 14;
-  ctx.beginPath();
-  ctx.moveTo(x - s, y); ctx.lineTo(x + s, y);
-  ctx.moveTo(x, y - s); ctx.lineTo(x, y + s);
-  ctx.stroke();
-  ctx.setLineDash([]);
   ctx.restore();
 }
 
@@ -753,8 +762,8 @@ function renderDots(dotArr) {
 // ── render snapshot ──
 function renderSnapshot(snap) {
   ctx.fillStyle = bgColor; ctx.fillRect(0, 0, W, H);
-  if (showGhost) drawGhost();
-  drawAnchorIndicator();
+  if (simMode === 'scatter') drawGhost(0.18);
+  else if (showGhost) drawGhost();
   renderDots(snap);
 }
 
@@ -763,8 +772,9 @@ function startLoop() {
   if (rafId) cancelAnimationFrame(rafId);
   function frame(now) {
     ctx.fillStyle = bgColor; ctx.fillRect(0, 0, W, H);
-    if (showGhost) drawGhost();
-    drawAnchorIndicator();
+    // In scatter mode always show ghost so user can see/drag the text
+    if (simMode === 'scatter') drawGhost(0.18);
+    else if (showGhost) drawGhost();
 
     dots.forEach(d => updateDot(d, now));
     renderDots(dots);
