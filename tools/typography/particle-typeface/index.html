@@ -129,6 +129,12 @@
 
   #canvas-wrap { flex: 1; position: relative; overflow: hidden; background: var(--canvas-bg); }
   canvas { display: block; }
+
+  #preview-c {
+    display: block; width: 100%; height: 80px;
+    border-radius: var(--radius-md); margin-top: 10px;
+    background: #0a0a0a;
+  }
 </style>
 </head>
 <body>
@@ -155,6 +161,7 @@
       <input type="file" id="font-upload" accept=".ttf,.otf,.woff" style="display:none" />
       <div id="font-name"></div>
     </div>
+    <canvas id="preview-c"></canvas>
   </div>
 
   <div class="section">
@@ -297,8 +304,8 @@ outlineToggle.addEventListener('click', () => {
 });
 
 // ── color controls ────────────────────────────────────────
-document.getElementById('bg-color').addEventListener('input', e => { bgColor = e.target.value; });
-document.getElementById('dot-color').addEventListener('input', e => { dotColor = e.target.value; });
+document.getElementById('bg-color').addEventListener('input', e => { bgColor = e.target.value; updatePreview(); });
+document.getElementById('dot-color').addEventListener('input', e => { dotColor = e.target.value; updatePreview(); });
 
 // ── dot factory ───────────────────────────────────────────
 function newDot() {
@@ -362,47 +369,64 @@ function updateDot(d, now) {
   }
 }
 
-// ── ghost text overlay ────────────────────────────────────
+// ── sidebar text preview ──────────────────────────────────
 function buildFontString(fontSize) {
   return `bold ${fontSize}px Georgia, serif`;
 }
 
-function drawGhost() {
-  const text = document.getElementById('txt-input').value.trim();
-  if (!text) return;
-  const fontSize = gi('font-size');
+function updatePreview() {
+  const pc = document.getElementById('preview-c');
+  const px = pc.getContext('2d');
+  const pdpr = window.devicePixelRatio || 1;
+  const pW = pc.clientWidth || 260;
+  const pH = pc.clientHeight || 80;
+  pc.width  = Math.round(pW * pdpr);
+  pc.height = Math.round(pH * pdpr);
+  px.setTransform(pdpr, 0, 0, pdpr, 0, 0);
 
-  ctx.save();
-  ctx.globalAlpha = 0.14;
-  ctx.fillStyle = dotColor;
+  px.fillStyle = bgColor;
+  px.fillRect(0, 0, pW, pH);
+
+  const text = document.getElementById('txt-input').value.trim() || 'HTY';
+  const PAD  = 16;
+  const REF  = 200;
+
+  px.fillStyle = dotColor;
 
   if (customFont) {
     try {
-      const path = getOpenTypePath(customFont, text, fontSize);
+      const bb0 = customFont.getPath(text, 0, 0, REF).getBoundingBox();
+      const tw0 = bb0.x2 - bb0.x1, th0 = bb0.y2 - bb0.y1;
+      const scale = Math.min((pW - PAD) / tw0, (pH - PAD) / th0);
+      const fs = REF * scale;
+      const bb = customFont.getPath(text, 0, 0, fs).getBoundingBox();
+      const offX = (pW - (bb.x2 - bb.x1)) / 2 - bb.x1;
+      const offY = (pH - (bb.y2 - bb.y1)) / 2 - bb.y1;
       if (outlineOnly) {
-        ctx.strokeStyle = dotColor;
-        ctx.lineWidth = Math.max(2, fontSize * 0.03);
-        ctx.stroke(path);
+        px.strokeStyle = dotColor;
+        px.lineWidth = Math.max(1, fs * 0.03);
+        px.stroke(new Path2D(customFont.getPath(text, offX, offY, fs).toPathData()));
       } else {
-        ctx.fill(path);
+        px.fill(new Path2D(customFont.getPath(text, offX, offY, fs).toPathData()));
       }
-    } catch (e) { fallbackGhost(ctx, text, fontSize); }
-  } else {
-    fallbackGhost(ctx, text, fontSize);
+      return;
+    } catch (e) {}
   }
-  ctx.restore();
-}
 
-function fallbackGhost(cx, text, fontSize) {
-  cx.font = buildFontString(fontSize);
-  cx.textBaseline = 'middle';
-  cx.textAlign = 'center';
+  // Fallback: canvas text
+  px.font = buildFontString(REF);
+  const tw = px.measureText(text).width;
+  const scale = Math.min((pW - PAD) / tw, (pH - PAD) / (REF * 0.72));
+  const fs = Math.round(REF * scale);
+  px.font = buildFontString(fs);
+  px.textBaseline = 'middle';
+  px.textAlign = 'center';
   if (outlineOnly) {
-    cx.strokeStyle = dotColor;
-    cx.lineWidth = Math.max(2, fontSize * 0.04);
-    cx.strokeText(text, W / 2, H / 2);
+    px.strokeStyle = dotColor;
+    px.lineWidth = Math.max(1, fs * 0.04);
+    px.strokeText(text, pW / 2, pH / 2);
   } else {
-    cx.fillText(text, W / 2, H / 2);
+    px.fillText(text, pW / 2, pH / 2);
   }
 }
 
@@ -470,7 +494,6 @@ function startLoop() {
   function frame(now) {
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, W, H);
-    drawGhost();
     ctx.fillStyle = dotColor;
     dots.forEach(d => {
       updateDot(d, now);
@@ -590,6 +613,7 @@ document.getElementById('font-upload').addEventListener('change', e => {
       customFont = opentype.parse(ev.target.result);
       document.getElementById('font-name').textContent = '✓ ' + file.name;
       setStatus('Font loaded: ' + file.name);
+      updatePreview();
     } catch (err) { setStatus('Font error: ' + err.message); }
   };
   reader.readAsArrayBuffer(file);
@@ -600,7 +624,10 @@ document.getElementById('btn-animate').addEventListener('click', animate);
 document.getElementById('btn-scatter').addEventListener('click', scatter);
 document.getElementById('btn-png').addEventListener('click', exportPNG);
 document.getElementById('btn-svg').addEventListener('click', exportSVG);
+document.getElementById('txt-input').addEventListener('input', updatePreview);
 document.getElementById('txt-input').addEventListener('keydown', e => { if (e.key === 'Enter') animate(); });
+document.getElementById('font-size').addEventListener('input', updatePreview);
+outlineToggle.addEventListener('click', updatePreview);
 
 function setStatus(msg) {
   const el = document.getElementById('status');
@@ -609,6 +636,7 @@ function setStatus(msg) {
 }
 
 // ── boot ──────────────────────────────────────────────────
+updatePreview();
 startLoop();
 
 })();
