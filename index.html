@@ -208,11 +208,10 @@
   </main>
 
   <script>
-    const OWNER = "sheerenj";
-    const REPO  = "CC-TY";
-    const BRANCH = "main";
+    const OWNER     = "sheerenj";
+    const REPO      = "CC-TY";
     const SITE_BASE = `https://${OWNER}.github.io/${REPO}/tools`;
-    const TREE_API  = `https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${BRANCH}?recursive=1`;
+    const MANIFEST  = `https://${OWNER}.github.io/${REPO}/tools.json`;
 
     const gallery  = document.getElementById("gallery");
     const statusEl = document.getElementById("status");
@@ -253,42 +252,17 @@
 
     async function loadGallery() {
       try {
-        const res = await fetch(TREE_API, {
-          headers: { "Accept": "application/vnd.github+json" }
-        });
-        if (!res.ok) throw new Error(`GitHub API ${res.status}`);
-        const { tree, truncated } = await res.json();
+        const res = await fetch(MANIFEST);
+        if (!res.ok) throw new Error(`Manifest fetch failed: ${res.status}`);
+        const tools = await res.json();
 
-        // Build lookup sets from all file paths in one pass
-        const indexPaths   = new Set();
-        const previewPaths = new Set();
-
-        for (const item of tree) {
-          if (item.type !== "blob") continue;
-          const parts = item.path.split("/");
-          // Expected: tools/{category}/{tool}/filename
-          if (parts.length === 4 && parts[0] === "tools") {
-            const name = parts[3].toLowerCase();
-            if (name === "index.html")  indexPaths.add(`${parts[1]}/${parts[2]}`);
-            if (name === "preview.png") previewPaths.add(`${parts[1]}/${parts[2]}`);
-          }
-        }
-
-        const tools = [];
-        for (const key of indexPaths) {
-          const [category, slug] = key.split("/");
-          tools.push({ category, slug, hasPreview: previewPaths.has(key) });
-        }
         tools.sort((a, b) => a.slug.localeCompare(b.slug));
-
         gallery.innerHTML = "";
         tools.forEach(tool => gallery.appendChild(makeCard(tool)));
-
-        const note = truncated ? " (tree truncated — some tools may be missing)" : "";
-        statusEl.textContent = `${tools.length} tools loaded${note}`;
+        statusEl.textContent = `${tools.length} tools loaded`;
       } catch (error) {
         console.error(error);
-        statusEl.textContent = "Could not load tools from GitHub";
+        statusEl.textContent = "Could not load tools — check tools.json is deployed";
       }
     }
 
