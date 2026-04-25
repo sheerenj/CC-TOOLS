@@ -5,6 +5,6 @@
   { "category": "image",       "slug": "BCA-halftone-lines-image",    "hasPreview": false },
   { "category": "templates",   "slug": "ascii-template-tool",         "hasPreview": false },
   { "category": "typography",  "slug": "experimental-type-tool",      "hasPreview": true  },
-  { "category": "typography",  "slug": "particle-typeface",           "hasPreview": false },
+  { "category": "typography",  "slug": "particle-typeface",           "hasPreview": true  },
   { "category": "video",       "slug": "BCA-halftone-lines-video",    "hasPreview": false }
 ]

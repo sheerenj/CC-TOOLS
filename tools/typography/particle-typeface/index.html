@@ -67,6 +67,8 @@
   input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
   input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%;
     background: #000; cursor: pointer; border: none; }
+  input[type="range"]:disabled { opacity: 0.35; cursor: default; }
+  input[type="range"]:disabled::-webkit-slider-thumb { cursor: default; transform: none; }
 
   input[type="text"] { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
     color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
@@ -113,6 +115,10 @@
   button.btn.accent { background: var(--accent); color: #000; }
   button.btn.accent:hover { background: #c2ea3c; }
 
+  .btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn-row button.btn { margin-bottom: 0; }
+  .btn-row button.btn:last-of-type { margin-bottom: 0; }
+
   .upload-btn { display: block; width: 100%; padding: 9px 12px; background: #f4f4f4;
     border: 1px dashed var(--line-2); color: var(--text-dim); border-radius: var(--radius-pill);
     font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit;
@@ -135,6 +141,8 @@
     border-radius: var(--radius-md); margin-top: 10px;
     background: #0a0a0a;
   }
+
+  #timeline-section { display: none; }
 </style>
 </head>
 <body>
@@ -146,6 +154,7 @@
     <div class="brand-sub">Particle Typeface</div>
   </div>
 
+  <!-- Text -->
   <div class="section">
     <div class="section-title">Text</div>
     <div class="control">
@@ -164,6 +173,7 @@
     <canvas id="preview-c"></canvas>
   </div>
 
+  <!-- Motion -->
   <div class="section">
     <div class="section-title">Motion</div>
     <div class="control">
@@ -199,6 +209,7 @@
     </div>
   </div>
 
+  <!-- Particles -->
   <div class="section">
     <div class="section-title">Particles</div>
     <div class="control">
@@ -221,8 +232,13 @@
       <label>Outline only</label>
       <div class="toggle-switch" id="outline-toggle"></div>
     </div>
+    <div class="toggle">
+      <label>Show ghost on canvas</label>
+      <div class="toggle-switch" id="ghost-toggle"></div>
+    </div>
   </div>
 
+  <!-- Colors -->
   <div class="section">
     <div class="section-title">Colors</div>
     <div class="color-row">
@@ -235,6 +251,21 @@
     </div>
   </div>
 
+  <!-- Timeline (shown after first animation) -->
+  <div class="section" id="timeline-section">
+    <div class="section-title">Timeline</div>
+    <div class="control">
+      <label>Frame <span><span class="val" id="frame-val">1</span> / <span id="frame-total">—</span></span></label>
+      <input type="range" id="timeline-slider" min="0" value="0" disabled />
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" id="btn-resume" style="font-size:12px">▶ Resume live</button>
+      <button class="btn ghost" id="btn-frame-png" style="font-size:12px">↓ PNG</button>
+      <button class="btn ghost" id="btn-frame-svg" style="font-size:12px">↓ SVG</button>
+    </div>
+  </div>
+
+  <!-- Actions -->
   <div class="section">
     <div class="section-title">Actions</div>
     <button class="btn accent" id="btn-animate">▶ Animate to text</button>
@@ -264,9 +295,9 @@ function resize() {
   const cw = wrap.clientWidth;
   const ch = wrap.clientHeight;
   W = cw; H = ch;
-  canvas.width = Math.round(cw * dpr);
+  canvas.width  = Math.round(cw * dpr);
   canvas.height = Math.round(ch * dpr);
-  canvas.style.width = cw + 'px';
+  canvas.style.width  = cw + 'px';
   canvas.style.height = ch + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
@@ -281,6 +312,17 @@ let simMode = 'scatter'; // 'scatter' | 'animate'
 let rafId = null;
 let customFont = null;
 let outlineOnly = false;
+let showGhost = false;
+
+// ── frame recording ───────────────────────────────────────
+let frames = [];
+let recording = false;
+let animStartTime = 0;
+let lastCapture = 0;
+let scrubbing = false;
+let scrubSnapshot = null; // [{x,y,r}]
+const CAPTURE_INTERVAL = 50; // ms between frames (~20fps)
+const MAX_RECORD_MS = 8000;
 
 // ── helpers ───────────────────────────────────────────────
 const g  = id => parseFloat(document.getElementById(id).value);
@@ -289,18 +331,25 @@ const gv = id => document.getElementById(id).value;
 
 // ── slider sync ───────────────────────────────────────────
 ['font-size','dot-count','dot-size','dot-var','noise','speed','bounce','stagger'].forEach(id => {
-  const el = document.getElementById(id);
+  const el  = document.getElementById(id);
   const vEl = document.getElementById(id + '-val');
   if (!el || !vEl) return;
   vEl.textContent = el.value;
   el.addEventListener('input', () => { vEl.textContent = el.value; });
 });
 
-// ── outline toggle ────────────────────────────────────────
+// ── toggles ───────────────────────────────────────────────
 const outlineToggle = document.getElementById('outline-toggle');
 outlineToggle.addEventListener('click', () => {
   outlineOnly = !outlineOnly;
   outlineToggle.classList.toggle('on', outlineOnly);
+  updatePreview();
+});
+
+const ghostToggle = document.getElementById('ghost-toggle');
+ghostToggle.addEventListener('click', () => {
+  showGhost = !showGhost;
+  ghostToggle.classList.toggle('on', showGhost);
 });
 
 // ── color controls ────────────────────────────────────────
@@ -319,14 +368,12 @@ function newDot() {
 }
 
 function initDots() {
-  const count = gi('dot-count');
-  dots = Array.from({ length: count }, newDot);
+  dots = Array.from({ length: gi('dot-count') }, newDot);
 }
 initDots();
 
 // ── per-dot physics ───────────────────────────────────────
 function updateDot(d, now) {
-  // Wander: used in scatter mode AND during stagger delay
   function wander() {
     d.vx += (Math.random() - 0.5) * 0.08;
     d.vy += (Math.random() - 0.5) * 0.08;
@@ -337,12 +384,10 @@ function updateDot(d, now) {
   }
 
   if (simMode === 'scatter' || !d.startTime) { wander(); return; }
-
   if (now - d.startTime < d.delay) { wander(); return; }
 
-  // Seek target
-  const style  = gv('move-style');
-  const speed  = g('speed');
+  const style = gv('move-style');
+  const speed = g('speed');
   const tx = d.tx + d.nx;
   const ty = d.ty + d.ny;
 
@@ -358,7 +403,7 @@ function updateDot(d, now) {
     d.vy += (ty - d.y) * tension;
     d.vx *= damping; d.vy *= damping;
     d.x += d.vx; d.y += d.vy;
-  } else { // drift
+  } else {
     d.vx += (Math.random() - 0.5) * 0.14;
     d.vy += (Math.random() - 0.5) * 0.14;
     const f = speed * 0.0025;
@@ -369,11 +414,45 @@ function updateDot(d, now) {
   }
 }
 
-// ── sidebar text preview ──────────────────────────────────
+// ── ghost overlay ─────────────────────────────────────────
 function buildFontString(fontSize) {
   return `bold ${fontSize}px Georgia, serif`;
 }
 
+function drawGhost() {
+  const text = document.getElementById('txt-input').value.trim();
+  if (!text) return;
+  const fontSize = gi('font-size');
+  ctx.save();
+  ctx.globalAlpha = 0.13;
+  ctx.fillStyle = dotColor;
+  if (customFont) {
+    try {
+      const path = getOpenTypePath(customFont, text, fontSize);
+      if (outlineOnly) {
+        ctx.strokeStyle = dotColor;
+        ctx.lineWidth = Math.max(2, fontSize * 0.03);
+        ctx.stroke(path);
+      } else {
+        ctx.fill(path);
+      }
+      ctx.restore(); return;
+    } catch (e) {}
+  }
+  ctx.font = buildFontString(fontSize);
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  if (outlineOnly) {
+    ctx.strokeStyle = dotColor;
+    ctx.lineWidth = Math.max(2, fontSize * 0.04);
+    ctx.strokeText(text, W / 2, H / 2);
+  } else {
+    ctx.fillText(text, W / 2, H / 2);
+  }
+  ctx.restore();
+}
+
+// ── sidebar text preview ──────────────────────────────────
 function updatePreview() {
   const pc = document.getElementById('preview-c');
   const px = pc.getContext('2d');
@@ -388,16 +467,14 @@ function updatePreview() {
   px.fillRect(0, 0, pW, pH);
 
   const text = document.getElementById('txt-input').value.trim() || 'HTY';
-  const PAD  = 16;
-  const REF  = 200;
-
+  const PAD = 16;
+  const REF = 200;
   px.fillStyle = dotColor;
 
   if (customFont) {
     try {
       const bb0 = customFont.getPath(text, 0, 0, REF).getBoundingBox();
-      const tw0 = bb0.x2 - bb0.x1, th0 = bb0.y2 - bb0.y1;
-      const scale = Math.min((pW - PAD) / tw0, (pH - PAD) / th0);
+      const scale = Math.min((pW - PAD) / (bb0.x2 - bb0.x1), (pH - PAD) / (bb0.y2 - bb0.y1));
       const fs = REF * scale;
       const bb = customFont.getPath(text, 0, 0, fs).getBoundingBox();
       const offX = (pW - (bb.x2 - bb.x1)) / 2 - bb.x1;
@@ -413,7 +490,6 @@ function updatePreview() {
     } catch (e) {}
   }
 
-  // Fallback: canvas text
   px.font = buildFontString(REF);
   const tw = px.measureText(text).width;
   const scale = Math.min((pW - PAD) / tw, (pH - PAD) / (REF * 0.72));
@@ -433,9 +509,8 @@ function updatePreview() {
 // ── opentype helpers ──────────────────────────────────────
 function getOpenTypePath(font, text, fontSize) {
   const bb = font.getPath(text, 0, 0, fontSize).getBoundingBox();
-  const tw = bb.x2 - bb.x1, th = bb.y2 - bb.y1;
-  const offX = (W - tw) / 2 - bb.x1;
-  const offY = (H - th) / 2 - bb.y1;
+  const offX = (W - (bb.x2 - bb.x1)) / 2 - bb.x1;
+  const offY = (H - (bb.y2 - bb.y1)) / 2 - bb.y1;
   return new Path2D(font.getPath(text, offX, offY, fontSize).toPathData());
 }
 
@@ -448,14 +523,8 @@ function sampleGlyph(text, fontSize) {
   if (customFont) {
     try {
       const path = getOpenTypePath(customFont, text, fontSize);
-      if (outlineOnly) {
-        ox.strokeStyle = '#fff';
-        ox.lineWidth = Math.max(2, fontSize * 0.03);
-        ox.stroke(path);
-      } else {
-        ox.fillStyle = '#fff';
-        ox.fill(path);
-      }
+      if (outlineOnly) { ox.strokeStyle = '#fff'; ox.lineWidth = Math.max(2, fontSize * 0.03); ox.stroke(path); }
+      else { ox.fillStyle = '#fff'; ox.fill(path); }
     } catch (e) { fallbackSample(ox, text, fontSize); }
   } else {
     fallbackSample(ox, text, fontSize);
@@ -465,35 +534,61 @@ function sampleGlyph(text, fontSize) {
   const pts = [];
   const count = gi('dot-count');
   const step = Math.max(1, Math.floor(Math.sqrt((W * H) / (count * 8))));
-
-  for (let y = 0; y < H; y += step) {
-    for (let x = 0; x < W; x += step) {
+  for (let y = 0; y < H; y += step)
+    for (let x = 0; x < W; x += step)
       if (imgData[(y * W + x) * 4 + 3] > 100) pts.push([x, y]);
-    }
-  }
   return pts;
 }
 
 function fallbackSample(ox, text, fontSize) {
   ox.font = buildFontString(fontSize);
-  ox.textBaseline = 'middle';
-  ox.textAlign = 'center';
-  if (outlineOnly) {
-    ox.strokeStyle = '#fff';
-    ox.lineWidth = Math.max(2, fontSize * 0.04);
-    ox.strokeText(text, W / 2, H / 2);
-  } else {
-    ox.fillStyle = '#fff';
-    ox.fillText(text, W / 2, H / 2);
-  }
+  ox.textBaseline = 'middle'; ox.textAlign = 'center';
+  if (outlineOnly) { ox.strokeStyle = '#fff'; ox.lineWidth = Math.max(2, fontSize * 0.04); ox.strokeText(text, W/2, H/2); }
+  else { ox.fillStyle = '#fff'; ox.fillText(text, W/2, H/2); }
+}
+
+// ── frame recording ───────────────────────────────────────
+function captureFrame() {
+  return dots.map(d => ({ x: d.x, y: d.y, r: d.r }));
+}
+
+function renderSnapshot(snap) {
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, W, H);
+  if (showGhost) drawGhost();
+  ctx.fillStyle = dotColor;
+  snap.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function showTimeline() {
+  const section = document.getElementById('timeline-section');
+  const slider  = document.getElementById('timeline-slider');
+  const total   = document.getElementById('frame-total');
+  section.style.display = 'block';
+  slider.max = frames.length - 1;
+  slider.value = frames.length - 1;
+  slider.disabled = false;
+  total.textContent = frames.length;
+  document.getElementById('frame-val').textContent = frames.length;
 }
 
 // ── render loop ───────────────────────────────────────────
 function startLoop() {
   if (rafId) cancelAnimationFrame(rafId);
   function frame(now) {
+    if (scrubbing && scrubSnapshot) {
+      renderSnapshot(scrubSnapshot);
+      rafId = requestAnimationFrame(frame);
+      return;
+    }
+
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, W, H);
+    if (showGhost) drawGhost();
     ctx.fillStyle = dotColor;
     dots.forEach(d => {
       updateDot(d, now);
@@ -501,6 +596,21 @@ function startLoop() {
       ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
       ctx.fill();
     });
+
+    // Record frames during animation
+    if (recording && simMode === 'animate') {
+      const elapsed = now - animStartTime;
+      if (elapsed <= MAX_RECORD_MS && now - lastCapture >= CAPTURE_INTERVAL) {
+        frames.push(captureFrame());
+        lastCapture = now;
+        setStatus(`Recording… ${frames.length} frames`);
+      } else if (elapsed > MAX_RECORD_MS) {
+        recording = false;
+        showTimeline();
+        setStatus(`${frames.length} frames recorded`);
+      }
+    }
+
     rafId = requestAnimationFrame(frame);
   }
   rafId = requestAnimationFrame(frame);
@@ -509,28 +619,29 @@ function startLoop() {
 // ── scatter ───────────────────────────────────────────────
 function scatter() {
   simMode = 'scatter';
+  recording = false;
+  scrubbing = false;
   dots.forEach(d => { d.startTime = null; });
   setStatus('Scattered');
 }
 
 // ── animate ───────────────────────────────────────────────
 function animate() {
-  const text = document.getElementById('txt-input').value.trim() || 'HTY';
+  const text     = document.getElementById('txt-input').value.trim() || 'HTY';
   const fontSize = gi('font-size');
-  const count = gi('dot-count');
+  const count    = gi('dot-count');
   setStatus('Sampling…');
 
   requestAnimationFrame(() => {
     const pts = sampleGlyph(text, fontSize);
     if (!pts.length) { setStatus('No glyph pixels — try a larger font size'); return; }
 
-    // Grow or shrink dots array to match count without discarding current positions
     while (dots.length < count) dots.push(newDot());
     dots.length = count;
 
-    const now = performance.now();
-    const staggerMs = g('stagger');
-    const noiseAmt = g('noise');
+    const now        = performance.now();
+    const staggerMs  = g('stagger');
+    const noiseAmt   = g('noise');
     const launchMode = gv('launch-mode');
 
     dots.forEach(d => {
@@ -542,35 +653,95 @@ function animate() {
       d.startTime = now;
       d.r = g('dot-size') * 0.5 + Math.random() * g('dot-var') * 0.5;
 
-      // Teleport to launch origin only when explicitly chosen
       if (launchMode !== 'current') {
         switch (launchMode) {
-          case 'bottom':
-            d.x = W * 0.1 + Math.random() * W * 0.8;
-            d.y = H + 50 + Math.random() * 100; break;
-          case 'top':
-            d.x = W * 0.1 + Math.random() * W * 0.8;
-            d.y = -50 - Math.random() * 100; break;
-          case 'center': {
-            const a = Math.random() * Math.PI * 2, r = 20 + Math.random() * 80;
-            d.x = W / 2 + Math.cos(a) * r; d.y = H / 2 + Math.sin(a) * r; break;
-          }
+          case 'bottom': d.x = W*0.1+Math.random()*W*0.8; d.y = H+50+Math.random()*100; break;
+          case 'top':    d.x = W*0.1+Math.random()*W*0.8; d.y = -50-Math.random()*100; break;
+          case 'center': { const a=Math.random()*Math.PI*2, r=20+Math.random()*80;
+            d.x = W/2+Math.cos(a)*r; d.y = H/2+Math.sin(a)*r; break; }
           case 'sides':
-            d.x = Math.random() > 0.5 ? -60 - Math.random() * 80 : W + 60 + Math.random() * 80;
-            d.y = Math.random() * H; break;
-          default: // scatter
-            d.x = Math.random() * W; d.y = Math.random() * H;
+            d.x = Math.random()>0.5 ? -60-Math.random()*80 : W+60+Math.random()*80;
+            d.y = Math.random()*H; break;
+          default: d.x = Math.random()*W; d.y = Math.random()*H;
         }
         d.vx = 0; d.vy = 0;
       }
     });
 
+    // Start recording
+    frames = [];
+    scrubbing = false;
+    scrubSnapshot = null;
+    recording = true;
+    animStartTime = now;
+    lastCapture = 0;
+    document.getElementById('timeline-section').style.display = 'none';
+    document.getElementById('timeline-slider').disabled = true;
+
     simMode = 'animate';
-    setStatus(`${count} dots → "${text}"`);
+    setStatus(`Recording animation…`);
   });
 }
 
-// ── exports ───────────────────────────────────────────────
+// ── timeline scrubbing ────────────────────────────────────
+document.getElementById('timeline-slider').addEventListener('input', function () {
+  const idx = parseInt(this.value);
+  document.getElementById('frame-val').textContent = idx + 1;
+  if (!frames[idx]) return;
+  scrubbing = true;
+  scrubSnapshot = frames[idx];
+});
+
+document.getElementById('btn-resume').addEventListener('click', () => {
+  if (scrubSnapshot) {
+    // Restore dot positions from scrubbed frame, continue physics from there
+    dots.forEach((d, i) => {
+      if (scrubSnapshot[i]) {
+        d.x = scrubSnapshot[i].x;
+        d.y = scrubSnapshot[i].y;
+        d.r = scrubSnapshot[i].r;
+        d.vx = 0; d.vy = 0;
+      }
+    });
+  }
+  scrubbing = false;
+  scrubSnapshot = null;
+  setStatus('Resumed from frame ' + (parseInt(document.getElementById('timeline-slider').value) + 1));
+});
+
+document.getElementById('btn-frame-png').addEventListener('click', () => {
+  if (!scrubSnapshot) return;
+  renderSnapshot(scrubSnapshot);
+  const link = document.createElement('a');
+  link.download = `particle-frame-${document.getElementById('timeline-slider').value}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  setStatus('Frame PNG exported');
+});
+
+document.getElementById('btn-frame-svg').addEventListener('click', () => {
+  const snap = scrubSnapshot || captureFrame();
+  const circles = snap.map(p =>
+    `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="${p.r.toFixed(2)}"/>`
+  ).join('\n  ');
+  const svg = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`,
+    `  <rect width="${W}" height="${H}" fill="${bgColor}"/>`,
+    `  <g fill="${dotColor}">\n  ${circles}\n  </g>`,
+    `</svg>`
+  ].join('\n');
+  const blob = new Blob([svg], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `particle-frame-${document.getElementById('timeline-slider').value}.svg`;
+  a.click();
+  URL.revokeObjectURL(url);
+  setStatus('Frame SVG exported');
+});
+
+// ── exports (live state) ──────────────────────────────────
 function exportPNG() {
   const link = document.createElement('a');
   link.download = 'particle-typeface.png';
@@ -583,17 +754,13 @@ function exportSVG() {
   const circles = dots.map(d =>
     `<circle cx="${d.x.toFixed(2)}" cy="${d.y.toFixed(2)}" r="${d.r.toFixed(2)}"/>`
   ).join('\n  ');
-
   const svg = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`,
     `  <rect width="${W}" height="${H}" fill="${bgColor}"/>`,
-    `  <g fill="${dotColor}">`,
-    `  ${circles}`,
-    `  </g>`,
+    `  <g fill="${dotColor}">\n  ${circles}\n  </g>`,
     `</svg>`
   ].join('\n');
-
   const blob = new Blob([svg], { type: 'image/svg+xml' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -627,12 +794,11 @@ document.getElementById('btn-svg').addEventListener('click', exportSVG);
 document.getElementById('txt-input').addEventListener('input', updatePreview);
 document.getElementById('txt-input').addEventListener('keydown', e => { if (e.key === 'Enter') animate(); });
 document.getElementById('font-size').addEventListener('input', updatePreview);
-outlineToggle.addEventListener('click', updatePreview);
 
 function setStatus(msg) {
   const el = document.getElementById('status');
   el.textContent = msg;
-  el.classList.toggle('ok', msg.includes('→') || msg.includes('exported') || msg.includes('loaded'));
+  el.classList.toggle('ok', msg.includes('→') || msg.includes('exported') || msg.includes('loaded') || msg.includes('recorded'));
 }
 
 // ── boot ──────────────────────────────────────────────────
