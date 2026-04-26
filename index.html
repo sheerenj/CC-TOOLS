@@ -77,17 +77,59 @@
       line-height: 1.7;
     }
 
-    .status {
-      margin: 20px 0 0;
-      color: var(--text-soft);
-      font-size: 12px;
+    .hero-bottom {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
     }
 
+    /* Tab bar */
+    .tabs {
+      display: flex;
+      gap: 6px;
+    }
+
+    .tab {
+      padding: 7px 14px;
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text-soft);
+      font-family: inherit;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+    }
+
+    .tab:hover {
+      border-color: var(--stroke-strong);
+      color: var(--text);
+    }
+
+    .tab.active {
+      background: var(--text);
+      border-color: var(--text);
+      color: #fff;
+    }
+
+    .status {
+      color: var(--text-soft);
+      font-size: 12px;
+      margin: 0;
+    }
+
+    /* Galleries */
     .gallery {
       display: grid;
       grid-template-columns: repeat(12, 1fr);
       gap: 18px;
     }
+
+    .gallery.hidden { display: none; }
 
     .tool-card {
       display: flex;
@@ -103,7 +145,7 @@
       transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
     }
 
-    .tool-card:hover {
+    a.tool-card:hover {
       transform: translateY(-3px);
       border-color: var(--stroke-strong);
       background: var(--panel-hover);
@@ -157,6 +199,17 @@
       line-height: 1.4;
     }
 
+    .plugin-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      font-size: 10px;
+      color: var(--text-soft);
+      margin-top: 2px;
+      align-self: flex-start;
+    }
+
     .footer-note {
       margin-top: 22px;
       padding: 14px 16px;
@@ -196,25 +249,35 @@
       <p class="lead">
         A live gallery of generators, scripts, image tools, typography tools, and visual experiments.
       </p>
-      <p class="status" id="status">Loading tools…</p>
+      <div class="hero-bottom">
+        <div class="tabs">
+          <button class="tab active" data-tab="tools">Tools</button>
+          <button class="tab" data-tab="plugins">Plugins</button>
+        </div>
+        <p class="status" id="status">Loading…</p>
+      </div>
     </section>
 
-    <section class="gallery" id="gallery"></section>
+    <section class="gallery" id="gallery-tools"></section>
+    <section class="gallery hidden" id="gallery-plugins"></section>
 
-    <div class="footer-note">
+    <div class="footer-note" id="footer-note">
       To show a thumbnail, place a file named <strong>preview.png</strong> inside a tool folder.
       Every folder containing an <strong>index.html</strong> will be listed automatically.
     </div>
   </main>
 
   <script>
-    const OWNER     = "sheerenj";
-    const REPO      = "CC-TY";
-    const SITE_BASE = `https://${OWNER}.github.io/${REPO}/tools`;
-    const MANIFEST  = `https://${OWNER}.github.io/${REPO}/tools.json`;
+    const OWNER        = "sheerenj";
+    const REPO         = "CC-TY";
+    const SITE_BASE    = `https://${OWNER}.github.io/${REPO}/tools`;
+    const PLUGIN_BASE  = `https://${OWNER}.github.io/${REPO}/plugins`;
+    const MANIFEST     = `https://${OWNER}.github.io/${REPO}/tools.json`;
+    const PLUG_MANIFEST= `https://${OWNER}.github.io/${REPO}/plugins.json`;
 
-    const gallery  = document.getElementById("gallery");
-    const statusEl = document.getElementById("status");
+    const galleryTools   = document.getElementById("gallery-tools");
+    const galleryPlugins = document.getElementById("gallery-plugins");
+    const statusEl       = document.getElementById("status");
 
     function prettifyName(slug) {
       return slug.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
@@ -224,49 +287,90 @@
       return str.replace(/\b\w/g, c => c.toUpperCase());
     }
 
-    function makeCard({ category, slug, hasPreview }) {
+    function thumbHtml(hasPreview, previewUrl, altText) {
+      return `
+        <div class="thumb-wrap">
+          ${hasPreview
+            ? `<img src="${previewUrl}" alt="${altText} preview"
+                onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">`
+            : ""}
+          <div class="thumb-fallback ${hasPreview ? "hidden" : ""}">No Preview Yet</div>
+        </div>`;
+    }
+
+    function makeToolCard({ category, slug, hasPreview }) {
       const link    = `${SITE_BASE}/${category}/${slug}/`;
       const preview = `${SITE_BASE}/${category}/${slug}/preview.png`;
+      const name    = titleCase(prettifyName(slug));
 
       const card = document.createElement("a");
       card.className = "tool-card";
       card.href = link;
       card.target = "_blank";
       card.rel = "noopener noreferrer";
-
       card.innerHTML = `
-        <div class="thumb-wrap">
-          ${hasPreview
-            ? `<img src="${preview}" alt="${titleCase(prettifyName(slug))} preview"
-                onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">`
-            : ""}
-          <div class="thumb-fallback ${hasPreview ? "hidden" : ""}">No Preview Yet</div>
-        </div>
+        ${thumbHtml(hasPreview, preview, name)}
         <div class="card-body">
-          <h2 class="tool-name">${titleCase(prettifyName(slug))}</h2>
+          <h2 class="tool-name">${name}</h2>
           <div class="tool-meta">${titleCase(prettifyName(category))}</div>
         </div>`;
-
       return card;
     }
 
-    async function loadGallery() {
-      try {
-        const res = await fetch(MANIFEST);
-        if (!res.ok) throw new Error(`Manifest fetch failed: ${res.status}`);
-        const tools = await res.json();
+    function makePluginCard({ slug, app, hasPreview }) {
+      const preview = `${PLUGIN_BASE}/${slug}/preview.png`;
+      const name    = titleCase(prettifyName(slug));
 
-        tools.sort((a, b) => a.slug.localeCompare(b.slug));
-        gallery.innerHTML = "";
-        tools.forEach(tool => gallery.appendChild(makeCard(tool)));
-        statusEl.textContent = `${tools.length} tools loaded`;
-      } catch (error) {
-        console.error(error);
-        statusEl.textContent = "Could not load tools — check tools.json is deployed";
-      }
+      const card = document.createElement("div");
+      card.className = "tool-card";
+      card.innerHTML = `
+        ${thumbHtml(hasPreview, preview, name)}
+        <div class="card-body">
+          <h2 class="tool-name">${name}</h2>
+          <div class="tool-meta">Plugin</div>
+          ${app ? `<span class="plugin-badge">${app}</span>` : ""}
+        </div>`;
+      return card;
     }
 
-    loadGallery();
+    async function loadAll() {
+      const [toolsRes, pluginsRes] = await Promise.allSettled([
+        fetch(MANIFEST),
+        fetch(PLUG_MANIFEST),
+      ]);
+
+      let toolCount = 0, pluginCount = 0;
+
+      if (toolsRes.status === "fulfilled" && toolsRes.value.ok) {
+        const tools = await toolsRes.value.json();
+        tools.sort((a, b) => a.slug.localeCompare(b.slug));
+        tools.forEach(t => galleryTools.appendChild(makeToolCard(t)));
+        toolCount = tools.length;
+      }
+
+      if (pluginsRes.status === "fulfilled" && pluginsRes.value.ok) {
+        const plugins = await pluginsRes.value.json();
+        plugins.sort((a, b) => a.slug.localeCompare(b.slug));
+        plugins.forEach(p => galleryPlugins.appendChild(makePluginCard(p)));
+        pluginCount = plugins.length;
+      }
+
+      statusEl.textContent = `${toolCount} tools · ${pluginCount} plugin${pluginCount !== 1 ? "s" : ""}`;
+    }
+
+    // Tab switching
+    const tabs = document.querySelectorAll(".tab");
+    tabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        tabs.forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        const target = tab.dataset.tab;
+        galleryTools.classList.toggle("hidden", target !== "tools");
+        galleryPlugins.classList.toggle("hidden", target !== "plugins");
+      });
+    });
+
+    loadAll();
   </script>
 </body>
 </html>
