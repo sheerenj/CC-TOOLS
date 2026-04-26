@@ -410,6 +410,24 @@
     </div>
     <div class="status-pill" id="record-status" style="display:none">Ready</div>
     <div class="hint">Records as MP4 (or WebM if MP4 unsupported). Press stop to download.</div>
+
+    <div style="height:1px;background:var(--line);margin:12px 0"></div>
+
+    <div class="control">
+      <label>Seq duration <span class="val" id="v-seq-dur">5s</span></label>
+      <input type="range" id="seq-dur" min="1" max="30" value="5">
+    </div>
+    <div class="control">
+      <label>FPS</label>
+      <select id="seq-fps">
+        <option value="12">12 fps</option>
+        <option value="24" selected>24 fps</option>
+        <option value="30">30 fps</option>
+      </select>
+    </div>
+    <button class="btn accent" id="seq-btn" style="margin-top:4px">PNG Sequence + α</button>
+    <div class="status-pill" id="seq-status" style="display:none"></div>
+    <div class="hint">Exports PNG frames with transparent background — import folder into AE as image sequence.</div>
   </div>
 </aside>
 
@@ -765,6 +783,7 @@
 
   // ---------- Render ----------
   const startT = performance.now();
+  let captureT = null; // null = live time, number = offline export override
   function render() {
     const W = canvas.width;   // = state.canvasW
     const H = canvas.height;  // = state.canvasH
@@ -776,7 +795,7 @@
     const rows = Math.ceil(H / cell);
     const maxR = cell * 0.5 * state.maxSize;
     const inactiveR = cell * 0.5 * state.inactiveSize;
-    const t = (performance.now() - startT) / 1000;
+    const t = captureT !== null ? captureT : (performance.now() - startT) / 1000;
     const aspect = W / H;
 
     if (mode === 'organic') {
@@ -1309,6 +1328,172 @@
     setRange('falloff', 1, 'v-falloff');
     setRange('inactive-size', 0.12, 'v-inactive-size');
   });
+
+  // ---------- Seq duration slider ----------
+  const seqDurSlider = document.getElementById('seq-dur');
+  const seqDurVal = document.getElementById('v-seq-dur');
+  seqDurSlider.addEventListener('input', () => { seqDurVal.textContent = seqDurSlider.value + 's'; });
+
+  // ---------- ZIP builder (stored, no compression) ----------
+  const crcTable = (() => {
+    const t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c; }
+    return t;
+  })();
+  function crc32(buf) { let c = 0xFFFFFFFF; for (let i = 0; i < buf.length; i++) c = crcTable[(c ^ buf[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function buildZip(files) {
+    const enc = new TextEncoder(), parts = [], cdParts = [];
+    let offset = 0;
+    function w32(dv, o, v) { dv.setUint32(o, v, true); }
+    function w16(dv, o, v) { dv.setUint16(o, v, true); }
+    for (const f of files) {
+      const nb = enc.encode(f.name), crc = crc32(f.data), sz = f.data.length;
+      const lh = new DataView(new ArrayBuffer(30 + nb.length));
+      w32(lh,0,0x04034b50);w16(lh,4,20);w16(lh,6,0);w16(lh,8,0);w16(lh,10,0);w16(lh,12,0);
+      w32(lh,14,crc);w32(lh,18,sz);w32(lh,22,sz);w16(lh,26,nb.length);w16(lh,28,0);
+      new Uint8Array(lh.buffer, 30).set(nb);
+      parts.push(new Uint8Array(lh.buffer), f.data);
+      const cd = new DataView(new ArrayBuffer(46 + nb.length));
+      w32(cd,0,0x02014b50);w16(cd,4,20);w16(cd,6,20);w16(cd,8,0);w16(cd,10,0);w16(cd,12,0);
+      w16(cd,14,0);w32(cd,16,crc);w32(cd,20,sz);w32(cd,24,sz);w16(cd,28,nb.length);
+      w16(cd,30,0);w16(cd,32,0);w16(cd,34,0);w16(cd,36,0);w32(cd,38,0);w32(cd,42,offset);
+      new Uint8Array(cd.buffer, 46).set(nb);
+      cdParts.push(new Uint8Array(cd.buffer));
+      offset += 30 + nb.length + sz;
+    }
+    const cdSize = cdParts.reduce((s, b) => s + b.length, 0);
+    const eocd = new DataView(new ArrayBuffer(22));
+    w32(eocd,0,0x06054b50);w16(eocd,4,0);w16(eocd,6,0);w16(eocd,8,files.length);
+    w16(eocd,10,files.length);w32(eocd,12,cdSize);w32(eocd,16,offset);w16(eocd,20,0);
+    const all = [...parts, ...cdParts, new Uint8Array(eocd.buffer)];
+    const total = all.reduce((s, b) => s + b.length, 0);
+    const out = new Uint8Array(total); let pos = 0;
+    for (const p of all) { out.set(p, pos); pos += p.length; }
+    return out;
+  }
+  function dataURLtoBytes(url) {
+    const bin = atob(url.split(',')[1]);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  // ---------- PNG Sequence export ----------
+  let seqExporting = false;
+  const seqBtn = document.getElementById('seq-btn');
+  const seqStatus = document.getElementById('seq-status');
+
+  seqBtn.addEventListener('click', async () => {
+    if (seqExporting) return;
+    if (mode !== 'organic') {
+      seqStatus.textContent = 'Switch to Organic mode first.';
+      seqStatus.style.display = '';
+      return;
+    }
+    const dur = +seqDurSlider.value;
+    const fps = +document.getElementById('seq-fps').value;
+    const totalFrames = Math.round(dur * fps);
+    seqExporting = true;
+    seqBtn.disabled = true;
+    seqStatus.style.display = '';
+    seqStatus.className = 'status-pill';
+
+    // Render each frame at a fixed time, with transparent background
+    const fc = document.createElement('canvas');
+    fc.width = state.canvasW; fc.height = state.canvasH;
+    const fctx = fc.getContext('2d');
+    const files = [];
+    events = []; // restart events from t=0
+
+    for (let fi = 0; fi < totalFrames; fi++) {
+      captureT = fi / fps;
+
+      // Force event update for event-based patterns
+      if (state.pattern === 'splash' || state.pattern === 'sparks' || state.pattern === 'rain') {
+        updateEvents(captureT * state.speed);
+      }
+
+      // Render with transparent bg — copy canvas to fc after rendering
+      render();
+      fctx.clearRect(0, 0, fc.width, fc.height);
+      fctx.drawImage(canvas, 0, 0);
+
+      // Make background (state.bg) transparent: replace bg pixels with alpha=0
+      // Approach: re-render onto fctx with transparent bg instead
+      fctx.clearRect(0, 0, fc.width, fc.height);
+      renderAlphaFrame(fctx, captureT);
+
+      const name = `frame_${String(fi + 1).padStart(4, '0')}.png`;
+      files.push({ name, data: dataURLtoBytes(fc.toDataURL('image/png')) });
+      const pct = Math.round(((fi + 1) / totalFrames) * 100);
+      seqStatus.textContent = `Rendering… ${pct}%`;
+      if (fi % 5 === 4) await new Promise(r => setTimeout(r, 0));
+    }
+
+    captureT = null;
+    events = [];
+
+    const zip = buildZip(files);
+    const a = document.createElement('a');
+    a.download = `hty-dot-matrix-${Date.now()}.zip`;
+    a.href = URL.createObjectURL(new Blob([zip], { type: 'application/zip' }));
+    a.click();
+
+    seqExporting = false;
+    seqBtn.disabled = false;
+    seqStatus.textContent = `Done — ${totalFrames} frames saved`;
+    seqStatus.className = 'status-pill ok';
+    setTimeout(() => { seqStatus.style.display = 'none'; }, 4000);
+  });
+
+  // Render a single frame with transparent background onto a given context
+  function renderAlphaFrame(targetCtx, t) {
+    const W = state.canvasW, H = state.canvasH;
+    targetCtx.clearRect(0, 0, W, H);
+
+    const cols = state.grid;
+    const cell = W / cols;
+    const rows = Math.ceil(H / cell);
+    const maxR = cell * 0.5 * state.maxSize;
+    const inactiveR = cell * 0.5 * state.inactiveSize;
+    const aspect = W / H;
+
+    if (state.pattern === 'splash' || state.pattern === 'sparks' || state.pattern === 'rain') {
+      updateEvents(t * state.speed);
+    }
+
+    // Draw dots with transparent background (no fillRect)
+    for (let j = 0; j < rows; j++) {
+      for (let i = 0; i < cols; i++) {
+        const nx = i / cols, ny = j / rows;
+        const v = getValue(nx, ny, t, aspect);
+        const a = activation(v);
+        const r = a > 0 ? Math.max(inactiveR, a * maxR) : inactiveR;
+        if (r < 0.15) continue;
+        const cx = (i + 0.5) * cell, cy = (j + 0.5) * cell;
+        if (state.soft > 0) {
+          const grad = targetCtx.createRadialGradient(cx, cy, 0, cx, cy, r);
+          const col = a > 0 ? pickFromValue(v) : state.inactiveColor;
+          const alpha = a > 0 ? 1 : (state.inactiveSize > 0 ? 0.6 : 0);
+          if (alpha === 0) continue;
+          grad.addColorStop(0, col);
+          grad.addColorStop(1 - state.soft, col);
+          grad.addColorStop(1, col + '00');
+          targetCtx.fillStyle = grad;
+        } else {
+          if (a > 0) {
+            targetCtx.fillStyle = pickFromValue(v);
+          } else {
+            if (inactiveR < 0.15) continue;
+            targetCtx.fillStyle = state.inactiveColor;
+          }
+        }
+        targetCtx.beginPath();
+        targetCtx.arc(cx, cy, r, 0, Math.PI * 2);
+        targetCtx.fill();
+      }
+    }
+  }
 
   // ---------- Export: PNG ----------
   document.getElementById('save-png').addEventListener('click', () => {

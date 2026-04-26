@@ -5,14 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Strange Matter</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
-
-#c {
-  display: block; width: 100vw; height: 100vh;
-  image-rendering: pixelated; image-rendering: crisp-edges;
+:root {
+  --bg: #ececec;
+  --card: #ffffff;
+  --text: #000000;
+  --text-dim: #6b6b6b;
+  --line: #e4e4e4;
+  --line-2: #d4d4d4;
+  --accent: #d4fc4e;
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-pill: 999px;
 }
-#c.smooth { image-rendering: auto; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: #000; overflow: hidden;
+  font-family: -apple-system, "Inter", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased; }
+
+#c { display: block; width: 100vw; height: 100vh; }
 
 #fx {
   position: fixed; inset: 0; pointer-events: none; z-index: 10;
@@ -20,6 +31,13 @@ html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
     repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0,0,0,0.055) 2px, rgba(0,0,0,0.055) 3px),
     radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(0,0,0,0.62) 100%);
 }
+#fx.no-scan {
+  background: radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(0,0,0,0.62) 100%);
+}
+#fx.no-vig {
+  background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0,0,0,0.055) 2px, rgba(0,0,0,0.055) 3px);
+}
+#fx.no-scan.no-vig { background: none; }
 
 #status {
   position: fixed; bottom: 10px; left: 14px; z-index: 20;
@@ -30,125 +48,115 @@ html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
 }
 #status.show { opacity: 1; }
 
-/* Panel toggle */
-#panel-toggle {
-  position: fixed; top: 14px; right: 14px; z-index: 50;
-  background: rgba(14,12,22,0.82); border: 1px solid rgba(255,255,255,0.11);
-  color: rgba(255,255,255,0.5); padding: 6px 11px;
-  font-family: ui-monospace, monospace; font-size: 10px;
-  letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
-  border-radius: 3px; backdrop-filter: blur(10px);
-  transition: background 0.15s, color 0.15s;
+/* Toggle button */
+#ctrl-btn {
+  position: fixed; top: 16px; right: 16px; z-index: 50;
+  background: #000; color: #fff; border: none;
+  padding: 8px 16px; border-radius: var(--radius-pill);
+  font-size: 12px; font-weight: 600; font-family: inherit;
+  cursor: pointer; letter-spacing: 0.01em;
+  transition: background 0.15s;
 }
-#panel-toggle:hover { color: rgba(255,255,255,0.85); background: rgba(30,26,50,0.9); }
+#ctrl-btn:hover { background: #222; }
+#ctrl-btn.panel-open { background: #222; }
 
-/* Floating panel */
+/* Panel */
 #panel {
   position: fixed; top: 0; right: 0; z-index: 40;
-  width: 252px; height: 100vh;
-  background: rgba(9,8,16,0.94); backdrop-filter: blur(18px);
-  border-left: 1px solid rgba(255,255,255,0.06);
+  width: 320px; height: 100vh;
+  background: var(--bg); border-left: 1px solid var(--line-2);
   overflow-y: auto; overflow-x: hidden;
-  transform: translateX(100%); transition: transform 0.2s ease;
-  padding: 52px 0 24px;
+  transform: translateX(100%); transition: transform 0.22s ease;
+  padding: 16px;
 }
 #panel.open { transform: translateX(0); }
-#panel::-webkit-scrollbar { width: 3px; }
-#panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+#panel::-webkit-scrollbar { width: 6px; }
+#panel::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 3px; }
 
-.psec { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-.psec-title {
-  font-family: ui-monospace, monospace; font-size: 9px;
-  letter-spacing: 0.15em; text-transform: uppercase;
-  color: rgba(255,255,255,0.2); margin-bottom: 9px;
-}
+/* Brand */
+.brand-row { display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 16px; padding: 2px 4px; }
+.brand { font-size: 17px; font-weight: 900; letter-spacing: -0.02em; }
+.brand .dot { display: inline-block; width: 5px; height: 5px; background: #000;
+  border-radius: 50%; vertical-align: baseline; margin-left: 1px; margin-bottom: 1px; }
+.brand .reg { font-size: 10px; font-weight: 700; vertical-align: super; margin-left: 1px; }
+.brand-sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.12em; font-weight: 600; }
 
-.prow {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 8px; margin-bottom: 7px;
-}
-.prow:last-child { margin-bottom: 0; }
-.prow label {
-  font-family: ui-monospace, monospace; font-size: 10px;
-  letter-spacing: 0.05em; color: rgba(255,255,255,0.38);
-  white-space: nowrap; flex-shrink: 0; cursor: default;
-}
-.prow .val {
-  font-family: ui-monospace, monospace; font-size: 10px;
-  color: rgba(255,255,255,0.25); min-width: 30px; text-align: right; flex-shrink: 0;
-}
+/* Sections */
+.section { background: var(--card); border-radius: var(--radius-lg);
+  padding: 14px 14px 16px; margin-bottom: 10px; }
+.section-title { display: inline-block; background: var(--accent); color: #000;
+  padding: 3px 7px; font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px; border-radius: 3px; }
 
-input[type=range] {
-  -webkit-appearance: none; appearance: none;
-  flex: 1; height: 2px; min-width: 0;
-  background: rgba(255,255,255,0.12); border-radius: 1px; outline: none; cursor: pointer;
-}
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%;
-  background: rgba(200,190,255,0.7); cursor: pointer;
-}
+.control { margin-bottom: 12px; }
+.control:last-child { margin-bottom: 0; }
+.control > label { display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
+.control > label .val { color: var(--text-dim); font-variant-numeric: tabular-nums;
+  font-size: 11px; font-family: ui-monospace, monospace; }
 
-select {
-  width: 100%; background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.09); border-radius: 3px;
-  color: rgba(255,255,255,0.55); font-family: ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.03em; padding: 5px 8px;
-  cursor: pointer; outline: none; appearance: none; margin-top: 1px;
-}
-select option { background: #111018; }
+/* Range */
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+  background: #d4d4d4; border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer;
+  transition: transform 0.1s; }
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
 
-.toggle { position: relative; width: 30px; height: 16px; flex-shrink: 0; }
-.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
-.toggle-track {
-  position: absolute; inset: 0; cursor: pointer;
-  background: rgba(255,255,255,0.09); border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.1); transition: background 0.18s;
-}
-.toggle input:checked + .toggle-track { background: rgba(110,80,240,0.5); border-color: rgba(130,100,255,0.4); }
-.toggle-thumb {
-  position: absolute; top: 2px; left: 2px; width: 10px; height: 10px;
-  border-radius: 50%; background: rgba(255,255,255,0.45); transition: left 0.18s;
-  pointer-events: none;
-}
-.toggle input:checked ~ .toggle-thumb { left: 16px; background: #e8e0ff; }
+/* Select */
+select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+  color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
+  font-size: 13px; outline: none; cursor: pointer; font-family: inherit; font-weight: 500;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 32px; }
 
-.pbtn {
-  width: 100%; padding: 7px; border-radius: 3px;
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.5); font-family: ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase;
-  cursor: pointer; transition: background 0.15s, color 0.15s; margin-bottom: 5px;
-}
-.pbtn:last-child { margin-bottom: 0; }
-.pbtn:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); }
-.pbtn.accent {
-  background: rgba(100,70,220,0.2); border-color: rgba(120,90,255,0.35);
-  color: rgba(180,165,255,0.85);
-}
-.pbtn.accent:hover { background: rgba(100,70,220,0.32); }
-.pbtn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+/* Toggle */
+.toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.toggle:last-child { margin-bottom: 0; }
+.toggle > label { font-size: 12px; font-weight: 500; }
+.toggle-switch { position: relative; width: 38px; height: 22px; background: #d4d4d4;
+  border-radius: 11px; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
+.toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+.toggle-switch.on { background: #000; }
+.toggle-switch.on::after { left: 18px; }
 
-.pnote {
-  font-family: ui-monospace, monospace; font-size: 9px;
-  color: rgba(255,255,255,0.18); line-height: 1.5; letter-spacing: 0.03em;
-  margin-bottom: 8px;
-}
+/* Buttons */
+button.btn { width: 100%; background: #000; color: #fff; border: none; padding: 10px 14px;
+  border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s; font-family: inherit; }
+button.btn:hover { background: #222; }
+button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line-2); }
+button.btn.ghost:hover { background: #f5f5f5; }
+button.btn.accent { background: var(--accent); color: #000; border: none; }
+button.btn.accent:hover { background: #c2ea3c; }
+button.btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+.btn-row { display: flex; gap: 8px; }
+.btn-row button { flex: 1; }
+
+.hint { font-size: 11px; color: var(--text-dim); line-height: 1.5; margin-top: 6px; }
+.status-pill { display: inline-block; padding: 4px 10px; background: #f4f4f4;
+  border-radius: var(--radius-pill); font-size: 11px; color: var(--text-dim);
+  margin-top: 8px; font-family: ui-monospace, monospace; }
 
 /* Progress overlay */
 #progress {
   position: fixed; inset: 0; z-index: 100;
-  background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none; transition: opacity 0.25s;
 }
 #progress.show { opacity: 1; pointer-events: all; }
-#prog-label {
-  font-family: ui-monospace, monospace; font-size: 11px;
+#prog-label { font-family: ui-monospace, monospace; font-size: 11px;
   letter-spacing: 0.1em; text-transform: uppercase;
-  color: rgba(255,255,255,0.45); margin-bottom: 12px;
-}
-#prog-track { width: 220px; height: 2px; background: rgba(255,255,255,0.1); border-radius: 1px; }
-#prog-fill { height: 100%; background: rgba(120,90,255,0.85); border-radius: 1px; width: 0%; transition: width 0.08s; }
+  color: rgba(255,255,255,0.55); margin-bottom: 14px; }
+#prog-track { width: 220px; height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+#prog-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.08s; }
 </style>
 </head>
 <body>
@@ -162,124 +170,146 @@ select option { background: #111018; }
   <div id="prog-track"><div id="prog-fill"></div></div>
 </div>
 
-<button id="panel-toggle">Controls</button>
+<button id="ctrl-btn">Controls</button>
 
 <div id="panel">
-
-  <div class="psec">
-    <div class="psec-title">Color</div>
-    <div class="prow"><label>Palette</label></div>
-    <select id="sel-palette">
-      <option value="auto">Auto (cycling)</option>
-      <option value="0">Mineral</option>
-      <option value="1">Biological</option>
-      <option value="2">Ceremonial</option>
-      <option value="3">Glitch</option>
-      <option value="4">Fungal</option>
-      <option value="5">Ultraviolet</option>
-    </select>
-    <div class="prow" style="margin-top:9px">
-      <label>Color drift</label>
-      <input type="range" id="sl-drift" min="0" max="100" value="50" />
-      <span class="val" id="val-drift">50</span>
+  <div class="brand-row">
+    <div>
+      <div class="brand">HEAR THE YOUTH<span class="dot"></span><span class="reg">®</span></div>
+      <div class="brand-sub">Strange Matter</div>
     </div>
   </div>
 
-  <div class="psec">
-    <div class="psec-title">Pattern</div>
-    <div class="prow"><label>Zone</label></div>
-    <select id="sel-zone">
-      <option value="auto">Auto (evolving)</option>
-      <option value="0">Coral</option>
-      <option value="1">Pulsars</option>
-      <option value="2">Solitons</option>
-      <option value="3">Worms</option>
-      <option value="4">Spores</option>
-      <option value="5">Holes</option>
-      <option value="6">Spirals</option>
-      <option value="7">Chaos</option>
-      <option value="8">Flowers</option>
-    </select>
-    <div class="prow" style="margin-top:9px">
-      <label>Chaos</label>
-      <input type="range" id="sl-chaos" min="0" max="100" value="40" />
-      <span class="val" id="val-chaos">40</span>
-    </div>
-    <button class="pbtn" id="btn-reseed" style="margin-top:4px">Reseed</button>
-  </div>
-
-  <div class="psec">
-    <div class="psec-title">Motion</div>
-    <div class="prow">
-      <label>Speed</label>
-      <input type="range" id="sl-speed" min="0" max="100" value="50" />
-      <span class="val" id="val-speed">1×</span>
-    </div>
-    <div class="prow">
-      <label>Breathing</label>
-      <label class="toggle"><input type="checkbox" id="tog-breath" checked /><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
-    </div>
-    <div class="prow">
-      <label>Auto-glitch</label>
-      <label class="toggle"><input type="checkbox" id="tog-glitch" checked /><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
-    </div>
-  </div>
-
-  <div class="psec">
-    <div class="psec-title">Visual</div>
-    <div class="prow">
-      <label>Pixelated</label>
-      <label class="toggle"><input type="checkbox" id="tog-pixel" /><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
-    </div>
-    <div class="prow">
-      <label>Scanlines</label>
-      <label class="toggle"><input type="checkbox" id="tog-scan" checked /><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
-    </div>
-    <div class="prow">
-      <label>Vignette</label>
-      <label class="toggle"><input type="checkbox" id="tog-vig" checked /><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
-    </div>
-    <div class="prow">
-      <label>Edge glow</label>
-      <label class="toggle"><input type="checkbox" id="tog-grad" checked /><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
-    </div>
-  </div>
-
-  <div class="psec">
-    <div class="psec-title">Export</div>
-    <div class="prow">
-      <label>Format</label>
-      <select id="sel-format" style="width:auto;flex:1;margin-left:8px">
-        <option value="png-alpha">PNG Sequence + α</option>
-        <option value="video">Video (WebM)</option>
-        <option value="screenshot">Screenshot</option>
+  <div class="section">
+    <div class="section-title">Color</div>
+    <div class="control">
+      <label>Palette</label>
+      <select id="sel-palette">
+        <option value="auto">Auto (cycling)</option>
+        <option value="0">Mineral</option>
+        <option value="1">Biological</option>
+        <option value="2">Ceremonial</option>
+        <option value="3">Glitch</option>
+        <option value="4">Fungal</option>
+        <option value="5">Ultraviolet</option>
       </select>
     </div>
-    <div class="prow" id="row-dur">
-      <label>Duration</label>
-      <input type="range" id="sl-dur" min="1" max="30" value="5" />
-      <span class="val" id="val-dur">5s</span>
+    <div class="control">
+      <label>Color drift <span class="val" id="val-drift">50</span></label>
+      <input type="range" id="sl-drift" min="0" max="100" value="50" />
     </div>
-    <div class="prow" id="row-fps">
+  </div>
+
+  <div class="section">
+    <div class="section-title">Pattern</div>
+    <div class="control">
+      <label>Zone</label>
+      <select id="sel-zone">
+        <option value="auto">Auto (evolving)</option>
+        <option value="0">Coral</option>
+        <option value="1">Pulsars</option>
+        <option value="2">Solitons</option>
+        <option value="3">Worms</option>
+        <option value="4">Spores</option>
+        <option value="5">Holes</option>
+        <option value="6">Spirals</option>
+        <option value="7">Chaos</option>
+        <option value="8">Flowers</option>
+      </select>
+    </div>
+    <div class="control">
+      <label>Chaos <span class="val" id="val-chaos">40</span></label>
+      <input type="range" id="sl-chaos" min="0" max="100" value="40" />
+    </div>
+    <div class="btn-row" style="margin-top:4px">
+      <button class="btn ghost" id="btn-reseed">Reseed</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Motion</div>
+    <div class="control">
+      <label>Speed <span class="val" id="val-speed">1.0×</span></label>
+      <input type="range" id="sl-speed" min="0" max="100" value="50" />
+    </div>
+    <div class="toggle">
+      <label>Breathing</label>
+      <div class="toggle-switch on" id="tog-breath"></div>
+    </div>
+    <div class="toggle">
+      <label>Auto-glitch</label>
+      <div class="toggle-switch on" id="tog-glitch"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Visual</div>
+    <div class="toggle">
+      <label>Pixelated</label>
+      <div class="toggle-switch" id="tog-pixel"></div>
+    </div>
+    <div class="toggle">
+      <label>Scanlines</label>
+      <div class="toggle-switch on" id="tog-scan"></div>
+    </div>
+    <div class="toggle">
+      <label>Vignette</label>
+      <div class="toggle-switch on" id="tog-vig"></div>
+    </div>
+    <div class="toggle">
+      <label>Edge glow</label>
+      <div class="toggle-switch on" id="tog-grad"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Export</div>
+    <div class="control">
+      <label>Format</label>
+      <select id="sel-format">
+        <option value="png-alpha">PNG Sequence + α</option>
+        <option value="video">Video (WebM)</option>
+        <option value="screenshot">Screenshot PNG</option>
+      </select>
+    </div>
+    <div class="control" id="row-dur">
+      <label>Duration <span class="val" id="val-dur">5s</span></label>
+      <input type="range" id="sl-dur" min="1" max="30" value="5" />
+    </div>
+    <div class="control" id="row-fps">
       <label>FPS</label>
-      <select id="sel-fps" style="width:auto;flex:1;margin-left:8px">
+      <select id="sel-fps">
         <option value="12">12 fps</option>
         <option value="24" selected>24 fps</option>
         <option value="30">30 fps</option>
       </select>
     </div>
-    <div class="pnote" id="export-note">PNG sequence with alpha channel — import folder in AE as image sequence, use Normal or Screen blend mode.</div>
-    <button class="pbtn accent" id="btn-export">Export</button>
-    <button class="pbtn" id="btn-pause">Pause</button>
+    <div class="control" id="row-res">
+      <label>Resolution</label>
+      <select id="sel-res">
+        <option value="1920x1080">1920×1080 Full HD</option>
+        <option value="1280x720">1280×720 HD</option>
+        <option value="960x540">960×540</option>
+        <option value="320x180">320×180 Raw sim</option>
+      </select>
+    </div>
+    <div class="hint" id="export-note">PNG sequence with alpha channel — import folder into AE as image sequence.</div>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn accent" id="btn-export">Export</button>
+      <button class="btn ghost" id="btn-pause">Pause</button>
+    </div>
   </div>
 
+  <div class="hint" style="padding:4px;text-align:center">
+    R — reseed &nbsp;·&nbsp; S — screenshot &nbsp;·&nbsp; Space — pause &nbsp;·&nbsp; click — perturb
+  </div>
 </div>
 
 <script>
 (function () {
 'use strict';
 
-// ── canvas ────────────────────────────────────────────────────────────────────
+// ── canvas ─────────────────────────────────────────────────────────────────
 const canvas = document.getElementById('c');
 const ctx    = canvas.getContext('2d');
 const dpr    = window.devicePixelRatio || 1;
@@ -294,14 +324,14 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-// ── PRNG ──────────────────────────────────────────────────────────────────────
+// ── PRNG ──────────────────────────────────────────────────────────────────
 let seed = (Math.random() * 0xffffffff) >>> 0;
 function rand() {
   seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5;
   return (seed >>> 0) / 0xffffffff;
 }
 
-// ── simulation grid ───────────────────────────────────────────────────────────
+// ── simulation grid ────────────────────────────────────────────────────────
 const GW = 320, GH = 180, N = GW * GH;
 let U  = new Float32Array(N).fill(1), V  = new Float32Array(N);
 let nU = new Float32Array(N),         nV = new Float32Array(N);
@@ -334,7 +364,7 @@ function initGrid() {
 }
 initGrid();
 
-// ── zones & palettes ──────────────────────────────────────────────────────────
+// ── zones & palettes ────────────────────────────────────────────────────────
 const ZONES = [
   { f:0.0545, k:0.0620, name:'coral'    },
   { f:0.0370, k:0.0600, name:'pulsars'  },
@@ -356,6 +386,7 @@ const PALETTES = [
 ];
 
 let zFrom=0, zTo=1, zT=0, pFrom=0, pTo=1, pT=0;
+const toggleState = { breath:true, glitch:true, pixel:false, scan:true, vig:true, grad:true };
 
 function smoothstep(t) { return t*t*(3-2*t); }
 function lerpC(a,b,t) { return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
@@ -363,8 +394,7 @@ function lerpC(a,b,t) { return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[
 function currentFk() {
   const a=ZONES[zFrom], b=ZONES[zTo];
   const t=smoothstep(Math.max(0,Math.min(1,zT)));
-  const breath = document.getElementById('tog-breath').checked
-    ? Math.sin(performance.now()*0.00085)*0.0012 : 0;
+  const breath = toggleState.breath ? Math.sin(performance.now()*0.00085)*0.0012 : 0;
   return { f: a.f+(b.f-a.f)*t+breath, k: a.k+(b.k-a.k)*t };
 }
 
@@ -374,15 +404,15 @@ function getPalette() {
   return [lerpC(pa[0],pb[0],t), lerpC(pa[1],pb[1],t), lerpC(pa[2],pb[2],t)];
 }
 
-// ── rendering ─────────────────────────────────────────────────────────────────
+// ── rendering ──────────────────────────────────────────────────────────────
 const gc   = document.createElement('canvas');
 gc.width   = GW; gc.height = GH;
 const gctx = gc.getContext('2d');
 
-function cellRgb(i, pal, withGrad) {
+function cellRgb(i, pal) {
   const v = V[i];
   let vv;
-  if (withGrad) {
+  if (toggleState.grad) {
     const x=i%GW, y=(i/GW)|0;
     const gx=V[y*GW+colR[x]]-V[y*GW+colL[x]];
     const gy=V[rowD[y]+x]-V[rowU[y]+x];
@@ -409,9 +439,8 @@ function renderToCtx(targetCtx, withAlpha) {
   const img  = targetCtx.createImageData(GW, GH);
   const data = img.data;
   const pal  = getPalette();
-  const grad = document.getElementById('tog-grad').checked;
   for (let i = 0; i < N; i++) {
-    const [r,g,b] = cellRgb(i, pal, grad);
+    const [r,g,b] = cellRgb(i, pal);
     const p = i << 2;
     data[p]=r; data[p+1]=g; data[p+2]=b;
     data[p+3] = withAlpha ? Math.min(255, V[i]*600|0) : 255;
@@ -421,13 +450,12 @@ function renderToCtx(targetCtx, withAlpha) {
 
 function render() {
   renderToCtx(gctx, false);
-  const pixelated = document.getElementById('tog-pixel').checked;
-  ctx.imageSmoothingEnabled = !pixelated;
-  if (!pixelated) ctx.imageSmoothingQuality = 'high';
+  ctx.imageSmoothingEnabled = !toggleState.pixel;
+  if (!toggleState.pixel) ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(gc, 0, 0, CW, CH);
 }
 
-// ── Gray-Scott step ───────────────────────────────────────────────────────────
+// ── Gray-Scott step ─────────────────────────────────────────────────────────
 const Du=1.0, Dv=0.5;
 function step(f, k) {
   for (let y = 0; y < GH; y++) {
@@ -447,7 +475,7 @@ function step(f, k) {
   let t=U; U=nU; nU=t; t=V; V=nV; nV=t;
 }
 
-// ── perturbation ──────────────────────────────────────────────────────────────
+// ── perturbation ───────────────────────────────────────────────────────────
 function perturb(gx2, gy2, radius, strength) {
   const r2=radius*radius;
   for (let dy=-radius; dy<=radius; dy++)
@@ -459,7 +487,7 @@ function perturb(gx2, gy2, radius, strength) {
     }
 }
 
-// ── glitch ────────────────────────────────────────────────────────────────────
+// ── glitch ─────────────────────────────────────────────────────────────────
 let glitchIn=7+rand()*15;
 function doGlitch() {
   const r=rand();
@@ -474,13 +502,13 @@ function doGlitch() {
   } else { pFrom=pTo; pTo=rand()*PALETTES.length|0; pT=0; }
 }
 
-// ── mouse ─────────────────────────────────────────────────────────────────────
+// ── mouse ──────────────────────────────────────────────────────────────────
 let mx=-1, my=-1;
 canvas.addEventListener('mousemove', e => { mx=(e.clientX/CW*GW)|0; my=(e.clientY/CH*GH)|0; });
 canvas.addEventListener('mouseleave', () => { mx=-1; my=-1; });
 canvas.addEventListener('click', e => { perturb((e.clientX/CW*GW)|0,(e.clientY/CH*GH)|0,13,1.0); });
 
-// ── main loop ─────────────────────────────────────────────────────────────────
+// ── main loop ──────────────────────────────────────────────────────────────
 let paused=false, exporting=false, lastT=performance.now();
 
 function frame(now) {
@@ -505,7 +533,7 @@ function frame(now) {
       pT += 0.00012*drift*sm;
       if (pT>=1) { pFrom=pTo; pTo=rand()*PALETTES.length|0; pT=0; }
     }
-    if (document.getElementById('tog-glitch').checked) {
+    if (toggleState.glitch) {
       glitchIn -= elapsed*sm;
       if (glitchIn<=0) { doGlitch(); glitchIn=(4+rand()*20)/chaos; }
     }
@@ -521,42 +549,43 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 
-// ── ZIP builder (stored, no compression) ─────────────────────────────────────
+// ── ZIP builder ─────────────────────────────────────────────────────────────
 const crcTable=(()=>{
   const t=new Uint32Array(256);
-  for (let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?0xEDB88320^(c>>>1):c>>>1;t[n]=c;}
+  for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?0xEDB88320^(c>>>1):c>>>1;t[n]=c;}
   return t;
 })();
 function crc32(buf){let c=0xFFFFFFFF;for(let i=0;i<buf.length;i++)c=crcTable[(c^buf[i])&0xFF]^(c>>>8);return(c^0xFFFFFFFF)>>>0;}
-function dv32(dv,off,v,le){dv.setUint32(off,v,le);}
-function dv16(dv,off,v,le){dv.setUint16(off,v,le);}
 
 function buildZip(files) {
   const enc=new TextEncoder(), parts=[], cdParts=[];
   let offset=0;
+  function w32(dv,o,v){dv.setUint32(o,v,true);}
+  function w16(dv,o,v){dv.setUint16(o,v,true);}
   for (const f of files) {
     const nb=enc.encode(f.name), crc=crc32(f.data), sz=f.data.length;
     const lh=new DataView(new ArrayBuffer(30+nb.length));
-    dv32(lh,0,0x04034b50,true);dv16(lh,4,20,true);dv16(lh,6,0,true);dv16(lh,8,0,true);
-    dv16(lh,10,0,true);dv16(lh,12,0,true);dv32(lh,14,crc,true);dv32(lh,18,sz,true);dv32(lh,22,sz,true);
-    dv16(lh,26,nb.length,true);dv16(lh,28,0,true);new Uint8Array(lh.buffer,30).set(nb);
+    w32(lh,0,0x04034b50);w16(lh,4,20);w16(lh,6,0);w16(lh,8,0);
+    w16(lh,10,0);w16(lh,12,0);w32(lh,14,crc);w32(lh,18,sz);w32(lh,22,sz);
+    w16(lh,26,nb.length);w16(lh,28,0);new Uint8Array(lh.buffer,30).set(nb);
     parts.push(new Uint8Array(lh.buffer),f.data);
     const cd=new DataView(new ArrayBuffer(46+nb.length));
-    dv32(cd,0,0x02014b50,true);dv16(cd,4,20,true);dv16(cd,6,20,true);dv16(cd,8,0,true);
-    dv16(cd,10,0,true);dv16(cd,12,0,true);dv16(cd,14,0,true);dv32(cd,16,crc,true);dv32(cd,20,sz,true);
-    dv32(cd,24,sz,true);dv16(cd,28,nb.length,true);dv16(cd,30,0,true);dv16(cd,32,0,true);
-    dv16(cd,34,0,true);dv16(cd,36,0,true);dv32(cd,38,0,true);dv32(cd,42,offset,true);
-    new Uint8Array(cd.buffer,46).set(nb);cdParts.push(new Uint8Array(cd.buffer));
+    w32(cd,0,0x02014b50);w16(cd,4,20);w16(cd,6,20);w16(cd,8,0);
+    w16(cd,10,0);w16(cd,12,0);w16(cd,14,0);w32(cd,16,crc);
+    w32(cd,20,sz);w32(cd,24,sz);w16(cd,28,nb.length);
+    w16(cd,30,0);w16(cd,32,0);w16(cd,34,0);w16(cd,36,0);
+    w32(cd,38,0);w32(cd,42,offset);new Uint8Array(cd.buffer,46).set(nb);
+    cdParts.push(new Uint8Array(cd.buffer));
     offset+=30+nb.length+sz;
   }
   const cdSize=cdParts.reduce((s,b)=>s+b.length,0);
   const eocd=new DataView(new ArrayBuffer(22));
-  dv32(eocd,0,0x06054b50,true);dv16(eocd,4,0,true);dv16(eocd,6,0,true);
-  dv16(eocd,8,files.length,true);dv16(eocd,10,files.length,true);
-  dv32(eocd,12,cdSize,true);dv32(eocd,16,offset,true);dv16(eocd,20,0,true);
+  w32(eocd,0,0x06054b50);w16(eocd,4,0);w16(eocd,6,0);
+  w16(eocd,8,files.length);w16(eocd,10,files.length);
+  w32(eocd,12,cdSize);w32(eocd,16,offset);w16(eocd,20,0);
   const all=[...parts,...cdParts,new Uint8Array(eocd.buffer)];
   const total=all.reduce((s,b)=>s+b.length,0);
-  const out=new Uint8Array(total);let pos=0;
+  const out=new Uint8Array(total); let pos=0;
   for(const p of all){out.set(p,pos);pos+=p.length;}
   return out;
 }
@@ -568,19 +597,21 @@ function dataURLtoBytes(url) {
   return out;
 }
 
-// ── export PNG sequence ───────────────────────────────────────────────────────
-async function exportPNGSequence(durationSec, fps) {
+// ── export PNG sequence ─────────────────────────────────────────────────────
+async function exportPNGSequence(durationSec, fps, exportW, exportH) {
   const totalFrames=Math.round(durationSec*fps);
-  const savedU=U.slice(),savedV=V.slice();
+  const savedU=U.slice(), savedV=V.slice();
   const sz={zFrom,zTo,zT,pFrom,pTo,pT};
   exporting=true;
-  showProg(0,`Rendering ${totalFrames} frames…`);
+  showProg(0,`Rendering ${totalFrames} frames at ${exportW}×${exportH}…`);
 
+  // Export canvas — scales up from GW×GH grid
   const fc=document.createElement('canvas');
-  fc.width=GW; fc.height=GH;
+  fc.width=exportW; fc.height=exportH;
   const fctx=fc.getContext('2d');
-  const files=[];
+  fctx.imageSmoothingEnabled=true; fctx.imageSmoothingQuality='high';
 
+  const files=[];
   for (let fi=0;fi<totalFrames;fi++) {
     const {f,k}=currentFk();
     for (let s=0;s<5;s++) step(f,k);
@@ -590,10 +621,12 @@ async function exportPNGSequence(durationSec, fps) {
     if (document.getElementById('sel-palette').value==='auto') {
       pT+=0.00012; if(pT>=1){pFrom=pTo;pTo=rand()*PALETTES.length|0;pT=0;}
     }
-    renderToCtx(fctx,true);
+    renderToCtx(gctx, true);
+    fctx.clearRect(0,0,exportW,exportH);
+    fctx.drawImage(gc, 0, 0, exportW, exportH);
     files.push({name:`frame_${String(fi+1).padStart(4,'0')}.png`, data:dataURLtoBytes(fc.toDataURL('image/png'))});
     updateProg((fi+1)/totalFrames);
-    if(fi%6===5) await new Promise(r=>setTimeout(r,0));
+    if(fi%5===4) await new Promise(r=>setTimeout(r,0));
   }
 
   U.set(savedU); V.set(savedV);
@@ -607,7 +640,7 @@ async function exportPNGSequence(durationSec, fps) {
   exporting=false; hideProg();
 }
 
-// ── export video ──────────────────────────────────────────────────────────────
+// ── export video ───────────────────────────────────────────────────────────
 function exportVideo(durationSec, fps) {
   const mimeType=MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
     ? 'video/webm;codecs=vp9' : 'video/webm';
@@ -642,51 +675,59 @@ document.getElementById('btn-export').addEventListener('click', async () => {
     a.href=canvas.toDataURL('image/png'); a.click(); return;
   }
   document.getElementById('btn-export').disabled=true;
-  if (format==='png-alpha') { await exportPNGSequence(dur,fps); document.getElementById('btn-export').disabled=false; }
-  else exportVideo(dur,fps);
+  if (format==='png-alpha') {
+    const resVal=document.getElementById('sel-res').value.split('x');
+    const exportW=+resVal[0], exportH=+resVal[1];
+    await exportPNGSequence(dur,fps,exportW,exportH);
+    document.getElementById('btn-export').disabled=false;
+  } else {
+    exportVideo(dur,fps);
+  }
 });
 
-// ── progress helpers ──────────────────────────────────────────────────────────
-function showProg(p,label){ document.getElementById('prog-label').textContent=label; updateProg(p); document.getElementById('progress').classList.add('show'); }
+// ── progress ───────────────────────────────────────────────────────────────
+function showProg(p,label){ document.getElementById('prog-label').textContent=label||'Working…'; updateProg(p); document.getElementById('progress').classList.add('show'); }
 function updateProg(p){ document.getElementById('prog-fill').style.width=(p*100)+'%'; }
 function hideProg(){ document.getElementById('progress').classList.remove('show'); }
 
-// ── panel controls ────────────────────────────────────────────────────────────
-document.getElementById('btn-pause').addEventListener('click',()=>{
-  paused=!paused; document.getElementById('btn-pause').textContent=paused?'Resume':'Pause';
-});
-document.getElementById('btn-reseed').addEventListener('click',()=>{
-  seed=(Math.random()*0xffffffff)>>>0; initGrid();
-  if(document.getElementById('sel-zone').value==='auto'){zFrom=rand()*ZONES.length|0;zTo=rand()*ZONES.length|0;}
-  if(document.getElementById('sel-palette').value==='auto'){pFrom=rand()*PALETTES.length|0;pTo=(pFrom+1)%PALETTES.length;}
-  zT=pT=0; glitchIn=3+rand()*8;
-});
+// ── panel toggles ──────────────────────────────────────────────────────────
+function bindToggle(id, key, onChange) {
+  const el=document.getElementById(id);
+  el.addEventListener('click',()=>{
+    toggleState[key]=!toggleState[key];
+    el.classList.toggle('on',toggleState[key]);
+    if(onChange) onChange(toggleState[key]);
+  });
+}
+const fxEl=document.getElementById('fx');
+function updateFx(){
+  fxEl.className='';
+  if(!toggleState.scan) fxEl.classList.add('no-scan');
+  if(!toggleState.vig)  fxEl.classList.add('no-vig');
+}
+bindToggle('tog-breath','breath');
+bindToggle('tog-glitch','glitch');
+bindToggle('tog-pixel','pixel');
+bindToggle('tog-scan','scan',updateFx);
+bindToggle('tog-vig','vig',updateFx);
+bindToggle('tog-grad','grad');
 
+// Zone select — reseed immediately for visible feedback
 document.getElementById('sel-zone').addEventListener('change',e=>{
-  if(e.target.value!=='auto'){const zi=+e.target.value;zFrom=zi;zTo=zi;zT=0;}
+  if(e.target.value!=='auto'){
+    const zi=+e.target.value; zFrom=zi; zTo=zi; zT=0;
+    initGrid(); // reseed so new zone's pattern forms immediately
+    glitchIn=3+rand()*8;
+  }
 });
+// Palette select
 document.getElementById('sel-palette').addEventListener('change',e=>{
   if(e.target.value!=='auto'){const pi=+e.target.value;pFrom=pi;pTo=pi;pT=0;}
 });
 
-document.getElementById('tog-pixel').addEventListener('change',e=>{
-  canvas.classList.toggle('smooth',!e.target.checked);
-});
-
-const fxEl=document.getElementById('fx');
-function updateFx(){
-  const s=document.getElementById('tog-scan').checked;
-  const v=document.getElementById('tog-vig').checked;
-  fxEl.style.background=[
-    s?'repeating-linear-gradient(0deg,transparent 0px,transparent 2px,rgba(0,0,0,0.055) 2px,rgba(0,0,0,0.055) 3px)':'',
-    v?'radial-gradient(ellipse at 50% 50%,transparent 35%,rgba(0,0,0,0.62) 100%)':'',
-  ].filter(Boolean).join(',')||'none';
-}
-document.getElementById('tog-scan').addEventListener('change',updateFx);
-document.getElementById('tog-vig').addEventListener('change',updateFx);
-
+// Format change
 const exportNotes={
-  'png-alpha':'PNG sequence with alpha — import folder in AE as image sequence, use Normal or Screen blend mode.',
+  'png-alpha':'PNG sequence with alpha channel — import folder into AE as image sequence, use Normal blend mode.',
   'video':'WebM video — use Screen or Add blend mode in AE to composite over footage.',
   'screenshot':'Saves the current frame as PNG.',
 };
@@ -695,37 +736,76 @@ document.getElementById('sel-format').addEventListener('change',e=>{
   const hide=e.target.value==='screenshot';
   document.getElementById('row-dur').style.display=hide?'none':'';
   document.getElementById('row-fps').style.display=hide?'none':'';
+  document.getElementById('row-res').style.display=(hide||e.target.value==='video')?'none':'';
 });
 
-// Slider value displays
+// Slider displays
 function wire(id,valId,fmt){
   const el=document.getElementById(id),vl=document.getElementById(valId);
-  el.addEventListener('input',()=>vl.textContent=fmt(el.value));
+  const update=()=>{ vl.textContent=fmt(+el.value); };
+  el.addEventListener('input',update); update();
 }
-wire('sl-drift','val-drift',v=>v);
-wire('sl-chaos','val-chaos',v=>v);
+wire('sl-drift','val-drift',v=>Math.round(v));
+wire('sl-chaos','val-chaos',v=>Math.round(v));
 wire('sl-dur','val-dur',v=>v+'s');
 wire('sl-speed','val-speed',v=>{
   const m=Math.pow(16,v/100-0.5);
   return m<1?m.toFixed(2)+'×':m.toFixed(1)+'×';
 });
 
-document.getElementById('panel-toggle').addEventListener('click',()=>{
-  document.getElementById('panel').classList.toggle('open');
+// Buttons
+document.getElementById('btn-pause').addEventListener('click',()=>{
+  paused=!paused; document.getElementById('btn-pause').textContent=paused?'Resume':'Pause';
+});
+document.getElementById('btn-reseed').addEventListener('click',()=>{
+  seed=(Math.random()*0xffffffff)>>>0; initGrid();
+  const zoneEl=document.getElementById('sel-zone');
+  if(zoneEl.value==='auto'){zFrom=rand()*ZONES.length|0;zTo=rand()*ZONES.length|0;}
+  const palEl=document.getElementById('sel-palette');
+  if(palEl.value==='auto'){pFrom=rand()*PALETTES.length|0;pTo=(pFrom+1)%PALETTES.length;}
+  zT=pT=0; glitchIn=3+rand()*8;
 });
 
-// ── status bar ────────────────────────────────────────────────────────────────
+// Panel toggle
+const panelEl=document.getElementById('panel');
+const ctrlBtn=document.getElementById('ctrl-btn');
+ctrlBtn.addEventListener('click',()=>{
+  panelEl.classList.toggle('open');
+  ctrlBtn.classList.toggle('panel-open',panelEl.classList.contains('open'));
+  ctrlBtn.textContent=panelEl.classList.contains('open')?'Close':'Controls';
+});
+
+// ── status bar ─────────────────────────────────────────────────────────────
 const statusEl=document.getElementById('status');
 let statusTimer;
 function showStatus(){clearTimeout(statusTimer);statusEl.classList.add('show');statusTimer=setTimeout(()=>statusEl.classList.remove('show'),3000);}
 window.addEventListener('mousemove',showStatus);
 
-// ── keyboard ──────────────────────────────────────────────────────────────────
+// ── keyboard ───────────────────────────────────────────────────────────────
 window.addEventListener('keydown', e => {
-  if (e.code==='Space'){e.preventDefault();paused=!paused;document.getElementById('btn-pause').textContent=paused?'Resume':'Pause';showStatus();}
-  if (e.code==='KeyR'){seed=(Math.random()*0xffffffff)>>>0;initGrid();if(document.getElementById('sel-zone').value==='auto'){zFrom=rand()*ZONES.length|0;zTo=rand()*ZONES.length|0;}if(document.getElementById('sel-palette').value==='auto'){pFrom=rand()*PALETTES.length|0;pTo=(pFrom+1)%PALETTES.length;}zT=pT=0;glitchIn=3+rand()*8;showStatus();}
-  if (e.code==='KeyS'){const a=document.createElement('a');a.download=`strange-matter-${Date.now()}.png`;a.href=canvas.toDataURL('image/png');a.click();}
-  if (e.code==='KeyC'){document.getElementById('panel').classList.toggle('open');}
+  if (e.code==='Space'){
+    e.preventDefault(); paused=!paused;
+    document.getElementById('btn-pause').textContent=paused?'Resume':'Pause';
+    showStatus();
+  }
+  if (e.code==='KeyR'){
+    seed=(Math.random()*0xffffffff)>>>0; initGrid();
+    const ze=document.getElementById('sel-zone');
+    if(ze.value==='auto'){zFrom=rand()*ZONES.length|0;zTo=rand()*ZONES.length|0;}
+    const pe=document.getElementById('sel-palette');
+    if(pe.value==='auto'){pFrom=rand()*PALETTES.length|0;pTo=(pFrom+1)%PALETTES.length;}
+    zT=pT=0; glitchIn=3+rand()*8; showStatus();
+  }
+  if (e.code==='KeyS'){
+    const a=document.createElement('a');
+    a.download=`strange-matter-${Date.now()}.png`;
+    a.href=canvas.toDataURL('image/png'); a.click();
+  }
+  if (e.code==='KeyC'){
+    panelEl.classList.toggle('open');
+    ctrlBtn.classList.toggle('panel-open',panelEl.classList.contains('open'));
+    ctrlBtn.textContent=panelEl.classList.contains('open')?'Close':'Controls';
+  }
 });
 
 })();
