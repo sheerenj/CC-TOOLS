@@ -329,10 +329,17 @@ const empty   = document.getElementById('empty-state');
 
 // ── Canvas sizing ─────────────────────────────────────────────────────────────
 let DW = 960, DH = 540;
+let exportW = 1920, exportH = 1080;
+
 function resizeCanvas() {
   const r = wrap.getBoundingClientRect();
-  DW = Math.round(r.width);
-  DH = Math.round(r.height);
+  const wrapW = r.width  - 32;
+  const wrapH = r.height - 32;
+  const aspect = exportW / exportH;
+  let cw = wrapW, ch = wrapW / aspect;
+  if (ch > wrapH) { ch = wrapH; cw = wrapH * aspect; }
+  DW = Math.round(cw);
+  DH = Math.round(ch);
   canvas.width  = DW;
   canvas.height = DH;
   render();
@@ -427,11 +434,22 @@ function setupColor(swId, hexId, pickId, onSet) {
 setupColor('sw-dot', 'hex-dot', 'cp-dot', v => dotColor = v);
 setupColor('sw-bg',  'hex-bg',  'cp-bg',  v => bgColor  = v);
 
-// ── Custom resolution toggle ───────────────────────────────────────────────────
+// ── Resolution / canvas aspect ratio ──────────────────────────────────────────
+function updateExportDimensions() {
+  if (gv('sel-res') === 'custom') {
+    exportW = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-cw').value) || 1920));
+    exportH = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-ch').value) || 1080));
+  } else {
+    [exportW, exportH] = gv('sel-res').split('x').map(Number);
+  }
+  resizeCanvas();
+}
 document.getElementById('sel-res').addEventListener('change', function() {
-  const wrap = document.getElementById('custom-res-wrap');
-  wrap.classList.toggle('visible', this.value === 'custom');
+  document.getElementById('custom-res-wrap').classList.toggle('visible', this.value === 'custom');
+  updateExportDimensions();
 });
+document.getElementById('inp-cw').addEventListener('change', updateExportDimensions);
+document.getElementById('inp-ch').addEventListener('change', updateExportDimensions);
 
 // ── Image loading ─────────────────────────────────────────────────────────────
 function loadFile(file) {
@@ -606,19 +624,9 @@ document.getElementById('btn-reseed').addEventListener('click', () => {
 
 // ── Export ────────────────────────────────────────────────────────────────────
 document.getElementById('btn-export').addEventListener('click', () => {
-  let ew, eh;
-  if (gv('sel-res') === 'custom') {
-    ew = parseInt(document.getElementById('inp-cw').value) || 1920;
-    eh = parseInt(document.getElementById('inp-ch').value) || 1080;
-    ew = Math.max(100, Math.min(8000, ew));
-    eh = Math.max(100, Math.min(8000, eh));
-  } else {
-    [ew, eh] = gv('sel-res').split('x').map(Number);
-  }
-
-  const sfx = ew / DW;
-  const sfy = eh / DH;
-  const sf  = Math.min(sfx, sfy);
+  const ew = exportW, eh = exportH;
+  // Canvas already matches export aspect ratio, so sf is exact in both axes
+  const sf = ew / DW;
 
   const ec  = document.createElement('canvas');
   ec.width  = ew; ec.height = eh;
