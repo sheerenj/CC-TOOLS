@@ -100,21 +100,31 @@
   .ce-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
   .ce-swatch {
     width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2);
-    cursor: pointer; padding: 0; flex-shrink: 0; -webkit-appearance: none;
+    flex-shrink: 0; cursor: pointer;
   }
-  .ce-swatch::-webkit-color-swatch-wrapper { padding: 2px; }
-  .ce-swatch::-webkit-color-swatch { border: none; border-radius: 4px; }
   .ce-label { font-size: 11px; font-weight: 500; flex: 1; color: var(--text); }
   .ce-pct   { font-size: 10px; color: var(--dim); font-family: ui-monospace, monospace; min-width: 26px; text-align: right; }
   .ce-rm    { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 16px; padding: 0 2px; line-height: 1; }
   .ce-rm:hover { color: var(--text); }
-
-  input[type=color].bg-swatch {
-    -webkit-appearance: none; border: 1px solid var(--border2); background: transparent;
-    width: 100%; height: 30px; border-radius: 6px; cursor: pointer; padding: 0;
+  .ce-hex {
+    width: 100%; background: #333; border: 1px solid var(--border2); color: var(--text);
+    padding: 5px 8px; border-radius: 6px; font-size: 12px; outline: none;
+    font-family: ui-monospace, monospace; margin-bottom: 6px; display: none;
   }
-  input[type=color].bg-swatch::-webkit-color-swatch-wrapper { padding: 2px; }
-  input[type=color].bg-swatch::-webkit-color-swatch { border: none; border-radius: 4px; }
+  .ce-hex.open { display: block; }
+  .ce-hex:focus { border-color: var(--accent); }
+
+  .bg-color-row { display: flex; align-items: center; gap: 8px; }
+  .bg-swatch {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2);
+    flex-shrink: 0; cursor: pointer;
+  }
+  .bg-hex {
+    flex: 1; background: #333; border: 1px solid var(--border2); color: var(--text);
+    padding: 5px 8px; border-radius: 6px; font-size: 12px; outline: none;
+    font-family: ui-monospace, monospace;
+  }
+  .bg-hex:focus { border-color: var(--accent); }
 
   /* ── Toggles ── */
   .tog { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
@@ -254,9 +264,12 @@
     <!-- Colors -->
     <div class="sec">
       <div class="sec-title">Colors</div>
-      <div class="ctrl" style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:11px;font-weight:500;flex:1">Background</span>
-        <input type="color" class="bg-swatch" id="bg-color" value="#0a0a0a" style="width:60px" />
+      <div class="ctrl">
+        <label>Background</label>
+        <div class="bg-color-row">
+          <div class="bg-swatch" id="bg-swatch" style="background:#0a0a0a"></div>
+          <input type="text" class="bg-hex" id="bg-color" value="#0a0a0a" maxlength="7" />
+        </div>
       </div>
       <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);margin:10px 0 8px">Particle colors</div>
       <div id="color-list"></div>
@@ -397,6 +410,8 @@ document.getElementById('tog-outline').addEventListener('click', function() {
 });
 
 // ── Color palette ─────────────────────────────────────────────────────────────
+function isValidHex(h) { return /^#[0-9a-fA-F]{6}$/.test(h); }
+
 function pickColorIdx() {
   if (colors.length === 1) return 0;
   var total = colors.reduce(function(s, c) { return s + c.pct; }, 0);
@@ -415,16 +430,35 @@ function renderColorList() {
     entry.className = 'color-entry';
     entry.innerHTML =
       '<div class="ce-top">' +
-        '<input type="color" class="ce-swatch" value="' + c.hex + '" data-ci="' + i + '" />' +
+        '<div class="ce-swatch" style="background:' + c.hex + '" data-ci="' + i + '"></div>' +
         '<span class="ce-label">Color ' + (i+1) + '</span>' +
         '<span class="ce-pct" id="cpct-' + i + '">' + Math.round(c.pct) + '%</span>' +
         (colors.length > 1 ? '<button class="ce-rm" data-ci="' + i + '">×</button>' : '') +
       '</div>' +
+      '<input type="text" class="ce-hex" value="' + c.hex + '" maxlength="7" data-ci="' + i + '" placeholder="#rrggbb" />' +
       '<input type="range" min="0" max="100" value="' + c.pct + '" step="1" data-ci="' + i + '" class="cpct-sl" />';
     list.appendChild(entry);
   });
   list.querySelectorAll('.ce-swatch').forEach(function(el) {
-    el.addEventListener('input', function(e) { colors[+e.target.dataset.ci].hex = e.target.value; });
+    el.addEventListener('click', function(e) {
+      var hexEl = e.target.parentElement.nextElementSibling;
+      hexEl.classList.toggle('open');
+      if (hexEl.classList.contains('open')) { hexEl.focus(); hexEl.select(); }
+    });
+  });
+  list.querySelectorAll('.ce-hex').forEach(function(el) {
+    el.addEventListener('input', function(e) {
+      var ci = +e.target.dataset.ci;
+      var v = e.target.value.trim();
+      if (!v.startsWith('#')) v = '#' + v;
+      if (isValidHex(v)) {
+        colors[ci].hex = v;
+        e.target.previousElementSibling.querySelector('.ce-swatch').style.background = v;
+      }
+    });
+    el.addEventListener('blur', function(e) {
+      e.target.classList.remove('open');
+    });
   });
   list.querySelectorAll('.cpct-sl').forEach(function(el) {
     el.addEventListener('input', function(e) {
@@ -449,7 +483,16 @@ document.getElementById('btn-add-color').addEventListener('click', function() {
   renderColorList(); updateAddBtn();
 });
 document.getElementById('bg-color').addEventListener('input', function(e) {
-  bgColor = e.target.value;
+  var v = e.target.value.trim();
+  if (!v.startsWith('#')) v = '#' + v;
+  if (isValidHex(v)) {
+    bgColor = v;
+    document.getElementById('bg-swatch').style.background = v;
+  }
+});
+document.getElementById('bg-swatch').addEventListener('click', function() {
+  document.getElementById('bg-color').focus();
+  document.getElementById('bg-color').select();
 });
 
 // ── Dot factory ───────────────────────────────────────────────────────────────

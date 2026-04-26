@@ -1,7 +1,6 @@
 // host.jsx — ExtendScript running inside After Effects
 // Called from the CEP panel via CSInterface.evalScript()
-// Target: After Effects CC 2022+ (v22.0+)
-// @include "json2.js"  // not needed for AE CC 2022+, JSON is built-in
+// Target: After Effects CC 2022+ (v22.0+) — JSON is built-in, no include needed
 
 // ── Returns a writable temp file path ────────────────────────────────────────
 function PT_getTempPath() {
