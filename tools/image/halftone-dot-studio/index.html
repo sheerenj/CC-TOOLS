@@ -63,11 +63,24 @@ select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
 .color-row:last-child { margin-bottom: 0; }
 .color-label { font-size: 12px; font-weight: 500; flex: 1; }
 .color-swatch { width: 30px; height: 30px; border-radius: 8px;
-  border: 1px solid var(--line2); flex-shrink: 0; cursor: pointer; }
+  border: 1px solid var(--line2); flex-shrink: 0; cursor: pointer;
+  position: relative; overflow: hidden; }
+.native-picker { position: absolute; inset: -4px; width: calc(100% + 8px);
+  height: calc(100% + 8px); opacity: 0; cursor: pointer;
+  border: none; padding: 0; }
 .color-hex { flex: 1; background: #f4f4f4; border: 1px solid var(--line); color: #000;
   padding: 7px 9px; border-radius: var(--radius-md); font-size: 12px; outline: none;
   font-family: ui-monospace, monospace; min-width: 0; }
 .color-hex:focus { border-color: var(--line2); }
+
+.custom-res-wrap { margin-top: 8px; display: none; }
+.custom-res-wrap.visible { display: block; }
+.custom-res-row { display: flex; gap: 6px; align-items: center; }
+.custom-res-row input[type=number] { flex: 1; background: #f4f4f4; border: 1px solid var(--line);
+  color: #000; padding: 7px 9px; border-radius: var(--radius-md); font-size: 12px;
+  outline: none; font-family: inherit; min-width: 0; }
+.custom-res-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+.custom-res-sep { font-size: 11px; color: var(--dim); flex-shrink: 0; }
 
 .toggle { display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 10px; }
@@ -193,14 +206,36 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
   <!-- Dots -->
   <div class="section">
     <div class="section-title">Dots</div>
-    <div class="ctrl">
-      <label>Max size <span class="val" id="v-ms">7</span>px</label>
-      <input type="range" id="sl-ms" min="1" max="30" value="7" step="0.5" />
+
+    <div class="toggle" style="margin-bottom:14px;">
+      <label>Uniform dots</label>
+      <div class="tog-sw" id="tog-uni"></div>
     </div>
-    <div class="ctrl">
-      <label>Min size <span class="val" id="v-mn">0</span>px</label>
-      <input type="range" id="sl-mn" min="0" max="10" value="0" step="0.25" />
+
+    <!-- Variable-size controls (normal mode) -->
+    <div id="var-size-ctrls">
+      <div class="ctrl">
+        <label>Max size <span class="val" id="v-ms">7</span>px</label>
+        <input type="range" id="sl-ms" min="1" max="30" value="7" step="0.5" />
+      </div>
+      <div class="ctrl">
+        <label>Min size <span class="val" id="v-mn">0</span>px</label>
+        <input type="range" id="sl-mn" min="0" max="10" value="0" step="0.25" />
+      </div>
     </div>
+
+    <!-- Uniform-size controls (uniform mode) -->
+    <div id="uni-size-ctrls" style="display:none">
+      <div class="ctrl">
+        <label>Dot size <span class="val" id="v-sz">3.5</span>px</label>
+        <input type="range" id="sl-sz" min="0.5" max="20" value="3.5" step="0.25" />
+      </div>
+      <div class="ctrl">
+        <label>Coverage <span class="val" id="v-cov">1.00</span>×</label>
+        <input type="range" id="sl-cov" min="0.1" max="3" value="1" step="0.05" />
+      </div>
+    </div>
+
     <div class="ctrl">
       <label>Position jitter <span class="val" id="v-jt">1.5</span>px</label>
       <input type="range" id="sl-jt" min="0" max="20" value="1.5" step="0.25" />
@@ -228,12 +263,16 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
     <div class="section-title">Color</div>
     <div class="color-row">
       <span class="color-label">Dots</span>
-      <div class="color-swatch" id="sw-dot" style="background:#1c1212"></div>
+      <div class="color-swatch" id="sw-dot" style="background:#1c1212">
+        <input type="color" class="native-picker" id="cp-dot" value="#1c1212" />
+      </div>
       <input type="text" class="color-hex" id="hex-dot" value="#1c1212" maxlength="7" />
     </div>
     <div class="color-row">
       <span class="color-label">Background</span>
-      <div class="color-swatch" id="sw-bg" style="background:#6ec4c0"></div>
+      <div class="color-swatch" id="sw-bg" style="background:#6ec4c0">
+        <input type="color" class="native-picker" id="cp-bg" value="#6ec4c0" />
+      </div>
       <input type="text" class="color-hex" id="hex-bg" value="#6ec4c0" maxlength="7" />
     </div>
   </div>
@@ -250,7 +289,15 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
         <option value="1080x1080">1080 × 1080 — Square</option>
         <option value="1080x1350">1080 × 1350 — Portrait</option>
         <option value="1080x1920">1080 × 1920 — Story</option>
+        <option value="custom">Custom…</option>
       </select>
+      <div class="custom-res-wrap" id="custom-res-wrap">
+        <div class="custom-res-row">
+          <input type="number" id="inp-cw" value="1920" min="100" max="8000" placeholder="Width" />
+          <span class="custom-res-sep">×</span>
+          <input type="number" id="inp-ch" value="1080" min="100" max="8000" placeholder="Height" />
+        </div>
+      </div>
     </div>
     <button class="btn accent" id="btn-export" disabled>↓ Export PNG</button>
     <button class="btn ghost" id="btn-reseed">↺ Re-randomize</button>
@@ -303,10 +350,11 @@ function rand() {
 // ── State ─────────────────────────────────────────────────────────────────────
 let img = null, imgW = 0, imgH = 0;
 let adjustedData = null;
-let dotColor = '#1c1212';
-let bgColor  = '#6ec4c0';
-let organic  = false;
-let invert   = false;
+let dotColor    = '#1c1212';
+let bgColor     = '#6ec4c0';
+let organic     = false;
+let invert      = false;
+let uniformMode = false;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function g(id)  { return parseFloat(document.getElementById(id).value); }
@@ -315,13 +363,14 @@ function isHex(h) { return /^#[0-9a-fA-F]{6}$/.test(h); }
 
 // Slider display sync
 const SL = {
-  'sl-px':['v-px', v=>Math.round(v)],  'sl-py':['v-py', v=>Math.round(v)],
-  'sl-sc':['v-sc', v=>Math.round(v)],  'sl-br':['v-br', v=>Math.round(v)],
-  'sl-co':['v-co', v=>(+v).toFixed(2)],'sl-ga':['v-ga', v=>(+v).toFixed(2)],
-  'sl-bl':['v-bl', v=>(+v).toFixed(1)],'sl-sp':['v-sp', v=>(+v).toFixed(1)],
-  'sl-an':['v-an', v=>Math.round(v)],  'sl-ms':['v-ms', v=>(+v).toFixed(1)],
-  'sl-mn':['v-mn', v=>(+v).toFixed(2)],'sl-jt':['v-jt', v=>(+v).toFixed(1)],
-  'sl-sv':['v-sv', v=>(+v).toFixed(1)],'sl-do':['v-do', v=>Math.round(v)],
+  'sl-px': ['v-px', v => Math.round(v)],   'sl-py': ['v-py', v => Math.round(v)],
+  'sl-sc': ['v-sc', v => Math.round(v)],   'sl-br': ['v-br', v => Math.round(v)],
+  'sl-co': ['v-co', v => (+v).toFixed(2)], 'sl-ga': ['v-ga', v => (+v).toFixed(2)],
+  'sl-bl': ['v-bl', v => (+v).toFixed(1)], 'sl-sp': ['v-sp', v => (+v).toFixed(1)],
+  'sl-an': ['v-an', v => Math.round(v)],   'sl-ms': ['v-ms', v => (+v).toFixed(1)],
+  'sl-mn': ['v-mn', v => (+v).toFixed(2)], 'sl-jt': ['v-jt', v => (+v).toFixed(1)],
+  'sl-sv': ['v-sv', v => (+v).toFixed(1)], 'sl-do': ['v-do', v => Math.round(v)],
+  'sl-sz': ['v-sz', v => (+v).toFixed(1)], 'sl-cov':['v-cov',v => (+v).toFixed(2)],
 };
 Object.entries(SL).forEach(([sid, [vid, fmt]]) => {
   const el = document.getElementById(sid);
@@ -346,20 +395,43 @@ document.getElementById('tog-org').addEventListener('click', function() {
 document.getElementById('tog-inv').addEventListener('click', function() {
   invert = !invert; this.classList.toggle('on', invert); render();
 });
+document.getElementById('tog-uni').addEventListener('click', function() {
+  uniformMode = !uniformMode;
+  this.classList.toggle('on', uniformMode);
+  document.getElementById('var-size-ctrls').style.display = uniformMode ? 'none' : 'block';
+  document.getElementById('uni-size-ctrls').style.display = uniformMode ? 'block' : 'none';
+  render();
+});
 
 // ── Color pickers ─────────────────────────────────────────────────────────────
-function setupColor(swId, hexId, onSet) {
+function setupColor(swId, hexId, pickId, onSet) {
   const sw = document.getElementById(swId);
   const hx = document.getElementById(hexId);
+  const cp = document.getElementById(pickId);
+
+  // Native color picker → sync hex text + state
+  cp.addEventListener('input', () => {
+    hx.value = cp.value;
+    sw.style.background = cp.value;
+    onSet(cp.value);
+    render();
+  });
+
+  // Hex text → sync native picker + state
   hx.addEventListener('input', () => {
     let v = hx.value.trim();
     if (!v.startsWith('#')) v = '#' + v;
-    if (isHex(v)) { sw.style.background = v; onSet(v); render(); }
+    if (isHex(v)) { sw.style.background = v; cp.value = v; onSet(v); render(); }
   });
-  sw.addEventListener('click', () => { hx.focus(); hx.select(); });
 }
-setupColor('sw-dot', 'hex-dot', v => dotColor = v);
-setupColor('sw-bg',  'hex-bg',  v => bgColor  = v);
+setupColor('sw-dot', 'hex-dot', 'cp-dot', v => dotColor = v);
+setupColor('sw-bg',  'hex-bg',  'cp-bg',  v => bgColor  = v);
+
+// ── Custom resolution toggle ───────────────────────────────────────────────────
+document.getElementById('sel-res').addEventListener('change', function() {
+  const wrap = document.getElementById('custom-res-wrap');
+  wrap.classList.toggle('visible', this.value === 'custom');
+});
 
 // ── Image loading ─────────────────────────────────────────────────────────────
 function loadFile(file) {
@@ -410,7 +482,7 @@ function processImage() {
   const d  = id.data;
   for (let i = 0; i < d.length; i += 4) {
     let r = d[i]/255, gr = d[i+1]/255, b = d[i+2]/255;
-    if (gamma !== 1) { r = r**( 1/gamma); gr = gr**(1/gamma); b = b**(1/gamma); }
+    if (gamma !== 1) { r = r**(1/gamma); gr = gr**(1/gamma); b = b**(1/gamma); }
     r += brightness; gr += brightness; b += brightness;
     r  = (r  - 0.5) * contrast + 0.5;
     gr = (gr - 0.5) * contrast + 0.5;
@@ -442,12 +514,16 @@ function makeSampler(W, H, sf) {
 function halftone(ctx2, W, H, sf, sample) {
   const spacing = g('sl-sp') * sf;
   const angle   = g('sl-an') * Math.PI / 180;
-  const maxDot  = g('sl-ms') * sf;
-  const minDot  = g('sl-mn') * sf;
   const jitter  = g('sl-jt') * sf;
   const sizeVar = g('sl-sv') * sf;
   const dropout = g('sl-do') / 100;
   const pattern = gv('sel-pat');
+
+  // Mode-specific params
+  const maxDot  = g('sl-ms') * sf;
+  const minDot  = g('sl-mn') * sf;
+  const dotSize = g('sl-sz') * sf;
+  const coverage = g('sl-cov');
 
   const cos_ = Math.cos(angle), sin_ = Math.sin(angle);
   const cx   = W / 2, cy = H / 2;
@@ -483,7 +559,17 @@ function halftone(ctx2, W, H, sf, sample) {
       if (rand() < dropout) continue;
 
       const lum = sample(sx, sy);
-      let r = minDot + (1 - lum) * (maxDot - minDot);
+
+      let r;
+      if (uniformMode) {
+        // Stochastic placement: fixed size, probability driven by darkness
+        const prob = (1 - lum) * coverage;
+        if (rand() >= prob) continue;
+        r = dotSize;
+      } else {
+        r = minDot + (1 - lum) * (maxDot - minDot);
+      }
+
       r += (rand() - 0.5) * sizeVar * 2;
       r = Math.max(0, r);
       if (r < 0.3 * sf) continue;
@@ -520,17 +606,24 @@ document.getElementById('btn-reseed').addEventListener('click', () => {
 
 // ── Export ────────────────────────────────────────────────────────────────────
 document.getElementById('btn-export').addEventListener('click', () => {
-  const [ew, eh] = gv('sel-res').split('x').map(Number);
+  let ew, eh;
+  if (gv('sel-res') === 'custom') {
+    ew = parseInt(document.getElementById('inp-cw').value) || 1920;
+    eh = parseInt(document.getElementById('inp-ch').value) || 1080;
+    ew = Math.max(100, Math.min(8000, ew));
+    eh = Math.max(100, Math.min(8000, eh));
+  } else {
+    [ew, eh] = gv('sel-res').split('x').map(Number);
+  }
+
   const sfx = ew / DW;
   const sfy = eh / DH;
-  // Use average scale factor; works best for same-aspect exports
   const sf  = Math.min(sfx, sfy);
 
   const ec  = document.createElement('canvas');
   ec.width  = ew; ec.height = eh;
   const ex  = ec.getContext('2d');
 
-  // Pan in export space — scale pan offsets by sf
   const panX  = ew/2 + g('sl-px') * sf;
   const panY  = eh/2 + g('sl-py') * sf;
   const scale = g('sl-sc') / 100;
@@ -544,7 +637,7 @@ document.getElementById('btn-export').addEventListener('click', () => {
     return invert ? 1 - lum : lum;
   }
 
-  _seed = _renderSeed; // deterministic — same pattern as display
+  _seed = _renderSeed;
   halftone(ex, ew, eh, sf, sampleExport);
 
   const a = document.createElement('a');
