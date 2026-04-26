@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reaction Diffusion</title>
+<style>
+:root {
+  --bg: #ececec;
+  --card: #ffffff;
+  --text: #000000;
+  --text-dim: #6b6b6b;
+  --line: #e4e4e4;
+  --line-2: #d4d4d4;
+  --accent: #d4fc4e;
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-pill: 999px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: #000; overflow: hidden;
+  font-family: -apple-system, "Inter", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased; }
+
+#c { display: block; width: 100vw; height: 100vh; }
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+
+#status {
+  position: fixed; bottom: 10px; left: 14px; z-index: 20;
+  font-family: ui-monospace, monospace; font-size: 10px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(255,255,255,0.22); pointer-events: none;
+  opacity: 0; transition: opacity 0.5s;
+}
+#status.show { opacity: 1; }
+
+#ctrl-btn {
+  position: fixed; top: 16px; right: 16px; z-index: 50;
+  background: #000; color: #fff; border: none;
+  padding: 8px 16px; border-radius: var(--radius-pill);
+  font-size: 12px; font-weight: 600; font-family: inherit;
+  cursor: pointer; letter-spacing: 0.01em; transition: background 0.15s;
+}
+#ctrl-btn:hover { background: #222; }
+
+#panel {
+  position: fixed; top: 0; right: 0; z-index: 40;
+  width: 320px; height: 100vh; background: var(--bg);
+  border-left: 1px solid var(--line-2);
+  overflow-y: auto; overflow-x: hidden;
+  transform: translateX(100%); transition: transform 0.22s ease;
+  padding: 16px;
+}
+#panel.open { transform: translateX(0); }
+#panel::-webkit-scrollbar { width: 6px; }
+#panel::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 3px; }
+
+.brand-row { display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 16px; padding: 2px 4px; }
+.brand { font-size: 17px; font-weight: 900; letter-spacing: -0.02em; }
+.brand .dot { display: inline-block; width: 5px; height: 5px; background: #000;
+  border-radius: 50%; vertical-align: baseline; margin-left: 1px; margin-bottom: 1px; }
+.brand .reg { font-size: 10px; font-weight: 700; vertical-align: super; margin-left: 1px; }
+.brand-sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.12em; font-weight: 600; }
+
+.section { background: var(--card); border-radius: var(--radius-lg);
+  padding: 14px 14px 16px; margin-bottom: 10px; }
+.section-title { display: inline-block; background: var(--accent); color: #000;
+  padding: 3px 7px; font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px; border-radius: 3px; }
+
+.control { margin-bottom: 12px; }
+.control:last-child { margin-bottom: 0; }
+.control > label { display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
+.control > label .val { color: var(--text-dim); font-variant-numeric: tabular-nums;
+  font-size: 11px; font-family: ui-monospace, monospace; }
+
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+  background: #d4d4d4; border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer;
+  transition: transform 0.1s; }
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+  color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
+  font-size: 13px; outline: none; cursor: pointer; font-family: inherit; font-weight: 500;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 32px; }
+
+/* 3-stop color row */
+.color-stops { display: flex; gap: 8px; margin-bottom: 8px; }
+.color-stop { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.color-stop-swatch { width: 100%; height: 42px; border-radius: 10px;
+  border: 1px solid var(--line-2); overflow: hidden; position: relative; }
+.color-stop-swatch input[type=color] { position: absolute; inset: -4px;
+  width: calc(100%+8px); height: calc(100%+8px); border: none; cursor: pointer; padding: 0; }
+.color-stop-label { font-size: 10px; color: var(--text-dim); font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.07em; }
+
+.toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.toggle:last-child { margin-bottom: 0; }
+.toggle > label { font-size: 12px; font-weight: 500; }
+.toggle-switch { position: relative; width: 38px; height: 22px; background: #d4d4d4;
+  border-radius: 11px; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
+.toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+.toggle-switch.on { background: #000; }
+.toggle-switch.on::after { left: 18px; }
+
+button.btn { width: 100%; background: #000; color: #fff; border: none; padding: 10px 14px;
+  border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s; font-family: inherit; }
+button.btn:hover { background: #222; }
+button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line-2); }
+button.btn.ghost:hover { background: #f5f5f5; }
+button.btn.accent { background: var(--accent); color: #000; border: none; }
+button.btn.accent:hover { background: #c2ea3c; }
+button.btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+.btn-row { display: flex; gap: 8px; }
+.btn-row button { flex: 1; }
+.hint { font-size: 11px; color: var(--text-dim); line-height: 1.5; margin-top: 6px; }
+
+#progress {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s;
+}
+#progress.show { opacity: 1; pointer-events: all; }
+#prog-label { font-family: ui-monospace, monospace; font-size: 11px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(255,255,255,0.55); margin-bottom: 14px; }
+#prog-track { width: 220px; height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+#prog-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.08s; }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div id="fx"></div>
+<div id="status"></div>
+
+<div id="progress">
+  <div id="prog-label">Rendering…</div>
+  <div id="prog-track"><div id="prog-fill"></div></div>
+</div>
+
+<button id="ctrl-btn">Controls</button>
+
+<div id="panel">
+  <div class="brand-row">
+    <div>
+      <div class="brand">HEAR THE YOUTH<span class="dot"></span><span class="reg">®</span></div>
+      <div class="brand-sub">Reaction Diffusion</div>
+    </div>
+  </div>
+
+  <!-- COLOR -->
+  <div class="section">
+    <div class="section-title">Color</div>
+    <div class="control">
+      <label>Palette preset</label>
+      <select id="sel-palette">
+        <option value="custom">Custom</option>
+        <option value="0">Mineral</option>
+        <option value="1">Biological</option>
+        <option value="2">Ceremonial</option>
+        <option value="3">Glitch</option>
+        <option value="4">Fungal</option>
+        <option value="5">Ultraviolet</option>
+        <option value="auto">Auto (cycling)</option>
+      </select>
+    </div>
+    <div class="color-stops">
+      <div class="color-stop">
+        <div class="color-stop-swatch"><input type="color" id="cp-bg"  value="#040210" /></div>
+        <span class="color-stop-label">BG</span>
+      </div>
+      <div class="color-stop">
+        <div class="color-stop-swatch"><input type="color" id="cp-org" value="#410c82" /></div>
+        <span class="color-stop-label">Organism</span>
+      </div>
+      <div class="color-stop">
+        <div class="color-stop-swatch"><input type="color" id="cp-hi"  value="#b9a512" /></div>
+        <span class="color-stop-label">Highlight</span>
+      </div>
+    </div>
+    <div class="control" id="row-drift" style="display:none">
+      <label>Color drift <span class="val" id="val-drift">50</span></label>
+      <input type="range" id="sl-drift" min="0" max="100" value="50" />
+    </div>
+  </div>
+
+  <!-- PATTERN -->
+  <div class="section">
+    <div class="section-title">Pattern</div>
+    <div class="control">
+      <label>Zone</label>
+      <select id="sel-zone">
+        <option value="auto">Auto (evolving)</option>
+        <option value="0">Coral</option>
+        <option value="1">Pulsars</option>
+        <option value="2">Solitons</option>
+        <option value="3">Worms</option>
+        <option value="4">Spores</option>
+        <option value="5">Holes</option>
+        <option value="6">Spirals</option>
+        <option value="7">Chaos</option>
+        <option value="8">Flowers</option>
+      </select>
+    </div>
+    <div id="fk-controls" style="display:none; margin-top:10px">
+      <div class="control">
+        <label>F rate <span class="val" id="val-f">0.0545</span></label>
+        <input type="range" id="sl-f" min="0.005" max="0.10" step="0.0001" value="0.0545" />
+      </div>
+      <div class="control">
+        <label>K rate <span class="val" id="val-k">0.0620</span></label>
+        <input type="range" id="sl-k" min="0.040" max="0.075" step="0.0001" value="0.0620" />
+      </div>
+    </div>
+    <div class="control" style="margin-top:10px">
+      <label>Chaos <span class="val" id="val-chaos">40</span></label>
+      <input type="range" id="sl-chaos" min="0" max="100" value="40" />
+    </div>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn ghost" id="btn-reseed">Reseed</button>
+    </div>
+  </div>
+
+  <!-- SIMULATION -->
+  <div class="section">
+    <div class="section-title">Simulation</div>
+    <div class="control">
+      <label>Diffusion ratio <span class="val" id="val-dv">0.50</span></label>
+      <input type="range" id="sl-dv" min="0.1" max="0.9" step="0.01" value="0.5" />
+    </div>
+    <div class="hint" style="margin-bottom:10px">Lower = tight spots. Higher = diffuse, connected blobs.</div>
+    <div class="control">
+      <label>Noise <span class="val" id="val-noise">0.00</span></label>
+      <input type="range" id="sl-noise" min="0" max="0.05" step="0.001" value="0" />
+    </div>
+    <div class="hint" style="margin-bottom:10px">Organic randomness. High values destabilize patterns.</div>
+    <div class="control">
+      <label>Symmetry</label>
+      <select id="sel-sym">
+        <option value="0">None</option>
+        <option value="1">Horizontal mirror</option>
+        <option value="2">Vertical mirror</option>
+        <option value="3">4-way mirror</option>
+      </select>
+    </div>
+    <div class="toggle" style="margin-top:10px">
+      <label>Invert</label>
+      <div class="toggle-switch" id="tog-invert"></div>
+    </div>
+  </div>
+
+  <!-- MOTION -->
+  <div class="section">
+    <div class="section-title">Motion</div>
+    <div class="control">
+      <label>Speed <span class="val" id="val-speed">1.0×</span></label>
+      <input type="range" id="sl-speed" min="0" max="100" value="50" />
+    </div>
+    <div class="toggle">
+      <label>Breathing</label>
+      <div class="toggle-switch on" id="tog-breath"></div>
+    </div>
+    <div class="toggle">
+      <label>Auto-glitch</label>
+      <div class="toggle-switch on" id="tog-glitch"></div>
+    </div>
+  </div>
+
+  <!-- VISUAL -->
+  <div class="section">
+    <div class="section-title">Visual</div>
+    <div class="toggle">
+      <label>Pixelated</label>
+      <div class="toggle-switch" id="tog-pixel"></div>
+    </div>
+    <div class="toggle">
+      <label>Scanlines</label>
+      <div class="toggle-switch" id="tog-scan"></div>
+    </div>
+    <div class="toggle">
+      <label>Vignette</label>
+      <div class="toggle-switch" id="tog-vig"></div>
+    </div>
+    <div class="toggle">
+      <label>Edge glow</label>
+      <div class="toggle-switch on" id="tog-grad"></div>
+    </div>
+  </div>
+
+  <!-- EXPORT -->
+  <div class="section">
+    <div class="section-title">Export</div>
+    <div class="control">
+      <label>Format</label>
+      <select id="sel-format">
+        <option value="png-alpha">PNG Sequence + α</option>
+        <option value="video">Video (WebM)</option>
+        <option value="screenshot">Screenshot PNG</option>
+      </select>
+    </div>
+    <div class="control" id="row-dur">
+      <label>Duration <span class="val" id="val-dur">5s</span></label>
+      <input type="range" id="sl-dur" min="1" max="30" value="5" />
+    </div>
+    <div class="control" id="row-fps">
+      <label>FPS</label>
+      <select id="sel-fps">
+        <option value="12">12 fps</option>
+        <option value="24" selected>24 fps</option>
+        <option value="30">30 fps</option>
+      </select>
+    </div>
+    <div class="control" id="row-res">
+      <label>Resolution</label>
+      <select id="sel-res">
+        <option value="1920x1080">1920×1080 Full HD</option>
+        <option value="1280x720">1280×720 HD</option>
+        <option value="960x540">960×540</option>
+        <option value="320x180">320×180 Raw</option>
+      </select>
+    </div>
+    <div class="hint" id="export-note">PNG sequence with alpha — import into AE as image sequence.</div>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn accent" id="btn-export">Export</button>
+      <button class="btn ghost" id="btn-pause">Pause</button>
+    </div>
+  </div>
+
+  <div class="hint" style="padding:4px 0 8px;text-align:center">
+    R — reseed &nbsp;·&nbsp; S — screenshot &nbsp;·&nbsp; Space — pause &nbsp;·&nbsp; C — controls
+  </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+// ── canvas ─────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const dpr    = window.devicePixelRatio || 1;
+let CW, CH;
+function resizeCanvas() {
+  CW = window.innerWidth; CH = window.innerHeight;
+  canvas.width  = Math.round(CW * dpr);
+  canvas.height = Math.round(CH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// ── PRNG ──────────────────────────────────────────────────────────────────
+let seed = (Math.random() * 0xffffffff) >>> 0;
+function rand() {
+  seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5;
+  return (seed >>> 0) / 0xffffffff;
+}
+
+// ── simulation grid ────────────────────────────────────────────────────────
+const GW = 320, GH = 180, N = GW * GH;
+let U  = new Float32Array(N).fill(1), V  = new Float32Array(N);
+let nU = new Float32Array(N),         nV = new Float32Array(N);
+
+const rowU = new Int32Array(GH), rowD = new Int32Array(GH);
+for (let y = 0; y < GH; y++) {
+  rowU[y] = (y === 0 ? GH-1 : y-1) * GW;
+  rowD[y] = (y === GH-1 ? 0 : y+1) * GW;
+}
+const colL = new Int32Array(GW), colR = new Int32Array(GW);
+for (let x = 0; x < GW; x++) {
+  colL[x] = x === 0 ? GW-1 : x-1;
+  colR[x] = x === GW-1 ? 0 : x+1;
+}
+
+function initGrid() {
+  U.fill(1); V.fill(0);
+  const ns = 3 + (rand()*7|0);
+  for (let i = 0; i < ns; i++) {
+    const cx=rand()*GW|0, cy=rand()*GH|0, r=3+(rand()*11|0);
+    for (let dy=-r; dy<=r; dy++)
+      for (let dx=-r; dx<=r; dx++) {
+        if (dx*dx+dy*dy > r*r) continue;
+        const idx = ((cy+dy+GH)%GH)*GW+(cx+dx+GW)%GW;
+        V[idx]=1; U[idx]=0;
+      }
+  }
+  for (let i = 0; i < N; i++)
+    if (rand() < 0.004) { V[i]=rand()*0.7+0.15; U[i]=1-V[i]; }
+}
+initGrid();
+
+// ── zones ──────────────────────────────────────────────────────────────────
+const ZONES = [
+  { f:0.0545, k:0.0620, name:'coral'    },
+  { f:0.0370, k:0.0600, name:'pulsars'  },
+  { f:0.0293, k:0.0570, name:'solitons' },
+  { f:0.0820, k:0.0600, name:'worms'    },
+  { f:0.0220, k:0.0590, name:'spores'   },
+  { f:0.0148, k:0.0540, name:'holes'    },
+  { f:0.0460, k:0.0630, name:'spirals'  },
+  { f:0.0625, k:0.0609, name:'chaos'    },
+  { f:0.0118, k:0.0475, name:'flowers'  },
+];
+let zFrom=0, zTo=1, zT=0;
+let manualF=ZONES[0].f, manualK=ZONES[0].k;
+
+// ── palettes ───────────────────────────────────────────────────────────────
+const PRESETS = [
+  [[ 4, 2,16],[ 65, 12,130],[185,165, 18]],
+  [[ 3,16, 5],[ 28,105, 40],[215, 22, 72]],
+  [[20, 2, 2],[135, 22, 22],[255,195, 42]],
+  [[ 2, 2,22],[  8,155,185],[245,  0,118]],
+  [[ 9, 7, 2],[ 88, 55,  8],[ 52,190, 95]],
+  [[14, 0,18],[160,  0, 90],[ 50,255,180]],
+];
+let customPal = [[4,2,16],[65,12,130],[185,165,18]];
+let pFrom=0, pTo=1, pT=0;
+
+function hexToRgbArr(hex) {
+  hex=hex.replace('#','');
+  return [parseInt(hex.slice(0,2),16),parseInt(hex.slice(2,4),16),parseInt(hex.slice(4,6),16)];
+}
+function rgbArrToHex(arr) {
+  return '#'+arr.map(v=>Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,'0')).join('');
+}
+
+function smoothstep(t) { return t*t*(3-2*t); }
+function lerpC(a,b,t) { return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]; }
+
+function getActivePalette() {
+  const sel=document.getElementById('sel-palette').value;
+  if (sel==='custom') return customPal;
+  if (sel==='auto') {
+    const t=smoothstep(Math.max(0,Math.min(1,pT)));
+    const pa=PRESETS[pFrom],pb=PRESETS[pTo];
+    return [lerpC(pa[0],pb[0],t),lerpC(pa[1],pb[1],t),lerpC(pa[2],pb[2],t)];
+  }
+  return PRESETS[+sel];
+}
+
+// ── toggle state ───────────────────────────────────────────────────────────
+const ts = { breath:true, glitch:true, pixel:false, scan:false, vig:false, grad:true, invert:false };
+
+// ── simulation params ──────────────────────────────────────────────────────
+const Du = 1.0;
+let Dv   = 0.5;
+
+function currentFk() {
+  const zoneVal=document.getElementById('sel-zone').value;
+  const breath=ts.breath ? Math.sin(performance.now()*0.00085)*0.0012 : 0;
+  if (zoneVal!=='auto') return { f:manualF+breath, k:manualK };
+  const a=ZONES[zFrom],b=ZONES[zTo];
+  const t=smoothstep(Math.max(0,Math.min(1,zT)));
+  return { f:a.f+(b.f-a.f)*t+breath, k:a.k+(b.k-a.k)*t };
+}
+
+// ── rendering ──────────────────────────────────────────────────────────────
+const gc   = document.createElement('canvas');
+gc.width   = GW; gc.height = GH;
+const gctx = gc.getContext('2d');
+
+function cellRgb(i, pal) {
+  const v=V[i];
+  let vv;
+  if (ts.grad) {
+    const x=i%GW,y=(i/GW)|0;
+    const gx=V[y*GW+colR[x]]-V[y*GW+colL[x]];
+    const gy=V[rowD[y]+x]-V[rowU[y]+x];
+    vv=Math.min(1,Math.pow(v*2.8,0.72)+Math.sqrt(gx*gx+gy*gy)*1.4);
+  } else {
+    vv=Math.min(1,Math.pow(v*2.8,0.72));
+  }
+  if (ts.invert) vv=1-vv;
+  let r,g,b;
+  if (vv<=0.5) {
+    const t=vv*2;
+    r=pal[0][0]+(pal[1][0]-pal[0][0])*t;
+    g=pal[0][1]+(pal[1][1]-pal[0][1])*t;
+    b=pal[0][2]+(pal[1][2]-pal[0][2])*t;
+  } else {
+    const t=(vv-0.5)*2;
+    r=pal[1][0]+(pal[2][0]-pal[1][0])*t;
+    g=pal[1][1]+(pal[2][1]-pal[1][1])*t;
+    b=pal[1][2]+(pal[2][2]-pal[1][2])*t;
+  }
+  return [r|0,g|0,b|0];
+}
+
+function renderToCtx(targetCtx, withAlpha) {
+  const img=targetCtx.createImageData(GW,GH);
+  const data=img.data;
+  const pal=getActivePalette();
+  for (let i=0;i<N;i++) {
+    const [r,g,b]=cellRgb(i,pal);
+    const p=i<<2;
+    data[p]=r;data[p+1]=g;data[p+2]=b;
+    data[p+3]=withAlpha ? Math.min(255,V[i]*600|0) : 255;
+  }
+  targetCtx.putImageData(img,0,0);
+}
+
+function render() {
+  renderToCtx(gctx,false);
+  ctx.imageSmoothingEnabled=!ts.pixel;
+  if (!ts.pixel) ctx.imageSmoothingQuality='high';
+  ctx.drawImage(gc,0,0,CW,CH);
+}
+
+// ── Gray-Scott step ─────────────────────────────────────────────────────────
+function step(f,k) {
+  for (let y=0;y<GH;y++) {
+    const rUr=rowU[y],rDr=rowD[y],rC=y*GW;
+    for (let x=0;x<GW;x++) {
+      const cLx=colL[x],cRx=colR[x],i=rC+x;
+      const u=U[i],v=V[i];
+      const lapU=(U[rC+cLx]+U[rC+cRx]+U[rUr+x]+U[rDr+x])*0.2
+               +(U[rUr+cLx]+U[rUr+cRx]+U[rDr+cLx]+U[rDr+cRx])*0.05-u;
+      const lapV=(V[rC+cLx]+V[rC+cRx]+V[rUr+x]+V[rDr+x])*0.2
+               +(V[rUr+cLx]+V[rUr+cRx]+V[rDr+cLx]+V[rDr+cRx])*0.05-v;
+      const uvv=u*v*v;
+      nU[i]=Math.max(0,Math.min(1,u+Du*lapU-uvv+f*(1-u)));
+      nV[i]=Math.max(0,Math.min(1,v+Dv*lapV+uvv-(f+k)*v));
+    }
+  }
+  let t=U;U=nU;nU=t;t=V;V=nV;nV=t;
+}
+
+// ── symmetry ───────────────────────────────────────────────────────────────
+function applySymmetry(sym) {
+  if (!sym) return;
+  const hw=GW>>1,hh=GH>>1;
+  if (sym===1||sym===3) for (let y=0;y<GH;y++) for (let x=0;x<hw;x++) {
+    const l=y*GW+x,r=y*GW+(GW-1-x); V[r]=V[l]; U[r]=U[l];
+  }
+  if (sym===2||sym===3) for (let y=0;y<hh;y++) for (let x=0;x<GW;x++) {
+    const top=y*GW+x,bot=(GH-1-y)*GW+x; V[bot]=V[top]; U[bot]=U[top];
+  }
+}
+
+// ── noise ──────────────────────────────────────────────────────────────────
+function injectNoise(amount) {
+  if (amount<=0) return;
+  for (let i=0;i<N;i++) {
+    if (Math.random()<0.08) {
+      V[i]=Math.max(0,Math.min(1,V[i]+(Math.random()-0.5)*amount*2));
+      U[i]=Math.max(0,Math.min(1,1-V[i]));
+    }
+  }
+}
+
+// ── perturbation ───────────────────────────────────────────────────────────
+function perturb(gx2,gy2,radius,strength) {
+  const r2=radius*radius;
+  for (let dy=-radius;dy<=radius;dy++) for (let dx=-radius;dx<=radius;dx++) {
+    if (dx*dx+dy*dy>r2) continue;
+    const x=(gx2+dx+GW)%GW,y=(gy2+dy+GH)%GH,i=y*GW+x;
+    const amt=strength*(1-Math.sqrt(dx*dx+dy*dy)/radius);
+    V[i]=Math.min(1,V[i]+amt); U[i]=Math.max(0,1-V[i]);
+  }
+}
+
+// ── glitch ─────────────────────────────────────────────────────────────────
+let glitchIn=7+rand()*15;
+function doGlitch() {
+  const r=rand();
+  if (r<0.35) { zFrom=rand()*ZONES.length|0; zTo=rand()*ZONES.length|0; zT=0; }
+  else if (r<0.65) { perturb(rand()*GW|0,rand()*GH|0,6+(rand()*22|0),rand()*0.9+0.1); }
+  else if (r<0.85) {
+    const cx=rand()*GW|0,cy=rand()*GH|0,rad=8+(rand()*28|0);
+    for (let dy=-rad;dy<=rad;dy++) for (let dx=-rad;dx<=rad;dx++) {
+      if (dx*dx+dy*dy>rad*rad) continue;
+      const i=((cy+dy+GH)%GH)*GW+(cx+dx+GW)%GW; V[i]=0; U[i]=1;
+    }
+  } else { pFrom=pTo; pTo=rand()*PRESETS.length|0; pT=0; }
+}
+
+// ── mouse ──────────────────────────────────────────────────────────────────
+let mx=-1,my=-1;
+canvas.addEventListener('mousemove',e=>{mx=(e.clientX/CW*GW)|0;my=(e.clientY/CH*GH)|0;});
+canvas.addEventListener('mouseleave',()=>{mx=-1;my=-1;});
+canvas.addEventListener('click',e=>{perturb((e.clientX/CW*GW)|0,(e.clientY/CH*GH)|0,13,1.0);});
+
+// ── main loop ──────────────────────────────────────────────────────────────
+let paused=false,exporting=false,lastT=performance.now();
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (exporting) return;
+  const elapsed=Math.min((now-lastT)/1000,0.05);
+  lastT=now;
+
+  if (!paused) {
+    const chaosVal=+document.getElementById('sl-chaos').value;
+    const driftVal=+document.getElementById('sl-drift').value;
+    const speedVal=+document.getElementById('sl-speed').value;
+    const chaos=0.2+(chaosVal/100)*1.8;
+    const drift=0.3+(driftVal/100)*1.5;
+    const sm=Math.pow(16,speedVal/100-0.5);
+    const sym=+document.getElementById('sel-sym').value;
+    const noiseAmt=+document.getElementById('sl-noise').value;
+
+    if (document.getElementById('sel-zone').value==='auto') {
+      zT+=0.00025*chaos*sm;
+      if (zT>=1){zFrom=zTo;zTo=rand()*ZONES.length|0;zT=0;}
+    }
+    if (document.getElementById('sel-palette').value==='auto') {
+      pT+=0.00012*drift*sm;
+      if (pT>=1){pFrom=pTo;pTo=rand()*PRESETS.length|0;pT=0;}
+    }
+    if (ts.glitch) {
+      glitchIn-=elapsed*sm;
+      if (glitchIn<=0){doGlitch();glitchIn=(4+rand()*20)/chaos;}
+    }
+
+    const {f,k}=currentFk();
+    const steps=Math.max(1,Math.round(5*sm));
+    for (let s=0;s<steps;s++){step(f,k);if(mx>=0&&my>=0)perturb(mx,my,2,0.014);}
+
+    applySymmetry(sym);
+    injectNoise(noiseAmt);
+
+    document.getElementById('status').textContent=
+      `${ZONES[zFrom].name}→${ZONES[zTo].name}  f:${f.toFixed(4)}  k:${k.toFixed(4)}  Dv:${Dv.toFixed(2)}`;
+  }
+  render();
+}
+requestAnimationFrame(frame);
+
+// ── overlay ─────────────────────────────────────────────────────────────────
+const fxEl=document.getElementById('fx');
+function updateFx(){
+  const layers=[];
+  if (ts.scan) layers.push('repeating-linear-gradient(0deg,transparent 0px,transparent 2px,rgba(0,0,0,0.055) 2px,rgba(0,0,0,0.055) 3px)');
+  if (ts.vig)  layers.push('radial-gradient(ellipse at 50% 50%,transparent 35%,rgba(0,0,0,0.62) 100%)');
+  fxEl.style.background=layers.join(',')||'none';
+}
+updateFx();
+
+// ── ZIP builder ─────────────────────────────────────────────────────────────
+const crcTable=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?0xEDB88320^(c>>>1):c>>>1;t[n]=c;}return t;})();
+function crc32(buf){let c=0xFFFFFFFF;for(let i=0;i<buf.length;i++)c=crcTable[(c^buf[i])&0xFF]^(c>>>8);return(c^0xFFFFFFFF)>>>0;}
+function buildZip(files){
+  const enc=new TextEncoder(),parts=[],cd=[];let off=0;
+  function w32(dv,o,v){dv.setUint32(o,v,true);}function w16(dv,o,v){dv.setUint16(o,v,true);}
+  for(const f of files){
+    const nb=enc.encode(f.name),crc=crc32(f.data),sz=f.data.length;
+    const lh=new DataView(new ArrayBuffer(30+nb.length));
+    w32(lh,0,0x04034b50);w16(lh,4,20);w16(lh,6,0);w16(lh,8,0);w16(lh,10,0);w16(lh,12,0);
+    w32(lh,14,crc);w32(lh,18,sz);w32(lh,22,sz);w16(lh,26,nb.length);w16(lh,28,0);
+    new Uint8Array(lh.buffer,30).set(nb);parts.push(new Uint8Array(lh.buffer),f.data);
+    const ce=new DataView(new ArrayBuffer(46+nb.length));
+    w32(ce,0,0x02014b50);w16(ce,4,20);w16(ce,6,20);w16(ce,8,0);w16(ce,10,0);w16(ce,12,0);
+    w16(ce,14,0);w32(ce,16,crc);w32(ce,20,sz);w32(ce,24,sz);w16(ce,28,nb.length);
+    w16(ce,30,0);w16(ce,32,0);w16(ce,34,0);w16(ce,36,0);w32(ce,38,0);w32(ce,42,off);
+    new Uint8Array(ce.buffer,46).set(nb);cd.push(new Uint8Array(ce.buffer));
+    off+=30+nb.length+sz;
+  }
+  const cds=cd.reduce((s,b)=>s+b.length,0);
+  const eocd=new DataView(new ArrayBuffer(22));
+  w32(eocd,0,0x06054b50);w16(eocd,4,0);w16(eocd,6,0);w16(eocd,8,files.length);
+  w16(eocd,10,files.length);w32(eocd,12,cds);w32(eocd,16,off);w16(eocd,20,0);
+  const all=[...parts,...cd,new Uint8Array(eocd.buffer)];
+  const total=all.reduce((s,b)=>s+b.length,0);
+  const out=new Uint8Array(total);let pos=0;
+  for(const p of all){out.set(p,pos);pos+=p.length;}
+  return out;
+}
+function dataURLtoBytes(url){const bin=atob(url.split(',')[1]);const out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out;}
+
+// ── export ─────────────────────────────────────────────────────────────────
+async function exportPNGSeq(durSec,fps,ew,eh){
+  const total=Math.round(durSec*fps);
+  const sU=U.slice(),sV=V.slice();
+  const sv={zFrom,zTo,zT,pFrom,pTo,pT,manualF,manualK};
+  exporting=true;showProg(0,`Rendering ${total} frames at ${ew}×${eh}…`);
+  const fc=document.createElement('canvas');fc.width=ew;fc.height=eh;
+  const fctx=fc.getContext('2d');fctx.imageSmoothingEnabled=true;fctx.imageSmoothingQuality='high';
+  const files=[];
+  const sym=+document.getElementById('sel-sym').value;
+  const noiseAmt=+document.getElementById('sl-noise').value;
+  for(let fi=0;fi<total;fi++){
+    const {f,k}=currentFk();
+    for(let s=0;s<5;s++)step(f,k);
+    applySymmetry(sym);injectNoise(noiseAmt);
+    if(document.getElementById('sel-zone').value==='auto'){
+      zT+=0.00025;if(zT>=1){zFrom=zTo;zTo=rand()*ZONES.length|0;zT=0;}
+    }
+    if(document.getElementById('sel-palette').value==='auto'){
+      pT+=0.00012;if(pT>=1){pFrom=pTo;pTo=rand()*PRESETS.length|0;pT=0;}
+    }
+    renderToCtx(gctx,true);
+    fctx.clearRect(0,0,ew,eh);fctx.drawImage(gc,0,0,ew,eh);
+    files.push({name:`frame_${String(fi+1).padStart(4,'0')}.png`,data:dataURLtoBytes(fc.toDataURL('image/png'))});
+    updateProg((fi+1)/total);
+    if(fi%5===4)await new Promise(r=>setTimeout(r,0));
+  }
+  U.set(sU);V.set(sV);
+  ({zFrom,zTo,zT,pFrom,pTo,pT,manualF,manualK}=sv);
+  const zip=buildZip(files);
+  const a=document.createElement('a');
+  a.download=`reaction-diffusion-${Date.now()}.zip`;
+  a.href=URL.createObjectURL(new Blob([zip],{type:'application/zip'}));a.click();
+  exporting=false;hideProg();
+}
+
+function exportVideo(durSec,fps){
+  const mt=MediaRecorder.isTypeSupported('video/webm;codecs=vp9')?'video/webm;codecs=vp9':'video/webm';
+  const rec=new MediaRecorder(canvas.captureStream(fps),{mimeType:mt});
+  const chunks=[];
+  rec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+  rec.onstop=()=>{
+    const a=document.createElement('a');
+    a.download=`reaction-diffusion-${Date.now()}.webm`;
+    a.href=URL.createObjectURL(new Blob(chunks,{type:mt}));a.click();
+    document.getElementById('btn-export').disabled=false;hideProg();
+  };
+  rec.start();showProg(0,`Recording ${durSec}s…`);
+  let el=0;const iv=setInterval(()=>{el+=1/fps;updateProg(el/durSec);if(el>=durSec){clearInterval(iv);rec.stop();}},1000/fps);
+}
+
+document.getElementById('btn-export').addEventListener('click',async()=>{
+  const fmt=document.getElementById('sel-format').value;
+  const dur=+document.getElementById('sl-dur').value;
+  const fps=+document.getElementById('sel-fps').value;
+  if(fmt==='screenshot'){const a=document.createElement('a');a.download=`reaction-diffusion-${Date.now()}.png`;a.href=canvas.toDataURL('image/png');a.click();return;}
+  document.getElementById('btn-export').disabled=true;
+  if(fmt==='png-alpha'){const[ew,eh]=document.getElementById('sel-res').value.split('x').map(Number);await exportPNGSeq(dur,fps,ew,eh);document.getElementById('btn-export').disabled=false;}
+  else exportVideo(dur,fps);
+});
+
+function showProg(p,l){document.getElementById('prog-label').textContent=l||'…';updateProg(p);document.getElementById('progress').classList.add('show');}
+function updateProg(p){document.getElementById('prog-fill').style.width=(p*100)+'%';}
+function hideProg(){document.getElementById('progress').classList.remove('show');}
+
+// ── wiring ─────────────────────────────────────────────────────────────────
+function bindToggle(id,key,cb){
+  const el=document.getElementById(id);
+  el.addEventListener('click',()=>{ts[key]=!ts[key];el.classList.toggle('on',ts[key]);if(cb)cb();});
+}
+bindToggle('tog-breath','breath');
+bindToggle('tog-glitch','glitch');
+bindToggle('tog-pixel','pixel');
+bindToggle('tog-scan','scan',updateFx);
+bindToggle('tog-vig','vig',updateFx);
+bindToggle('tog-grad','grad');
+bindToggle('tog-invert','invert');
+
+function wire(id,valId,fmt){
+  const el=document.getElementById(id),vl=document.getElementById(valId);
+  const upd=()=>{vl.textContent=fmt(+el.value);};
+  el.addEventListener('input',upd);upd();
+}
+wire('sl-drift','val-drift',v=>Math.round(v));
+wire('sl-chaos','val-chaos',v=>Math.round(v));
+wire('sl-dur','val-dur',v=>v+'s');
+wire('sl-speed','val-speed',v=>{const m=Math.pow(16,v/100-0.5);return m<1?m.toFixed(2)+'×':m.toFixed(1)+'×';});
+wire('sl-dv','val-dv',v=>{Dv=+v;return(+v).toFixed(2);});
+wire('sl-noise','val-noise',v=>(+v).toFixed(3));
+wire('sl-f','val-f',v=>{manualF=+v;return(+v).toFixed(4);});
+wire('sl-k','val-k',v=>{manualK=+v;return(+v).toFixed(4);});
+
+// Zone select → show F/K sliders + reseed
+document.getElementById('sel-zone').addEventListener('change',e=>{
+  const fkDiv=document.getElementById('fk-controls');
+  if(e.target.value!=='auto'){
+    const zi=+e.target.value;
+    zFrom=zi;zTo=zi;zT=0;
+    manualF=ZONES[zi].f;manualK=ZONES[zi].k;
+    document.getElementById('sl-f').value=manualF;
+    document.getElementById('sl-k').value=manualK;
+    document.getElementById('val-f').textContent=manualF.toFixed(4);
+    document.getElementById('val-k').textContent=manualK.toFixed(4);
+    fkDiv.style.display='';
+    initGrid();glitchIn=3+rand()*8;
+  } else {
+    fkDiv.style.display='none';
+  }
+});
+
+// Palette preset → push colors into pickers, switch to custom
+document.getElementById('sel-palette').addEventListener('change',e=>{
+  const val=e.target.value;
+  document.getElementById('row-drift').style.display=val==='auto'?'':'none';
+  if(val==='auto'||val==='custom') return;
+  const pal=PRESETS[+val];
+  document.getElementById('cp-bg').value=rgbArrToHex(pal[0]);
+  document.getElementById('cp-org').value=rgbArrToHex(pal[1]);
+  document.getElementById('cp-hi').value=rgbArrToHex(pal[2]);
+  customPal=pal.map(c=>[...c]);
+  pFrom=+val;pTo=+val;pT=0;
+  document.getElementById('sel-palette').value='custom';
+});
+
+// Color pickers → live update custom palette
+function onColorChange(){
+  customPal=[
+    hexToRgbArr(document.getElementById('cp-bg').value),
+    hexToRgbArr(document.getElementById('cp-org').value),
+    hexToRgbArr(document.getElementById('cp-hi').value),
+  ];
+  document.getElementById('sel-palette').value='custom';
+}
+['cp-bg','cp-org','cp-hi'].forEach(id=>document.getElementById(id).addEventListener('input',onColorChange));
+
+// Export format
+document.getElementById('sel-format').addEventListener('change',e=>{
+  const hide=e.target.value==='screenshot';
+  document.getElementById('row-dur').style.display=hide?'none':'';
+  document.getElementById('row-fps').style.display=hide?'none':'';
+  document.getElementById('row-res').style.display=(hide||e.target.value==='video')?'none':'';
+  const notes={'png-alpha':'PNG sequence with alpha — import into AE as image sequence.',
+    'video':'WebM — use Screen blend mode in AE to composite.','screenshot':'Saves current frame.'};
+  document.getElementById('export-note').textContent=notes[e.target.value]||'';
+});
+
+document.getElementById('btn-pause').addEventListener('click',()=>{paused=!paused;document.getElementById('btn-pause').textContent=paused?'Resume':'Pause';});
+document.getElementById('btn-reseed').addEventListener('click',()=>{
+  seed=(Math.random()*0xffffffff)>>>0;initGrid();
+  const ze=document.getElementById('sel-zone');
+  if(ze.value==='auto'){zFrom=rand()*ZONES.length|0;zTo=rand()*ZONES.length|0;}
+  const pe=document.getElementById('sel-palette');
+  if(pe.value==='auto'){pFrom=rand()*PRESETS.length|0;pTo=(pFrom+1)%PRESETS.length;}
+  zT=pT=0;glitchIn=3+rand()*8;
+});
+
+const panelEl=document.getElementById('panel');
+const ctrlBtn=document.getElementById('ctrl-btn');
+function togglePanel(){panelEl.classList.toggle('open');ctrlBtn.textContent=panelEl.classList.contains('open')?'Close':'Controls';}
+ctrlBtn.addEventListener('click',togglePanel);
+
+const statusEl=document.getElementById('status');
+let statusTimer;
+function showStatus(){clearTimeout(statusTimer);statusEl.classList.add('show');statusTimer=setTimeout(()=>statusEl.classList.remove('show'),3000);}
+window.addEventListener('mousemove',showStatus);
+
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();paused=!paused;document.getElementById('btn-pause').textContent=paused?'Resume':'Pause';showStatus();}
+  if(e.code==='KeyR'){seed=(Math.random()*0xffffffff)>>>0;initGrid();const ze=document.getElementById('sel-zone');if(ze.value==='auto'){zFrom=rand()*ZONES.length|0;zTo=rand()*ZONES.length|0;}const pe=document.getElementById('sel-palette');if(pe.value==='auto'){pFrom=rand()*PRESETS.length|0;pTo=(pFrom+1)%PRESETS.length;}zT=pT=0;glitchIn=3+rand()*8;showStatus();}
+  if(e.code==='KeyS'){const a=document.createElement('a');a.download=`reaction-diffusion-${Date.now()}.png`;a.href=canvas.toDataURL('image/png');a.click();}
+  if(e.code==='KeyC')togglePanel();
+});
+
+})();
+</script>
+</body>
+</html>
