@@ -1,3 +1,8 @@
 [
-  { "slug": "particle-typeface-ae", "app": "After Effects", "hasPreview": false }
+  {
+    "slug": "particle-typeface-ae",
+    "app": "After Effects",
+    "hasPreview": true,
+    "repoUrl": "https://github.com/sheerenj/CC-TY/tree/main/plugins/particle-typeface-ae"
+  }
 ]

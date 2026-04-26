@@ -317,12 +317,17 @@
       return card;
     }
 
-    function makePluginCard({ slug, app, hasPreview }) {
+    function makePluginCard({ slug, app, hasPreview, repoUrl }) {
       const preview = `${PLUGIN_BASE}/${slug}/preview.png`;
       const name    = titleCase(prettifyName(slug));
 
-      const card = document.createElement("div");
+      const card = document.createElement(repoUrl ? "a" : "div");
       card.className = "tool-card";
+      if (repoUrl) {
+        card.href   = repoUrl;
+        card.target = "_blank";
+        card.rel    = "noopener noreferrer";
+      }
       card.innerHTML = `
         ${thumbHtml(hasPreview, preview, name)}
         <div class="card-body">
