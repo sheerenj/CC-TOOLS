@@ -252,7 +252,7 @@
       <div class="hero-bottom">
         <div class="tabs">
           <button class="tab active" data-tab="tools">Tools</button>
-          <button class="tab" data-tab="plugins">Plugins</button>
+          <button class="tab" data-tab="plugins">Plugins + Scripts</button>
         </div>
         <p class="status" id="status">Loading…</p>
       </div>
@@ -317,9 +317,11 @@
       return card;
     }
 
-    function makePluginCard({ slug, app, hasPreview, repoUrl }) {
-      const preview = `${PLUGIN_BASE}/${slug}/preview.png`;
+    function makePluginCard({ slug, type, app, hasPreview, repoUrl, previewBase }) {
+      const base    = previewBase || PLUGIN_BASE;
+      const preview = `${base}/${slug}/preview.png`;
       const name    = titleCase(prettifyName(slug));
+      const typeLabel = type === "script" ? "Script" : "Plugin";
 
       const card = document.createElement(repoUrl ? "a" : "div");
       card.className = "tool-card";
@@ -332,7 +334,7 @@
         ${thumbHtml(hasPreview, preview, name)}
         <div class="card-body">
           <h2 class="tool-name">${name}</h2>
-          <div class="tool-meta">Plugin</div>
+          <div class="tool-meta">${typeLabel}</div>
           ${app ? `<span class="plugin-badge">${app}</span>` : ""}
         </div>`;
       return card;
@@ -348,14 +350,12 @@
 
       if (toolsRes.status === "fulfilled" && toolsRes.value.ok) {
         const tools = await toolsRes.value.json();
-        tools.sort((a, b) => a.slug.localeCompare(b.slug));
         tools.forEach(t => galleryTools.appendChild(makeToolCard(t)));
         toolCount = tools.length;
       }
 
       if (pluginsRes.status === "fulfilled" && pluginsRes.value.ok) {
         const plugins = await pluginsRes.value.json();
-        plugins.sort((a, b) => a.slug.localeCompare(b.slug));
         plugins.forEach(p => galleryPlugins.appendChild(makePluginCard(p)));
         pluginCount = plugins.length;
       }

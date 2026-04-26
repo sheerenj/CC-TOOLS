@@ -4,7 +4,6 @@
   { "category": "generators",  "slug": "geometric-emblem-generator",    "hasPreview": true  },
   { "category": "generators",  "slug": "reaction-diffusion",            "hasPreview": true  },
   { "category": "image",       "slug": "BCA-halftone-lines-image",      "hasPreview": true  },
-  { "category": "scripts",     "slug": "squircles-for-illustrator",     "hasPreview": true  },
   { "category": "templates",   "slug": "ascii-template-tool",           "hasPreview": true  },
   { "category": "typography",  "slug": "experimental-type-tool",        "hasPreview": true  },
   { "category": "typography",  "slug": "particle-typeface",             "hasPreview": true  },
