@@ -294,10 +294,10 @@
         </div>`;
     }
 
-    function makeToolCard({ category, slug, hasPreview }) {
+    function makeToolCard({ category, slug, hasPreview, name: nameOverride }) {
       const link    = `${SITE_BASE}/${category}/${slug}/`;
       const preview = `${SITE_BASE}/${category}/${slug}/preview.png`;
-      const name    = titleCase(prettifyName(slug));
+      const name    = nameOverride || titleCase(prettifyName(slug));
 
       const card = document.createElement("a");
       card.className = "tool-card";
