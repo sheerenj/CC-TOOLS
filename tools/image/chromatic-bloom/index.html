@@ -89,7 +89,8 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 #canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center;
   background: var(--bg); overflow: hidden; position: relative; padding: 16px; }
-#c { display: block; background: #fff; }
+#c { display: block; background: #fff; cursor: grab; }
+#c:active { cursor: grabbing; }
 
 #empty-state { position: absolute; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 10px; pointer-events: none; }
@@ -146,16 +147,16 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
       <input type="range" id="sl-sat" min="100" max="400" value="190" step="1" />
     </div>
     <div class="ctrl">
-      <label>White fade <span class="val" id="v-wf">80</span>%
+      <label>White fade <span class="val" id="v-wf">100</span>%
         <span style="font-size:10px;color:var(--dim);font-weight:400;margin-left:2px">neutrals → white</span>
       </label>
-      <input type="range" id="sl-wf" min="0" max="100" value="80" step="1" />
+      <input type="range" id="sl-wf" min="0" max="100" value="100" step="1" />
     </div>
     <div class="ctrl">
-      <label>Fade threshold <span class="val" id="v-thr">10</span>%
+      <label>Fade threshold <span class="val" id="v-thr">30</span>%
         <span style="font-size:10px;color:var(--dim);font-weight:400;margin-left:2px">colour sensitivity</span>
       </label>
-      <input type="range" id="sl-thr" min="2" max="30" value="10" step="1" />
+      <input type="range" id="sl-thr" min="2" max="100" value="30" step="1" />
     </div>
     <div class="ctrl">
       <label>Hue shift <span class="val" id="v-hue">0</span>°</label>
@@ -167,12 +168,12 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
   <div class="section">
     <div class="section-title">Bloom</div>
     <div class="ctrl">
-      <label>Intensity <span class="val" id="v-bmi">35</span>%</label>
-      <input type="range" id="sl-bmi" min="0" max="100" value="35" step="1" />
+      <label>Intensity <span class="val" id="v-bmi">0</span>%</label>
+      <input type="range" id="sl-bmi" min="0" max="100" value="0" step="1" />
     </div>
     <div class="ctrl">
-      <label>Spread <span class="val" id="v-bms">45</span>px</label>
-      <input type="range" id="sl-bms" min="0" max="150" value="45" step="1" />
+      <label>Spread <span class="val" id="v-bms">0</span>px</label>
+      <input type="range" id="sl-bms" min="0" max="150" value="0" step="1" />
     </div>
   </div>
 
@@ -180,16 +181,16 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
   <div class="section">
     <div class="section-title">Effects</div>
     <div class="ctrl">
-      <label>Chromatic shift <span class="val" id="v-chr">3</span>px</label>
-      <input type="range" id="sl-chr" min="0" max="20" value="3" step="0.5" />
+      <label>Chromatic shift <span class="val" id="v-chr">0.0</span>px</label>
+      <input type="range" id="sl-chr" min="0" max="20" value="0" step="0.5" />
     </div>
     <div class="ctrl">
-      <label>Vignette <span class="val" id="v-vig">60</span>%</label>
-      <input type="range" id="sl-vig" min="0" max="100" value="60" step="1" />
+      <label>Vignette <span class="val" id="v-vig">0</span>%</label>
+      <input type="range" id="sl-vig" min="0" max="100" value="0" step="1" />
     </div>
     <div class="ctrl">
-      <label>Grain <span class="val" id="v-grn">10</span></label>
-      <input type="range" id="sl-grn" min="0" max="40" value="10" step="1" />
+      <label>Grain <span class="val" id="v-grn">0</span></label>
+      <input type="range" id="sl-grn" min="0" max="40" value="0" step="1" />
     </div>
   </div>
 
@@ -506,6 +507,55 @@ document.getElementById('btn-export').addEventListener('click',()=>{
     btn.disabled=false; btn.textContent='↓ Export PNG';
   });
 });
+
+// ── Canvas pan / zoom ─────────────────────────────────────────────────────────
+(function () {
+  let dragging = false, lx = 0, ly = 0;
+
+  function setPan(dx, dy) {
+    const sf = DW / exportW;
+    const pxEl = document.getElementById('sl-px');
+    const pyEl = document.getElementById('sl-py');
+    const nx = Math.max(-800, Math.min(800, parseFloat(pxEl.value) + dx / sf));
+    const ny = Math.max(-800, Math.min(800, parseFloat(pyEl.value) + dy / sf));
+    pxEl.value = nx;
+    pyEl.value = ny;
+    document.getElementById('v-px').textContent = Math.round(nx);
+    document.getElementById('v-py').textContent = Math.round(ny);
+  }
+
+  function setZoom(factor) {
+    const scEl = document.getElementById('sl-sc');
+    const nv = Math.max(10, Math.min(400, parseFloat(scEl.value) * factor));
+    scEl.value = nv;
+    document.getElementById('v-sc').textContent = Math.round(nv);
+  }
+
+  canvas.addEventListener('mousedown', e => {
+    if (!img) return;
+    dragging = true; lx = e.clientX; ly = e.clientY;
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    setPan(e.clientX - lx, e.clientY - ly);
+    lx = e.clientX; ly = e.clientY;
+    schedRender();
+  });
+  document.addEventListener('mouseup', () => { dragging = false; });
+
+  canvas.addEventListener('wheel', e => {
+    if (!img) return;
+    e.preventDefault();
+    if (e.ctrlKey) {
+      // Pinch-to-zoom (macOS trackpad) or ctrl+scroll
+      setZoom(1 - e.deltaY * 0.008);
+    } else {
+      // Two-finger scroll = pan
+      setPan(-e.deltaX, -e.deltaY);
+    }
+    schedRender();
+  }, { passive: false });
+})();
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 resizeCanvas();
