@@ -66,8 +66,7 @@ select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
   border: 1px solid var(--line2); flex-shrink: 0; cursor: pointer;
   position: relative; overflow: hidden; }
 .native-picker { position: absolute; inset: -4px; width: calc(100% + 8px);
-  height: calc(100% + 8px); opacity: 0; cursor: pointer;
-  border: none; padding: 0; }
+  height: calc(100% + 8px); opacity: 0; cursor: pointer; border: none; padding: 0; }
 .color-hex { flex: 1; background: #f4f4f4; border: 1px solid var(--line); color: #000;
   padding: 7px 9px; border-radius: var(--radius-md); font-size: 12px; outline: none;
   font-family: ui-monospace, monospace; min-width: 0; }
@@ -118,8 +117,8 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* ── Canvas area ── */
 #canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center;
-  background: var(--bg); overflow: hidden; position: relative; }
-#c { display: block; max-width: 100%; max-height: 100%; }
+  background: var(--bg); overflow: hidden; position: relative; padding: 16px; }
+#c { display: block; } /* width/height set by JS */
 
 #empty-state { position: absolute; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 10px; pointer-events: none; }
@@ -212,7 +211,6 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
       <div class="tog-sw" id="tog-uni"></div>
     </div>
 
-    <!-- Variable-size controls (normal mode) -->
     <div id="var-size-ctrls">
       <div class="ctrl">
         <label>Max size <span class="val" id="v-ms">7</span>px</label>
@@ -224,7 +222,6 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
       </div>
     </div>
 
-    <!-- Uniform-size controls (uniform mode) -->
     <div id="uni-size-ctrls" style="display:none">
       <div class="ctrl">
         <label>Dot size <span class="val" id="v-sz">3.5</span>px</label>
@@ -299,14 +296,18 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
         </div>
       </div>
     </div>
-    <button class="btn accent" id="btn-export" disabled>↓ Export PNG</button>
+    <button class="btn accent" id="btn-svg" disabled>↓ Export SVG</button>
+    <button class="btn ghost" id="btn-png" disabled>↓ Export PNG</button>
     <button class="btn ghost" id="btn-reseed">↺ Re-randomize</button>
   </div>
 </div>
 
-<!-- Canvas -->
+<!-- SVG canvas -->
 <div id="canvas-wrap">
-  <canvas id="c"></canvas>
+  <svg id="c" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <rect id="svg-bg" x="0" y="0" />
+    <path id="svg-dots" fill-rule="nonzero" />
+  </svg>
   <div id="empty-state">
     <div class="empty-dot-grid">
       <div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div>
@@ -322,29 +323,33 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
 (function () {
 'use strict';
 
-const canvas  = document.getElementById('c');
-const ctx     = canvas.getContext('2d');
+const svgEl   = document.getElementById('c');
+const svgBg   = document.getElementById('svg-bg');
+const svgDots = document.getElementById('svg-dots');
 const wrap    = document.getElementById('canvas-wrap');
 const empty   = document.getElementById('empty-state');
 
-// ── Canvas sizing ─────────────────────────────────────────────────────────────
-let DW = 960, DH = 540;
+// ── Export dimensions (= SVG coordinate space) ────────────────────────────────
 let exportW = 1920, exportH = 1080;
 
-function resizeCanvas() {
+function updateViewBox() {
+  svgEl.setAttribute('viewBox', `0 0 ${exportW} ${exportH}`);
+  svgBg.setAttribute('width', exportW);
+  svgBg.setAttribute('height', exportH);
+}
+
+// Fit SVG display size to wrap, preserving export aspect ratio
+function resizeDisplay() {
   const r = wrap.getBoundingClientRect();
   const wrapW = r.width  - 32;
   const wrapH = r.height - 32;
   const aspect = exportW / exportH;
   let cw = wrapW, ch = wrapW / aspect;
   if (ch > wrapH) { ch = wrapH; cw = wrapH * aspect; }
-  DW = Math.round(cw);
-  DH = Math.round(ch);
-  canvas.width  = DW;
-  canvas.height = DH;
-  render();
+  svgEl.style.width  = Math.round(cw) + 'px';
+  svgEl.style.height = Math.round(ch) + 'px';
 }
-new ResizeObserver(resizeCanvas).observe(wrap);
+new ResizeObserver(resizeDisplay).observe(wrap);
 
 // ── PRNG ──────────────────────────────────────────────────────────────────────
 let _seed = (Math.random() * 0xffffffff) >>> 0;
@@ -367,6 +372,7 @@ let uniformMode = false;
 function g(id)  { return parseFloat(document.getElementById(id).value); }
 function gv(id) { return document.getElementById(id).value; }
 function isHex(h) { return /^#[0-9a-fA-F]{6}$/.test(h); }
+function n(v)   { return Math.round(v * 10) / 10; } // round to 1dp for compact path data
 
 // Slider display sync
 const SL = {
@@ -380,7 +386,7 @@ const SL = {
   'sl-sz': ['v-sz', v => (+v).toFixed(1)], 'sl-cov':['v-cov',v => (+v).toFixed(2)],
 };
 Object.entries(SL).forEach(([sid, [vid, fmt]]) => {
-  const el = document.getElementById(sid);
+  const el  = document.getElementById(sid);
   const vEl = document.getElementById(vid);
   vEl.textContent = fmt(el.value);
   el.addEventListener('input', () => {
@@ -415,16 +421,9 @@ function setupColor(swId, hexId, pickId, onSet) {
   const sw = document.getElementById(swId);
   const hx = document.getElementById(hexId);
   const cp = document.getElementById(pickId);
-
-  // Native color picker → sync hex text + state
   cp.addEventListener('input', () => {
-    hx.value = cp.value;
-    sw.style.background = cp.value;
-    onSet(cp.value);
-    render();
+    hx.value = cp.value; sw.style.background = cp.value; onSet(cp.value); render();
   });
-
-  // Hex text → sync native picker + state
   hx.addEventListener('input', () => {
     let v = hx.value.trim();
     if (!v.startsWith('#')) v = '#' + v;
@@ -434,7 +433,7 @@ function setupColor(swId, hexId, pickId, onSet) {
 setupColor('sw-dot', 'hex-dot', 'cp-dot', v => dotColor = v);
 setupColor('sw-bg',  'hex-bg',  'cp-bg',  v => bgColor  = v);
 
-// ── Resolution / canvas aspect ratio ──────────────────────────────────────────
+// ── Resolution ────────────────────────────────────────────────────────────────
 function updateExportDimensions() {
   if (gv('sel-res') === 'custom') {
     exportW = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-cw').value) || 1920));
@@ -442,7 +441,9 @@ function updateExportDimensions() {
   } else {
     [exportW, exportH] = gv('sel-res').split('x').map(Number);
   }
-  resizeCanvas();
+  updateViewBox();
+  resizeDisplay();
+  render();
 }
 document.getElementById('sel-res').addEventListener('change', function() {
   document.getElementById('custom-res-wrap').classList.toggle('visible', this.value === 'custom');
@@ -461,7 +462,8 @@ function loadFile(file) {
     URL.revokeObjectURL(url);
     document.getElementById('img-name').textContent = file.name;
     empty.classList.add('hidden');
-    document.getElementById('btn-export').disabled = false;
+    document.getElementById('btn-svg').disabled = false;
+    document.getElementById('btn-png').disabled = false;
     processImage();
     render();
   };
@@ -474,8 +476,6 @@ document.getElementById('upload-zone').addEventListener('click', e => {
   if (e.target !== document.getElementById('file-input'))
     document.getElementById('file-input').click();
 });
-
-// Drag-and-drop on whole page
 document.addEventListener('dragover', e => e.preventDefault());
 document.addEventListener('drop', e => {
   e.preventDefault();
@@ -512,10 +512,10 @@ function processImage() {
   adjustedData = id;
 }
 
-// ── Luminance sampling ────────────────────────────────────────────────────────
-function makeSampler(W, H, sf) {
-  const panX  = W/2 + g('sl-px') * sf;
-  const panY  = H/2 + g('sl-py') * sf;
+// ── Luminance sampler (works in export coordinate space) ──────────────────────
+function makeSampler() {
+  const panX  = exportW/2 + g('sl-px');
+  const panY  = exportH/2 + g('sl-py');
   const scale = g('sl-sc') / 100;
   return function sample(sx, sy) {
     if (!adjustedData) return 1;
@@ -528,33 +528,32 @@ function makeSampler(W, H, sf) {
   };
 }
 
-// ── Core halftone renderer ────────────────────────────────────────────────────
-function halftone(ctx2, W, H, sf, sample) {
-  const spacing = g('sl-sp') * sf;
-  const angle   = g('sl-an') * Math.PI / 180;
-  const jitter  = g('sl-jt') * sf;
-  const sizeVar = g('sl-sv') * sf;
-  const dropout = g('sl-do') / 100;
-  const pattern = gv('sel-pat');
-
-  // Mode-specific params
-  const maxDot  = g('sl-ms') * sf;
-  const minDot  = g('sl-mn') * sf;
-  const dotSize = g('sl-sz') * sf;
+// ── Core halftone — builds SVG path data string ───────────────────────────────
+function halftone() {
+  const W = exportW, H = exportH;
+  const spacing  = g('sl-sp');
+  const angle    = g('sl-an') * Math.PI / 180;
+  const maxDot   = g('sl-ms');
+  const minDot   = g('sl-mn');
+  const dotSize  = g('sl-sz');
   const coverage = g('sl-cov');
+  const jitter   = g('sl-jt');
+  const sizeVar  = g('sl-sv');
+  const dropout  = g('sl-do') / 100;
+  const pattern  = gv('sel-pat');
+  const sample   = makeSampler();
 
   const cos_ = Math.cos(angle), sin_ = Math.sin(angle);
   const cx   = W / 2, cy = H / 2;
   const diag = Math.hypot(W, H) / 2 + spacing * 3;
   const half = Math.ceil(diag / spacing) + 2;
 
-  ctx2.fillStyle = bgColor;
-  ctx2.fillRect(0, 0, W, H);
+  svgBg.setAttribute('fill', bgColor);
+  svgDots.setAttribute('fill', dotColor);
 
-  if (!img) return;
+  if (!img) { svgDots.setAttribute('d', ''); return; }
 
-  ctx2.fillStyle = dotColor;
-  const path = new Path2D();
+  const parts = [];
 
   for (let row = -half; row <= half; row++) {
     for (let col = -half; col <= half; col++) {
@@ -580,9 +579,7 @@ function halftone(ctx2, W, H, sf, sample) {
 
       let r;
       if (uniformMode) {
-        // Stochastic placement: fixed size, probability driven by darkness
-        const prob = (1 - lum) * coverage;
-        if (rand() >= prob) continue;
+        if (rand() >= (1 - lum) * coverage) continue;
         r = dotSize;
       } else {
         r = minDot + (1 - lum) * (maxDot - minDot);
@@ -590,7 +587,7 @@ function halftone(ctx2, W, H, sf, sample) {
 
       r += (rand() - 0.5) * sizeVar * 2;
       r = Math.max(0, r);
-      if (r < 0.3 * sf) continue;
+      if (r < 0.3) continue;
 
       const dx = sx + (rand() - 0.5) * jitter * 2;
       const dy = sy + (rand() - 0.5) * jitter * 2;
@@ -599,63 +596,73 @@ function halftone(ctx2, W, H, sf, sample) {
         const rx  = r * (0.78 + rand() * 0.44);
         const ry  = r * (0.78 + rand() * 0.44);
         const rot = rand() * Math.PI;
-        path.ellipse(dx, dy, rx, ry, rot, 0, Math.PI * 2);
+        const rotDeg = rot * 180 / Math.PI;
+        const c = Math.cos(rot), s = Math.sin(rot);
+        // Two-arc ellipse: split at ends of rotated major axis
+        const x1 = n(dx - rx*c), y1 = n(dy - rx*s);
+        const x2 = n(dx + rx*c), y2 = n(dy + rx*s);
+        parts.push(`M${x1} ${y1}A${n(rx)} ${n(ry)} ${n(rotDeg)} 1 0 ${x2} ${y2}A${n(rx)} ${n(ry)} ${n(rotDeg)} 1 0 ${x1} ${y1}Z`);
       } else {
-        path.moveTo(dx + r, dy);
-        path.arc(dx, dy, r, 0, Math.PI * 2);
+        const nr = n(r), ndx = n(dx), ndy = n(dy);
+        // Two-arc circle: split at left and right points
+        parts.push(`M${n(dx-r)} ${ndy}A${nr} ${nr} 0 1 0 ${n(dx+r)} ${ndy}A${nr} ${nr} 0 1 0 ${n(dx-r)} ${ndy}Z`);
       }
     }
   }
 
-  ctx2.fill(path, 'nonzero');
+  svgDots.setAttribute('d', parts.join(''));
 }
 
-// ── Render (display) ──────────────────────────────────────────────────────────
+// ── Render ────────────────────────────────────────────────────────────────────
 function render() {
   _seed = _renderSeed;
-  halftone(ctx, DW, DH, 1, makeSampler(DW, DH, 1));
+  halftone();
 }
 
-// Re-randomize
 document.getElementById('btn-reseed').addEventListener('click', () => {
   _renderSeed = (Math.random() * 0xffffffff) >>> 0;
   render();
 });
 
-// ── Export ────────────────────────────────────────────────────────────────────
-document.getElementById('btn-export').addEventListener('click', () => {
-  const ew = exportW, eh = exportH;
-  // Canvas already matches export aspect ratio, so sf is exact in both axes
-  const sf = ew / DW;
-
-  const ec  = document.createElement('canvas');
-  ec.width  = ew; ec.height = eh;
-  const ex  = ec.getContext('2d');
-
-  const panX  = ew/2 + g('sl-px') * sf;
-  const panY  = eh/2 + g('sl-py') * sf;
-  const scale = g('sl-sc') / 100;
-  function sampleExport(sx, sy) {
-    if (!adjustedData) return 1;
-    const ix = Math.round((sx - panX) / scale + imgW/2);
-    const iy = Math.round((sy - panY) / scale + imgH/2);
-    if (ix < 0 || iy < 0 || ix >= imgW || iy >= imgH) return 1;
-    const k = (iy * imgW + ix) * 4;
-    const lum = (0.299*adjustedData.data[k] + 0.587*adjustedData.data[k+1] + 0.114*adjustedData.data[k+2]) / 255;
-    return invert ? 1 - lum : lum;
-  }
-
-  _seed = _renderSeed;
-  halftone(ex, ew, eh, sf, sampleExport);
-
+// ── SVG export ────────────────────────────────────────────────────────────────
+document.getElementById('btn-svg').addEventListener('click', () => {
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('width', exportW);
+  clone.setAttribute('height', exportH);
+  const str  = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([str], { type: 'image/svg+xml' });
   const a = document.createElement('a');
-  a.download = 'halftone-dot.png';
-  a.href = ec.toDataURL('image/png');
+  a.download = 'halftone-dot.svg';
+  a.href = URL.createObjectURL(blob);
   a.click();
 });
 
+// ── PNG export (rasterise the SVG) ────────────────────────────────────────────
+document.getElementById('btn-png').addEventListener('click', () => {
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('width', exportW);
+  clone.setAttribute('height', exportH);
+  const str  = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([str], { type: 'image/svg+xml;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const im   = new Image();
+  im.onload = () => {
+    const ec = document.createElement('canvas');
+    ec.width = exportW; ec.height = exportH;
+    ec.getContext('2d').drawImage(im, 0, 0);
+    const a = document.createElement('a');
+    a.download = 'halftone-dot.png';
+    a.href = ec.toDataURL('image/png');
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  im.src = url;
+});
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
-resizeCanvas();
+updateViewBox();
+resizeDisplay();
+render();
 
 })();
 </script>
