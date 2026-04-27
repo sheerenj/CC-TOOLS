@@ -397,8 +397,15 @@ function selectiveColor(data, satMult, bgFade, threshold, hueShift, bgRgb) {
     // colorness: 0 = fully neutral, 1 = vivid colour
     const colorness = Math.min(1, s/thr);
 
+    // How far is this pixel from the bg colour in RGB space?
+    // Pixels close to bg (blurred ghost artefacts) get no saturation boost —
+    // prevents the algorithm from amplifying faint image structure in bg areas.
+    const dr=r0-bgR, dg2=g0-bgG, db2=b0-bgB;
+    const bgDist = Math.min(1, Math.sqrt(dr*dr + dg2*dg2 + db2*db2) * 3);
+    const effectiveMult = 1 + (satMult - 1) * bgDist;
+
     // Saturation boost (pulled back as >100% fade kicks in)
-    const boostedS = Math.min(1, s*satMult) * (1 - wfExtra);
+    const boostedS = Math.min(1, s*effectiveMult) * (1 - wfExtra);
     const finalS   = boostedS*colorness + s*(1-colorness)*(1-wfExtra);
     const finalH   = (h+hs+1)%1;
 
