@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Moiré Studio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root {
   --bg: #ececec; --card: #ffffff; --text: #000000; --dim: #6b6b6b;
@@ -62,12 +63,13 @@ button.btn { width: 100%; background: #000; color: #fff; border: none;
   font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit;
   margin-bottom: 8px; }
 button.btn:last-of-type { margin-bottom: 0; }
-button.btn:hover { background: #222; }
+button.btn:hover:not(:disabled) { background: #222; }
 button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line2); }
-button.btn.ghost:hover { background: #f5f5f5; }
+button.btn.ghost:hover:not(:disabled) { background: #f5f5f5; }
 button.btn.accent { background: var(--accent); color: #000; }
-button.btn.accent:hover { background: #c2ea3c; }
-button.btn.playing { background: #000; color: #fff; }
+button.btn.accent:hover:not(:disabled) { background: #c2ea3c; }
+button.btn.recording { background: #e53e3e; color: #fff; }
+button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .swatch-row { display: flex; align-items: center; gap: 8px; }
 .swatch-wrap { position: relative; width: 36px; height: 28px; border: 1px solid var(--line2);
@@ -76,7 +78,7 @@ button.btn.playing { background: #000; color: #fff; }
   width: calc(100% + 8px); height: calc(100% + 8px); }
 .swatch-hex { font-size: 11px; font-family: ui-monospace, monospace; color: var(--dim); }
 
-.hint { font-size: 10px; color: var(--dim); margin-top: 6px; line-height: 1.5; }
+.hint { font-size: 10px; color: var(--dim); margin-top: 8px; line-height: 1.6; }
 
 .custom-res-wrap { margin-top: 8px; display: none; }
 .custom-res-wrap.visible { display: block; }
@@ -88,7 +90,7 @@ button.btn.playing { background: #000; color: #fff; }
 .custom-res-sep { font-size: 11px; color: var(--dim); flex-shrink: 0; }
 
 #canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center;
-  background: #111; overflow: hidden; position: relative; }
+  background: #111; overflow: hidden; }
 #c { display: block; cursor: crosshair; }
 </style>
 </head>
@@ -170,7 +172,7 @@ button.btn.playing { background: #000; color: #fff; }
     </div>
   </div>
 
-  <!-- Color + Combine -->
+  <!-- Color -->
   <div class="section">
     <div class="section-title">Color</div>
     <div class="ctrl">
@@ -222,7 +224,7 @@ button.btn.playing { background: #000; color: #fff; }
 
   <!-- Export -->
   <div class="section">
-    <div class="section-title">Export</div>
+    <div class="section-title">Export PNG</div>
     <div class="ctrl">
       <label>Resolution</label>
       <select id="sel-res">
@@ -243,7 +245,32 @@ button.btn.playing { background: #000; color: #fff; }
       </div>
     </div>
     <button class="btn accent" id="btn-export">↓ Export PNG</button>
-    <p class="hint" style="margin-top:8px">Click canvas to set L1 center.<br>Shift-click to set L2 center.</p>
+    <p class="hint">Click canvas → set L1 center.<br>Shift-click → set L2 center.</p>
+  </div>
+
+  <!-- Motion -->
+  <div class="section">
+    <div class="section-title">Motion Export</div>
+    <div class="ctrl">
+      <label>Duration <span class="val" id="v-rec-dur">5</span>s</label>
+      <input type="range" id="sl-rec-dur" min="2" max="30" value="5" step="1"/>
+    </div>
+    <div class="ctrl">
+      <label>FPS</label>
+      <select id="sel-fps">
+        <option value="24">24 fps</option>
+        <option value="30" selected>30 fps</option>
+        <option value="60">60 fps</option>
+      </select>
+    </div>
+    <button class="btn ghost" id="btn-record">⏺ Record Video</button>
+    <div style="height:10px"></div>
+    <div class="ctrl">
+      <label>Sequence frames <span class="val" id="v-seq">30</span></label>
+      <input type="range" id="sl-seq" min="12" max="120" value="30" step="6"/>
+    </div>
+    <button class="btn ghost" id="btn-seq">↓ Export PNG Sequence</button>
+    <p class="hint">Video exports as WebM/MP4 depending on browser. Sequence exports as ZIP of PNGs at display resolution.</p>
   </div>
 </div>
 
@@ -268,7 +295,6 @@ function resizeCanvas() {
   let cw = wW, ch = wW / asp;
   if (ch > wH) { ch = wH; cw = wH * asp; }
   DW = Math.round(cw); DH = Math.round(ch);
-  canvas.width = DW; canvas.height = DH;
   canvas.style.width  = DW + 'px';
   canvas.style.height = DH + 'px';
   schedRender();
@@ -280,9 +306,7 @@ function updateExportDimensions() {
   if (v === 'custom') {
     exportW = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-cw').value) || 1920));
     exportH = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-ch').value) || 1080));
-  } else {
-    [exportW, exportH] = v.split('x').map(Number);
-  }
+  } else { [exportW, exportH] = v.split('x').map(Number); }
   resizeCanvas();
 }
 document.getElementById('sel-res').addEventListener('change', function () {
@@ -301,19 +325,21 @@ function hexToRgb(hex) {
 
 // ── Slider sync ───────────────────────────────────────────────────────────────
 const SL = {
-  'sl-f1':    ['v-f1',    v => (+v).toFixed(1)],
-  'sl-a1':    ['v-a1',    v => Math.round(v)],
-  'sl-cx1':   ['v-cx1',   v => Math.round(v)],
-  'sl-cy1':   ['v-cy1',   v => Math.round(v)],
-  'sl-ph1':   ['v-ph1',   v => Math.round(v)],
-  'sl-f2':    ['v-f2',    v => (+v).toFixed(1)],
-  'sl-a2':    ['v-a2',    v => Math.round(v)],
-  'sl-cx2':   ['v-cx2',   v => Math.round(v)],
-  'sl-cy2':   ['v-cy2',   v => Math.round(v)],
-  'sl-ph2':   ['v-ph2',   v => Math.round(v)],
-  'sl-sharp': ['v-sharp', v => Math.round(v)],
-  'sl-sp1':   ['v-sp1',   v => (+v).toFixed(1)],
-  'sl-sp2':   ['v-sp2',   v => (+v).toFixed(1)],
+  'sl-f1':      ['v-f1',      v => (+v).toFixed(1)],
+  'sl-a1':      ['v-a1',      v => Math.round(v)],
+  'sl-cx1':     ['v-cx1',     v => Math.round(v)],
+  'sl-cy1':     ['v-cy1',     v => Math.round(v)],
+  'sl-ph1':     ['v-ph1',     v => Math.round(v)],
+  'sl-f2':      ['v-f2',      v => (+v).toFixed(1)],
+  'sl-a2':      ['v-a2',      v => Math.round(v)],
+  'sl-cx2':     ['v-cx2',     v => Math.round(v)],
+  'sl-cy2':     ['v-cy2',     v => Math.round(v)],
+  'sl-ph2':     ['v-ph2',     v => Math.round(v)],
+  'sl-sharp':   ['v-sharp',   v => Math.round(v)],
+  'sl-sp1':     ['v-sp1',     v => (+v).toFixed(1)],
+  'sl-sp2':     ['v-sp2',     v => (+v).toFixed(1)],
+  'sl-rec-dur': ['v-rec-dur', v => Math.round(v)],
+  'sl-seq':     ['v-seq',     v => Math.round(v)],
 };
 Object.entries(SL).forEach(([sid,[vid,fmt]]) => {
   const el = document.getElementById(sid), vEl = document.getElementById(vid);
@@ -323,22 +349,22 @@ Object.entries(SL).forEach(([sid,[vid,fmt]]) => {
 ['sel-t1','sel-t2','sel-comb'].forEach(id =>
   document.getElementById(id).addEventListener('change', schedRender));
 
-// ── Colour pickers ────────────────────────────────────────────────────────────
 function setupSwatch(inpId, swId, valId) {
   const inp = document.getElementById(inpId);
-  const sw  = document.getElementById(swId);
-  const val = document.getElementById(valId);
-  inp.addEventListener('input', () => { sw.style.background = inp.value; val.textContent = inp.value; schedRender(); });
+  inp.addEventListener('input', () => {
+    document.getElementById(swId).style.background = inp.value;
+    document.getElementById(valId).textContent = inp.value;
+    schedRender();
+  });
 }
-setupSwatch('inp-ca', 'sw-ca', 'v-ca');
-setupSwatch('inp-cb', 'sw-cb', 'v-cb');
+setupSwatch('inp-ca','sw-ca','v-ca');
+setupSwatch('inp-cb','sw-cb','v-cb');
 
 // ── Pattern signal (returns 0–1) ──────────────────────────────────────────────
 function signal(type, x, y, uiFreq, angle, cx, cy, phase, W) {
   const a   = angle * Math.PI / 180;
   const ph  = phase * Math.PI / 180;
-  const spf = uiFreq * Math.PI * 2 / W; // spatial cycles per canvas width
-
+  const spf = uiFreq * Math.PI * 2 / W;
   switch (type) {
     case 'lines': {
       const proj = x * Math.cos(a) + y * Math.sin(a);
@@ -354,18 +380,16 @@ function signal(type, x, y, uiFreq, angle, cx, cy, phase, W) {
       return v < 1 ? v : 2 - v;
     }
     case 'radial': {
-      // Angular frequency: uiFreq * 0.5 gives reasonable spoke count
       return (Math.sin(Math.atan2(y-cy, x-cx) * uiFreq * 0.5 + ph) + 1) * 0.5;
     }
     case 'diamonds': {
-      const d = Math.abs(x-cx) + Math.abs(y-cy);
-      return (Math.sin(d * spf + ph) + 1) * 0.5;
+      return (Math.sin((Math.abs(x-cx) + Math.abs(y-cy)) * spf + ph) + 1) * 0.5;
     }
     default: return 0;
   }
 }
 
-// ── Combine two signals ───────────────────────────────────────────────────────
+// ── Combine ───────────────────────────────────────────────────────────────────
 function combine(mode, s1, s2) {
   switch (mode) {
     case 'multiply':   return s1 * s2;
@@ -376,20 +400,27 @@ function combine(mode, s1, s2) {
   }
 }
 
-// ── Core render ───────────────────────────────────────────────────────────────
+// ── Core render (works at any W×H) ───────────────────────────────────────────
 function renderTo(tCtx, W, H, extraPh1, extraPh2) {
-  const type1  = gv('sel-t1'), type2 = gv('sel-t2');
-  const f1     = g('sl-f1'),   f2    = g('sl-f2');
-  const a1     = g('sl-a1'),   a2    = g('sl-a2');
-  const cx1    = g('sl-cx1') / 100 * W, cy1 = g('sl-cy1') / 100 * H;
-  const cx2    = g('sl-cx2') / 100 * W, cy2 = g('sl-cy2') / 100 * H;
-  const ph1    = g('sl-ph1') + (extraPh1 || 0);
-  const ph2    = g('sl-ph2') + (extraPh2 || 0);
-  const comb   = gv('sel-comb');
-  const sharp  = g('sl-sharp') / 100;
+  const type1 = gv('sel-t1'), type2 = gv('sel-t2');
+  const f1    = g('sl-f1'),   f2    = g('sl-f2');
+  const a1    = g('sl-a1'),   a2    = g('sl-a2');
+  const cx1   = g('sl-cx1') / 100 * W, cy1 = g('sl-cy1') / 100 * H;
+  const cx2   = g('sl-cx2') / 100 * W, cy2 = g('sl-cy2') / 100 * H;
+  const ph1   = g('sl-ph1') + (extraPh1 || 0);
+  const ph2   = g('sl-ph2') + (extraPh2 || 0);
+  const comb  = gv('sel-comb');
+  const sharp = g('sl-sharp') / 100;
 
-  const [ar, ag, ab] = hexToRgb(document.getElementById('inp-ca').value);
-  const [br, bg, bb] = hexToRgb(document.getElementById('inp-cb').value);
+  const [ar,ag,ab] = hexToRgb(document.getElementById('inp-ca').value);
+  const [br,bg,bb] = hexToRgb(document.getElementById('inp-cb').value);
+
+  // Adaptive edge width for smooth threshold — eliminates hard pixel stairstepping
+  // At the crossing point, the signal gradient ≈ 2π·freq/W per pixel.
+  // We want the transition to cover ~1 display pixel.
+  const effFreq = Math.max(f1, f2);
+  const minEdge = 1 / (effFreq * Math.PI * 2); // ~1 pixel at display res
+  const softEdge = minEdge + (1 - sharp) * 0.25;
 
   const img = tCtx.createImageData(W, H);
   const d = img.data;
@@ -400,9 +431,10 @@ function renderTo(tCtx, W, H, extraPh1, extraPh2) {
       const s2 = signal(type2, x, y, f2, a2, cx2, cy2, ph2, W);
       const c  = combine(comb, s1, s2);
 
-      // Blend between smooth and hard threshold based on sharpness
-      const hard = c > 0.5 ? 1 : 0;
-      const t    = c * (1 - sharp) + hard * sharp;
+      // Smooth step over adaptive edge width — anti-aliased even at max sharpness
+      const lo = 0.5 - softEdge, hi = 0.5 + softEdge;
+      const ct = Math.max(0, Math.min(1, (c - lo) / (softEdge * 2)));
+      const t  = ct * ct * (3 - 2 * ct); // smoothstep
 
       const i = (y * W + x) * 4;
       d[i]   = Math.round(br + (ar - br) * t);
@@ -414,12 +446,26 @@ function renderTo(tCtx, W, H, extraPh1, extraPh2) {
   tCtx.putImageData(img, 0, 0);
 }
 
-// ── Render scheduler ──────────────────────────────────────────────────────────
-let rafPending = false;
+// ── Display rendering: 1× for animation (fast), 2× for static (anti-aliased) ─
+function renderDisplay(scale) {
+  const W = DW * scale, H = DH * scale;
+  canvas.width  = W; canvas.height = H;
+  canvas.style.width  = DW + 'px';
+  canvas.style.height = DH + 'px';
+  renderTo(ctx, W, H, animPh1, animPh2);
+}
+
+let rafPending = false, qualityTimer = null;
 function schedRender() {
+  if (animPlaying) return;
   if (!rafPending) {
     rafPending = true;
-    requestAnimationFrame(() => { rafPending = false; renderTo(ctx, DW, DH, animPh1, animPh2); });
+    requestAnimationFrame(() => {
+      rafPending = false;
+      renderDisplay(1);                         // instant 1× response
+      clearTimeout(qualityTimer);
+      qualityTimer = setTimeout(() => renderDisplay(2), 180); // 2× after settle
+    });
   }
 }
 
@@ -429,7 +475,7 @@ let animPlaying = false, animFrame = null, animPh1 = 0, animPh2 = 0;
 function animLoop() {
   animPh1 += g('sl-sp1') * 1.5;
   animPh2 += g('sl-sp2') * 1.5;
-  renderTo(ctx, DW, DH, animPh1, animPh2);
+  renderDisplay(1);
   animFrame = requestAnimationFrame(animLoop);
 }
 
@@ -439,32 +485,31 @@ document.getElementById('btn-anim').addEventListener('click', () => {
     cancelAnimationFrame(animFrame);
     animPlaying = false;
     btn.textContent = '▶ Play';
-    btn.classList.remove('playing');
-    btn.classList.add('ghost');
+    btn.classList.remove('playing'); btn.classList.add('ghost');
+    renderDisplay(2); // quality render on stop
   } else {
     animPlaying = true;
     btn.textContent = '⏸ Pause';
-    btn.classList.remove('ghost');
-    btn.classList.add('playing');
+    btn.classList.remove('ghost'); btn.classList.add('playing');
     animLoop();
   }
 });
 
 // ── Canvas click → set center ─────────────────────────────────────────────────
 canvas.addEventListener('click', e => {
-  const r  = canvas.getBoundingClientRect();
-  const px = Math.round((e.clientX - r.left) / DW * 100);
-  const py = Math.round((e.clientY - r.top)  / DH * 100);
-  const layer = e.shiftKey ? '2' : '1';
-  const cxEl = document.getElementById('sl-cx' + layer);
-  const cyEl = document.getElementById('sl-cy' + layer);
+  const r   = canvas.getBoundingClientRect();
+  const px  = Math.round((e.clientX - r.left) / DW * 100);
+  const py  = Math.round((e.clientY - r.top)  / DH * 100);
+  const lay = e.shiftKey ? '2' : '1';
+  const cxEl = document.getElementById('sl-cx' + lay);
+  const cyEl = document.getElementById('sl-cy' + lay);
   cxEl.value = px; cyEl.value = py;
-  document.getElementById('v-cx' + layer).textContent = px;
-  document.getElementById('v-cy' + layer).textContent = py;
+  document.getElementById('v-cx' + lay).textContent = px;
+  document.getElementById('v-cy' + lay).textContent = py;
   schedRender();
 });
 
-// ── Export ────────────────────────────────────────────────────────────────────
+// ── PNG Export ────────────────────────────────────────────────────────────────
 document.getElementById('btn-export').addEventListener('click', () => {
   const btn = document.getElementById('btn-export');
   const wasPlaying = animPlaying;
@@ -475,16 +520,97 @@ document.getElementById('btn-export').addEventListener('click', () => {
     ec.width = exportW; ec.height = exportH;
     renderTo(ec.getContext('2d'), exportW, exportH, animPh1, animPh2);
     const a = document.createElement('a');
-    a.download = 'moire-studio.png';
-    a.href = ec.toDataURL('image/png');
-    a.click();
+    a.download = 'moire-studio.png'; a.href = ec.toDataURL('image/png'); a.click();
     btn.disabled = false; btn.textContent = '↓ Export PNG';
-    if (wasPlaying) {
-      animPlaying = true;
-      document.getElementById('btn-anim').textContent = '⏸ Pause';
-      animLoop();
-    }
+    if (wasPlaying) { animPlaying = true; document.getElementById('btn-anim').textContent = '⏸ Pause'; animLoop(); }
   });
+});
+
+// ── Video Recording ───────────────────────────────────────────────────────────
+document.getElementById('btn-record').addEventListener('click', () => {
+  const btn      = document.getElementById('btn-record');
+  const duration = Math.round(g('sl-rec-dur'));
+  const fps      = parseInt(gv('sel-fps'));
+
+  // Ensure animation is running during record
+  const wasPlaying = animPlaying;
+  if (!animPlaying) {
+    animPlaying = true;
+    document.getElementById('btn-anim').textContent = '⏸ Pause';
+    document.getElementById('btn-anim').classList.remove('ghost');
+    document.getElementById('btn-anim').classList.add('playing');
+    animLoop();
+  }
+
+  const mimeType =
+    MediaRecorder.isTypeSupported('video/mp4; codecs=avc1') ? 'video/mp4; codecs=avc1' :
+    MediaRecorder.isTypeSupported('video/webm; codecs=vp9') ? 'video/webm; codecs=vp9' :
+    'video/webm';
+  const ext = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
+
+  const stream   = canvas.captureStream(fps);
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 10_000_000 });
+  const chunks   = [];
+
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: mimeType.split(';')[0] });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'moire-studio.' + ext; a.click();
+    URL.revokeObjectURL(url);
+    btn.textContent = '⏺ Record Video';
+    btn.classList.remove('recording'); btn.classList.add('ghost');
+    btn.disabled = false;
+    if (!wasPlaying) {
+      cancelAnimationFrame(animFrame); animPlaying = false;
+      document.getElementById('btn-anim').textContent = '▶ Play';
+      document.getElementById('btn-anim').classList.remove('playing');
+      document.getElementById('btn-anim').classList.add('ghost');
+      renderDisplay(2);
+    }
+  };
+
+  recorder.start(100);
+  btn.textContent = `⏹ Stop (${duration}s)`;
+  btn.classList.remove('ghost'); btn.classList.add('recording');
+
+  // Auto-stop after duration
+  setTimeout(() => { if (recorder.state !== 'inactive') recorder.stop(); }, duration * 1000);
+});
+
+// ── PNG Sequence Export ───────────────────────────────────────────────────────
+document.getElementById('btn-seq').addEventListener('click', async () => {
+  const btn    = document.getElementById('btn-seq');
+  const nFrames = Math.round(g('sl-seq'));
+  btn.disabled = true;
+
+  const zip    = new JSZip();
+  const folder = zip.folder('moire-sequence');
+  const spd1   = g('sl-sp1') * 1.5;
+  const spd2   = g('sl-sp2') * 1.5;
+  const startPh1 = animPh1, startPh2 = animPh2;
+
+  for (let i = 0; i < nFrames; i++) {
+    btn.textContent = `Rendering frame ${i+1} / ${nFrames}…`;
+    const ph1 = startPh1 + i * spd1;
+    const ph2 = startPh2 + i * spd2;
+    const fc  = document.createElement('canvas');
+    fc.width = DW; fc.height = DH;
+    renderTo(fc.getContext('2d'), DW, DH, ph1, ph2);
+    const b64 = fc.toDataURL('image/png').split(',')[1];
+    folder.file(`frame_${String(i+1).padStart(4,'0')}.png`, b64, { base64: true });
+    await new Promise(r => setTimeout(r, 0)); // yield to keep UI responsive
+  }
+
+  btn.textContent = 'Zipping…';
+  const blob = await zip.generateAsync({ type:'blob', compression:'DEFLATE', compressionOptions:{level:3} });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'moire-sequence.zip'; a.click();
+  URL.revokeObjectURL(url);
+
+  btn.disabled = false; btn.textContent = '↓ Export PNG Sequence';
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
