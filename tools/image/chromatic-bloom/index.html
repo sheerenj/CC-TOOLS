@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chromatic Bloom</title>
+<style>
+:root {
+  --bg: #ececec; --card: #ffffff; --text: #000000; --dim: #6b6b6b;
+  --line: #e4e4e4; --line2: #d4d4d4; --accent: #d4fc4e;
+  --radius-lg: 20px; --radius-md: 14px; --radius-pill: 999px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, "Inter", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased; }
+body { display: flex; }
+
+#sidebar {
+  width: 296px; flex-shrink: 0; background: var(--bg);
+  padding: 16px; overflow-y: auto; height: 100vh;
+  border-right: 1px solid var(--line2);
+}
+#sidebar::-webkit-scrollbar { width: 6px; }
+#sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 3px; }
+
+.brand-row { display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 16px; padding: 0 2px; }
+.brand { font-size: 16px; font-weight: 900; letter-spacing: -0.02em; }
+.brand-sub { font-size: 11px; color: var(--dim); text-transform: uppercase;
+  letter-spacing: 0.1em; font-weight: 600; }
+
+.section { background: var(--card); border-radius: var(--radius-lg);
+  padding: 14px 14px 16px; margin-bottom: 10px; }
+.section-title { display: inline-block; background: var(--accent); color: #000;
+  padding: 3px 7px; font-family: ui-monospace, monospace; font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px; border-radius: 3px; }
+
+.ctrl { margin-bottom: 12px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl > label { display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+.ctrl > label .val { color: var(--dim); font-size: 11px; font-family: ui-monospace, monospace; }
+
+input[type=range] { -webkit-appearance: none; width: 100%; height: 4px;
+  background: var(--line2); border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
+  width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer;
+  transition: transform 0.1s; }
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+  color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
+  font-size: 12px; outline: none; cursor: pointer; font-family: inherit; font-weight: 500;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
+
+.custom-res-wrap { margin-top: 8px; display: none; }
+.custom-res-wrap.visible { display: block; }
+.custom-res-row { display: flex; gap: 6px; align-items: center; }
+.custom-res-row input[type=number] { flex: 1; background: #f4f4f4; border: 1px solid var(--line);
+  color: #000; padding: 7px 9px; border-radius: var(--radius-md); font-size: 12px;
+  outline: none; font-family: inherit; min-width: 0; }
+.custom-res-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+.custom-res-sep { font-size: 11px; color: var(--dim); flex-shrink: 0; }
+
+button.btn { width: 100%; background: #000; color: #fff; border: none;
+  padding: 10px 14px; border-radius: var(--radius-pill); font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit;
+  margin-bottom: 8px; }
+button.btn:last-of-type { margin-bottom: 0; }
+button.btn:hover:not(:disabled) { background: #222; }
+button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line2); }
+button.btn.ghost:hover:not(:disabled) { background: #f5f5f5; }
+button.btn.accent { background: var(--accent); color: #000; }
+button.btn.accent:hover:not(:disabled) { background: #c2ea3c; }
+button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.upload-zone { border: 1.5px dashed var(--line2); border-radius: var(--radius-md);
+  padding: 20px 16px; text-align: center; cursor: pointer; transition: all 0.15s;
+  color: var(--dim); font-size: 12px; line-height: 1.8; margin-bottom: 10px;
+  display: block; }
+.upload-zone:hover { border-color: #000; color: #000; }
+.upload-zone input { display: none; }
+#img-name { font-size: 11px; color: var(--dim); font-family: ui-monospace, monospace;
+  text-align: center; min-height: 14px; margin-bottom: 10px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+
+#canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center;
+  background: var(--bg); overflow: hidden; position: relative; padding: 16px; }
+#c { display: block; background: #fff; }
+
+#empty-state { position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px; pointer-events: none; }
+#empty-state.hidden { display: none; }
+.empty-blob-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px;
+  margin-bottom: 12px; opacity: 0.2; }
+.empty-blob { border-radius: 50%; }
+.empty-text { font-size: 13px; color: var(--dim); font-weight: 500; }
+
+#render-indicator { position: absolute; bottom: 20px; right: 20px;
+  font-size: 11px; color: var(--dim); font-family: ui-monospace, monospace;
+  opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+#render-indicator.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="brand-row">
+    <span class="brand">Chromatic</span>
+    <span class="brand-sub" style="color:var(--accent);font-weight:900">Bloom</span>
+  </div>
+
+  <!-- Image -->
+  <div class="section">
+    <div class="section-title">Image</div>
+    <label class="upload-zone" id="upload-zone">
+      <input type="file" id="file-input" accept="image/*" />
+      Drop image here<br>or click to upload
+    </label>
+    <div id="img-name"></div>
+    <div class="ctrl">
+      <label>Position X <span class="val" id="v-px">0</span>px</label>
+      <input type="range" id="sl-px" min="-800" max="800" value="0" />
+    </div>
+    <div class="ctrl">
+      <label>Position Y <span class="val" id="v-py">0</span>px</label>
+      <input type="range" id="sl-py" min="-800" max="800" value="0" />
+    </div>
+    <div class="ctrl">
+      <label>Scale <span class="val" id="v-sc">100</span>%</label>
+      <input type="range" id="sl-sc" min="10" max="400" value="100" step="1" />
+    </div>
+  </div>
+
+  <!-- Blur -->
+  <div class="section">
+    <div class="section-title">Blur</div>
+    <div class="ctrl">
+      <label>Radius <span class="val" id="v-blur">50</span>px</label>
+      <input type="range" id="sl-blur" min="0" max="150" value="50" step="1" />
+    </div>
+  </div>
+
+  <!-- Color -->
+  <div class="section">
+    <div class="section-title">Color</div>
+    <div class="ctrl">
+      <label>Saturation <span class="val" id="v-sat">140</span>%</label>
+      <input type="range" id="sl-sat" min="50" max="300" value="140" step="1" />
+    </div>
+    <div class="ctrl">
+      <label>Brightness <span class="val" id="v-bri">0</span></label>
+      <input type="range" id="sl-bri" min="-60" max="60" value="0" step="1" />
+    </div>
+    <div class="ctrl">
+      <label>Hue shift <span class="val" id="v-hue">0</span>°</label>
+      <input type="range" id="sl-hue" min="-180" max="180" value="0" step="1" />
+    </div>
+  </div>
+
+  <!-- Bloom -->
+  <div class="section">
+    <div class="section-title">Bloom</div>
+    <div class="ctrl">
+      <label>Intensity <span class="val" id="v-bmi">45</span>%</label>
+      <input type="range" id="sl-bmi" min="0" max="100" value="45" step="1" />
+    </div>
+    <div class="ctrl">
+      <label>Spread <span class="val" id="v-bms">35</span>px</label>
+      <input type="range" id="sl-bms" min="0" max="120" value="35" step="1" />
+    </div>
+  </div>
+
+  <!-- Effects -->
+  <div class="section">
+    <div class="section-title">Effects</div>
+    <div class="ctrl">
+      <label>Chromatic shift <span class="val" id="v-chr">3</span>px</label>
+      <input type="range" id="sl-chr" min="0" max="20" value="3" step="0.5" />
+    </div>
+    <div class="ctrl">
+      <label>Vignette <span class="val" id="v-vig">65</span>%</label>
+      <input type="range" id="sl-vig" min="0" max="100" value="65" step="1" />
+    </div>
+    <div class="ctrl">
+      <label>Grain <span class="val" id="v-grn">10</span></label>
+      <input type="range" id="sl-grn" min="0" max="40" value="10" step="1" />
+    </div>
+  </div>
+
+  <!-- Export -->
+  <div class="section">
+    <div class="section-title">Export</div>
+    <div class="ctrl">
+      <label>Resolution</label>
+      <select id="sel-res">
+        <option value="1920x1080">1920 × 1080</option>
+        <option value="2560x1440">2560 × 1440</option>
+        <option value="3840x2160">3840 × 2160</option>
+        <option value="1080x1080">1080 × 1080 — Square</option>
+        <option value="1080x1350">1080 × 1350 — Portrait</option>
+        <option value="1080x1920">1080 × 1920 — Story</option>
+        <option value="custom">Custom…</option>
+      </select>
+      <div class="custom-res-wrap" id="custom-res-wrap">
+        <div class="custom-res-row">
+          <input type="number" id="inp-cw" value="1920" min="100" max="8000" placeholder="Width" />
+          <span class="custom-res-sep">×</span>
+          <input type="number" id="inp-ch" value="1080" min="100" max="8000" placeholder="Height" />
+        </div>
+      </div>
+    </div>
+    <button class="btn accent" id="btn-export" disabled>↓ Export PNG</button>
+    <button class="btn ghost" id="btn-reseed">↺ Re-randomize grain</button>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <canvas id="c"></canvas>
+  <div id="empty-state">
+    <div class="empty-blob-grid">
+      <div class="empty-blob" style="width:48px;height:48px;background:radial-gradient(circle,#f472b6,transparent)"></div>
+      <div class="empty-blob" style="width:56px;height:40px;background:radial-gradient(circle,#a3e635,transparent)"></div>
+      <div class="empty-blob" style="width:44px;height:52px;background:radial-gradient(circle,#60a5fa,transparent)"></div>
+    </div>
+    <div class="empty-text">Drop an image to begin</div>
+  </div>
+  <div id="render-indicator">rendering…</div>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const wrap   = document.getElementById('canvas-wrap');
+const empty  = document.getElementById('empty-state');
+const indicator = document.getElementById('render-indicator');
+
+// ── Export dimensions ─────────────────────────────────────────────────────────
+let exportW = 1920, exportH = 1080;
+let DW = 960, DH = 540;
+
+function resizeCanvas() {
+  const r = wrap.getBoundingClientRect();
+  const wrapW = r.width - 32, wrapH = r.height - 32;
+  const aspect = exportW / exportH;
+  let cw = wrapW, ch = wrapW / aspect;
+  if (ch > wrapH) { ch = wrapH; cw = wrapH * aspect; }
+  DW = Math.round(cw); DH = Math.round(ch);
+  canvas.width = DW; canvas.height = DH;
+  schedRender();
+}
+new ResizeObserver(resizeCanvas).observe(wrap);
+
+function updateExportDimensions() {
+  const v = document.getElementById('sel-res').value;
+  if (v === 'custom') {
+    exportW = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-cw').value) || 1920));
+    exportH = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-ch').value) || 1080));
+  } else {
+    [exportW, exportH] = v.split('x').map(Number);
+  }
+  resizeCanvas();
+}
+document.getElementById('sel-res').addEventListener('change', function() {
+  document.getElementById('custom-res-wrap').classList.toggle('visible', this.value === 'custom');
+  updateExportDimensions();
+});
+document.getElementById('inp-cw').addEventListener('change', updateExportDimensions);
+document.getElementById('inp-ch').addEventListener('change', updateExportDimensions);
+
+// ── PRNG ──────────────────────────────────────────────────────────────────────
+let _seed = (Math.random() * 0xffffffff) >>> 0;
+let _renderSeed = _seed;
+function rand() {
+  _seed ^= _seed << 13; _seed ^= _seed >> 17; _seed ^= _seed << 5;
+  return (_seed >>> 0) / 0xffffffff;
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let img = null, imgW = 0, imgH = 0;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function g(id) { return parseFloat(document.getElementById(id).value); }
+function gv(id) { return document.getElementById(id).value; }
+
+// ── Slider sync ───────────────────────────────────────────────────────────────
+const SL = {
+  'sl-px':  ['v-px',  v => Math.round(v)],
+  'sl-py':  ['v-py',  v => Math.round(v)],
+  'sl-sc':  ['v-sc',  v => Math.round(v)],
+  'sl-blur':['v-blur',v => Math.round(v)],
+  'sl-sat': ['v-sat', v => Math.round(v)],
+  'sl-bri': ['v-bri', v => Math.round(v)],
+  'sl-hue': ['v-hue', v => Math.round(v)],
+  'sl-bmi': ['v-bmi', v => Math.round(v)],
+  'sl-bms': ['v-bms', v => Math.round(v)],
+  'sl-chr': ['v-chr', v => (+v).toFixed(1)],
+  'sl-vig': ['v-vig', v => Math.round(v)],
+  'sl-grn': ['v-grn', v => Math.round(v)],
+};
+Object.entries(SL).forEach(([sid, [vid, fmt]]) => {
+  const el = document.getElementById(sid);
+  const vEl = document.getElementById(vid);
+  vEl.textContent = fmt(el.value);
+  el.addEventListener('input', () => { vEl.textContent = fmt(el.value); schedRender(); });
+});
+
+// ── Image loading ─────────────────────────────────────────────────────────────
+function loadFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const url = URL.createObjectURL(file);
+  const im  = new Image();
+  im.onload = () => {
+    img = im; imgW = im.naturalWidth; imgH = im.naturalHeight;
+    URL.revokeObjectURL(url);
+    document.getElementById('img-name').textContent = file.name;
+    empty.classList.add('hidden');
+    document.getElementById('btn-export').disabled = false;
+    schedRender();
+  };
+  im.src = url;
+}
+document.getElementById('file-input').addEventListener('change', e => {
+  if (e.target.files[0]) loadFile(e.target.files[0]);
+});
+document.getElementById('upload-zone').addEventListener('click', e => {
+  if (e.target !== document.getElementById('file-input'))
+    document.getElementById('file-input').click();
+});
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+
+// ── Color helpers ─────────────────────────────────────────────────────────────
+function rgbToHsl(r, g, b) {
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h, s, l = (max + min) / 2;
+  if (max === min) { h = s = 0; }
+  else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g-b)/d + (g<b?6:0)) / 6; break;
+      case g: h = ((b-r)/d + 2) / 6; break;
+      default:h = ((r-g)/d + 4) / 6;
+    }
+  }
+  return [h, s, l];
+}
+function hslToRgb(h, s, l) {
+  if (s === 0) return [l, l, l];
+  const q = l < 0.5 ? l*(1+s) : l+s-l*s, p = 2*l-q;
+  const hue = t => {
+    if (t<0) t+=1; if (t>1) t-=1;
+    if (t<1/6) return p+(q-p)*6*t;
+    if (t<1/2) return q;
+    if (t<2/3) return p+(q-p)*(2/3-t)*6;
+    return p;
+  };
+  return [hue(h+1/3), hue(h), hue(h-1/3)];
+}
+
+// ── Pixel operations ──────────────────────────────────────────────────────────
+function adjustHSL(d, satMult, hueShift, briShift) {
+  const hs = hueShift / 360, bs = briShift / 100;
+  for (let i = 0; i < d.length; i += 4) {
+    let [h, s, l] = rgbToHsl(d[i]/255, d[i+1]/255, d[i+2]/255);
+    s = Math.min(1, s * satMult);
+    h = (h + hs + 1) % 1;
+    l = Math.max(0, Math.min(1, l + bs));
+    const [r, g, b] = hslToRgb(h, s, l);
+    d[i]   = r * 255;
+    d[i+1] = g * 255;
+    d[i+2] = b * 255;
+  }
+}
+
+function applyChromatic(ctx2, W, H, shift) {
+  const ishift = Math.round(shift);
+  if (ishift < 1) return;
+  const src = ctx2.getImageData(0, 0, W, H).data;
+  const dst = new ImageData(W, H);
+  const dd  = dst.data;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const di  = (y*W + x) * 4;
+      const rx  = Math.max(0, Math.min(W-1, x - ishift));
+      const bx  = Math.max(0, Math.min(W-1, x + ishift));
+      dd[di]   = src[(y*W + rx)*4];
+      dd[di+1] = src[di+1];
+      dd[di+2] = src[(y*W + bx)*4 + 2];
+      dd[di+3] = 255;
+    }
+  }
+  ctx2.putImageData(dst, 0, 0);
+}
+
+function applyGrain(d, amount) {
+  for (let i = 0; i < d.length; i += 4) {
+    const n = (rand() - 0.5) * amount * 2;
+    d[i]   = Math.max(0, Math.min(255, d[i]   + n));
+    d[i+1] = Math.max(0, Math.min(255, d[i+1] + n));
+    d[i+2] = Math.max(0, Math.min(255, d[i+2] + n));
+  }
+}
+
+// ── Core render pipeline ──────────────────────────────────────────────────────
+function renderTo(ctx2, W, H, sf) {
+  const blurR  = g('sl-blur') * sf;
+  const satM   = g('sl-sat') / 100;
+  const briS   = g('sl-bri');
+  const hueS   = g('sl-hue');
+  const bloomI = g('sl-bmi') / 100;
+  const bloomS = g('sl-bms') * sf;
+  const chrS   = g('sl-chr') * sf;
+  const vigS   = g('sl-vig') / 100;
+  const grnA   = g('sl-grn');
+  const panX   = W/2 + g('sl-px') * sf;
+  const panY   = H/2 + g('sl-py') * sf;
+  const scale  = g('sl-sc') / 100;
+
+  // ── 1. White background + blurred image ──
+  ctx2.fillStyle = '#ffffff';
+  ctx2.fillRect(0, 0, W, H);
+
+  if (!img) return;
+
+  const iw = imgW * scale * sf;
+  const ih = imgH * scale * sf;
+  ctx2.filter = blurR > 0 ? `blur(${blurR}px)` : 'none';
+  ctx2.drawImage(img, panX - iw/2, panY - ih/2, iw, ih);
+  ctx2.filter = 'none';
+
+  // ── 2. Color: saturation, brightness, hue ──
+  if (satM !== 1 || briS !== 0 || hueS !== 0) {
+    const id = ctx2.getImageData(0, 0, W, H);
+    adjustHSL(id.data, satM, hueS, briS);
+    ctx2.putImageData(id, 0, 0);
+  }
+
+  // ── 3. Bloom — extra-blurred copy screened back on ──
+  if (bloomI > 0.01 && bloomS > 0.5) {
+    const bc  = document.createElement('canvas');
+    bc.width  = W; bc.height = H;
+    const bx  = bc.getContext('2d');
+    bx.filter = `blur(${bloomS}px)`;
+    bx.drawImage(ctx2.canvas, 0, 0);
+    bx.filter = 'none';
+    ctx2.globalCompositeOperation = 'screen';
+    ctx2.globalAlpha = bloomI;
+    ctx2.drawImage(bc, 0, 0);
+    ctx2.globalCompositeOperation = 'source-over';
+    ctx2.globalAlpha = 1;
+  }
+
+  // ── 4. Chromatic shift ──
+  if (chrS >= 0.5) applyChromatic(ctx2, W, H, chrS);
+
+  // ── 5. Vignette — edges fade to white ──
+  if (vigS > 0.01) {
+    const cx = W/2, cy = H/2;
+    const inner = Math.min(W, H) * 0.15;
+    const outer = Math.max(W, H) * 0.8;
+    const vg = ctx2.createRadialGradient(cx, cy, inner, cx, cy, outer);
+    vg.addColorStop(0,   'rgba(255,255,255,0)');
+    vg.addColorStop(0.4, 'rgba(255,255,255,0)');
+    vg.addColorStop(1,   `rgba(255,255,255,${vigS})`);
+    ctx2.fillStyle = vg;
+    ctx2.fillRect(0, 0, W, H);
+  }
+
+  // ── 6. Grain ──
+  if (grnA > 0) {
+    const gid = ctx2.getImageData(0, 0, W, H);
+    applyGrain(gid.data, grnA);
+    ctx2.putImageData(gid, 0, 0);
+  }
+}
+
+// ── Render (display) ──────────────────────────────────────────────────────────
+let rafPending = false;
+function schedRender() {
+  if (!rafPending) {
+    rafPending = true;
+    requestAnimationFrame(() => { rafPending = false; render(); });
+  }
+}
+
+function render() {
+  indicator.classList.add('visible');
+  _seed = _renderSeed;
+  const sf = DW / exportW;
+  renderTo(ctx, DW, DH, sf);
+  indicator.classList.remove('visible');
+}
+
+// ── Re-seed grain ─────────────────────────────────────────────────────────────
+document.getElementById('btn-reseed').addEventListener('click', () => {
+  _renderSeed = (Math.random() * 0xffffffff) >>> 0;
+  render();
+});
+
+// ── Export ────────────────────────────────────────────────────────────────────
+document.getElementById('btn-export').addEventListener('click', () => {
+  const btn = document.getElementById('btn-export');
+  btn.disabled = true;
+  btn.textContent = 'Rendering…';
+
+  // Run on next frame so button state updates visually first
+  requestAnimationFrame(() => {
+    const ec  = document.createElement('canvas');
+    ec.width  = exportW; ec.height = exportH;
+    const ex  = ec.getContext('2d');
+    _seed = _renderSeed;
+    renderTo(ex, exportW, exportH, 1);
+
+    const a = document.createElement('a');
+    a.download = 'chromatic-bloom.png';
+    a.href = ec.toDataURL('image/png');
+    a.click();
+
+    btn.disabled = false;
+    btn.textContent = '↓ Export PNG';
+  });
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+resizeCanvas();
+
+})();
+</script>
+</body>
+</html>
