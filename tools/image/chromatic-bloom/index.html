@@ -80,8 +80,7 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 .upload-zone { border: 1.5px dashed var(--line2); border-radius: var(--radius-md);
   padding: 20px 16px; text-align: center; cursor: pointer; transition: all 0.15s;
-  color: var(--dim); font-size: 12px; line-height: 1.8; margin-bottom: 10px;
-  display: block; }
+  color: var(--dim); font-size: 12px; line-height: 1.8; margin-bottom: 10px; display: block; }
 .upload-zone:hover { border-color: #000; color: #000; }
 .upload-zone input { display: none; }
 #img-name { font-size: 11px; color: var(--dim); font-family: ui-monospace, monospace;
@@ -95,14 +94,9 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
 #empty-state { position: absolute; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 10px; pointer-events: none; }
 #empty-state.hidden { display: none; }
-.empty-blobs { position: relative; width: 120px; height: 80px; margin-bottom: 8px; opacity: 0.25; }
-.empty-blobs span { position: absolute; border-radius: 50%; filter: blur(12px); }
+.empty-blobs { position: relative; width: 120px; height: 80px; margin-bottom: 8px; opacity: 0.2; }
+.empty-blobs span { position: absolute; border-radius: 50%; filter: blur(14px); }
 .empty-text { font-size: 13px; color: var(--dim); font-weight: 500; }
-
-#status-bar { position: absolute; bottom: 20px; right: 20px; font-size: 11px;
-  color: var(--dim); font-family: ui-monospace, monospace; opacity: 0;
-  transition: opacity 0.2s; pointer-events: none; }
-#status-bar.visible { opacity: 1; }
 </style>
 </head>
 <body>
@@ -135,20 +129,12 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
     </div>
   </div>
 
-  <!-- Blobs -->
+  <!-- Blur -->
   <div class="section">
-    <div class="section-title">Blobs</div>
+    <div class="section-title">Blur</div>
     <div class="ctrl">
-      <label>Colour regions <span class="val" id="v-k">8</span></label>
-      <input type="range" id="sl-k" min="3" max="16" value="8" step="1" />
-    </div>
-    <div class="ctrl">
-      <label>Spread <span class="val" id="v-spr">55</span>%</label>
-      <input type="range" id="sl-spr" min="10" max="130" value="55" step="1" />
-    </div>
-    <div class="ctrl">
-      <label>Softness <span class="val" id="v-soft">12</span>px</label>
-      <input type="range" id="sl-soft" min="0" max="60" value="12" step="1" />
+      <label>Radius <span class="val" id="v-blur">50</span>px</label>
+      <input type="range" id="sl-blur" min="0" max="120" value="50" step="1" />
     </div>
   </div>
 
@@ -156,12 +142,20 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
   <div class="section">
     <div class="section-title">Color</div>
     <div class="ctrl">
-      <label>Saturation <span class="val" id="v-sat">140</span>%</label>
-      <input type="range" id="sl-sat" min="50" max="300" value="140" step="1" />
+      <label>Saturation <span class="val" id="v-sat">190</span>%</label>
+      <input type="range" id="sl-sat" min="100" max="400" value="190" step="1" />
     </div>
     <div class="ctrl">
-      <label>Brightness <span class="val" id="v-bri">0</span></label>
-      <input type="range" id="sl-bri" min="-60" max="60" value="0" step="1" />
+      <label>White fade <span class="val" id="v-wf">80</span>%
+        <span style="font-size:10px;color:var(--dim);font-weight:400;margin-left:2px">neutrals → white</span>
+      </label>
+      <input type="range" id="sl-wf" min="0" max="100" value="80" step="1" />
+    </div>
+    <div class="ctrl">
+      <label>Fade threshold <span class="val" id="v-thr">10</span>%
+        <span style="font-size:10px;color:var(--dim);font-weight:400;margin-left:2px">colour sensitivity</span>
+      </label>
+      <input type="range" id="sl-thr" min="2" max="30" value="10" step="1" />
     </div>
     <div class="ctrl">
       <label>Hue shift <span class="val" id="v-hue">0</span>°</label>
@@ -173,12 +167,12 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
   <div class="section">
     <div class="section-title">Bloom</div>
     <div class="ctrl">
-      <label>Intensity <span class="val" id="v-bmi">40</span>%</label>
-      <input type="range" id="sl-bmi" min="0" max="100" value="40" step="1" />
+      <label>Intensity <span class="val" id="v-bmi">35</span>%</label>
+      <input type="range" id="sl-bmi" min="0" max="100" value="35" step="1" />
     </div>
     <div class="ctrl">
-      <label>Spread <span class="val" id="v-bms">50</span>px</label>
-      <input type="range" id="sl-bms" min="0" max="150" value="50" step="1" />
+      <label>Spread <span class="val" id="v-bms">45</span>px</label>
+      <input type="range" id="sl-bms" min="0" max="150" value="45" step="1" />
     </div>
   </div>
 
@@ -190,8 +184,8 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
       <input type="range" id="sl-chr" min="0" max="20" value="3" step="0.5" />
     </div>
     <div class="ctrl">
-      <label>Vignette <span class="val" id="v-vig">65</span>%</label>
-      <input type="range" id="sl-vig" min="0" max="100" value="65" step="1" />
+      <label>Vignette <span class="val" id="v-vig">60</span>%</label>
+      <input type="range" id="sl-vig" min="0" max="100" value="60" step="1" />
     </div>
     <div class="ctrl">
       <label>Grain <span class="val" id="v-grn">10</span></label>
@@ -222,7 +216,7 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
       </div>
     </div>
     <button class="btn accent" id="btn-export" disabled>↓ Export PNG</button>
-    <button class="btn ghost" id="btn-reseed">↺ Re-randomize</button>
+    <button class="btn ghost" id="btn-reseed">↺ Re-randomize grain</button>
   </div>
 </div>
 
@@ -232,33 +226,29 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
     <div class="empty-blobs">
       <span style="width:70px;height:70px;background:#f472b6;top:5px;left:5px"></span>
       <span style="width:60px;height:60px;background:#a3e635;top:15px;left:40px"></span>
-      <span style="width:50px;height:50px;background:#60a5fa;top:0px;left:60px"></span>
+      <span style="width:50px;height:50px;background:#60a5fa;top:0;left:60px"></span>
     </div>
     <div class="empty-text">Drop an image to begin</div>
   </div>
-  <div id="status-bar">clustering…</div>
 </div>
 
 <script>
 (function () {
 'use strict';
 
-const canvas   = document.getElementById('c');
-const ctx      = canvas.getContext('2d');
-const wrap     = document.getElementById('canvas-wrap');
-const empty    = document.getElementById('empty-state');
-const statusEl = document.getElementById('status-bar');
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const wrap   = document.getElementById('canvas-wrap');
+const empty  = document.getElementById('empty-state');
 
-// ── Export / display sizing ───────────────────────────────────────────────────
-let exportW = 1920, exportH = 1080;
-let DW = 960, DH = 540;
+// ── Sizing ────────────────────────────────────────────────────────────────────
+let exportW = 1920, exportH = 1080, DW = 960, DH = 540;
 
 function resizeCanvas() {
   const r = wrap.getBoundingClientRect();
-  const wrapW = r.width - 32, wrapH = r.height - 32;
-  const aspect = exportW / exportH;
-  let cw = wrapW, ch = wrapW / aspect;
-  if (ch > wrapH) { ch = wrapH; cw = wrapH * aspect; }
+  const wW = r.width-32, wH = r.height-32, asp = exportW/exportH;
+  let cw = wW, ch = wW/asp;
+  if (ch > wH) { ch = wH; cw = wH*asp; }
   DW = Math.round(cw); DH = Math.round(ch);
   canvas.width = DW; canvas.height = DH;
   schedRender();
@@ -268,11 +258,9 @@ new ResizeObserver(resizeCanvas).observe(wrap);
 function updateExportDimensions() {
   const v = document.getElementById('sel-res').value;
   if (v === 'custom') {
-    exportW = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-cw').value) || 1920));
-    exportH = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-ch').value) || 1080));
-  } else {
-    [exportW, exportH] = v.split('x').map(Number);
-  }
+    exportW = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-cw').value)||1920));
+    exportH = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-ch').value)||1080));
+  } else { [exportW, exportH] = v.split('x').map(Number); }
   resizeCanvas();
 }
 document.getElementById('sel-res').addEventListener('change', function () {
@@ -283,398 +271,239 @@ document.getElementById('inp-cw').addEventListener('change', updateExportDimensi
 document.getElementById('inp-ch').addEventListener('change', updateExportDimensions);
 
 // ── PRNG ──────────────────────────────────────────────────────────────────────
-let _seed = (Math.random() * 0xffffffff) >>> 0;
-let _renderSeed = _seed;
+let _seed = (Math.random()*0xffffffff)>>>0, _renderSeed = _seed;
 function rand() {
-  _seed ^= _seed << 13; _seed ^= _seed >> 17; _seed ^= _seed << 5;
-  return (_seed >>> 0) / 0xffffffff;
+  _seed ^= _seed<<13; _seed ^= _seed>>17; _seed ^= _seed<<5;
+  return (_seed>>>0)/0xffffffff;
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let img = null, imgW = 0, imgH = 0;
-let clusters = null; // array of {x,y,r,g,b,count} — positions in 0-1 image space
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function g(id)  { return parseFloat(document.getElementById(id).value); }
 function gv(id) { return document.getElementById(id).value; }
 
 // ── Slider sync ───────────────────────────────────────────────────────────────
 const SL = {
-  'sl-px':  ['v-px',  v => Math.round(v)],
-  'sl-py':  ['v-py',  v => Math.round(v)],
-  'sl-sc':  ['v-sc',  v => Math.round(v)],
-  'sl-k':   ['v-k',   v => Math.round(v)],
-  'sl-spr': ['v-spr', v => Math.round(v)],
-  'sl-soft':['v-soft',v => Math.round(v)],
-  'sl-sat': ['v-sat', v => Math.round(v)],
-  'sl-bri': ['v-bri', v => Math.round(v)],
-  'sl-hue': ['v-hue', v => Math.round(v)],
-  'sl-bmi': ['v-bmi', v => Math.round(v)],
-  'sl-bms': ['v-bms', v => Math.round(v)],
-  'sl-chr': ['v-chr', v => (+v).toFixed(1)],
-  'sl-vig': ['v-vig', v => Math.round(v)],
-  'sl-grn': ['v-grn', v => Math.round(v)],
+  'sl-px':  ['v-px',  v=>Math.round(v)],
+  'sl-py':  ['v-py',  v=>Math.round(v)],
+  'sl-sc':  ['v-sc',  v=>Math.round(v)],
+  'sl-blur':['v-blur',v=>Math.round(v)],
+  'sl-sat': ['v-sat', v=>Math.round(v)],
+  'sl-wf':  ['v-wf',  v=>Math.round(v)],
+  'sl-thr': ['v-thr', v=>Math.round(v)],
+  'sl-hue': ['v-hue', v=>Math.round(v)],
+  'sl-bmi': ['v-bmi', v=>Math.round(v)],
+  'sl-bms': ['v-bms', v=>Math.round(v)],
+  'sl-chr': ['v-chr', v=>(+v).toFixed(1)],
+  'sl-vig': ['v-vig', v=>Math.round(v)],
+  'sl-grn': ['v-grn', v=>Math.round(v)],
 };
-Object.entries(SL).forEach(([sid, [vid, fmt]]) => {
-  const el  = document.getElementById(sid);
-  const vEl = document.getElementById(vid);
-  vEl.textContent = fmt(el.value);
-  el.addEventListener('input', () => {
-    vEl.textContent = fmt(el.value);
-    if (sid === 'sl-k') schedRecompute();
-    else schedRender();
-  });
+Object.entries(SL).forEach(([sid,[vid,fmt]])=>{
+  const el=document.getElementById(sid), vEl=document.getElementById(vid);
+  vEl.textContent=fmt(el.value);
+  el.addEventListener('input',()=>{ vEl.textContent=fmt(el.value); schedRender(); });
 });
 
 // ── Image loading ─────────────────────────────────────────────────────────────
 function loadFile(file) {
-  if (!file || !file.type.startsWith('image/')) return;
-  const url = URL.createObjectURL(file);
-  const im  = new Image();
-  im.onload = () => {
-    img = im; imgW = im.naturalWidth; imgH = im.naturalHeight;
+  if (!file||!file.type.startsWith('image/')) return;
+  const url=URL.createObjectURL(file), im=new Image();
+  im.onload=()=>{
+    img=im; imgW=im.naturalWidth; imgH=im.naturalHeight;
     URL.revokeObjectURL(url);
-    document.getElementById('img-name').textContent = file.name;
+    document.getElementById('img-name').textContent=file.name;
     empty.classList.add('hidden');
-    document.getElementById('btn-export').disabled = false;
-    computeClusters(Math.round(g('sl-k')));
+    document.getElementById('btn-export').disabled=false;
     schedRender();
   };
-  im.src = url;
+  im.src=url;
 }
-document.getElementById('file-input').addEventListener('change', e => {
-  if (e.target.files[0]) loadFile(e.target.files[0]);
-});
-document.getElementById('upload-zone').addEventListener('click', e => {
-  if (e.target !== document.getElementById('file-input'))
-    document.getElementById('file-input').click();
-});
-document.addEventListener('dragover', e => e.preventDefault());
-document.addEventListener('drop', e => {
-  e.preventDefault();
-  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
-});
-
-// ── K-means clustering ────────────────────────────────────────────────────────
-function computeClusters(K) {
-  if (!img) return;
-  statusEl.classList.add('visible');
-
-  // Sample image at small size for speed
-  const SW  = 180;
-  const SH  = Math.max(1, Math.round(SW * imgH / imgW));
-  const sc  = document.createElement('canvas');
-  sc.width  = SW; sc.height = SH;
-  sc.getContext('2d').drawImage(img, 0, 0, SW, SH);
-  const id  = sc.getContext('2d').getImageData(0, 0, SW, SH);
-  const d   = id.data;
-
-  // Collect pixels
-  const pixels = [];
-  for (let i = 0; i < d.length; i += 4) {
-    if (d[i+3] < 128) continue;
-    const idx = i >> 2;
-    pixels.push({
-      x: (idx % SW) / SW,
-      y: Math.floor(idx / SW) / SH,
-      r: d[i], g: d[i+1], b: d[i+2]
-    });
-  }
-
-  // Distance: colour-dominant, with mild spatial component to split same-colour regions
-  function dist(a, b) {
-    const dr = a.r-b.r, dg = a.g-b.g, db = a.b-b.b;
-    const dx = (a.x-b.x)*100, dy = (a.y-b.y)*100;
-    return dr*dr + dg*dg + db*db + dx*dx + dy*dy;
-  }
-
-  const N = pixels.length;
-
-  // K-means++ initialisation
-  const cIdx = [Math.floor(Math.random() * N)];
-  while (cIdx.length < K) {
-    const dists = pixels.map(p => {
-      let min = Infinity;
-      for (const ci of cIdx) min = Math.min(min, dist(p, pixels[ci]));
-      return min;
-    });
-    const total = dists.reduce((s, d) => s + d, 0);
-    let r = Math.random() * total, cum = 0;
-    for (let i = 0; i < N; i++) {
-      cum += dists[i];
-      if (cum >= r) { cIdx.push(i); break; }
-    }
-  }
-  let centroids = cIdx.map(i => ({ ...pixels[i], count: 0 }));
-
-  const assignments = new Int32Array(N);
-
-  for (let iter = 0; iter < 20; iter++) {
-    let changed = false;
-    for (let i = 0; i < N; i++) {
-      let best = 0, minD = Infinity;
-      for (let k = 0; k < K; k++) {
-        const d2 = dist(pixels[i], centroids[k]);
-        if (d2 < minD) { minD = d2; best = k; }
-      }
-      if (assignments[i] !== best) { assignments[i] = best; changed = true; }
-    }
-    if (!changed) break;
-
-    const sums = Array.from({length: K}, () => ({x:0,y:0,r:0,g:0,b:0,n:0}));
-    for (let i = 0; i < N; i++) {
-      const s = sums[assignments[i]], p = pixels[i];
-      s.x += p.x; s.y += p.y; s.r += p.r; s.g += p.g; s.b += p.b; s.n++;
-    }
-    centroids = sums.map((s, k) => s.n > 0
-      ? { x:s.x/s.n, y:s.y/s.n, r:s.r/s.n, g:s.g/s.n, b:s.b/s.n, count:s.n }
-      : centroids[k]);
-  }
-
-  // Final counts
-  const counts = new Array(K).fill(0);
-  for (let i = 0; i < N; i++) counts[assignments[i]]++;
-  centroids.forEach((c, k) => c.count = counts[k]);
-
-  // Sort largest first
-  clusters = centroids.filter(c => c.count > 0).sort((a, b) => b.count - a.count);
-  statusEl.classList.remove('visible');
-}
-
-// Debounce for K change (recompute is heavy)
-let recomputeTimer = null;
-function schedRecompute() {
-  clearTimeout(recomputeTimer);
-  statusEl.classList.add('visible');
-  statusEl.textContent = 'clustering…';
-  recomputeTimer = setTimeout(() => {
-    computeClusters(Math.round(g('sl-k')));
-    render();
-  }, 350);
-}
+document.getElementById('file-input').addEventListener('change',e=>{ if(e.target.files[0]) loadFile(e.target.files[0]); });
+document.getElementById('upload-zone').addEventListener('click',e=>{ if(e.target!==document.getElementById('file-input')) document.getElementById('file-input').click(); });
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>{ e.preventDefault(); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
 
 // ── Colour helpers ────────────────────────────────────────────────────────────
-function rgbToHsl(r, g, b) {
-  const max = Math.max(r,g,b), min = Math.min(r,g,b);
-  let h, s, l = (max+min)/2;
-  if (max === min) { h = s = 0; }
+function rgbToHsl(r,g,b) {
+  const max=Math.max(r,g,b), min=Math.min(r,g,b);
+  let h,s,l=(max+min)/2;
+  if(max===min){ h=s=0; }
   else {
-    const d = max-min;
-    s = l > 0.5 ? d/(2-max-min) : d/(max+min);
-    switch (max) {
-      case r: h = ((g-b)/d + (g<b?6:0))/6; break;
-      case g: h = ((b-r)/d + 2)/6; break;
-      default:h = ((r-g)/d + 4)/6;
+    const d=max-min;
+    s=l>0.5?d/(2-max-min):d/(max+min);
+    switch(max){
+      case r: h=((g-b)/d+(g<b?6:0))/6; break;
+      case g: h=((b-r)/d+2)/6; break;
+      default:h=((r-g)/d+4)/6;
     }
   }
-  return [h, s, l];
+  return [h,s,l];
 }
-function hslToRgb(h, s, l) {
-  if (s === 0) return [l,l,l];
-  const q = l<0.5 ? l*(1+s) : l+s-l*s, p = 2*l-q;
-  const hue = t => {
-    if (t<0) t+=1; if (t>1) t-=1;
-    if (t<1/6) return p+(q-p)*6*t;
-    if (t<1/2) return q;
-    if (t<2/3) return p+(q-p)*(2/3-t)*6;
+function hslToRgb(h,s,l) {
+  if(s===0) return [l,l,l];
+  const q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q;
+  const hue=t=>{
+    if(t<0)t+=1; if(t>1)t-=1;
+    if(t<1/6) return p+(q-p)*6*t;
+    if(t<1/2) return q;
+    if(t<2/3) return p+(q-p)*(2/3-t)*6;
     return p;
   };
-  return [hue(h+1/3), hue(h), hue(h-1/3)];
+  return [hue(h+1/3),hue(h),hue(h-1/3)];
 }
 
-function adjustedColor(r, g, b, satM, hueS, briS) {
-  let [h, s, l] = rgbToHsl(r/255, g/255, b/255);
-  s = Math.min(1, s * satM);
-  h = (h + hueS/360 + 1) % 1;
-  l = Math.max(0, Math.min(1, l + briS/100));
-  const [nr, ng, nb] = hslToRgb(h, s, l);
-  return [Math.round(nr*255), Math.round(ng*255), Math.round(nb*255)];
+// ── The key algorithm: selective saturation + white fade ──────────────────────
+// High-saturation pixels get their saturation boosted.
+// Low-saturation (neutral/grey) pixels get pushed toward white.
+// This makes the background disappear and colours pop — exactly the GALA look.
+function selectiveColor(data, satMult, whiteFade, threshold, hueShift) {
+  const thr = Math.max(0.001, threshold/100);
+  const wf  = whiteFade/100;
+  const hs  = hueShift/360;
+  for (let i=0; i<data.length; i+=4) {
+    let [h,s,l] = rgbToHsl(data[i]/255, data[i+1]/255, data[i+2]/255);
+
+    // colorness: 0 = fully neutral, 1 = vivid colour. Smooth ramp over [0, thr].
+    const colorness = Math.min(1, s/thr);
+
+    // Saturated pixels: boost saturation
+    const boostedS = Math.min(1, s*satMult);
+    // Neutral pixels: no saturation boost
+    const finalS = boostedS*colorness + s*(1-colorness);
+
+    // Neutral pixels: push lightness toward 1 (white)
+    const finalL = l + (1-l)*wf*(1-colorness);
+
+    // Hue shift (uniform)
+    const finalH = (h+hs+1)%1;
+
+    const [r,g2,b] = hslToRgb(finalH, finalS, finalL);
+    data[i]   = Math.round(r*255);
+    data[i+1] = Math.round(g2*255);
+    data[i+2] = Math.round(b*255);
+  }
 }
 
-// ── Pixel FX ──────────────────────────────────────────────────────────────────
+// ── Chromatic shift ───────────────────────────────────────────────────────────
 function applyChromatic(ctx2, W, H, shift) {
-  const s = Math.round(shift);
-  if (s < 1) return;
-  const src = ctx2.getImageData(0, 0, W, H).data;
-  const dst = new ImageData(W, H);
-  const dd  = dst.data;
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const di = (y*W + x)*4;
-      const rx = Math.max(0, Math.min(W-1, x-s));
-      const bx = Math.max(0, Math.min(W-1, x+s));
-      dd[di]   = src[(y*W+rx)*4];
-      dd[di+1] = src[di+1];
-      dd[di+2] = src[(y*W+bx)*4+2];
-      dd[di+3] = 255;
+  const s=Math.round(shift); if(s<1) return;
+  const src=ctx2.getImageData(0,0,W,H).data, dst=new ImageData(W,H), dd=dst.data;
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      const di=(y*W+x)*4;
+      const rx=Math.max(0,Math.min(W-1,x-s)), bx=Math.max(0,Math.min(W-1,x+s));
+      dd[di]  =src[(y*W+rx)*4];
+      dd[di+1]=src[di+1];
+      dd[di+2]=src[(y*W+bx)*4+2];
+      dd[di+3]=255;
     }
   }
-  ctx2.putImageData(dst, 0, 0);
+  ctx2.putImageData(dst,0,0);
 }
 
+// ── Grain ─────────────────────────────────────────────────────────────────────
 function applyGrain(ctx2, W, H, amount) {
-  if (amount < 0.5) return;
-  const id = ctx2.getImageData(0, 0, W, H);
-  const d  = id.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const n = (rand()-0.5)*amount*2;
-    d[i]   = Math.max(0, Math.min(255, d[i]  +n));
-    d[i+1] = Math.max(0, Math.min(255, d[i+1]+n));
-    d[i+2] = Math.max(0, Math.min(255, d[i+2]+n));
+  if(amount<0.5) return;
+  const id=ctx2.getImageData(0,0,W,H), d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const n=(rand()-0.5)*amount*2;
+    d[i]  =Math.max(0,Math.min(255,d[i]  +n));
+    d[i+1]=Math.max(0,Math.min(255,d[i+1]+n));
+    d[i+2]=Math.max(0,Math.min(255,d[i+2]+n));
   }
-  ctx2.putImageData(id, 0, 0);
+  ctx2.putImageData(id,0,0);
 }
 
-// ── Blob drawing ──────────────────────────────────────────────────────────────
-function drawBlobs(blobCtx, W, H, sf) {
-  if (!clusters || clusters.length === 0) return;
-
-  const panX  = W/2 + g('sl-px')*sf;
-  const panY  = H/2 + g('sl-py')*sf;
-  const scale = g('sl-sc')/100;
-  const iw    = imgW*scale*sf;
-  const ih    = imgH*scale*sf;
-  const left  = panX - iw/2;
-  const top   = panY - ih/2;
-
-  const spreadF  = g('sl-spr')/100;
-  const baseR    = Math.min(iw, ih) * spreadF;
-  const satM     = g('sl-sat')/100;
-  const hueS     = g('sl-hue');
-  const briS     = g('sl-bri');
-  const total    = clusters.reduce((s, c) => s+c.count, 0);
-
-  for (const cl of clusters) {
-    const weight = cl.count / total;
-    const blobR  = baseR * (0.3 + Math.sqrt(weight) * 2.2);
-
-    // Organic ellipse shape
-    const rx  = blobR * (0.6 + rand()*0.8);
-    const ry  = blobR * (0.6 + rand()*0.8);
-    const rot = rand() * Math.PI;
-
-    // Canvas position from normalised image coords
-    const cx = left + cl.x * iw;
-    const cy = top  + cl.y * ih;
-
-    const [r, gv2, b] = adjustedColor(cl.r, cl.g, cl.b, satM, hueS, briS);
-
-    // Radial gradient, fading outward
-    const rMax = Math.max(rx, ry);
-    const grad = blobCtx.createRadialGradient(0, 0, 0, 0, 0, rMax);
-    grad.addColorStop(0,    `rgba(${r},${gv2},${b},0.92)`);
-    grad.addColorStop(0.35, `rgba(${r},${gv2},${b},0.75)`);
-    grad.addColorStop(0.7,  `rgba(${r},${gv2},${b},0.3)`);
-    grad.addColorStop(1,    `rgba(${r},${gv2},${b},0)`);
-
-    blobCtx.save();
-    blobCtx.translate(cx, cy);
-    blobCtx.rotate(rot);
-    blobCtx.scale(rx/rMax, ry/rMax);
-    blobCtx.beginPath();
-    blobCtx.arc(0, 0, rMax, 0, Math.PI*2);
-    blobCtx.fillStyle = grad;
-    blobCtx.fill();
-    blobCtx.restore();
-  }
-}
-
-// ── Core render pipeline ──────────────────────────────────────────────────────
+// ── Core pipeline ─────────────────────────────────────────────────────────────
 function renderTo(ctx2, W, H, sf) {
-  const softnessR = g('sl-soft')*sf;
-  const bloomI    = g('sl-bmi')/100;
-  const bloomS    = g('sl-bms')*sf;
-  const chrS      = g('sl-chr')*sf;
-  const vigS      = g('sl-vig')/100;
-  const grnA      = g('sl-grn');
+  const blurR  = g('sl-blur')*sf;
+  const satM   = g('sl-sat')/100;
+  const wf     = g('sl-wf');
+  const thr    = g('sl-thr');
+  const hueS   = g('sl-hue');
+  const bloomI = g('sl-bmi')/100;
+  const bloomS = g('sl-bms')*sf;
+  const chrS   = g('sl-chr')*sf;
+  const vigS   = g('sl-vig')/100;
+  const grnA   = g('sl-grn');
+  const panX   = W/2 + g('sl-px')*sf;
+  const panY   = H/2 + g('sl-py')*sf;
+  const scale  = g('sl-sc')/100;
+  const iw     = imgW*scale*sf;
+  const ih     = imgH*scale*sf;
 
-  // ── 1. Blobs onto intermediate canvas ──
-  const blobC   = document.createElement('canvas');
-  blobC.width   = W; blobC.height = H;
-  const blobCtx = blobC.getContext('2d');
-  blobCtx.fillStyle = '#ffffff';
-  blobCtx.fillRect(0, 0, W, H);
-  drawBlobs(blobCtx, W, H, sf);
-
-  // ── 2. Softness blur ──
+  // ── 1. White base + blurred image ──
   ctx2.fillStyle = '#ffffff';
   ctx2.fillRect(0, 0, W, H);
 
-  if (softnessR > 0.5) {
-    const softC   = document.createElement('canvas');
-    softC.width   = W; softC.height = H;
-    const softCtx = softC.getContext('2d');
-    softCtx.filter = `blur(${softnessR}px)`;
-    softCtx.drawImage(blobC, 0, 0);
-    ctx2.drawImage(softC, 0, 0);
-  } else {
-    ctx2.drawImage(blobC, 0, 0);
-  }
+  if (!img) return;
 
-  // ── 3. Bloom — extra-blurred layer composited with screen ──
-  if (bloomI > 0.01 && bloomS > 0.5) {
-    const bc   = document.createElement('canvas');
-    bc.width   = W; bc.height = H;
-    const bx   = bc.getContext('2d');
-    bx.filter  = `blur(${bloomS}px)`;
+  ctx2.filter = blurR > 0 ? `blur(${blurR}px)` : 'none';
+  ctx2.drawImage(img, panX-iw/2, panY-ih/2, iw, ih);
+  ctx2.filter = 'none';
+
+  // ── 2. Selective colour: boost saturated, fade neutrals to white ──
+  const id = ctx2.getImageData(0, 0, W, H);
+  selectiveColor(id.data, satM, wf, thr, hueS);
+  ctx2.putImageData(id, 0, 0);
+
+  // ── 3. Bloom ──
+  if (bloomI>0.01 && bloomS>0.5) {
+    const bc=document.createElement('canvas'); bc.width=W; bc.height=H;
+    const bx=bc.getContext('2d');
+    bx.filter=`blur(${bloomS}px)`;
     bx.drawImage(ctx2.canvas, 0, 0);
-    ctx2.globalCompositeOperation = 'screen';
-    ctx2.globalAlpha = bloomI;
+    ctx2.globalCompositeOperation='screen';
+    ctx2.globalAlpha=bloomI;
     ctx2.drawImage(bc, 0, 0);
-    ctx2.globalCompositeOperation = 'source-over';
-    ctx2.globalAlpha = 1;
+    ctx2.globalCompositeOperation='source-over';
+    ctx2.globalAlpha=1;
   }
 
   // ── 4. Chromatic shift ──
-  if (chrS >= 0.5) applyChromatic(ctx2, W, H, chrS);
+  if (chrS>=0.5) applyChromatic(ctx2, W, H, chrS);
 
   // ── 5. Vignette — edges fade to white ──
-  if (vigS > 0.01) {
-    const cx = W/2, cy = H/2;
-    const vg = ctx2.createRadialGradient(cx, cy, Math.min(W,H)*0.15, cx, cy, Math.max(W,H)*0.8);
-    vg.addColorStop(0,   'rgba(255,255,255,0)');
-    vg.addColorStop(0.4, 'rgba(255,255,255,0)');
-    vg.addColorStop(1,   `rgba(255,255,255,${vigS})`);
-    ctx2.fillStyle = vg;
-    ctx2.fillRect(0, 0, W, H);
+  if (vigS>0.01) {
+    const cx=W/2, cy=H/2;
+    const vg=ctx2.createRadialGradient(cx,cy,Math.min(W,H)*0.1,cx,cy,Math.max(W,H)*0.8);
+    vg.addColorStop(0,  'rgba(255,255,255,0)');
+    vg.addColorStop(0.4,'rgba(255,255,255,0)');
+    vg.addColorStop(1,  `rgba(255,255,255,${vigS})`);
+    ctx2.fillStyle=vg;
+    ctx2.fillRect(0,0,W,H);
   }
 
   // ── 6. Grain ──
   applyGrain(ctx2, W, H, grnA);
 }
 
-// ── Render (display) ──────────────────────────────────────────────────────────
-let rafPending = false;
+// ── Render loop ───────────────────────────────────────────────────────────────
+let rafPending=false;
 function schedRender() {
-  if (!rafPending) {
-    rafPending = true;
-    requestAnimationFrame(() => { rafPending = false; render(); });
-  }
+  if(!rafPending){ rafPending=true; requestAnimationFrame(()=>{ rafPending=false; render(); }); }
 }
 function render() {
-  _seed = _renderSeed;
+  _seed=_renderSeed;
   renderTo(ctx, DW, DH, DW/exportW);
 }
 
-document.getElementById('btn-reseed').addEventListener('click', () => {
-  _renderSeed = (Math.random()*0xffffffff) >>> 0;
-  render();
+document.getElementById('btn-reseed').addEventListener('click',()=>{
+  _renderSeed=(Math.random()*0xffffffff)>>>0; render();
 });
 
 // ── Export ────────────────────────────────────────────────────────────────────
-document.getElementById('btn-export').addEventListener('click', () => {
-  const btn = document.getElementById('btn-export');
-  btn.disabled = true; btn.textContent = 'Rendering…';
-  requestAnimationFrame(() => {
-    const ec = document.createElement('canvas');
-    ec.width = exportW; ec.height = exportH;
-    _seed = _renderSeed;
+document.getElementById('btn-export').addEventListener('click',()=>{
+  const btn=document.getElementById('btn-export');
+  btn.disabled=true; btn.textContent='Rendering…';
+  requestAnimationFrame(()=>{
+    const ec=document.createElement('canvas'); ec.width=exportW; ec.height=exportH;
+    _seed=_renderSeed;
     renderTo(ec.getContext('2d'), exportW, exportH, 1);
-    const a = document.createElement('a');
-    a.download = 'chromatic-bloom.png';
-    a.href = ec.toDataURL('image/png');
-    a.click();
-    btn.disabled = false; btn.textContent = '↓ Export PNG';
+    const a=document.createElement('a'); a.download='chromatic-bloom.png';
+    a.href=ec.toDataURL('image/png'); a.click();
+    btn.disabled=false; btn.textContent='↓ Export PNG';
   });
 });
 
