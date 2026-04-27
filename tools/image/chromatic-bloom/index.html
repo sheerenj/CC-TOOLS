@@ -150,7 +150,7 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
       <label>White fade <span class="val" id="v-wf">100</span>%
         <span style="font-size:10px;color:var(--dim);font-weight:400;margin-left:2px">neutrals → white</span>
       </label>
-      <input type="range" id="sl-wf" min="0" max="100" value="100" step="1" />
+      <input type="range" id="sl-wf" min="0" max="200" value="100" step="1" />
     </div>
     <div class="ctrl">
       <label>Fade threshold <span class="val" id="v-thr">30</span>%
@@ -359,24 +359,25 @@ function hslToRgb(h,s,l) {
 // Low-saturation (neutral/grey) pixels get pushed toward white.
 // This makes the background disappear and colours pop — exactly the GALA look.
 function selectiveColor(data, satMult, whiteFade, threshold, hueShift) {
-  const thr = Math.max(0.001, threshold/100);
-  const wf  = whiteFade/100;
-  const hs  = hueShift/360;
+  const thr  = Math.max(0.001, threshold/100);
+  const wf   = whiteFade/100;       // 0–1: only neutrals fade; 1–2: coloured pixels also fade
+  const wfBase  = Math.min(1, wf);  // portion that acts on neutrals
+  const wfExtra = Math.max(0, wf-1);// portion that also acts on vivid pixels
+  const hs   = hueShift/360;
   for (let i=0; i<data.length; i+=4) {
     let [h,s,l] = rgbToHsl(data[i]/255, data[i+1]/255, data[i+2]/255);
 
     // colorness: 0 = fully neutral, 1 = vivid colour. Smooth ramp over [0, thr].
     const colorness = Math.min(1, s/thr);
 
-    // Saturated pixels: boost saturation
-    const boostedS = Math.min(1, s*satMult);
-    // Neutral pixels: no saturation boost
-    const finalS = boostedS*colorness + s*(1-colorness);
+    // Saturated pixels: boost saturation (reduced as we push toward white at >100%)
+    const boostedS = Math.min(1, s*satMult) * (1 - wfExtra);
+    const finalS = boostedS*colorness + s*(1-colorness)*(1-wfExtra);
 
-    // Neutral pixels: push lightness toward 1 (white)
-    const finalL = l + (1-l)*wf*(1-colorness);
+    // Neutrals always push to white; >100% also pulls vivid pixels toward white
+    const whiteStrength = wfBase*(1-colorness) + wfExtra;
+    const finalL = Math.min(1, l + (1-l)*whiteStrength);
 
-    // Hue shift (uniform)
     const finalH = (h+hs+1)%1;
 
     const [r,g2,b] = hslToRgb(finalH, finalS, finalL);

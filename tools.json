@@ -5,7 +5,7 @@
   { "category": "generators",  "slug": "reaction-diffusion",            "hasPreview": true                                      },
   { "category": "image",       "slug": "BCA-halftone-lines-image",      "hasPreview": true,  "name": "BCA Halftone Lines"       },
   { "category": "image",       "slug": "halftone-dot-studio",           "hasPreview": true,  "name": "Halftone Dots"            },
-  { "category": "image",       "slug": "chromatic-bloom",               "hasPreview": false, "name": "Chromatic Bloom"          },
+  { "category": "image",       "slug": "chromatic-bloom",               "hasPreview": true,  "name": "Chromatic Bloom"          },
   { "category": "templates",   "slug": "ascii-template-tool",           "hasPreview": true,  "name": "BOOTHCLUB ASCII Template" },
   { "category": "typography",  "slug": "experimental-type-tool",        "hasPreview": true,  "name": "Experimental Type"        },
   { "category": "typography",  "slug": "particle-typeface",             "hasPreview": true                                      },
