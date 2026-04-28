@@ -1,0 +1,16 @@
+[
+  {
+    "slug": "particle-typeface-ae",
+    "type": "plugin",
+    "app": "After Effects",
+    "hasPreview": true,
+    "repoUrl": "https://github.com/sheerenj/CC-TY/tree/main/plugins/particle-typeface-ae"
+  },
+  {
+    "slug": "squircles-for-illustrator",
+    "type": "script",
+    "app": "Illustrator",
+    "hasPreview": true,
+    "previewBase": "https://sheerenj.github.io/CC-TY/tools/scripts"
+  }
+]

@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Particle Typeface</title>
+<style>
+  :root {
+    --bg:      #1c1c1c;
+    --card:    #282828;
+    --border:  #3a3a3a;
+    --border2: #4a4a4a;
+    --text:    #e0e0e0;
+    --dim:     #888;
+    --accent:  #d4fc4e;
+    --radius:  10px;
+    --rpill:   999px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Helvetica Neue", sans-serif;
+    font-size: 12px; overflow: hidden;
+  }
+
+  /* ── Layout ── */
+  #root { display: flex; flex-direction: column; height: 100vh; }
+  #preview-wrap {
+    flex-shrink: 0; position: relative;
+    background: #000; border-bottom: 1px solid var(--border);
+  }
+  #preview-c { display: block; width: 100%; aspect-ratio: 16/9; }
+  #preview-badge {
+    position: absolute; top: 8px; left: 8px;
+    background: rgba(0,0,0,0.6); color: var(--dim);
+    font-size: 10px; padding: 3px 7px; border-radius: 4px;
+    font-family: ui-monospace, monospace; letter-spacing: 0.06em;
+    pointer-events: none;
+  }
+
+  #controls { flex: 1; overflow-y: auto; padding: 10px; }
+  #controls::-webkit-scrollbar { width: 6px; }
+  #controls::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+  /* ── Sections ── */
+  .sec { background: var(--card); border-radius: var(--radius);
+    border: 1px solid var(--border); padding: 12px; margin-bottom: 8px; }
+  .sec-title {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: #000; background: var(--accent);
+    padding: 2px 6px; border-radius: 3px; display: inline-block; margin-bottom: 10px;
+  }
+
+  /* ── Controls ── */
+  .ctrl { margin-bottom: 10px; }
+  .ctrl:last-child { margin-bottom: 0; }
+  .ctrl label {
+    display: flex; justify-content: space-between; align-items: center;
+    color: var(--text); margin-bottom: 5px; font-weight: 500;
+  }
+  .ctrl label .v { color: var(--dim); font-family: ui-monospace, monospace; font-size: 11px; }
+
+  input[type=range] {
+    -webkit-appearance: none; width: 100%; height: 3px;
+    background: #444; border-radius: 2px; outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--text); cursor: pointer;
+  }
+
+  input[type=text] {
+    width: 100%; background: #333; border: 1px solid var(--border2);
+    color: var(--text); padding: 7px 10px; border-radius: var(--rpill);
+    font-size: 16px; font-weight: 700; letter-spacing: 0.05em; outline: none;
+    font-family: ui-monospace, monospace;
+  }
+  input[type=text]:focus { border-color: var(--accent); }
+  input[type=number] {
+    background: #333; border: 1px solid var(--border2); color: var(--text);
+    padding: 5px 8px; border-radius: 6px; font-size: 12px; outline: none;
+    font-family: ui-monospace, monospace; -moz-appearance: textfield;
+    width: 100%;
+  }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input[type=number]:focus { border-color: var(--accent); }
+
+  select {
+    width: 100%; background: #333; border: 1px solid var(--border2); color: var(--text);
+    padding: 7px 10px; border-radius: var(--rpill); font-size: 12px; outline: none;
+    cursor: pointer; font-family: inherit; appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none'/></svg>");
+    background-repeat: no-repeat; background-position: right 10px center; padding-right: 26px;
+  }
+
+  /* ── Color palette ── */
+  .color-entry { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .color-entry:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .ce-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .ce-swatch {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2);
+    flex-shrink: 0; cursor: pointer;
+  }
+  .ce-label { font-size: 11px; font-weight: 500; flex: 1; color: var(--text); }
+  .ce-pct   { font-size: 10px; color: var(--dim); font-family: ui-monospace, monospace; min-width: 26px; text-align: right; }
+  .ce-rm    { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 16px; padding: 0 2px; line-height: 1; }
+  .ce-rm:hover { color: var(--text); }
+  .ce-hex {
+    width: 100%; background: #333; border: 1px solid var(--border2); color: var(--text);
+    padding: 5px 8px; border-radius: 6px; font-size: 12px; outline: none;
+    font-family: ui-monospace, monospace; margin-bottom: 6px; display: none;
+  }
+  .ce-hex.open { display: block; }
+  .ce-hex:focus { border-color: var(--accent); }
+
+  .bg-color-row { display: flex; align-items: center; gap: 8px; }
+  .bg-swatch {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2);
+    flex-shrink: 0; cursor: pointer;
+  }
+  .bg-hex {
+    flex: 1; background: #333; border: 1px solid var(--border2); color: var(--text);
+    padding: 5px 8px; border-radius: 6px; font-size: 12px; outline: none;
+    font-family: ui-monospace, monospace;
+  }
+  .bg-hex:focus { border-color: var(--accent); }
+
+  /* ── Toggles ── */
+  .tog { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .tog:last-child { margin-bottom: 0; }
+  .tog-label { font-size: 11px; font-weight: 500; color: var(--text); }
+  .tog-sw {
+    width: 32px; height: 18px; background: #444; border-radius: 9px;
+    cursor: pointer; transition: background 0.15s; flex-shrink: 0; position: relative;
+  }
+  .tog-sw::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 14px; height: 14px; background: #fff; border-radius: 50%;
+    transition: left 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+  .tog-sw.on { background: var(--accent); }
+  .tog-sw.on::after { left: 16px; }
+
+  /* ── Buttons ── */
+  .btn {
+    width: 100%; border: none; padding: 9px; border-radius: var(--rpill);
+    font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+    margin-bottom: 6px; transition: all 0.15s;
+  }
+  .btn:last-child { margin-bottom: 0; }
+  .btn-accent { background: var(--accent); color: #000; }
+  .btn-accent:hover:not(:disabled) { background: #bfe040; }
+  .btn-ghost  { background: #333; color: var(--text); border: 1px solid var(--border2); }
+  .btn-ghost:hover:not(:disabled) { background: #3a3a3a; }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ── AE settings grid ── */
+  .dim-row { display: flex; gap: 6px; align-items: center; }
+  .dim-row input { flex: 1; }
+  .dim-sep { color: var(--dim); font-size: 13px; }
+
+  /* ── Status ── */
+  #status-bar {
+    flex-shrink: 0; padding: 7px 12px;
+    border-top: 1px solid var(--border);
+    font-size: 10px; font-family: ui-monospace, monospace;
+    color: var(--dim); background: var(--bg);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #status-bar.ok  { color: var(--accent); }
+  #status-bar.err { color: #ff5f5f; }
+</style>
+</head>
+<body>
+<div id="root">
+
+  <!-- Live preview canvas -->
+  <div id="preview-wrap">
+    <canvas id="preview-c"></canvas>
+    <div id="preview-badge">PREVIEW</div>
+  </div>
+
+  <!-- Scrollable controls -->
+  <div id="controls">
+
+    <!-- Text -->
+    <div class="sec">
+      <div class="sec-title">Text</div>
+      <div class="ctrl">
+        <label>Content <span class="v">↵ to animate</span></label>
+        <input type="text" id="txt" value="HTY" maxlength="12" autocomplete="off" />
+      </div>
+      <div class="ctrl">
+        <label>Font size <span class="v" id="v-fs">200</span></label>
+        <input type="range" id="font-size" min="30" max="400" value="200" />
+      </div>
+    </div>
+
+    <!-- Motion -->
+    <div class="sec">
+      <div class="sec-title">Motion</div>
+      <div class="ctrl">
+        <label>Style</label>
+        <select id="move-style">
+          <option value="spring" selected>Spring — physics bounce</option>
+          <option value="glide">Glide — smooth ease</option>
+          <option value="drift">Drift — organic float</option>
+        </select>
+      </div>
+      <div class="ctrl">
+        <label>Speed <span class="v" id="v-sp">4</span></label>
+        <input type="range" id="speed" min="1" max="10" value="4" step="0.5" />
+      </div>
+      <div class="ctrl">
+        <label>Bounce <span class="v" id="v-bn">15</span>%</label>
+        <input type="range" id="bounce" min="0" max="100" value="15" step="5" />
+      </div>
+      <div class="ctrl">
+        <label>Stagger <span class="v" id="v-st">600</span> ms</label>
+        <input type="range" id="stagger" min="0" max="3000" value="600" step="50" />
+      </div>
+      <div class="ctrl">
+        <label>Launch from</label>
+        <select id="launch-mode">
+          <option value="scatter" selected>Random scatter</option>
+          <option value="bottom">Bottom edge</option>
+          <option value="top">Top edge</option>
+          <option value="center">Center burst</option>
+          <option value="sides">Left / right sides</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Particles -->
+    <div class="sec">
+      <div class="sec-title">Particles</div>
+      <div class="ctrl">
+        <label>Count (preview) <span class="v" id="v-dc">300</span></label>
+        <input type="range" id="dot-count" min="50" max="800" value="300" step="25" />
+      </div>
+      <div class="ctrl">
+        <label>Size <span class="v" id="v-ds">4</span></label>
+        <input type="range" id="dot-size" min="1" max="60" value="4" step="0.5" />
+      </div>
+      <div class="ctrl">
+        <label>Variance <span class="v" id="v-dv">2</span></label>
+        <input type="range" id="dot-var" min="0" max="20" value="2" step="0.5" />
+      </div>
+      <div class="ctrl">
+        <label>Noise <span class="v" id="v-ns">3</span></label>
+        <input type="range" id="noise" min="0" max="20" value="3" step="0.5" />
+      </div>
+      <div class="ctrl">
+        <label>Floaters <span class="v" id="v-fp">15</span>%</label>
+        <input type="range" id="floater-pct" min="0" max="50" value="15" step="1" />
+      </div>
+      <div class="tog">
+        <span class="tog-label">Outline only</span>
+        <div class="tog-sw" id="tog-outline"></div>
+      </div>
+    </div>
+
+    <!-- Colors -->
+    <div class="sec">
+      <div class="sec-title">Colors</div>
+      <div class="ctrl">
+        <label>Background</label>
+        <div class="bg-color-row">
+          <div class="bg-swatch" id="bg-swatch" style="background:#0a0a0a"></div>
+          <input type="text" class="bg-hex" id="bg-color" value="#0a0a0a" maxlength="7" />
+        </div>
+      </div>
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);margin:10px 0 8px">Particle colors</div>
+      <div id="color-list"></div>
+      <button class="btn btn-ghost" id="btn-add-color" style="margin-top:10px;font-size:11px">+ Add color</button>
+    </div>
+
+    <!-- AE Settings -->
+    <div class="sec">
+      <div class="sec-title">AE Settings</div>
+      <div class="ctrl">
+        <label>Comp name</label>
+        <input type="text" id="ae-name" value="Particle Typeface" style="font-size:12px;font-weight:500;letter-spacing:0" />
+      </div>
+      <div class="ctrl">
+        <label>Resolution</label>
+        <select id="ae-res">
+          <option value="1920x1080">1920 × 1080 — Full HD</option>
+          <option value="3840x2160">3840 × 2160 — 4K</option>
+          <option value="1280x720">1280 × 720 — HD</option>
+          <option value="1080x1080">1080 × 1080 — Square</option>
+          <option value="1080x1920">1080 × 1920 — Portrait</option>
+        </select>
+      </div>
+      <div class="ctrl">
+        <label>Frame rate</label>
+        <select id="ae-fps">
+          <option value="24" selected>24 fps</option>
+          <option value="25">25 fps</option>
+          <option value="30">30 fps</option>
+          <option value="60">60 fps</option>
+        </select>
+      </div>
+      <div class="ctrl">
+        <label>Duration <span class="v" id="v-dur">5</span> s</label>
+        <input type="range" id="ae-duration" min="2" max="15" value="5" step="0.5" />
+      </div>
+      <div class="ctrl">
+        <label>Particles in AE <span class="v" id="v-aep">200</span></label>
+        <input type="range" id="ae-particles" min="50" max="500" value="200" step="25" />
+      </div>
+      <div class="ctrl">
+        <label>Keyframe every <span class="v" id="v-kfi">2</span> frames</label>
+        <input type="range" id="kf-interval" min="1" max="6" value="2" step="1" />
+      </div>
+      <div style="font-size:10px;color:var(--dim);line-height:1.5;margin-top:4px">
+        Fewer AE particles = faster build. Each particle becomes a shape with position keyframes. Apply Glow, Blur, etc. after.
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="sec">
+      <div class="sec-title">Actions</div>
+      <button class="btn btn-accent" id="btn-animate">▶ Animate preview</button>
+      <button class="btn btn-ghost"  id="btn-scatter">⊹ Scatter</button>
+      <button class="btn btn-accent" id="btn-build" style="margin-top:4px">⬡ Build in After Effects</button>
+    </div>
+
+  </div><!-- /controls -->
+
+  <div id="status-bar">Ready — type text and click Animate</div>
+</div><!-- /root -->
+
+<script src="js/CSInterface.js"></script>
+<script>
+(function () {
+'use strict';
+
+// ── CEP bridge ────────────────────────────────────────────────────────────────
+var cs;
+try { cs = new CSInterface(); } catch (e) { /* running outside AE — preview only */ }
+
+// ── Simulation dimensions (logical pixels) ────────────────────────────────────
+var SIM_W = 480, SIM_H = 270;
+
+// ── Preview canvas ────────────────────────────────────────────────────────────
+var canvas = document.getElementById('preview-c');
+var ctx    = canvas.getContext('2d');
+var dpr    = window.devicePixelRatio || 1;
+var PW, PH; // CSS pixels of canvas
+
+function resizePreview() {
+  PW = canvas.clientWidth;
+  PH = canvas.clientHeight;
+  canvas.width  = Math.round(PW * dpr);
+  canvas.height = Math.round(PH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resizePreview();
+window.addEventListener('resize', resizePreview);
+
+// ── State ─────────────────────────────────────────────────────────────────────
+var bgColor    = '#0a0a0a';
+var colors     = [{ hex: '#e0ddd5', pct: 100 }];
+var dots       = [];
+var simMode    = 'scatter';
+var rafId      = null;
+var outlineOnly = false;
+
+// ── PRNG (seeded per session) ─────────────────────────────────────────────────
+var _seed = (Math.random() * 0xffffffff) >>> 0;
+function rand() {
+  _seed ^= _seed << 13; _seed ^= _seed >> 17; _seed ^= _seed << 5;
+  return (_seed >>> 0) / 0xffffffff;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function g(id)  { return parseFloat(document.getElementById(id).value); }
+function gi(id) { return parseInt(document.getElementById(id).value); }
+function gv(id) { return document.getElementById(id).value; }
+function setStatus(msg, cls) {
+  var el = document.getElementById('status-bar');
+  el.textContent = msg;
+  el.className = cls || '';
+}
+
+// Slider → display value sync
+['font-size','speed','bounce','stagger','dot-count','dot-size','dot-var',
+ 'noise','floater-pct','ae-duration','ae-particles','kf-interval'].forEach(function(id) {
+  var el  = document.getElementById(id);
+  var vid = 'v-' + id.replace('ae-','').replace('-','-');
+  // Map to short IDs used in HTML
+  var valMap = {
+    'font-size':    'v-fs', 'speed':      'v-sp', 'bounce':      'v-bn',
+    'stagger':      'v-st', 'dot-count':  'v-dc', 'dot-size':    'v-ds',
+    'dot-var':      'v-dv', 'noise':      'v-ns', 'floater-pct': 'v-fp',
+    'ae-duration':  'v-dur','ae-particles':'v-aep','kf-interval': 'v-kfi',
+  };
+  var vEl = document.getElementById(valMap[id]);
+  if (!el || !vEl) return;
+  vEl.textContent = el.value;
+  el.addEventListener('input', function() { vEl.textContent = el.value; });
+});
+
+// ── Outline toggle ────────────────────────────────────────────────────────────
+document.getElementById('tog-outline').addEventListener('click', function() {
+  outlineOnly = !outlineOnly;
+  this.classList.toggle('on', outlineOnly);
+});
+
+// ── Color palette ─────────────────────────────────────────────────────────────
+function isValidHex(h) { return /^#[0-9a-fA-F]{6}$/.test(h); }
+
+function pickColorIdx() {
+  if (colors.length === 1) return 0;
+  var total = colors.reduce(function(s, c) { return s + c.pct; }, 0);
+  if (total <= 0) return 0;
+  var r = Math.random() * total;
+  for (var i = 0; i < colors.length; i++) { r -= colors[i].pct; if (r <= 0) return i; }
+  return colors.length - 1;
+}
+
+var COLOR_PRESETS = ['#ff3366','#3399ff','#33ff99','#ffcc00'];
+function renderColorList() {
+  var list = document.getElementById('color-list');
+  list.innerHTML = '';
+  colors.forEach(function(c, i) {
+    var entry = document.createElement('div');
+    entry.className = 'color-entry';
+    entry.innerHTML =
+      '<div class="ce-top">' +
+        '<div class="ce-swatch" style="background:' + c.hex + '" data-ci="' + i + '"></div>' +
+        '<span class="ce-label">Color ' + (i+1) + '</span>' +
+        '<span class="ce-pct" id="cpct-' + i + '">' + Math.round(c.pct) + '%</span>' +
+        (colors.length > 1 ? '<button class="ce-rm" data-ci="' + i + '">×</button>' : '') +
+      '</div>' +
+      '<input type="text" class="ce-hex" value="' + c.hex + '" maxlength="7" data-ci="' + i + '" placeholder="#rrggbb" />' +
+      '<input type="range" min="0" max="100" value="' + c.pct + '" step="1" data-ci="' + i + '" class="cpct-sl" />';
+    list.appendChild(entry);
+  });
+  list.querySelectorAll('.ce-swatch').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      var hexEl = e.target.parentElement.nextElementSibling;
+      hexEl.classList.toggle('open');
+      if (hexEl.classList.contains('open')) { hexEl.focus(); hexEl.select(); }
+    });
+  });
+  list.querySelectorAll('.ce-hex').forEach(function(el) {
+    el.addEventListener('input', function(e) {
+      var ci = +e.target.dataset.ci;
+      var v = e.target.value.trim();
+      if (!v.startsWith('#')) v = '#' + v;
+      if (isValidHex(v)) {
+        colors[ci].hex = v;
+        e.target.previousElementSibling.querySelector('.ce-swatch').style.background = v;
+      }
+    });
+    el.addEventListener('blur', function(e) {
+      e.target.classList.remove('open');
+    });
+  });
+  list.querySelectorAll('.cpct-sl').forEach(function(el) {
+    el.addEventListener('input', function(e) {
+      var i = +e.target.dataset.ci;
+      colors[i].pct = parseFloat(e.target.value);
+      document.getElementById('cpct-' + i).textContent = Math.round(colors[i].pct) + '%';
+    });
+  });
+  list.querySelectorAll('.ce-rm').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      colors.splice(+e.target.dataset.ci, 1);
+      renderColorList(); updateAddBtn();
+    });
+  });
+}
+function updateAddBtn() {
+  document.getElementById('btn-add-color').disabled = colors.length >= 4;
+}
+document.getElementById('btn-add-color').addEventListener('click', function() {
+  if (colors.length >= 4) return;
+  colors.push({ hex: COLOR_PRESETS[colors.length % COLOR_PRESETS.length], pct: 50 });
+  renderColorList(); updateAddBtn();
+});
+document.getElementById('bg-color').addEventListener('input', function(e) {
+  var v = e.target.value.trim();
+  if (!v.startsWith('#')) v = '#' + v;
+  if (isValidHex(v)) {
+    bgColor = v;
+    document.getElementById('bg-swatch').style.background = v;
+  }
+});
+document.getElementById('bg-swatch').addEventListener('click', function() {
+  document.getElementById('bg-color').focus();
+  document.getElementById('bg-color').select();
+});
+
+// ── Dot factory ───────────────────────────────────────────────────────────────
+function newDot() {
+  return {
+    x: rand() * SIM_W, y: rand() * SIM_H,
+    vx: (rand()-0.5)*1.2, vy: (rand()-0.5)*1.2,
+    tx: 0, ty: 0, nx: 0, ny: 0,
+    r: g('dot-size')*0.5 + rand()*g('dot-var')*0.5,
+    delay: 0, startTime: null, isFloater: false,
+    colorIdx: pickColorIdx()
+  };
+}
+function initDots() { dots = Array.from({length: gi('dot-count')}, newDot); }
+
+// ── Physics ───────────────────────────────────────────────────────────────────
+function updateDot(d, now) {
+  function wander() {
+    d.vx += (rand()-0.5)*0.08; d.vy += (rand()-0.5)*0.08;
+    d.vx *= 0.97; d.vy *= 0.97;
+    d.x  += d.vx; d.y  += d.vy;
+    if (d.x < -10) d.x = SIM_W+10; else if (d.x > SIM_W+10) d.x = -10;
+    if (d.y < -10) d.y = SIM_H+10; else if (d.y > SIM_H+10) d.y = -10;
+  }
+  if (simMode === 'scatter' || !d.startTime || d.isFloater) { wander(); return; }
+  if (now - d.startTime < d.delay) { wander(); return; }
+
+  var style = gv('move-style'), speed = g('speed');
+  var tx = d.tx + d.nx, ty = d.ty + d.ny;
+  if (style === 'glide') {
+    var f = speed * 0.007;
+    d.x += (tx-d.x)*f; d.y += (ty-d.y)*f; d.vx = 0; d.vy = 0;
+  } else if (style === 'spring') {
+    var tension = speed*0.004, damp = 0.98-(g('bounce')/100)*0.32;
+    d.vx += (tx-d.x)*tension; d.vy += (ty-d.y)*tension;
+    d.vx *= damp; d.vy *= damp; d.x += d.vx; d.y += d.vy;
+  } else {
+    d.vx += (rand()-0.5)*0.14; d.vy += (rand()-0.5)*0.14;
+    var f2 = speed*0.0025;
+    d.vx += (tx-d.x)*f2; d.vy += (ty-d.y)*f2;
+    d.vx *= 0.97; d.vy *= 0.97; d.x += d.vx; d.y += d.vy;
+  }
+}
+
+// ── Text rendering (canvas fallback — opentype loaded async below) ─────────────
+var customFont = null;
+
+function drawText(cx2, cW, cH, text, fontSize, align, anchorX, anchorY, mode, color) {
+  if (!text) return;
+  cx2.save();
+  if (customFont) {
+    try {
+      var chars    = Array.from(text);
+      var fullBb   = customFont.getPath(text,0,0,fontSize).getBoundingBox();
+      var th       = fullBb.y2 - fullBb.y1;
+      var baselineY = anchorY - th/2 - fullBb.y1;
+      var advances = chars.map(function(ch) {
+        try { return customFont.charToGlyph(ch).advanceWidth * fontSize / customFont.unitsPerEm; }
+        catch(e) { return fontSize*0.5; }
+      });
+      var totalW = advances.reduce(function(s,a) { return s+a; }, 0);
+      var startX = align==='left' ? anchorX : align==='right' ? anchorX-totalW : anchorX-totalW/2;
+      if (mode==='stroke') { cx2.strokeStyle=color; cx2.lineWidth=Math.max(1.5,fontSize*0.035); }
+      else cx2.fillStyle = color;
+      var curX = startX;
+      for (var i=0; i<chars.length; i++) {
+        var path = new Path2D(customFont.getPath(chars[i],curX,baselineY,fontSize).toPathData());
+        mode==='stroke' ? cx2.stroke(path) : cx2.fill(path);
+        curX += advances[i];
+      }
+      cx2.restore(); return;
+    } catch(e) {}
+  }
+  cx2.font = 'bold ' + fontSize + 'px Georgia, serif';
+  cx2.textBaseline = 'middle'; cx2.textAlign = 'left';
+  var chars2 = Array.from(text);
+  var ws = chars2.map(function(ch) { return cx2.measureText(ch).width; });
+  var tw = ws.reduce(function(s,w){return s+w;},0);
+  var startX2 = align==='left' ? anchorX : align==='right' ? anchorX-tw : anchorX-tw/2;
+  if (mode==='stroke') { cx2.strokeStyle=color; cx2.lineWidth=Math.max(1.5,fontSize*0.04); }
+  else cx2.fillStyle = color;
+  var curX2 = startX2;
+  for (var i2=0; i2<chars2.length; i2++) {
+    mode==='stroke' ? cx2.strokeText(chars2[i2],curX2,anchorY) : cx2.fillText(chars2[i2],curX2,anchorY);
+    curX2 += ws[i2];
+  }
+  cx2.restore();
+}
+
+function measureText2(text, fontSize) {
+  if (customFont) {
+    try {
+      var chars   = Array.from(text);
+      var advances = chars.map(function(ch) {
+        try { return customFont.charToGlyph(ch).advanceWidth * fontSize / customFont.unitsPerEm; }
+        catch(e) { return fontSize*0.5; }
+      });
+      var bb = customFont.getPath(text,0,0,fontSize).getBoundingBox();
+      return { w: advances.reduce(function(s,a){return s+a;},0), h: bb.y2-bb.y1 };
+    } catch(e) {}
+  }
+  var tc = document.createElement('canvas').getContext('2d');
+  tc.font = 'bold ' + fontSize + 'px Georgia, serif';
+  return { w: Array.from(text).reduce(function(s,ch){return s+tc.measureText(ch).width;},0), h: fontSize*0.72 };
+}
+
+// ── Glyph sampling ────────────────────────────────────────────────────────────
+function sampleGlyph(text, fontSize) {
+  var oc = document.createElement('canvas');
+  oc.width = SIM_W; oc.height = SIM_H;
+  var ox = oc.getContext('2d');
+  drawText(ox, SIM_W, SIM_H, text, fontSize, 'center', SIM_W/2, SIM_H/2,
+    outlineOnly ? 'stroke' : 'fill', '#fff');
+  var data  = ox.getImageData(0,0,SIM_W,SIM_H).data;
+  var floaterCount = Math.round(gi('dot-count') * g('floater-pct') / 100);
+  var targetCount  = gi('dot-count') - floaterCount;
+  var step = Math.max(1, Math.floor(Math.sqrt((SIM_W*SIM_H)/(targetCount*8))));
+  var pts  = [];
+  for (var py=0; py<SIM_H; py+=step)
+    for (var px=0; px<SIM_W; px+=step)
+      if (data[(py*SIM_W+px)*4+3] > 100) pts.push([px,py]);
+  return pts;
+}
+
+// ── Preview render ─────────────────────────────────────────────────────────────
+function renderPreview() {
+  // Scale sim coords to preview canvas
+  var scaleX = PW / SIM_W, scaleY = PH / SIM_H;
+  ctx.fillStyle = bgColor; ctx.fillRect(0,0,PW,PH);
+
+  // Draw ghost in scatter mode
+  if (simMode === 'scatter') {
+    ctx.save(); ctx.globalAlpha = 0.15;
+    var text = document.getElementById('txt').value.trim() || 'HTY';
+    var { w: tw2, h: th2 } = measureText2(text, gi('font-size') * scaleX);
+    var scale2 = Math.min((PW-20)/tw2, (PH-20)/th2, 1);
+    drawText(ctx, PW, PH, text, gi('font-size') * scaleX * scale2, 'center', PW/2, PH/2,
+      outlineOnly ? 'stroke' : 'fill', colors[0].hex);
+    ctx.restore();
+  }
+
+  // Batch render dots by color
+  var paths = colors.map(function() { return new Path2D(); });
+  dots.forEach(function(d) {
+    var ci = Math.min(d.colorIdx||0, colors.length-1);
+    var sx = d.x * scaleX, sy = d.y * scaleY, sr = d.r * scaleX;
+    paths[ci].moveTo(sx+sr, sy);
+    paths[ci].arc(sx, sy, Math.max(0.5, sr), 0, Math.PI*2);
+  });
+  colors.forEach(function(c, ci) {
+    ctx.fillStyle = c.hex;
+    ctx.fill(paths[ci]);
+  });
+}
+
+// ── Scatter ───────────────────────────────────────────────────────────────────
+function scatter() {
+  simMode = 'scatter';
+  dots.forEach(function(d) { d.startTime = null; d.isFloater = false; });
+  setStatus('Scattered');
+}
+
+// ── Animate (preview) ─────────────────────────────────────────────────────────
+function animatePreview() {
+  var text      = document.getElementById('txt').value.trim() || 'HTY';
+  var fontSize  = gi('font-size');
+  var count     = gi('dot-count');
+  var floaterPct = g('floater-pct');
+  setStatus('Sampling…');
+  requestAnimationFrame(function() {
+    var pts = sampleGlyph(text, fontSize);
+    if (!pts.length) { setStatus('No glyph pixels — try larger font size', 'err'); return; }
+
+    while (dots.length < count) dots.push(newDot());
+    dots.length = count;
+
+    var floaterCount = Math.round(count * floaterPct / 100);
+    var idxArr = Array.from({length:count},function(_,i){return i;});
+    for (var i=0; i<floaterCount; i++) {
+      var j = i + (rand()*(count-i)|0);
+      var tmp = idxArr[i]; idxArr[i]=idxArr[j]; idxArr[j]=tmp;
+    }
+    var floaterSet = new Set(idxArr.slice(0,floaterCount));
+    var now        = performance.now();
+    var staggerMs  = g('stagger');
+    var noiseAmt   = g('noise');
+    var launchMode = gv('launch-mode');
+
+    dots.forEach(function(d, i) {
+      d.colorIdx  = pickColorIdx();
+      d.r         = g('dot-size')*0.5 + rand()*g('dot-var')*0.5;
+      d.isFloater = floaterSet.has(i);
+      if (d.isFloater) { d.startTime = null; return; }
+      var pt = pts[rand()*pts.length|0];
+      d.tx = pt[0]; d.ty = pt[1];
+      d.nx = (rand()-0.5)*2*noiseAmt; d.ny = (rand()-0.5)*2*noiseAmt;
+      d.delay = rand()*staggerMs; d.startTime = now;
+      switch (launchMode) {
+        case 'bottom': d.x=SIM_W*0.1+rand()*SIM_W*0.8; d.y=SIM_H+40; break;
+        case 'top':    d.x=SIM_W*0.1+rand()*SIM_W*0.8; d.y=-40;       break;
+        case 'center': { var a=rand()*Math.PI*2,r2=10+rand()*40;
+          d.x=SIM_W/2+Math.cos(a)*r2; d.y=SIM_H/2+Math.sin(a)*r2; break; }
+        case 'sides':
+          d.x = rand()>0.5 ? -40 : SIM_W+40; d.y = rand()*SIM_H; break;
+        default: d.x=rand()*SIM_W; d.y=rand()*SIM_H;
+      }
+      d.vx=0; d.vy=0;
+    });
+
+    simMode = 'animate';
+    setStatus('Animating "' + text + '" — watch preview');
+  });
+}
+
+// ── Preview loop ──────────────────────────────────────────────────────────────
+function startLoop() {
+  if (rafId) cancelAnimationFrame(rafId);
+  function frame(now) {
+    dots.forEach(function(d) { updateDot(d, now); });
+    renderPreview();
+    rafId = requestAnimationFrame(frame);
+  }
+  rafId = requestAnimationFrame(frame);
+}
+
+// ── Offline render (for AE export) ────────────────────────────────────────────
+// Runs the simulation frame-by-frame at a fixed rate, deterministic.
+function runOfflineRender(aeCount, aeFPS, aeDuration, compW, compH, kfInterval) {
+  var text       = document.getElementById('txt').value.trim() || 'HTY';
+  var fontSize   = gi('font-size');
+  var floaterPct = g('floater-pct');
+  var staggerMs  = g('stagger');
+  var noiseAmt   = g('noise');
+  var launchMode = gv('launch-mode');
+
+  var pts = sampleGlyph(text, fontSize);
+  if (!pts.length) return null;
+
+  // Scale pts to comp coords
+  var scaleX = compW / SIM_W, scaleY = compH / SIM_H;
+
+  // Build offline dots (separate from preview dots)
+  var count     = aeCount;
+  var offDots   = Array.from({length: count}, function() {
+    return {
+      x: rand()*SIM_W, y: rand()*SIM_H,
+      vx:(rand()-0.5)*1.2, vy:(rand()-0.5)*1.2,
+      tx:0, ty:0, nx:0, ny:0,
+      r: g('dot-size')*0.5 + rand()*g('dot-var')*0.5,
+      delay:0, startTime:null, isFloater:false,
+      colorIdx: pickColorIdx()
+    };
+  });
+
+  // Setup floaters
+  var floaterCount = Math.round(count * floaterPct / 100);
+  var idxArr = Array.from({length:count},function(_,i){return i;});
+  for (var i=0; i<floaterCount; i++) {
+    var j = i + (rand()*(count-i)|0);
+    var tmp = idxArr[i]; idxArr[i]=idxArr[j]; idxArr[j]=tmp;
+  }
+  var floaterSet = new Set(idxArr.slice(0,floaterCount));
+
+  // Assign targets (simTime = 0 is the start)
+  var SIM_T0 = 0;
+  offDots.forEach(function(d, i) {
+    d.colorIdx  = pickColorIdx();
+    d.r         = g('dot-size')*0.5 + rand()*g('dot-var')*0.5;
+    d.isFloater = floaterSet.has(i);
+    if (d.isFloater) { d.startTime = null; return; }
+    var pt = pts[rand()*pts.length|0];
+    d.tx = pt[0]; d.ty = pt[1];
+    d.nx = (rand()-0.5)*2*noiseAmt; d.ny = (rand()-0.5)*2*noiseAmt;
+    d.delay = rand()*staggerMs; d.startTime = SIM_T0;
+    switch (launchMode) {
+      case 'bottom': d.x=SIM_W*0.1+rand()*SIM_W*0.8; d.y=SIM_H+40; break;
+      case 'top':    d.x=SIM_W*0.1+rand()*SIM_W*0.8; d.y=-40; break;
+      case 'center': { var a2=rand()*Math.PI*2,r3=10+rand()*40;
+        d.x=SIM_W/2+Math.cos(a2)*r3; d.y=SIM_H/2+Math.sin(a2)*r3; break; }
+      case 'sides':
+        d.x = rand()>0.5 ? -40 : SIM_W+40; d.y = rand()*SIM_H; break;
+      default: d.x=rand()*SIM_W; d.y=rand()*SIM_H;
+    }
+    d.vx=0; d.vy=0;
+  });
+
+  // Temporarily override simMode for offline physics
+  var prevMode = simMode;
+  simMode = 'animate';
+
+  var frameDtMs    = 1000 / aeFPS;
+  var totalFrames  = Math.round(aeDuration * aeFPS);
+  var recordedFrames = [];
+
+  for (var fi=0; fi<totalFrames; fi++) {
+    var simNow = fi * frameDtMs;
+
+    offDots.forEach(function(d) {
+      function wander2() {
+        d.vx += (rand()-0.5)*0.08; d.vy += (rand()-0.5)*0.08;
+        d.vx *= 0.97; d.vy *= 0.97;
+        d.x  += d.vx; d.y  += d.vy;
+        if (d.x < -10) d.x = SIM_W+10; else if (d.x > SIM_W+10) d.x=-10;
+        if (d.y < -10) d.y = SIM_H+10; else if (d.y > SIM_H+10) d.y=-10;
+      }
+      if (!d.startTime || d.isFloater) { wander2(); return; }
+      if (simNow - d.startTime < d.delay) { wander2(); return; }
+
+      var style2 = gv('move-style'), speed2 = g('speed');
+      var tx2 = d.tx+d.nx, ty2 = d.ty+d.ny;
+      if (style2 === 'glide') {
+        var f2 = speed2*0.007; d.x+=(tx2-d.x)*f2; d.y+=(ty2-d.y)*f2; d.vx=0; d.vy=0;
+      } else if (style2 === 'spring') {
+        var t2=speed2*0.004, da=0.98-(g('bounce')/100)*0.32;
+        d.vx+=(tx2-d.x)*t2; d.vy+=(ty2-d.y)*t2; d.vx*=da; d.vy*=da; d.x+=d.vx; d.y+=d.vy;
+      } else {
+        d.vx+=(rand()-0.5)*0.14; d.vy+=(rand()-0.5)*0.14;
+        var f3=speed2*0.0025;
+        d.vx+=(tx2-d.x)*f3; d.vy+=(ty2-d.y)*f3; d.vx*=0.97; d.vy*=0.97; d.x+=d.vx; d.y+=d.vy;
+      }
+    });
+
+    // Only record every kfInterval frames
+    if (fi % kfInterval === 0) {
+      recordedFrames.push(offDots.map(function(d) {
+        return {
+          x:  Math.round(d.x * scaleX * 10) / 10,
+          y:  Math.round(d.y * scaleY * 10) / 10,
+          r:  Math.round(d.r * Math.min(scaleX, scaleY) * 10) / 10,
+          ci: d.colorIdx
+        };
+      }));
+    }
+  }
+
+  simMode = prevMode;
+  return recordedFrames;
+}
+
+// ── Build in After Effects ────────────────────────────────────────────────────
+document.getElementById('btn-build').addEventListener('click', function() {
+  if (!cs) { setStatus('Not running inside After Effects', 'err'); return; }
+
+  var resParts = gv('ae-res').split('x').map(Number);
+  var compW    = resParts[0], compH = resParts[1];
+  var fps      = gi('ae-fps');
+  var duration = g('ae-duration');
+  var aeCount  = gi('ae-particles');
+  var kfi      = gi('kf-interval');
+
+  setStatus('Rendering ' + aeCount + ' particles × ' + Math.round(duration*fps) + ' frames…');
+
+  // Small delay so status renders before the blocking render loop
+  setTimeout(function() {
+    var frames = runOfflineRender(aeCount, fps, duration, compW, compH, kfi);
+    if (!frames) { setStatus('Glyph sampling failed — try larger font size', 'err'); return; }
+
+    var payload = {
+      compName: document.getElementById('ae-name').value || 'Particle Typeface',
+      compW:    compW, compH: compH,
+      fps:      fps,   duration: duration,
+      bgColor:  bgColor,
+      colors:   colors.map(function(c) { return c.hex; }),
+      frames:   frames
+    };
+
+    var json     = JSON.stringify(payload);
+    var tempPath = '/tmp/pt_ae_export.json';
+
+    // Write JSON to temp file via CEP file API
+    var writeResult = window.cep.fs.writeFile(tempPath, json, cep.encoding.UTF8);
+    if (writeResult.err) {
+      setStatus('File write error: ' + writeResult.err, 'err'); return;
+    }
+
+    setStatus('Building comp in After Effects… (' + frames.length + ' keyframe groups)');
+
+    cs.evalScript('PT_buildComp("' + tempPath + '")', function(result) {
+      if (result && result.indexOf('OK:') === 0) {
+        setStatus(result.replace('OK:', ''), 'ok');
+      } else {
+        setStatus((result || 'Unknown error'), 'err');
+      }
+    });
+  }, 16);
+});
+
+// ── Wiring ────────────────────────────────────────────────────────────────────
+document.getElementById('btn-animate').addEventListener('click', animatePreview);
+document.getElementById('btn-scatter').addEventListener('click', scatter);
+document.getElementById('txt').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') animatePreview();
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+renderColorList();
+initDots();
+startLoop();
+
+// Load opentype.js for custom font support
+(function() {
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js';
+  s.onload = function() { console.log('opentype.js ready'); };
+  document.head.appendChild(s);
+})();
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Halftone Dots</title>
+<style>
+:root {
+  --bg: #ececec; --card: #ffffff; --text: #000000; --dim: #6b6b6b;
+  --line: #e4e4e4; --line2: #d4d4d4; --accent: #d4fc4e;
+  --radius-lg: 20px; --radius-md: 14px; --radius-pill: 999px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, "Inter", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased; }
+body { display: flex; }
+
+/* ── Sidebar ── */
+#sidebar {
+  width: 296px; flex-shrink: 0; background: var(--bg);
+  padding: 16px; overflow-y: auto; height: 100vh;
+  border-right: 1px solid var(--line2);
+}
+#sidebar::-webkit-scrollbar { width: 6px; }
+#sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 3px; }
+
+.brand-row { display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 16px; padding: 0 2px; }
+.brand { font-size: 16px; font-weight: 900; letter-spacing: -0.02em; }
+.brand-sub { font-size: 11px; color: var(--dim); text-transform: uppercase;
+  letter-spacing: 0.1em; font-weight: 600; }
+
+.section { background: var(--card); border-radius: var(--radius-lg);
+  padding: 14px 14px 16px; margin-bottom: 10px; }
+.section-title { display: inline-block; background: var(--accent); color: #000;
+  padding: 3px 7px; font-family: ui-monospace, monospace; font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px; border-radius: 3px; }
+
+.ctrl { margin-bottom: 12px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl > label { display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+.ctrl > label .val { color: var(--dim); font-size: 11px; font-family: ui-monospace, monospace; }
+
+input[type=range] { -webkit-appearance: none; width: 100%; height: 4px;
+  background: var(--line2); border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
+  width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer;
+  transition: transform 0.1s; }
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+  color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
+  font-size: 12px; outline: none; cursor: pointer; font-family: inherit; font-weight: 500;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
+
+.color-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.color-row:last-child { margin-bottom: 0; }
+.color-label { font-size: 12px; font-weight: 500; flex: 1; }
+.color-swatch { width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid var(--line2); flex-shrink: 0; cursor: pointer;
+  position: relative; overflow: hidden; }
+.native-picker { position: absolute; inset: -4px; width: calc(100% + 8px);
+  height: calc(100% + 8px); opacity: 0; cursor: pointer; border: none; padding: 0; }
+.color-hex { flex: 1; background: #f4f4f4; border: 1px solid var(--line); color: #000;
+  padding: 7px 9px; border-radius: var(--radius-md); font-size: 12px; outline: none;
+  font-family: ui-monospace, monospace; min-width: 0; }
+.color-hex:focus { border-color: var(--line2); }
+
+.custom-res-wrap { margin-top: 8px; display: none; }
+.custom-res-wrap.visible { display: block; }
+.custom-res-row { display: flex; gap: 6px; align-items: center; }
+.custom-res-row input[type=number] { flex: 1; background: #f4f4f4; border: 1px solid var(--line);
+  color: #000; padding: 7px 9px; border-radius: var(--radius-md); font-size: 12px;
+  outline: none; font-family: inherit; min-width: 0; }
+.custom-res-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+.custom-res-sep { font-size: 11px; color: var(--dim); flex-shrink: 0; }
+
+.toggle { display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; }
+.toggle:last-child { margin-bottom: 0; }
+.toggle > label { font-size: 12px; font-weight: 500; }
+.tog-sw { position: relative; width: 38px; height: 22px; background: var(--line2);
+  border-radius: 11px; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
+.tog-sw::after { content: ''; position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; background: #fff; border-radius: 50%;
+  transition: left 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.tog-sw.on { background: #000; }
+.tog-sw.on::after { left: 18px; }
+
+button.btn { width: 100%; background: #000; color: #fff; border: none;
+  padding: 10px 14px; border-radius: var(--radius-pill); font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit;
+  margin-bottom: 8px; }
+button.btn:last-of-type { margin-bottom: 0; }
+button.btn:hover:not(:disabled) { background: #222; }
+button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line2); }
+button.btn.ghost:hover:not(:disabled) { background: #f5f5f5; }
+button.btn.accent { background: var(--accent); color: #000; }
+button.btn.accent:hover:not(:disabled) { background: #c2ea3c; }
+button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.upload-zone { border: 1.5px dashed var(--line2); border-radius: var(--radius-md);
+  padding: 20px 16px; text-align: center; cursor: pointer; transition: all 0.15s;
+  color: var(--dim); font-size: 12px; line-height: 1.8; margin-bottom: 10px;
+  display: block; }
+.upload-zone:hover, .upload-zone.drag { border-color: #000; color: #000; }
+.upload-zone input { display: none; }
+#img-name { font-size: 11px; color: var(--dim); font-family: ui-monospace, monospace;
+  text-align: center; min-height: 14px; margin-bottom: 10px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Canvas area ── */
+#canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center;
+  background: var(--bg); overflow: hidden; position: relative; padding: 16px; }
+#c { display: block; } /* width/height set by JS */
+
+#empty-state { position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px; pointer-events: none; }
+#empty-state.hidden { display: none; }
+.empty-dot-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px;
+  margin-bottom: 12px; opacity: 0.15; }
+.empty-dot { width: 8px; height: 8px; background: #000; border-radius: 50%; }
+.empty-dot:nth-child(odd) { width: 5px; height: 5px; opacity: 0.5; }
+.empty-text { font-size: 13px; color: var(--dim); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="brand-row">
+    <span class="brand">Halftone<span style="display:inline-block;width:5px;height:5px;background:#000;border-radius:50%;vertical-align:middle;margin:0 1px 1px"></span></span>
+    <span class="brand-sub">Dot Studio</span>
+  </div>
+
+  <!-- Image -->
+  <div class="section">
+    <div class="section-title">Image</div>
+    <label class="upload-zone" id="upload-zone">
+      <input type="file" id="file-input" accept="image/*" />
+      Drop image here<br>or click to upload
+    </label>
+    <div id="img-name"></div>
+    <div class="ctrl">
+      <label>Position X <span class="val" id="v-px">0</span>px</label>
+      <input type="range" id="sl-px" min="-600" max="600" value="0" />
+    </div>
+    <div class="ctrl">
+      <label>Position Y <span class="val" id="v-py">0</span>px</label>
+      <input type="range" id="sl-py" min="-600" max="600" value="0" />
+    </div>
+    <div class="ctrl">
+      <label>Scale <span class="val" id="v-sc">100</span>%</label>
+      <input type="range" id="sl-sc" min="10" max="400" value="100" step="1" />
+    </div>
+  </div>
+
+  <!-- Adjust -->
+  <div class="section">
+    <div class="section-title">Adjust</div>
+    <div class="ctrl">
+      <label>Brightness <span class="val" id="v-br">0</span></label>
+      <input type="range" id="sl-br" min="-100" max="100" value="0" />
+    </div>
+    <div class="ctrl">
+      <label>Contrast <span class="val" id="v-co">1.00</span>×</label>
+      <input type="range" id="sl-co" min="0.1" max="3" value="1" step="0.05" />
+    </div>
+    <div class="ctrl">
+      <label>Gamma <span class="val" id="v-ga">1.00</span></label>
+      <input type="range" id="sl-ga" min="0.2" max="3" value="1" step="0.05" />
+    </div>
+    <div class="ctrl">
+      <label>Pre-blur <span class="val" id="v-bl">0</span>px</label>
+      <input type="range" id="sl-bl" min="0" max="12" value="0" step="0.5" />
+    </div>
+  </div>
+
+  <!-- Grid -->
+  <div class="section">
+    <div class="section-title">Grid</div>
+    <div class="ctrl">
+      <label>Spacing <span class="val" id="v-sp">10</span>px</label>
+      <input type="range" id="sl-sp" min="3" max="50" value="10" step="0.5" />
+    </div>
+    <div class="ctrl">
+      <label>Angle <span class="val" id="v-an">22</span>°</label>
+      <input type="range" id="sl-an" min="0" max="89" value="22" step="1" />
+    </div>
+    <div class="ctrl">
+      <label>Pattern</label>
+      <select id="sel-pat">
+        <option value="square">Square</option>
+        <option value="hex">Hexagonal</option>
+        <option value="random">Random scatter</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Dots -->
+  <div class="section">
+    <div class="section-title">Dots</div>
+
+    <div class="toggle" style="margin-bottom:14px;">
+      <label>Uniform dots</label>
+      <div class="tog-sw" id="tog-uni"></div>
+    </div>
+
+    <div id="var-size-ctrls">
+      <div class="ctrl">
+        <label>Max size <span class="val" id="v-ms">7</span>px</label>
+        <input type="range" id="sl-ms" min="1" max="30" value="7" step="0.5" />
+      </div>
+      <div class="ctrl">
+        <label>Min size <span class="val" id="v-mn">0</span>px</label>
+        <input type="range" id="sl-mn" min="0" max="10" value="0" step="0.25" />
+      </div>
+    </div>
+
+    <div id="uni-size-ctrls" style="display:none">
+      <div class="ctrl">
+        <label>Dot size <span class="val" id="v-sz">3.5</span>px</label>
+        <input type="range" id="sl-sz" min="0.5" max="20" value="3.5" step="0.25" />
+      </div>
+      <div class="ctrl">
+        <label>Coverage <span class="val" id="v-cov">1.00</span>×</label>
+        <input type="range" id="sl-cov" min="0.1" max="3" value="1" step="0.05" />
+      </div>
+    </div>
+
+    <div class="ctrl">
+      <label>Position jitter <span class="val" id="v-jt">1.5</span>px</label>
+      <input type="range" id="sl-jt" min="0" max="20" value="1.5" step="0.25" />
+    </div>
+    <div class="ctrl">
+      <label>Size variance <span class="val" id="v-sv">1.5</span>px</label>
+      <input type="range" id="sl-sv" min="0" max="10" value="1.5" step="0.25" />
+    </div>
+    <div class="ctrl">
+      <label>Dropout <span class="val" id="v-do">0</span>%</label>
+      <input type="range" id="sl-do" min="0" max="70" value="0" step="1" />
+    </div>
+    <div class="toggle">
+      <label>Organic shape</label>
+      <div class="tog-sw" id="tog-org"></div>
+    </div>
+    <div class="toggle">
+      <label>Invert (light = big dot)</label>
+      <div class="tog-sw" id="tog-inv"></div>
+    </div>
+  </div>
+
+  <!-- Color -->
+  <div class="section">
+    <div class="section-title">Color</div>
+    <div class="color-row">
+      <span class="color-label">Dots</span>
+      <div class="color-swatch" id="sw-dot" style="background:#1c1212">
+        <input type="color" class="native-picker" id="cp-dot" value="#1c1212" />
+      </div>
+      <input type="text" class="color-hex" id="hex-dot" value="#1c1212" maxlength="7" />
+    </div>
+    <div class="color-row">
+      <span class="color-label">Background</span>
+      <div class="color-swatch" id="sw-bg" style="background:#6ec4c0">
+        <input type="color" class="native-picker" id="cp-bg" value="#6ec4c0" />
+      </div>
+      <input type="text" class="color-hex" id="hex-bg" value="#6ec4c0" maxlength="7" />
+    </div>
+  </div>
+
+  <!-- Export -->
+  <div class="section">
+    <div class="section-title">Export</div>
+    <div class="ctrl">
+      <label>Resolution</label>
+      <select id="sel-res">
+        <option value="1920x1080">1920 × 1080</option>
+        <option value="2560x1440">2560 × 1440</option>
+        <option value="3840x2160">3840 × 2160</option>
+        <option value="1080x1080">1080 × 1080 — Square</option>
+        <option value="1080x1350">1080 × 1350 — Portrait</option>
+        <option value="1080x1920">1080 × 1920 — Story</option>
+        <option value="custom">Custom…</option>
+      </select>
+      <div class="custom-res-wrap" id="custom-res-wrap">
+        <div class="custom-res-row">
+          <input type="number" id="inp-cw" value="1920" min="100" max="8000" placeholder="Width" />
+          <span class="custom-res-sep">×</span>
+          <input type="number" id="inp-ch" value="1080" min="100" max="8000" placeholder="Height" />
+        </div>
+      </div>
+    </div>
+    <button class="btn accent" id="btn-svg" disabled>↓ Export SVG</button>
+    <button class="btn ghost" id="btn-png" disabled>↓ Export PNG</button>
+    <button class="btn ghost" id="btn-reseed">↺ Re-randomize</button>
+  </div>
+</div>
+
+<!-- SVG canvas -->
+<div id="canvas-wrap">
+  <svg id="c" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <rect id="svg-bg" x="0" y="0" />
+    <path id="svg-dots" fill-rule="nonzero" />
+  </svg>
+  <div id="empty-state">
+    <div class="empty-dot-grid">
+      <div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div>
+      <div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div>
+      <div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div>
+      <div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div>
+    </div>
+    <div class="empty-text">Drop an image to begin</div>
+  </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+const svgEl   = document.getElementById('c');
+const svgBg   = document.getElementById('svg-bg');
+const svgDots = document.getElementById('svg-dots');
+const wrap    = document.getElementById('canvas-wrap');
+const empty   = document.getElementById('empty-state');
+
+// ── Export dimensions (= SVG coordinate space) ────────────────────────────────
+let exportW = 1920, exportH = 1080;
+
+function updateViewBox() {
+  svgEl.setAttribute('viewBox', `0 0 ${exportW} ${exportH}`);
+  svgBg.setAttribute('width', exportW);
+  svgBg.setAttribute('height', exportH);
+}
+
+// Fit SVG display size to wrap, preserving export aspect ratio
+function resizeDisplay() {
+  const r = wrap.getBoundingClientRect();
+  const wrapW = r.width  - 32;
+  const wrapH = r.height - 32;
+  const aspect = exportW / exportH;
+  let cw = wrapW, ch = wrapW / aspect;
+  if (ch > wrapH) { ch = wrapH; cw = wrapH * aspect; }
+  svgEl.style.width  = Math.round(cw) + 'px';
+  svgEl.style.height = Math.round(ch) + 'px';
+}
+new ResizeObserver(resizeDisplay).observe(wrap);
+
+// ── PRNG ──────────────────────────────────────────────────────────────────────
+let _seed = (Math.random() * 0xffffffff) >>> 0;
+let _renderSeed = _seed;
+function rand() {
+  _seed ^= _seed << 13; _seed ^= _seed >> 17; _seed ^= _seed << 5;
+  return (_seed >>> 0) / 0xffffffff;
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let img = null, imgW = 0, imgH = 0;
+let adjustedData = null;
+let dotColor    = '#1c1212';
+let bgColor     = '#6ec4c0';
+let organic     = false;
+let invert      = false;
+let uniformMode = false;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function g(id)  { return parseFloat(document.getElementById(id).value); }
+function gv(id) { return document.getElementById(id).value; }
+function isHex(h) { return /^#[0-9a-fA-F]{6}$/.test(h); }
+function n(v)   { return Math.round(v * 10) / 10; } // round to 1dp for compact path data
+
+// Slider display sync
+const SL = {
+  'sl-px': ['v-px', v => Math.round(v)],   'sl-py': ['v-py', v => Math.round(v)],
+  'sl-sc': ['v-sc', v => Math.round(v)],   'sl-br': ['v-br', v => Math.round(v)],
+  'sl-co': ['v-co', v => (+v).toFixed(2)], 'sl-ga': ['v-ga', v => (+v).toFixed(2)],
+  'sl-bl': ['v-bl', v => (+v).toFixed(1)], 'sl-sp': ['v-sp', v => (+v).toFixed(1)],
+  'sl-an': ['v-an', v => Math.round(v)],   'sl-ms': ['v-ms', v => (+v).toFixed(1)],
+  'sl-mn': ['v-mn', v => (+v).toFixed(2)], 'sl-jt': ['v-jt', v => (+v).toFixed(1)],
+  'sl-sv': ['v-sv', v => (+v).toFixed(1)], 'sl-do': ['v-do', v => Math.round(v)],
+  'sl-sz': ['v-sz', v => (+v).toFixed(1)], 'sl-cov':['v-cov',v => (+v).toFixed(2)],
+};
+Object.entries(SL).forEach(([sid, [vid, fmt]]) => {
+  const el  = document.getElementById(sid);
+  const vEl = document.getElementById(vid);
+  vEl.textContent = fmt(el.value);
+  el.addEventListener('input', () => {
+    vEl.textContent = fmt(el.value);
+    if (sid === 'sl-br' || sid === 'sl-co' || sid === 'sl-ga' || sid === 'sl-bl') {
+      if (img) { processImage(); render(); }
+    } else {
+      render();
+    }
+  });
+});
+
+document.getElementById('sel-pat').addEventListener('change', render);
+
+// ── Toggles ───────────────────────────────────────────────────────────────────
+document.getElementById('tog-org').addEventListener('click', function() {
+  organic = !organic; this.classList.toggle('on', organic); render();
+});
+document.getElementById('tog-inv').addEventListener('click', function() {
+  invert = !invert; this.classList.toggle('on', invert); render();
+});
+document.getElementById('tog-uni').addEventListener('click', function() {
+  uniformMode = !uniformMode;
+  this.classList.toggle('on', uniformMode);
+  document.getElementById('var-size-ctrls').style.display = uniformMode ? 'none' : 'block';
+  document.getElementById('uni-size-ctrls').style.display = uniformMode ? 'block' : 'none';
+  render();
+});
+
+// ── Color pickers ─────────────────────────────────────────────────────────────
+function setupColor(swId, hexId, pickId, onSet) {
+  const sw = document.getElementById(swId);
+  const hx = document.getElementById(hexId);
+  const cp = document.getElementById(pickId);
+  cp.addEventListener('input', () => {
+    hx.value = cp.value; sw.style.background = cp.value; onSet(cp.value); render();
+  });
+  hx.addEventListener('input', () => {
+    let v = hx.value.trim();
+    if (!v.startsWith('#')) v = '#' + v;
+    if (isHex(v)) { sw.style.background = v; cp.value = v; onSet(v); render(); }
+  });
+}
+setupColor('sw-dot', 'hex-dot', 'cp-dot', v => dotColor = v);
+setupColor('sw-bg',  'hex-bg',  'cp-bg',  v => bgColor  = v);
+
+// ── Resolution ────────────────────────────────────────────────────────────────
+function updateExportDimensions() {
+  if (gv('sel-res') === 'custom') {
+    exportW = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-cw').value) || 1920));
+    exportH = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-ch').value) || 1080));
+  } else {
+    [exportW, exportH] = gv('sel-res').split('x').map(Number);
+  }
+  updateViewBox();
+  resizeDisplay();
+  render();
+}
+document.getElementById('sel-res').addEventListener('change', function() {
+  document.getElementById('custom-res-wrap').classList.toggle('visible', this.value === 'custom');
+  updateExportDimensions();
+});
+document.getElementById('inp-cw').addEventListener('change', updateExportDimensions);
+document.getElementById('inp-ch').addEventListener('change', updateExportDimensions);
+
+// ── Image loading ─────────────────────────────────────────────────────────────
+function loadFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const url = URL.createObjectURL(file);
+  const im  = new Image();
+  im.onload = () => {
+    img = im; imgW = im.naturalWidth; imgH = im.naturalHeight;
+    URL.revokeObjectURL(url);
+    document.getElementById('img-name').textContent = file.name;
+    empty.classList.add('hidden');
+    document.getElementById('btn-svg').disabled = false;
+    document.getElementById('btn-png').disabled = false;
+    processImage();
+    render();
+  };
+  im.src = url;
+}
+document.getElementById('file-input').addEventListener('change', e => {
+  if (e.target.files[0]) loadFile(e.target.files[0]);
+});
+document.getElementById('upload-zone').addEventListener('click', e => {
+  if (e.target !== document.getElementById('file-input'))
+    document.getElementById('file-input').click();
+});
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+
+// ── Image processing ──────────────────────────────────────────────────────────
+function processImage() {
+  if (!img) return;
+  const brightness = g('sl-br') / 100;
+  const contrast   = g('sl-co');
+  const gamma      = g('sl-ga');
+  const blur       = g('sl-bl');
+
+  const oc = document.createElement('canvas');
+  oc.width = imgW; oc.height = imgH;
+  const ox = oc.getContext('2d');
+  if (blur > 0) ox.filter = `blur(${blur}px)`;
+  ox.drawImage(img, 0, 0);
+
+  const id = ox.getImageData(0, 0, imgW, imgH);
+  const d  = id.data;
+  for (let i = 0; i < d.length; i += 4) {
+    let r = d[i]/255, gr = d[i+1]/255, b = d[i+2]/255;
+    if (gamma !== 1) { r = r**(1/gamma); gr = gr**(1/gamma); b = b**(1/gamma); }
+    r += brightness; gr += brightness; b += brightness;
+    r  = (r  - 0.5) * contrast + 0.5;
+    gr = (gr - 0.5) * contrast + 0.5;
+    b  = (b  - 0.5) * contrast + 0.5;
+    d[i]   = Math.max(0, Math.min(255, r  * 255));
+    d[i+1] = Math.max(0, Math.min(255, gr * 255));
+    d[i+2] = Math.max(0, Math.min(255, b  * 255));
+  }
+  adjustedData = id;
+}
+
+// ── Luminance sampler (works in export coordinate space) ──────────────────────
+function makeSampler() {
+  const panX  = exportW/2 + g('sl-px');
+  const panY  = exportH/2 + g('sl-py');
+  const scale = g('sl-sc') / 100;
+  return function sample(sx, sy) {
+    if (!adjustedData) return 1;
+    const ix = Math.round((sx - panX) / scale + imgW/2);
+    const iy = Math.round((sy - panY) / scale + imgH/2);
+    if (ix < 0 || iy < 0 || ix >= imgW || iy >= imgH) return 1;
+    const k = (iy * imgW + ix) * 4;
+    const lum = (0.299*adjustedData.data[k] + 0.587*adjustedData.data[k+1] + 0.114*adjustedData.data[k+2]) / 255;
+    return invert ? 1 - lum : lum;
+  };
+}
+
+// ── Core halftone — builds SVG path data string ───────────────────────────────
+function halftone() {
+  const W = exportW, H = exportH;
+  const spacing  = g('sl-sp');
+  const angle    = g('sl-an') * Math.PI / 180;
+  const maxDot   = g('sl-ms');
+  const minDot   = g('sl-mn');
+  const dotSize  = g('sl-sz');
+  const coverage = g('sl-cov');
+  const jitter   = g('sl-jt');
+  const sizeVar  = g('sl-sv');
+  const dropout  = g('sl-do') / 100;
+  const pattern  = gv('sel-pat');
+  const sample   = makeSampler();
+
+  const cos_ = Math.cos(angle), sin_ = Math.sin(angle);
+  const cx   = W / 2, cy = H / 2;
+  const diag = Math.hypot(W, H) / 2 + spacing * 3;
+  const half = Math.ceil(diag / spacing) + 2;
+
+  svgBg.setAttribute('fill', bgColor);
+  svgDots.setAttribute('fill', dotColor);
+
+  if (!img) { svgDots.setAttribute('d', ''); return; }
+
+  const parts = [];
+
+  for (let row = -half; row <= half; row++) {
+    for (let col = -half; col <= half; col++) {
+      let gx = col * spacing;
+      let gy = row * spacing;
+
+      if (pattern === 'hex' && (row & 1)) gx += spacing * 0.5;
+
+      let xj = 0, yj = 0;
+      if (pattern === 'random') {
+        xj = (rand() - 0.5) * spacing * 0.8;
+        yj = (rand() - 0.5) * spacing * 0.8;
+      }
+
+      const sx = cx + gx * cos_ - gy * sin_ + xj;
+      const sy = cy + gx * sin_ + gy * cos_ + yj;
+
+      if (sx < -spacing*2 || sx > W+spacing*2 || sy < -spacing*2 || sy > H+spacing*2) continue;
+
+      if (rand() < dropout) continue;
+
+      const lum = sample(sx, sy);
+
+      let r;
+      if (uniformMode) {
+        if (rand() >= (1 - lum) * coverage) continue;
+        r = dotSize;
+      } else {
+        r = minDot + (1 - lum) * (maxDot - minDot);
+      }
+
+      r += (rand() - 0.5) * sizeVar * 2;
+      r = Math.max(0, r);
+      if (r < 0.3) continue;
+
+      const dx = sx + (rand() - 0.5) * jitter * 2;
+      const dy = sy + (rand() - 0.5) * jitter * 2;
+
+      if (organic) {
+        const rx  = r * (0.78 + rand() * 0.44);
+        const ry  = r * (0.78 + rand() * 0.44);
+        const rot = rand() * Math.PI;
+        const rotDeg = rot * 180 / Math.PI;
+        const c = Math.cos(rot), s = Math.sin(rot);
+        // Two-arc ellipse: split at ends of rotated major axis
+        const x1 = n(dx - rx*c), y1 = n(dy - rx*s);
+        const x2 = n(dx + rx*c), y2 = n(dy + rx*s);
+        parts.push(`M${x1} ${y1}A${n(rx)} ${n(ry)} ${n(rotDeg)} 1 0 ${x2} ${y2}A${n(rx)} ${n(ry)} ${n(rotDeg)} 1 0 ${x1} ${y1}Z`);
+      } else {
+        const nr = n(r), ndx = n(dx), ndy = n(dy);
+        // Two-arc circle: split at left and right points
+        parts.push(`M${n(dx-r)} ${ndy}A${nr} ${nr} 0 1 0 ${n(dx+r)} ${ndy}A${nr} ${nr} 0 1 0 ${n(dx-r)} ${ndy}Z`);
+      }
+    }
+  }
+
+  svgDots.setAttribute('d', parts.join(''));
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  _seed = _renderSeed;
+  halftone();
+}
+
+document.getElementById('btn-reseed').addEventListener('click', () => {
+  _renderSeed = (Math.random() * 0xffffffff) >>> 0;
+  render();
+});
+
+// ── SVG export ────────────────────────────────────────────────────────────────
+document.getElementById('btn-svg').addEventListener('click', () => {
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('width', exportW);
+  clone.setAttribute('height', exportH);
+  const str  = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([str], { type: 'image/svg+xml' });
+  const a = document.createElement('a');
+  a.download = 'halftone-dot.svg';
+  a.href = URL.createObjectURL(blob);
+  a.click();
+});
+
+// ── PNG export (rasterise the SVG) ────────────────────────────────────────────
+document.getElementById('btn-png').addEventListener('click', () => {
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('width', exportW);
+  clone.setAttribute('height', exportH);
+  const str  = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([str], { type: 'image/svg+xml;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const im   = new Image();
+  im.onload = () => {
+    const ec = document.createElement('canvas');
+    ec.width = exportW; ec.height = exportH;
+    ec.getContext('2d').drawImage(im, 0, 0);
+    const a = document.createElement('a');
+    a.download = 'halftone-dot.png';
+    a.href = ec.toDataURL('image/png');
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  im.src = url;
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+updateViewBox();
+resizeDisplay();
+render();
+
+})();
+</script>
+</body>
+</html>

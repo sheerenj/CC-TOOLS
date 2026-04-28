@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Moiré Studio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root {
+  --bg: #ececec; --card: #ffffff; --text: #000000; --dim: #6b6b6b;
+  --line: #e4e4e4; --line2: #d4d4d4; --accent: #d4fc4e;
+  --radius-lg: 20px; --radius-md: 14px; --radius-pill: 999px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, "Inter", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased; }
+body { display: flex; }
+
+#sidebar {
+  width: 296px; flex-shrink: 0; background: var(--bg);
+  padding: 16px; overflow-y: auto; height: 100vh;
+  border-right: 1px solid var(--line2);
+}
+#sidebar::-webkit-scrollbar { width: 6px; }
+#sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 3px; }
+
+.brand-row { display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 16px; padding: 0 2px; }
+.brand { font-size: 16px; font-weight: 900; letter-spacing: -0.02em; }
+.brand-sub { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 900; }
+
+.section { background: var(--card); border-radius: var(--radius-lg);
+  padding: 14px 14px 16px; margin-bottom: 10px; }
+.section-title { display: inline-block; background: var(--accent); color: #000;
+  padding: 3px 7px; font-family: ui-monospace, monospace; font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px; border-radius: 3px; }
+
+.ctrl { margin-bottom: 12px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl > label { display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+.ctrl > label .val { color: var(--dim); font-size: 11px; font-family: ui-monospace, monospace; }
+
+input[type=range] { -webkit-appearance: none; width: 100%; height: 4px;
+  background: var(--line2); border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
+  width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer;
+  transition: transform 0.1s; }
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+  color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
+  font-size: 12px; outline: none; cursor: pointer; font-family: inherit; font-weight: 500;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
+
+button.btn { width: 100%; background: #000; color: #fff; border: none;
+  padding: 10px 14px; border-radius: var(--radius-pill); font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit;
+  margin-bottom: 8px; }
+button.btn:last-of-type { margin-bottom: 0; }
+button.btn:hover:not(:disabled) { background: #222; }
+button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line2); }
+button.btn.ghost:hover:not(:disabled) { background: #f5f5f5; }
+button.btn.accent { background: var(--accent); color: #000; }
+button.btn.accent:hover:not(:disabled) { background: #c2ea3c; }
+button.btn.recording { background: #e53e3e; color: #fff; }
+button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.swatch-row { display: flex; align-items: center; gap: 8px; }
+.swatch-wrap { position: relative; width: 36px; height: 28px; border: 1px solid var(--line2);
+  border-radius: 8px; overflow: hidden; cursor: pointer; flex-shrink: 0; }
+.swatch-wrap input[type=color] { position: absolute; inset: -4px; opacity: 0; cursor: pointer;
+  width: calc(100% + 8px); height: calc(100% + 8px); }
+.swatch-hex { font-size: 11px; font-family: ui-monospace, monospace; color: var(--dim); }
+
+.hint { font-size: 10px; color: var(--dim); margin-top: 8px; line-height: 1.6; }
+
+.custom-res-wrap { margin-top: 8px; display: none; }
+.custom-res-wrap.visible { display: block; }
+.custom-res-row { display: flex; gap: 6px; align-items: center; }
+.custom-res-row input[type=number] { flex: 1; background: #f4f4f4; border: 1px solid var(--line);
+  color: #000; padding: 7px 9px; border-radius: var(--radius-md); font-size: 12px;
+  outline: none; font-family: inherit; min-width: 0; }
+.custom-res-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+.custom-res-sep { font-size: 11px; color: var(--dim); flex-shrink: 0; }
+
+#canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center;
+  background: #111; overflow: hidden; }
+#c { display: block; cursor: crosshair; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="brand-row">
+    <span class="brand">Moiré</span>
+    <span class="brand-sub" style="color:var(--accent)">Studio</span>
+  </div>
+
+  <!-- Layer 1 -->
+  <div class="section">
+    <div class="section-title">Layer 1</div>
+    <div class="ctrl">
+      <label>Pattern</label>
+      <select id="sel-t1">
+        <option value="lines">Lines</option>
+        <option value="circles" selected>Circles</option>
+        <option value="zigzag">Zigzag</option>
+        <option value="radial">Radial</option>
+        <option value="diamonds">Diamonds</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>Frequency <span class="val" id="v-f1">20</span></label>
+      <input type="range" id="sl-f1" min="1" max="80" value="20" step="0.5"/>
+    </div>
+    <div class="ctrl">
+      <label>Angle <span class="val" id="v-a1">0</span>°</label>
+      <input type="range" id="sl-a1" min="0" max="180" value="0" step="1"/>
+    </div>
+    <div class="ctrl">
+      <label>Center X <span class="val" id="v-cx1">50</span>%</label>
+      <input type="range" id="sl-cx1" min="0" max="100" value="50" step="1"/>
+    </div>
+    <div class="ctrl">
+      <label>Center Y <span class="val" id="v-cy1">50</span>%</label>
+      <input type="range" id="sl-cy1" min="0" max="100" value="50" step="1"/>
+    </div>
+    <div class="ctrl">
+      <label>Phase <span class="val" id="v-ph1">0</span>°</label>
+      <input type="range" id="sl-ph1" min="0" max="360" value="0" step="1"/>
+    </div>
+  </div>
+
+  <!-- Layer 2 -->
+  <div class="section">
+    <div class="section-title">Layer 2</div>
+    <div class="ctrl">
+      <label>Pattern</label>
+      <select id="sel-t2">
+        <option value="lines" selected>Lines</option>
+        <option value="circles">Circles</option>
+        <option value="zigzag">Zigzag</option>
+        <option value="radial">Radial</option>
+        <option value="diamonds">Diamonds</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>Frequency <span class="val" id="v-f2">20</span></label>
+      <input type="range" id="sl-f2" min="1" max="80" value="20" step="0.5"/>
+    </div>
+    <div class="ctrl">
+      <label>Angle <span class="val" id="v-a2">0</span>°</label>
+      <input type="range" id="sl-a2" min="0" max="180" value="0" step="1"/>
+    </div>
+    <div class="ctrl">
+      <label>Center X <span class="val" id="v-cx2">50</span>%</label>
+      <input type="range" id="sl-cx2" min="0" max="100" value="50" step="1"/>
+    </div>
+    <div class="ctrl">
+      <label>Center Y <span class="val" id="v-cy2">50</span>%</label>
+      <input type="range" id="sl-cy2" min="0" max="100" value="50" step="1"/>
+    </div>
+    <div class="ctrl">
+      <label>Phase <span class="val" id="v-ph2">0</span>°</label>
+      <input type="range" id="sl-ph2" min="0" max="360" value="0" step="1"/>
+    </div>
+  </div>
+
+  <!-- Color -->
+  <div class="section">
+    <div class="section-title">Color</div>
+    <div class="ctrl">
+      <label>Combine mode</label>
+      <select id="sel-comb">
+        <option value="multiply" selected>Multiply</option>
+        <option value="rings">Rings</option>
+        <option value="difference">Difference</option>
+        <option value="xor">XOR</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>Color A</label>
+      <div class="swatch-row">
+        <div class="swatch-wrap" id="sw-ca" style="background:#e84400">
+          <input type="color" id="inp-ca" value="#e84400"/>
+        </div>
+        <span class="swatch-hex" id="v-ca">#e84400</span>
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>Color B</label>
+      <div class="swatch-row">
+        <div class="swatch-wrap" id="sw-cb" style="background:#000000">
+          <input type="color" id="inp-cb" value="#000000"/>
+        </div>
+        <span class="swatch-hex" id="v-cb">#000000</span>
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>Sharpness <span class="val" id="v-sharp">85</span>%</label>
+      <input type="range" id="sl-sharp" min="0" max="100" value="85" step="1"/>
+    </div>
+  </div>
+
+  <!-- Animate -->
+  <div class="section">
+    <div class="section-title">Animate</div>
+    <div class="ctrl">
+      <label>L1 speed <span class="val" id="v-sp1">1.0</span></label>
+      <input type="range" id="sl-sp1" min="-8" max="8" value="1" step="0.1"/>
+    </div>
+    <div class="ctrl">
+      <label>L2 speed <span class="val" id="v-sp2">-1.0</span></label>
+      <input type="range" id="sl-sp2" min="-8" max="8" value="-1" step="0.1"/>
+    </div>
+    <button class="btn ghost" id="btn-anim">▶ Play</button>
+  </div>
+
+  <!-- Export -->
+  <div class="section">
+    <div class="section-title">Export PNG</div>
+    <div class="ctrl">
+      <label>Resolution</label>
+      <select id="sel-res">
+        <option value="1920x1080">1920 × 1080</option>
+        <option value="2560x1440">2560 × 1440</option>
+        <option value="3840x2160">3840 × 2160</option>
+        <option value="1080x1080">1080 × 1080 — Square</option>
+        <option value="1080x1350">1080 × 1350 — Portrait</option>
+        <option value="1080x1920">1080 × 1920 — Story</option>
+        <option value="custom">Custom…</option>
+      </select>
+      <div class="custom-res-wrap" id="custom-res-wrap">
+        <div class="custom-res-row">
+          <input type="number" id="inp-cw" value="1920" min="100" max="8000" placeholder="W"/>
+          <span class="custom-res-sep">×</span>
+          <input type="number" id="inp-ch" value="1080" min="100" max="8000" placeholder="H"/>
+        </div>
+      </div>
+    </div>
+    <button class="btn accent" id="btn-export">↓ Export PNG</button>
+    <p class="hint">Click canvas → set L1 center.<br>Shift-click → set L2 center.</p>
+  </div>
+
+  <!-- Motion -->
+  <div class="section">
+    <div class="section-title">Motion Export</div>
+    <div class="ctrl">
+      <label>Duration <span class="val" id="v-rec-dur">5</span>s</label>
+      <input type="range" id="sl-rec-dur" min="2" max="30" value="5" step="1"/>
+    </div>
+    <div class="ctrl">
+      <label>FPS</label>
+      <select id="sel-fps">
+        <option value="24">24 fps</option>
+        <option value="30" selected>30 fps</option>
+        <option value="60">60 fps</option>
+      </select>
+    </div>
+    <button class="btn ghost" id="btn-record">⏺ Record Video</button>
+    <div style="height:10px"></div>
+    <div class="ctrl">
+      <label>Sequence frames <span class="val" id="v-seq">30</span></label>
+      <input type="range" id="sl-seq" min="12" max="120" value="30" step="6"/>
+    </div>
+    <button class="btn ghost" id="btn-seq">↓ Export PNG Sequence</button>
+    <p class="hint">Video exports as WebM/MP4 depending on browser. Sequence exports as ZIP of PNGs at display resolution.</p>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <canvas id="c"></canvas>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const wrap   = document.getElementById('canvas-wrap');
+
+// ── Sizing ────────────────────────────────────────────────────────────────────
+let exportW = 1920, exportH = 1080, DW = 960, DH = 540;
+
+function resizeCanvas() {
+  const r = wrap.getBoundingClientRect();
+  const wW = r.width - 32, wH = r.height - 32, asp = exportW / exportH;
+  let cw = wW, ch = wW / asp;
+  if (ch > wH) { ch = wH; cw = wH * asp; }
+  DW = Math.round(cw); DH = Math.round(ch);
+  canvas.style.width  = DW + 'px';
+  canvas.style.height = DH + 'px';
+  schedRender();
+}
+new ResizeObserver(resizeCanvas).observe(wrap);
+
+function updateExportDimensions() {
+  const v = document.getElementById('sel-res').value;
+  if (v === 'custom') {
+    exportW = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-cw').value) || 1920));
+    exportH = Math.max(100, Math.min(8000, parseInt(document.getElementById('inp-ch').value) || 1080));
+  } else { [exportW, exportH] = v.split('x').map(Number); }
+  resizeCanvas();
+}
+document.getElementById('sel-res').addEventListener('change', function () {
+  document.getElementById('custom-res-wrap').classList.toggle('visible', this.value === 'custom');
+  updateExportDimensions();
+});
+document.getElementById('inp-cw').addEventListener('change', updateExportDimensions);
+document.getElementById('inp-ch').addEventListener('change', updateExportDimensions);
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function g(id)  { return parseFloat(document.getElementById(id).value); }
+function gv(id) { return document.getElementById(id).value; }
+function hexToRgb(hex) {
+  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+}
+
+// ── Slider sync ───────────────────────────────────────────────────────────────
+const SL = {
+  'sl-f1':      ['v-f1',      v => (+v).toFixed(1)],
+  'sl-a1':      ['v-a1',      v => Math.round(v)],
+  'sl-cx1':     ['v-cx1',     v => Math.round(v)],
+  'sl-cy1':     ['v-cy1',     v => Math.round(v)],
+  'sl-ph1':     ['v-ph1',     v => Math.round(v)],
+  'sl-f2':      ['v-f2',      v => (+v).toFixed(1)],
+  'sl-a2':      ['v-a2',      v => Math.round(v)],
+  'sl-cx2':     ['v-cx2',     v => Math.round(v)],
+  'sl-cy2':     ['v-cy2',     v => Math.round(v)],
+  'sl-ph2':     ['v-ph2',     v => Math.round(v)],
+  'sl-sharp':   ['v-sharp',   v => Math.round(v)],
+  'sl-sp1':     ['v-sp1',     v => (+v).toFixed(1)],
+  'sl-sp2':     ['v-sp2',     v => (+v).toFixed(1)],
+  'sl-rec-dur': ['v-rec-dur', v => Math.round(v)],
+  'sl-seq':     ['v-seq',     v => Math.round(v)],
+};
+Object.entries(SL).forEach(([sid,[vid,fmt]]) => {
+  const el = document.getElementById(sid), vEl = document.getElementById(vid);
+  vEl.textContent = fmt(el.value);
+  el.addEventListener('input', () => { vEl.textContent = fmt(el.value); schedRender(); });
+});
+['sel-t1','sel-t2','sel-comb'].forEach(id =>
+  document.getElementById(id).addEventListener('change', schedRender));
+
+function setupSwatch(inpId, swId, valId) {
+  const inp = document.getElementById(inpId);
+  inp.addEventListener('input', () => {
+    document.getElementById(swId).style.background = inp.value;
+    document.getElementById(valId).textContent = inp.value;
+    schedRender();
+  });
+}
+setupSwatch('inp-ca','sw-ca','v-ca');
+setupSwatch('inp-cb','sw-cb','v-cb');
+
+// ── Pattern signal (returns 0–1) ──────────────────────────────────────────────
+function signal(type, x, y, uiFreq, angle, cx, cy, phase, W) {
+  const a   = angle * Math.PI / 180;
+  const ph  = phase * Math.PI / 180;
+  const spf = uiFreq * Math.PI * 2 / W;
+  switch (type) {
+    case 'lines': {
+      const proj = x * Math.cos(a) + y * Math.sin(a);
+      return (Math.sin(proj * spf + ph) + 1) * 0.5;
+    }
+    case 'circles': {
+      const d = Math.sqrt((x-cx)**2 + (y-cy)**2);
+      return (Math.sin(d * spf + ph) + 1) * 0.5;
+    }
+    case 'zigzag': {
+      const proj = x * Math.cos(a) + y * Math.sin(a);
+      let v = (((proj * spf + ph) / Math.PI) % 2 + 2) % 2;
+      return v < 1 ? v : 2 - v;
+    }
+    case 'radial': {
+      return (Math.sin(Math.atan2(y-cy, x-cx) * uiFreq * 0.5 + ph) + 1) * 0.5;
+    }
+    case 'diamonds': {
+      return (Math.sin((Math.abs(x-cx) + Math.abs(y-cy)) * spf + ph) + 1) * 0.5;
+    }
+    default: return 0;
+  }
+}
+
+// ── Combine ───────────────────────────────────────────────────────────────────
+function combine(mode, s1, s2) {
+  switch (mode) {
+    case 'multiply':   return s1 * s2;
+    case 'rings':      return (Math.sin(s1 * Math.PI * 2) * Math.sin(s2 * Math.PI * 2) + 1) * 0.5;
+    case 'difference': return 1 - Math.abs(s1 - s2);
+    case 'xor':        return (s1 > 0.5) !== (s2 > 0.5) ? 1 : 0;
+    default: return 0;
+  }
+}
+
+// ── Core render (works at any W×H) ───────────────────────────────────────────
+function renderTo(tCtx, W, H, extraPh1, extraPh2) {
+  const type1 = gv('sel-t1'), type2 = gv('sel-t2');
+  const f1    = g('sl-f1'),   f2    = g('sl-f2');
+  const a1    = g('sl-a1'),   a2    = g('sl-a2');
+  const cx1   = g('sl-cx1') / 100 * W, cy1 = g('sl-cy1') / 100 * H;
+  const cx2   = g('sl-cx2') / 100 * W, cy2 = g('sl-cy2') / 100 * H;
+  const ph1   = g('sl-ph1') + (extraPh1 || 0);
+  const ph2   = g('sl-ph2') + (extraPh2 || 0);
+  const comb  = gv('sel-comb');
+  const sharp = g('sl-sharp') / 100;
+
+  const [ar,ag,ab] = hexToRgb(document.getElementById('inp-ca').value);
+  const [br,bg,bb] = hexToRgb(document.getElementById('inp-cb').value);
+
+  // Adaptive edge width for smooth threshold — eliminates hard pixel stairstepping
+  // At the crossing point, the signal gradient ≈ 2π·freq/W per pixel.
+  // We want the transition to cover ~1 display pixel.
+  const effFreq = Math.max(f1, f2);
+  const minEdge = 1 / (effFreq * Math.PI * 2); // ~1 pixel at display res
+  const softEdge = minEdge + (1 - sharp) * 0.25;
+
+  const img = tCtx.createImageData(W, H);
+  const d = img.data;
+
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const s1 = signal(type1, x, y, f1, a1, cx1, cy1, ph1, W);
+      const s2 = signal(type2, x, y, f2, a2, cx2, cy2, ph2, W);
+      const c  = combine(comb, s1, s2);
+
+      // Smooth step over adaptive edge width — anti-aliased even at max sharpness
+      const lo = 0.5 - softEdge, hi = 0.5 + softEdge;
+      const ct = Math.max(0, Math.min(1, (c - lo) / (softEdge * 2)));
+      const t  = ct * ct * (3 - 2 * ct); // smoothstep
+
+      const i = (y * W + x) * 4;
+      d[i]   = Math.round(br + (ar - br) * t);
+      d[i+1] = Math.round(bg + (ag - bg) * t);
+      d[i+2] = Math.round(bb + (ab - bb) * t);
+      d[i+3] = 255;
+    }
+  }
+  tCtx.putImageData(img, 0, 0);
+}
+
+// ── Display rendering: 1× for animation (fast), 2× for static (anti-aliased) ─
+function renderDisplay(scale) {
+  const W = DW * scale, H = DH * scale;
+  canvas.width  = W; canvas.height = H;
+  canvas.style.width  = DW + 'px';
+  canvas.style.height = DH + 'px';
+  renderTo(ctx, W, H, animPh1, animPh2);
+}
+
+let rafPending = false, qualityTimer = null;
+function schedRender() {
+  if (animPlaying) return;
+  if (!rafPending) {
+    rafPending = true;
+    requestAnimationFrame(() => {
+      rafPending = false;
+      renderDisplay(1);                         // instant 1× response
+      clearTimeout(qualityTimer);
+      qualityTimer = setTimeout(() => renderDisplay(2), 180); // 2× after settle
+    });
+  }
+}
+
+// ── Animation ─────────────────────────────────────────────────────────────────
+let animPlaying = false, animFrame = null, animPh1 = 0, animPh2 = 0;
+
+function animLoop() {
+  animPh1 += g('sl-sp1') * 1.5;
+  animPh2 += g('sl-sp2') * 1.5;
+  renderDisplay(1);
+  animFrame = requestAnimationFrame(animLoop);
+}
+
+document.getElementById('btn-anim').addEventListener('click', () => {
+  const btn = document.getElementById('btn-anim');
+  if (animPlaying) {
+    cancelAnimationFrame(animFrame);
+    animPlaying = false;
+    btn.textContent = '▶ Play';
+    btn.classList.remove('playing'); btn.classList.add('ghost');
+    renderDisplay(2); // quality render on stop
+  } else {
+    animPlaying = true;
+    btn.textContent = '⏸ Pause';
+    btn.classList.remove('ghost'); btn.classList.add('playing');
+    animLoop();
+  }
+});
+
+// ── Canvas click → set center ─────────────────────────────────────────────────
+canvas.addEventListener('click', e => {
+  const r   = canvas.getBoundingClientRect();
+  const px  = Math.round((e.clientX - r.left) / DW * 100);
+  const py  = Math.round((e.clientY - r.top)  / DH * 100);
+  const lay = e.shiftKey ? '2' : '1';
+  const cxEl = document.getElementById('sl-cx' + lay);
+  const cyEl = document.getElementById('sl-cy' + lay);
+  cxEl.value = px; cyEl.value = py;
+  document.getElementById('v-cx' + lay).textContent = px;
+  document.getElementById('v-cy' + lay).textContent = py;
+  schedRender();
+});
+
+// ── PNG Export ────────────────────────────────────────────────────────────────
+document.getElementById('btn-export').addEventListener('click', () => {
+  const btn = document.getElementById('btn-export');
+  const wasPlaying = animPlaying;
+  if (animPlaying) { cancelAnimationFrame(animFrame); animPlaying = false; }
+  btn.disabled = true; btn.textContent = 'Rendering…';
+  requestAnimationFrame(() => {
+    const ec = document.createElement('canvas');
+    ec.width = exportW; ec.height = exportH;
+    renderTo(ec.getContext('2d'), exportW, exportH, animPh1, animPh2);
+    const a = document.createElement('a');
+    a.download = 'moire-studio.png'; a.href = ec.toDataURL('image/png'); a.click();
+    btn.disabled = false; btn.textContent = '↓ Export PNG';
+    if (wasPlaying) { animPlaying = true; document.getElementById('btn-anim').textContent = '⏸ Pause'; animLoop(); }
+  });
+});
+
+// ── Video Recording ───────────────────────────────────────────────────────────
+document.getElementById('btn-record').addEventListener('click', () => {
+  const btn      = document.getElementById('btn-record');
+  const duration = Math.round(g('sl-rec-dur'));
+  const fps      = parseInt(gv('sel-fps'));
+
+  // Ensure animation is running during record
+  const wasPlaying = animPlaying;
+  if (!animPlaying) {
+    animPlaying = true;
+    document.getElementById('btn-anim').textContent = '⏸ Pause';
+    document.getElementById('btn-anim').classList.remove('ghost');
+    document.getElementById('btn-anim').classList.add('playing');
+    animLoop();
+  }
+
+  const mimeType =
+    MediaRecorder.isTypeSupported('video/mp4; codecs=avc1') ? 'video/mp4; codecs=avc1' :
+    MediaRecorder.isTypeSupported('video/webm; codecs=vp9') ? 'video/webm; codecs=vp9' :
+    'video/webm';
+  const ext = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
+
+  const stream   = canvas.captureStream(fps);
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 10_000_000 });
+  const chunks   = [];
+
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: mimeType.split(';')[0] });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'moire-studio.' + ext; a.click();
+    URL.revokeObjectURL(url);
+    btn.textContent = '⏺ Record Video';
+    btn.classList.remove('recording'); btn.classList.add('ghost');
+    btn.disabled = false;
+    if (!wasPlaying) {
+      cancelAnimationFrame(animFrame); animPlaying = false;
+      document.getElementById('btn-anim').textContent = '▶ Play';
+      document.getElementById('btn-anim').classList.remove('playing');
+      document.getElementById('btn-anim').classList.add('ghost');
+      renderDisplay(2);
+    }
+  };
+
+  recorder.start(100);
+  btn.textContent = `⏹ Stop (${duration}s)`;
+  btn.classList.remove('ghost'); btn.classList.add('recording');
+
+  // Auto-stop after duration
+  setTimeout(() => { if (recorder.state !== 'inactive') recorder.stop(); }, duration * 1000);
+});
+
+// ── PNG Sequence Export ───────────────────────────────────────────────────────
+document.getElementById('btn-seq').addEventListener('click', async () => {
+  const btn    = document.getElementById('btn-seq');
+  const nFrames = Math.round(g('sl-seq'));
+  btn.disabled = true;
+
+  const zip    = new JSZip();
+  const folder = zip.folder('moire-sequence');
+  const spd1   = g('sl-sp1') * 1.5;
+  const spd2   = g('sl-sp2') * 1.5;
+  const startPh1 = animPh1, startPh2 = animPh2;
+
+  for (let i = 0; i < nFrames; i++) {
+    btn.textContent = `Rendering frame ${i+1} / ${nFrames}…`;
+    const ph1 = startPh1 + i * spd1;
+    const ph2 = startPh2 + i * spd2;
+    const fc  = document.createElement('canvas');
+    fc.width = DW; fc.height = DH;
+    renderTo(fc.getContext('2d'), DW, DH, ph1, ph2);
+    const b64 = fc.toDataURL('image/png').split(',')[1];
+    folder.file(`frame_${String(i+1).padStart(4,'0')}.png`, b64, { base64: true });
+    await new Promise(r => setTimeout(r, 0)); // yield to keep UI responsive
+  }
+
+  btn.textContent = 'Zipping…';
+  const blob = await zip.generateAsync({ type:'blob', compression:'DEFLATE', compressionOptions:{level:3} });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'moire-sequence.zip'; a.click();
+  URL.revokeObjectURL(url);
+
+  btn.disabled = false; btn.textContent = '↓ Export PNG Sequence';
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+resizeCanvas();
+
+})();
+</script>
+</body>
+</html>

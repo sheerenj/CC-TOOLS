@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CC-TY — Visual Coding Tools</title>
+  <title>Creative Coding Tools — Jan S'heeren</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -77,17 +77,59 @@
       line-height: 1.7;
     }
 
-    .status {
-      margin: 20px 0 0;
-      color: var(--text-soft);
-      font-size: 12px;
+    .hero-bottom {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
     }
 
+    /* Tab bar */
+    .tabs {
+      display: flex;
+      gap: 6px;
+    }
+
+    .tab {
+      padding: 7px 14px;
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text-soft);
+      font-family: inherit;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+    }
+
+    .tab:hover {
+      border-color: var(--stroke-strong);
+      color: var(--text);
+    }
+
+    .tab.active {
+      background: var(--text);
+      border-color: var(--text);
+      color: #fff;
+    }
+
+    .status {
+      color: var(--text-soft);
+      font-size: 12px;
+      margin: 0;
+    }
+
+    /* Galleries */
     .gallery {
       display: grid;
       grid-template-columns: repeat(12, 1fr);
       gap: 18px;
     }
+
+    .gallery.hidden { display: none; }
 
     .tool-card {
       display: flex;
@@ -103,7 +145,7 @@
       transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
     }
 
-    .tool-card:hover {
+    a.tool-card:hover {
       transform: translateY(-3px);
       border-color: var(--stroke-strong);
       background: var(--panel-hover);
@@ -157,6 +199,17 @@
       line-height: 1.4;
     }
 
+    .plugin-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      font-size: 10px;
+      color: var(--text-soft);
+      margin-top: 2px;
+      align-self: flex-start;
+    }
+
     .footer-note {
       margin-top: 22px;
       padding: 14px 16px;
@@ -191,145 +244,134 @@
 <body>
   <main class="shell">
     <section class="hero">
-      <div class="eyebrow">Visual Coding Tools</div>
-      <h1>CC-TY</h1>
+      <div class="eyebrow">Jan S'heeren</div>
+      <h1>Creative Coding Tools</h1>
       <p class="lead">
         A live gallery of generators, scripts, image tools, typography tools, and visual experiments.
       </p>
-      <p class="status" id="status">Loading tools…</p>
+      <div class="hero-bottom">
+        <div class="tabs">
+          <button class="tab active" data-tab="tools">Tools</button>
+          <button class="tab" data-tab="plugins">Plugins + Scripts</button>
+        </div>
+        <p class="status" id="status">Loading…</p>
+      </div>
     </section>
 
-    <section class="gallery" id="gallery"></section>
+    <section class="gallery" id="gallery-tools"></section>
+    <section class="gallery hidden" id="gallery-plugins"></section>
 
-    <div class="footer-note">
-      To show a thumbnail, place a file named <strong>preview.png</strong> inside a tool folder.
-      Every folder containing an <strong>index.html</strong> will be listed automatically.
-    </div>
   </main>
 
   <script>
-    const OWNER = "sheerenj";
-    const REPO = "CC-TY";
-    const BRANCH = "main";
-    const API_BASE = `https://api.github.com/repos/${OWNER}/${REPO}/contents/tools`;
-    const SITE_BASE = `https://${OWNER}.github.io/${REPO}/tools`;
+    const OWNER        = "sheerenj";
+    const REPO         = "CC-TY";
+    const SITE_BASE    = `https://${OWNER}.github.io/${REPO}/tools`;
+    const PLUGIN_BASE  = `https://${OWNER}.github.io/${REPO}/plugins`;
+    const MANIFEST     = `https://${OWNER}.github.io/${REPO}/tools.json`;
+    const PLUG_MANIFEST= `https://${OWNER}.github.io/${REPO}/plugins.json`;
 
-    const gallery = document.getElementById("gallery");
-    const statusEl = document.getElementById("status");
+    const galleryTools   = document.getElementById("gallery-tools");
+    const galleryPlugins = document.getElementById("gallery-plugins");
+    const statusEl       = document.getElementById("status");
 
     function prettifyName(slug) {
-      return slug
-        .replace(/[-_]+/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+      return slug.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
     }
 
     function titleCase(str) {
-      return str.replace(/\b\w/g, char => char.toUpperCase());
+      return str.replace(/\b\w/g, c => c.toUpperCase());
     }
 
-    async function fetchJson(url) {
-      const res = await fetch(url, {
-        headers: { "Accept": "application/vnd.github+json" }
-      });
-      if (!res.ok) {
-        throw new Error(`GitHub API error: ${res.status}`);
-      }
-      return res.json();
+    function thumbHtml(hasPreview, previewUrl, altText) {
+      return `
+        <div class="thumb-wrap">
+          ${hasPreview
+            ? `<img src="${previewUrl}" alt="${altText} preview"
+                onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">`
+            : ""}
+          <div class="thumb-fallback ${hasPreview ? "hidden" : ""}">No Preview Yet</div>
+        </div>`;
     }
 
-    async function getCategories() {
-      return fetchJson(API_BASE);
-    }
-
-    async function getToolsInCategory(categoryName) {
-      return fetchJson(`${API_BASE}/${encodeURIComponent(categoryName)}`);
-    }
-
-    async function folderHasIndex(categoryName, toolName) {
-      try {
-        const files = await fetchJson(`${API_BASE}/${encodeURIComponent(categoryName)}/${encodeURIComponent(toolName)}`);
-        return files.some(file => file.type === "file" && file.name.toLowerCase() === "index.html");
-      } catch {
-        return false;
-      }
-    }
-
-    async function folderHasPreview(categoryName, toolName) {
-      try {
-        const files = await fetchJson(`${API_BASE}/${encodeURIComponent(categoryName)}/${encodeURIComponent(toolName)}`);
-        return files.some(file => file.type === "file" && file.name.toLowerCase() === "preview.png");
-      } catch {
-        return false;
-      }
-    }
-
-    function makeCard({ category, slug, hasPreview }) {
-      const link = `${SITE_BASE}/${category}/${slug}/`;
+    function makeToolCard({ category, slug, hasPreview, name: nameOverride }) {
+      const link    = `${SITE_BASE}/${category}/${slug}/`;
       const preview = `${SITE_BASE}/${category}/${slug}/preview.png`;
+      const name    = nameOverride || titleCase(prettifyName(slug));
 
       const card = document.createElement("a");
       card.className = "tool-card";
       card.href = link;
       card.target = "_blank";
       card.rel = "noopener noreferrer";
-
       card.innerHTML = `
-        <div class="thumb-wrap">
-          ${
-            hasPreview
-              ? `<img src="${preview}" alt="${titleCase(prettifyName(slug))} preview" onerror="this.remove(); this.nextElementSibling.classList.remove('hidden');">`
-              : ``
-          }
-          <div class="thumb-fallback ${hasPreview ? "hidden" : ""}">No Preview Yet</div>
-        </div>
+        ${thumbHtml(hasPreview, preview, name)}
         <div class="card-body">
-          <h2 class="tool-name">${titleCase(prettifyName(slug))}</h2>
+          <h2 class="tool-name">${name}</h2>
           <div class="tool-meta">${titleCase(prettifyName(category))}</div>
-        </div>
-      `;
-
+        </div>`;
       return card;
     }
 
-    async function loadGallery() {
-      try {
-        const categories = await getCategories();
-        const categoryFolders = categories.filter(item => item.type === "dir");
+    function makePluginCard({ slug, type, app, hasPreview, repoUrl, previewBase }) {
+      const base    = previewBase || PLUGIN_BASE;
+      const preview = `${base}/${slug}/preview.png`;
+      const name    = titleCase(prettifyName(slug));
+      const typeLabel = type === "script" ? "Script" : "Plugin";
 
-        const tools = [];
-
-        for (const category of categoryFolders) {
-          const items = await getToolsInCategory(category.name);
-          const toolFolders = items.filter(item => item.type === "dir");
-
-          for (const tool of toolFolders) {
-            const hasIndex = await folderHasIndex(category.name, tool.name);
-            if (!hasIndex) continue;
-
-            const hasPreview = await folderHasPreview(category.name, tool.name);
-
-            tools.push({
-              category: category.name,
-              slug: tool.name,
-              hasPreview
-            });
-          }
-        }
-
-        tools.sort((a, b) => a.slug.localeCompare(b.slug));
-
-        gallery.innerHTML = "";
-        tools.forEach(tool => gallery.appendChild(makeCard(tool)));
-
-        statusEl.textContent = `${tools.length} tools loaded`;
-      } catch (error) {
-        console.error(error);
-        statusEl.textContent = "Could not load tools from GitHub";
+      const card = document.createElement(repoUrl ? "a" : "div");
+      card.className = "tool-card";
+      if (repoUrl) {
+        card.href   = repoUrl;
+        card.target = "_blank";
+        card.rel    = "noopener noreferrer";
       }
+      card.innerHTML = `
+        ${thumbHtml(hasPreview, preview, name)}
+        <div class="card-body">
+          <h2 class="tool-name">${name}</h2>
+          <div class="tool-meta">${typeLabel}</div>
+          ${app ? `<span class="plugin-badge">${app}</span>` : ""}
+        </div>`;
+      return card;
     }
 
-    loadGallery();
+    async function loadAll() {
+      const [toolsRes, pluginsRes] = await Promise.allSettled([
+        fetch(MANIFEST),
+        fetch(PLUG_MANIFEST),
+      ]);
+
+      let toolCount = 0, pluginCount = 0;
+
+      if (toolsRes.status === "fulfilled" && toolsRes.value.ok) {
+        const tools = await toolsRes.value.json();
+        tools.forEach(t => galleryTools.appendChild(makeToolCard(t)));
+        toolCount = tools.length;
+      }
+
+      if (pluginsRes.status === "fulfilled" && pluginsRes.value.ok) {
+        const plugins = await pluginsRes.value.json();
+        plugins.forEach(p => galleryPlugins.appendChild(makePluginCard(p)));
+        pluginCount = plugins.length;
+      }
+
+      statusEl.textContent = `${toolCount} tools · ${pluginCount} plugin${pluginCount !== 1 ? "s" : ""}`;
+    }
+
+    // Tab switching
+    const tabs = document.querySelectorAll(".tab");
+    tabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        tabs.forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        const target = tab.dataset.tab;
+        galleryTools.classList.toggle("hidden", target !== "tools");
+        galleryPlugins.classList.toggle("hidden", target !== "plugins");
+      });
+    });
+
+    loadAll();
   </script>
 </body>
 </html>

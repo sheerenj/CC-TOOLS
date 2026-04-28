@@ -3,22 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Halftone Lines Tool (Image)</title>
+<title>Boothclub Halftone Lines</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #0a0a0a;
-    --panel: #111111;
-    --border: #222222;
-    --accent: #e02020;
-    --accent-dim: #6b0f0f;
-    --text: #d8d8d0;
-    --muted: #555550;
-    --mono: 'Space Mono', monospace;
-    --sans: 'DM Sans', sans-serif;
+    --bg: #ececec;
+    --panel: #ffffff;
+    --border: #e4e4e4;
+    --border-md: #d4d4d4;
+    --accent: #d4fc4e;
+    --text: #000000;
+    --muted: #6b6b6b;
+    --mono: ui-monospace, monospace;
+    --sans: -apple-system, "Inter", "Helvetica Neue", sans-serif;
   }
 
   body {
@@ -33,6 +31,7 @@
 
   header {
     grid-column: 1 / -1;
+    background: var(--panel);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -45,7 +44,7 @@
     font-weight: 700;
     font-size: 15px;
     letter-spacing: 0.12em;
-    color: var(--accent);
+    color: var(--text);
   }
 
   .logo-sub {
@@ -62,11 +61,13 @@
     font-size: 9px;
     letter-spacing: 0.1em;
     color: var(--muted);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-md);
     padding: 3px 8px;
+    border-radius: 999px;
   }
 
   aside {
+    background: var(--panel);
     border-right: 1px solid var(--border);
     padding: 24px 20px;
     display: flex;
@@ -76,22 +77,17 @@
   }
 
   .section-label {
+    display: inline-block;
+    background: var(--accent);
+    color: #000;
+    padding: 3px 7px;
     font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: 0.15em;
-    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-radius: 3px;
     margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .section-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
   }
 
   .control {
@@ -115,7 +111,7 @@
   .control-value {
     font-family: var(--mono);
     font-size: 11px;
-    color: var(--accent);
+    color: var(--text);
     min-width: 36px;
     text-align: right;
   }
@@ -123,31 +119,31 @@
   input[type=range] {
     -webkit-appearance: none;
     width: 100%;
-    height: 2px;
-    background: var(--border);
+    height: 4px;
+    background: var(--border-md);
     outline: none;
     cursor: pointer;
     position: relative;
+    border-radius: 2px;
   }
 
   input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
-    background: var(--accent);
+    width: 16px;
+    height: 16px;
+    background: #000;
     cursor: pointer;
     border: none;
-    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    border-radius: 50%;
   }
 
   input[type=range]::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    background: var(--accent);
+    width: 16px;
+    height: 16px;
+    background: #000;
     cursor: pointer;
     border: none;
-    border-radius: 0;
-    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    border-radius: 50%;
   }
 
   .color-row {
@@ -166,14 +162,14 @@
   }
 
   .color-swatch.active {
-    border-color: var(--text);
+    border-color: #000;
   }
 
   .color-custom {
     width: 28px;
     height: 28px;
     cursor: pointer;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-md);
     background: transparent;
     display: flex;
     align-items: center;
@@ -191,7 +187,7 @@
   }
 
   .upload-zone {
-    border: 1px dashed var(--border);
+    border: 1px dashed var(--border-md);
     padding: 28px 16px;
     text-align: center;
     cursor: pointer;
@@ -200,8 +196,8 @@
   }
 
   .upload-zone:hover, .upload-zone.drag {
-    border-color: var(--accent);
-    background: rgba(224,32,32,0.04);
+    border-color: #000;
+    background: transparent;
   }
 
   .upload-zone input {
@@ -232,7 +228,7 @@
   .upload-filename {
     font-family: var(--mono);
     font-size: 10px;
-    color: var(--accent);
+    color: var(--muted);
     margin-top: 8px;
     word-break: break-all;
     display: none;
@@ -241,7 +237,7 @@
   .btn {
     width: 100%;
     padding: 11px;
-    background: var(--accent);
+    background: #000;
     color: #fff;
     border: none;
     cursor: pointer;
@@ -249,23 +245,24 @@
     font-size: 11px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    font-weight: 700;
+    font-weight: 600;
+    border-radius: 999px;
     transition: background 0.1s;
   }
 
-  .btn:hover { background: #c01818; }
-  .btn:disabled { background: var(--accent-dim); cursor: not-allowed; opacity: 0.5; }
+  .btn:hover { background: #222; }
+  .btn:disabled { background: #000; cursor: not-allowed; opacity: 0.5; }
 
   .btn-outline {
     background: transparent;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-md);
     color: var(--muted);
     margin-top: 8px;
   }
 
   .btn-outline:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+    border-color: #000;
+    color: #000;
     background: transparent;
   }
 
@@ -274,7 +271,7 @@
     align-items: center;
     justify-content: center;
     padding: 32px;
-    background: #060606;
+    background: var(--bg);
     position: relative;
     overflow: hidden;
   }
@@ -312,7 +309,7 @@
 
   .empty-line {
     height: 2px;
-    background: var(--accent);
+    background: var(--border-md);
   }
 
   .empty-title {
@@ -328,7 +325,7 @@
     right: 16px;
     font-family: var(--mono);
     font-size: 10px;
-    color: var(--accent);
+    color: #000;
     letter-spacing: 0.1em;
     display: none;
   }

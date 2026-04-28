@@ -1,0 +1,14 @@
+[
+  { "category": "generators",  "slug": "ascii-art-generator",           "hasPreview": true,  "name": "BOOTHCLUB ASCII Art"      },
+  { "category": "generators",  "slug": "dot-matrix-studio",             "hasPreview": true,  "name": "Dot Matrix"               },
+  { "category": "generators",  "slug": "geometric-emblem-generator",    "hasPreview": true,  "name": "Geometric Emblem"         },
+  { "category": "generators",  "slug": "reaction-diffusion",            "hasPreview": true                                      },
+  { "category": "generators",  "slug": "moire-studio",                  "hasPreview": true,  "name": "Moiré Studio"             },
+  { "category": "image",       "slug": "BCA-halftone-lines-image",      "hasPreview": true,  "name": "Boothclub Halftone Lines" },
+  { "category": "image",       "slug": "halftone-dot-studio",           "hasPreview": true,  "name": "Halftone Dots"            },
+  { "category": "image",       "slug": "chromatic-bloom",               "hasPreview": true,  "name": "Chromatic Bloom"          },
+  { "category": "templates",   "slug": "ascii-template-tool",           "hasPreview": true,  "name": "BOOTHCLUB ASCII Template" },
+  { "category": "typography",  "slug": "experimental-type-tool",        "hasPreview": true,  "name": "Experimental Type"        },
+  { "category": "typography",  "slug": "particle-typeface",             "hasPreview": true                                      },
+  { "category": "video",       "slug": "BCA-halftone-lines-video",      "hasPreview": true,  "name": "Boothclub Halftone Lines" }
+]
