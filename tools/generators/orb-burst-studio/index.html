@@ -293,6 +293,7 @@ in float v_axial;
 uniform float u_core;     /* 0..1 core weight */
 uniform float u_soft;   /* edge softness 0..1 */
 uniform int u_blendMode;  /* 0 = alpha-over (visible on light bg), 1 = additive (dark bg) */
+uniform vec3 u_bg;      /* plate color (sRGB) — fringes ease toward this */
 
 out vec4 fragColor;
 
@@ -316,8 +317,12 @@ void main() {
     /* Additive: needs headroom on the background — best on mid/dark tones */
     fragColor = vec4(rgb * a * 1.35, 1.0);
   } else {
-    /* Alpha-over: SRC_ALPHA × rgb + dst × (1−α) — reads on white */
-    fragColor = vec4(min(rgb * 1.12, vec3(1.0)), clamp(a * 1.05, 0.0, 1.0));
+    /* Alpha-over: ease chroma toward plate as α falls → pastel → plate, not a muddy rim */
+    float aa = clamp(a * 1.05, 0.0, 1.0);
+    vec3 pc = min(rgb * 1.12, vec3(1.0));
+    float lift = pow(1.0 - aa, 1.25);
+    pc = mix(pc, u_bg, lift * 0.55);
+    fragColor = vec4(pc, aa);
   }
 }
 `;
@@ -335,25 +340,30 @@ void main() {
 precision highp float;
 uniform sampler2D u_tex;
 uniform vec2 u_px; /* 1/width, 0 */
+uniform vec3 u_bg; /* plate sRGB — blur only “above the mist” so gray does not ring color */
 in vec2 v_uv;
 out vec4 o;
 
-/* Blur in linear light — averaging sRGB bytes darkens edges (muddy halos). */
 vec3 toLin(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }
 vec3 toSrgb(vec3 c) { return pow(clamp(c, 0.0, 1.0), vec3(1.0 / 2.2)); }
 
+vec3 exc(vec2 uv, vec3 bgLin) {
+  return max(toLin(texture(u_tex, uv).rgb) - bgLin, vec3(0.0));
+}
+
 void main() {
   vec2 d = u_px;
+  vec3 bgLin = toLin(u_bg);
   vec3 acc =
-    toLin(texture(u_tex, v_uv + d * -4.0).rgb) * 0.05 +
-    toLin(texture(u_tex, v_uv + d * -3.0).rgb) * 0.09 +
-    toLin(texture(u_tex, v_uv + d * -2.0).rgb) * 0.12 +
-    toLin(texture(u_tex, v_uv + d * -1.0).rgb) * 0.15 +
-    toLin(texture(u_tex, v_uv).rgb) * 0.18 +
-    toLin(texture(u_tex, v_uv + d * 1.0).rgb) * 0.15 +
-    toLin(texture(u_tex, v_uv + d * 2.0).rgb) * 0.12 +
-    toLin(texture(u_tex, v_uv + d * 3.0).rgb) * 0.09 +
-    toLin(texture(u_tex, v_uv + d * 4.0).rgb) * 0.05;
+    exc(v_uv + d * -4.0, bgLin) * 0.05 +
+    exc(v_uv + d * -3.0, bgLin) * 0.09 +
+    exc(v_uv + d * -2.0, bgLin) * 0.12 +
+    exc(v_uv + d * -1.0, bgLin) * 0.15 +
+    exc(v_uv, bgLin) * 0.18 +
+    exc(v_uv + d * 1.0, bgLin) * 0.15 +
+    exc(v_uv + d * 2.0, bgLin) * 0.12 +
+    exc(v_uv + d * 3.0, bgLin) * 0.09 +
+    exc(v_uv + d * 4.0, bgLin) * 0.05;
   o = vec4(toSrgb(acc), 1.0);
 }
 `;
@@ -362,24 +372,30 @@ void main() {
 precision highp float;
 uniform sampler2D u_tex;
 uniform vec2 u_px; /* 0, 1/height */
+uniform vec3 u_bg;
 in vec2 v_uv;
 out vec4 o;
 
 vec3 toLin(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }
 vec3 toSrgb(vec3 c) { return pow(clamp(c, 0.0, 1.0), vec3(1.0 / 2.2)); }
 
+vec3 exc(vec2 uv, vec3 bgLin) {
+  return max(toLin(texture(u_tex, uv).rgb) - bgLin, vec3(0.0));
+}
+
 void main() {
   vec2 d = u_px;
+  vec3 bgLin = toLin(u_bg);
   vec3 acc =
-    toLin(texture(u_tex, v_uv + d * -4.0).rgb) * 0.05 +
-    toLin(texture(u_tex, v_uv + d * -3.0).rgb) * 0.09 +
-    toLin(texture(u_tex, v_uv + d * -2.0).rgb) * 0.12 +
-    toLin(texture(u_tex, v_uv + d * -1.0).rgb) * 0.15 +
-    toLin(texture(u_tex, v_uv).rgb) * 0.18 +
-    toLin(texture(u_tex, v_uv + d * 1.0).rgb) * 0.15 +
-    toLin(texture(u_tex, v_uv + d * 2.0).rgb) * 0.12 +
-    toLin(texture(u_tex, v_uv + d * 3.0).rgb) * 0.09 +
-    toLin(texture(u_tex, v_uv + d * 4.0).rgb) * 0.05;
+    exc(v_uv + d * -4.0, bgLin) * 0.05 +
+    exc(v_uv + d * -3.0, bgLin) * 0.09 +
+    exc(v_uv + d * -2.0, bgLin) * 0.12 +
+    exc(v_uv + d * -1.0, bgLin) * 0.15 +
+    exc(v_uv, bgLin) * 0.18 +
+    exc(v_uv + d * 1.0, bgLin) * 0.15 +
+    exc(v_uv + d * 2.0, bgLin) * 0.12 +
+    exc(v_uv + d * 3.0, bgLin) * 0.09 +
+    exc(v_uv + d * 4.0, bgLin) * 0.05;
   o = vec4(toSrgb(acc), 1.0);
 }
 `;
@@ -420,10 +436,13 @@ void main() {
     core: gl.getUniformLocation(pOrb, 'u_core'),
     soft: gl.getUniformLocation(pOrb, 'u_soft'),
     blendMode: gl.getUniformLocation(pOrb, 'u_blendMode'),
+    orb_bg: gl.getUniformLocation(pOrb, 'u_bg'),
     bh_tex: gl.getUniformLocation(pBH, 'u_tex'),
     bh_px: gl.getUniformLocation(pBH, 'u_px'),
+    bh_bg: gl.getUniformLocation(pBH, 'u_bg'),
     bv_tex: gl.getUniformLocation(pBV, 'u_tex'),
     bv_px: gl.getUniformLocation(pBV, 'u_px'),
+    bv_bg: gl.getUniformLocation(pBV, 'u_bg'),
     c_scene: gl.getUniformLocation(pComp, 'u_scene'),
     c_bloom: gl.getUniformLocation(pComp, 'u_bloom'),
     c_mix: gl.getUniformLocation(pComp, 'u_bloomMix')
@@ -813,6 +832,10 @@ void main() {
     gl.uniform1f(loc.core, u.core);
     gl.uniform1f(loc.soft, u.soft);
     gl.uniform1i(loc.blendMode, additive ? 1 : 0);
+    {
+      const b = hexRgb(u.bg);
+      gl.uniform3f(loc.orb_bg, b[0], b[1], b[2]);
+    }
 
     gl.bindVertexArray(vaoOrb);
     gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, particleCount);
@@ -839,15 +862,17 @@ void main() {
     }
   }
 
-  function drawBlurChain(bpx) {
+  function drawBlurChain(bpx, bgHex) {
     if (bpx < 0.5 || !texScene || !sceneTexReady) return;
     const s = bpx * dpr;
+    const b = hexRgb(bgHex);
     gl.disable(gl.BLEND);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, fboBlurA);
     gl.viewport(0, 0, W, H);
     gl.useProgram(pBH);
     gl.uniform1i(loc.bh_tex, 0);
+    gl.uniform3f(loc.bh_bg, b[0], b[1], b[2]);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texScene);
     gl.uniform2f(loc.bh_px, s / W, 0);
@@ -857,6 +882,7 @@ void main() {
     gl.bindFramebuffer(gl.FRAMEBUFFER, fboBlurB);
     gl.useProgram(pBV);
     gl.uniform1i(loc.bv_tex, 0);
+    gl.uniform3f(loc.bv_bg, b[0], b[1], b[2]);
     gl.bindTexture(gl.TEXTURE_2D, texBlurA);
     gl.uniform2f(loc.bv_px, 0, s / H);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -907,7 +933,7 @@ void main() {
     const eye = [Math.sin(ang) * camR, 0.15 + Math.sin(time * 0.27) * 0.08, Math.cos(ang) * camR];
 
     drawParticlesToCanvas(u, eye);
-    drawBlurChain(u.bpx);
+    drawBlurChain(u.bpx, u.bg);
     composite(u);
 
     requestAnimationFrame(frame);
