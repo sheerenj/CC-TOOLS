@@ -11,21 +11,31 @@
 
   <style>
     :root {
-      --bg: #f2f2f2;
+      --bg: #ebebeb;
+      --bg-accent: #e4e4e4;
       --panel: #ffffff;
-      --panel-hover: #f7f7f7;
-      --stroke: #d9d9d9;
-      --stroke-strong: #bcbcbc;
+      --panel-hover: #fafafa;
+      --stroke: #d0d0d0;
+      --stroke-strong: #a8a8a8;
       --text: #111111;
-      --text-soft: #6a6a6a;
+      --text-soft: #5c5c5c;
+      --accent: #111111;
       --radius-xl: 28px;
       --radius-lg: 22px;
       --radius-md: 18px;
-      --shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+      --shadow: 0 10px 36px rgba(0, 0, 0, 0.06);
+      --shadow-hover: 0 18px 48px rgba(0, 0, 0, 0.1);
       --max-width: 1440px;
+      --cursor-size: 9px;
+      --cursor-size-hover: 28px;
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+    }
 
     body {
       margin: 0;
@@ -37,19 +47,119 @@
       letter-spacing: 0.04em;
     }
 
+    /* Subtle page backdrop */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(0, 0, 0, 0.04), transparent 50%),
+        radial-gradient(ellipse 60% 40% at 100% 0%, rgba(0, 0, 0, 0.03), transparent 45%);
+      z-index: 0;
+    }
+
+    /* Custom cursor (fine pointers only) */
+    .cursor-dot {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: var(--cursor-size);
+      height: var(--cursor-size);
+      margin-left: calc(var(--cursor-size) / -2);
+      margin-top: calc(var(--cursor-size) / -2);
+      border-radius: 50%;
+      background: var(--text);
+      pointer-events: none;
+      z-index: 100000;
+      will-change: left, top, width, height, margin;
+      transition:
+        width 0.35s var(--ease-out),
+        height 0.35s var(--ease-out),
+        margin 0.35s var(--ease-out),
+        background 0.25s ease,
+        opacity 0.2s ease;
+    }
+
+    .cursor-dot.is-hover {
+      width: var(--cursor-size-hover);
+      height: var(--cursor-size-hover);
+      margin-left: calc(var(--cursor-size-hover) / -2);
+      margin-top: calc(var(--cursor-size-hover) / -2);
+      background: rgba(17, 17, 17, 0.85);
+    }
+
+    @media (pointer: fine) {
+      body.use-custom-cursor {
+        cursor: none;
+      }
+      body.use-custom-cursor .cursor-dot {
+        display: block;
+      }
+      body.use-custom-cursor a,
+      body.use-custom-cursor button,
+      body.use-custom-cursor .tab {
+        cursor: none;
+      }
+    }
+
     .shell {
+      position: relative;
+      z-index: 1;
       width: min(var(--max-width), calc(100% - 40px));
       margin: 0 auto;
       padding: 28px 0 56px;
     }
 
     .hero {
-      margin-bottom: 24px;
-      padding: 24px 28px;
+      position: relative;
+      margin-bottom: 28px;
+      padding: 28px 32px;
       border: 1px solid var(--stroke);
       border-radius: var(--radius-xl);
       background: var(--panel);
       box-shadow: var(--shadow);
+      overflow: hidden;
+      animation: heroIn 0.85s var(--ease-out) both;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: -40% -20%;
+      background: linear-gradient(
+        105deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.55) 45%,
+        transparent 55%
+      );
+      transform: translateX(-30%) rotate(6deg);
+      animation: heroSheen 12s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes heroIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.985);
+        filter: blur(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+      }
+    }
+
+    @keyframes heroSheen {
+      0%, 100% { transform: translateX(-35%) rotate(6deg); opacity: 0.35; }
+      50% { transform: translateX(25%) rotate(6deg); opacity: 0.55; }
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
     }
 
     .eyebrow {
@@ -60,6 +170,7 @@
       color: var(--text-soft);
       font-size: 12px;
       line-height: 1;
+      animation: fadeUp 0.7s var(--ease-out) 0.12s both;
     }
 
     h1 {
@@ -67,6 +178,7 @@
       font-size: clamp(2rem, 5vw, 4rem);
       line-height: 0.95;
       font-weight: 700;
+      animation: fadeUp 0.75s var(--ease-out) 0.18s both;
     }
 
     .lead {
@@ -75,24 +187,37 @@
       color: var(--text-soft);
       font-size: 14px;
       line-height: 1.7;
+      animation: fadeUp 0.75s var(--ease-out) 0.26s both;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .hero-bottom {
-      margin-top: 20px;
+      margin-top: 22px;
       display: flex;
       align-items: center;
       gap: 16px;
       flex-wrap: wrap;
+      animation: fadeUp 0.75s var(--ease-out) 0.34s both;
     }
 
-    /* Tab bar */
+    /* Tabs */
     .tabs {
       display: flex;
-      gap: 6px;
+      gap: 8px;
     }
 
     .tab {
-      padding: 7px 14px;
+      padding: 9px 16px;
       border: 1px solid var(--stroke);
       border-radius: 999px;
       background: transparent;
@@ -102,34 +227,67 @@
       text-transform: uppercase;
       letter-spacing: 0.04em;
       cursor: pointer;
-      transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+      transition:
+        background 0.3s var(--ease-out),
+        border-color 0.3s var(--ease-out),
+        color 0.3s var(--ease-out),
+        transform 0.25s var(--ease-out),
+        box-shadow 0.3s ease;
     }
 
     .tab:hover {
       border-color: var(--stroke-strong);
       color: var(--text);
+      transform: translateY(-1px);
+    }
+
+    .tab:active {
+      transform: translateY(0);
     }
 
     .tab.active {
       background: var(--text);
       border-color: var(--text);
       color: #fff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
     }
 
     .status {
       color: var(--text-soft);
       font-size: 12px;
       margin: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .status.is-error {
+      color: #8a3d3d;
     }
 
     /* Galleries */
     .gallery {
       display: grid;
       grid-template-columns: repeat(12, 1fr);
-      gap: 18px;
+      gap: 20px;
     }
 
-    .gallery.hidden { display: none; }
+    .gallery.hidden {
+      display: none;
+    }
+
+    .gallery:not(.hidden) {
+      animation: galleryReveal 0.55s var(--ease-out) both;
+    }
+
+    @keyframes galleryReveal {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
     .tool-card {
       display: flex;
@@ -140,15 +298,44 @@
       border-radius: var(--radius-lg);
       background: var(--panel);
       box-shadow: var(--shadow);
-      text-decoration: none;
       color: inherit;
-      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+      transition:
+        transform 0.45s var(--ease-out),
+        border-color 0.35s ease,
+        box-shadow 0.45s var(--ease-out);
+      animation: cardRise 0.65s var(--ease-out) backwards;
+      animation-delay: calc(var(--stagger, 0) * 55ms);
     }
 
-    a.tool-card:hover {
-      transform: translateY(-3px);
+    @keyframes cardRise {
+      from {
+        opacity: 0;
+        transform: translateY(22px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .tool-card:hover {
+      transform: translateY(-6px);
       border-color: var(--stroke-strong);
-      background: var(--panel-hover);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .tool-card__main {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      text-decoration: none;
+      color: inherit;
+      outline: none;
+    }
+
+    .tool-card__main:focus-visible {
+      box-shadow: inset 0 0 0 2px var(--text);
+      border-radius: var(--radius-lg);
     }
 
     .thumb-wrap {
@@ -157,7 +344,7 @@
       overflow: hidden;
       border: 1px solid var(--stroke);
       border-radius: var(--radius-md);
-      background: #ececec;
+      background: linear-gradient(145deg, #ececec 0%, #dedede 100%);
     }
 
     .thumb-wrap img {
@@ -165,6 +352,11 @@
       height: 100%;
       object-fit: cover;
       display: block;
+      transition: transform 0.65s var(--ease-out);
+    }
+
+    .tool-card:hover .thumb-wrap img {
+      transform: scale(1.05);
     }
 
     .thumb-fallback {
@@ -179,10 +371,11 @@
     }
 
     .card-body {
-      padding: 16px 18px 18px;
+      padding: 16px 18px 12px;
       display: flex;
       flex-direction: column;
       gap: 8px;
+      flex: 1;
     }
 
     .tool-name {
@@ -191,6 +384,11 @@
       line-height: 1.5;
       font-weight: 500;
       color: var(--text);
+      transition: color 0.25s ease;
+    }
+
+    .tool-card:hover .tool-name {
+      color: var(--accent);
     }
 
     .tool-meta {
@@ -210,18 +408,56 @@
       align-self: flex-start;
     }
 
-    .footer-note {
-      margin-top: 22px;
-      padding: 14px 16px;
-      border: 1px solid var(--stroke);
-      border-radius: 18px;
-      background: var(--panel);
-      color: var(--text-soft);
-      font-size: 12px;
-      line-height: 1.7;
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 18px 18px;
+      margin-top: auto;
     }
 
-    .hidden { display: none; }
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      background: var(--bg-accent);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      text-decoration: none;
+      transition:
+        background 0.3s var(--ease-out),
+        border-color 0.3s ease,
+        transform 0.25s var(--ease-out),
+        box-shadow 0.35s ease;
+    }
+
+    .btn-download:hover {
+      background: var(--text);
+      border-color: var(--text);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-download:active {
+      transform: translateY(0);
+    }
+
+    .btn-download svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .hidden { display: none !important; }
 
     @media (max-width: 1100px) {
       .tool-card { grid-column: span 6; }
@@ -233,47 +469,84 @@
         padding-top: 18px;
       }
 
-      .hero { padding: 20px; }
-      .gallery { gap: 14px; }
+      .hero { padding: 22px 20px; }
+      .gallery { gap: 16px; }
       .tool-card { grid-column: span 12; }
       .thumb-wrap { margin: 12px 12px 0; }
-      .card-body { padding: 14px 16px 16px; }
+      .card-body { padding: 14px 16px 10px; }
+      .card-actions { padding: 0 16px 16px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+
+      body.use-custom-cursor {
+        cursor: auto;
+      }
+      body.use-custom-cursor .cursor-dot {
+        display: none !important;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="cursor-dot" id="cursor-dot" aria-hidden="true"></div>
+
   <main class="shell">
     <section class="hero">
-      <div class="eyebrow">Jan S'heeren</div>
-      <h1>Creative Coding Tools</h1>
-      <p class="lead">
-        A live gallery of generators, scripts, image tools, typography tools, and visual experiments.
-      </p>
-      <div class="hero-bottom">
-        <div class="tabs">
-          <button class="tab active" data-tab="tools">Tools</button>
-          <button class="tab" data-tab="plugins">Plugins + Scripts</button>
+      <div class="hero-inner">
+        <div class="eyebrow">Jan S'heeren</div>
+        <h1>Creative Coding Tools</h1>
+        <p class="lead">
+          A live gallery of generators, scripts, image tools, typography tools, and visual experiments.
+        </p>
+        <div class="hero-bottom">
+          <div class="tabs" role="tablist" aria-label="Gallery sections">
+            <button type="button" class="tab active" role="tab" aria-selected="true" data-tab="tools" id="tab-tools">Tools</button>
+            <button type="button" class="tab" role="tab" aria-selected="false" data-tab="plugins" id="tab-plugins">Plugins + Scripts</button>
+          </div>
+          <p class="status" id="status">Loading…</p>
         </div>
-        <p class="status" id="status">Loading…</p>
       </div>
     </section>
 
-    <section class="gallery" id="gallery-tools"></section>
-    <section class="gallery hidden" id="gallery-plugins"></section>
-
+    <section class="gallery" id="gallery-tools" role="tabpanel" aria-labelledby="tab-tools"></section>
+    <section class="gallery hidden" id="gallery-plugins" role="tabpanel" aria-labelledby="tab-plugins" hidden></section>
   </main>
 
   <script>
     const OWNER        = "sheerenj";
     const REPO         = "CC-TY";
+    const BRANCH       = "main";
     const SITE_BASE    = `https://${OWNER}.github.io/${REPO}/tools`;
     const PLUGIN_BASE  = `https://${OWNER}.github.io/${REPO}/plugins`;
     const MANIFEST     = `https://${OWNER}.github.io/${REPO}/tools.json`;
     const PLUG_MANIFEST= `https://${OWNER}.github.io/${REPO}/plugins.json`;
+    const REPO_TREE    = `https://github.com/${OWNER}/${REPO}/tree/${BRANCH}`;
 
     const galleryTools   = document.getElementById("gallery-tools");
     const galleryPlugins = document.getElementById("gallery-plugins");
     const statusEl       = document.getElementById("status");
+    const cursorDot      = document.getElementById("cursor-dot");
+
+    const downloadIconSvg = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3v12"/><path d="m8 14 4 4 4-4"/><path d="M4 21h16"/>
+      </svg>`;
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
 
     function prettifyName(slug) {
       return slug.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
@@ -283,57 +556,109 @@
       return str.replace(/\b\w/g, c => c.toUpperCase());
     }
 
+    /** Zip a folder from GitHub via download-directory helper */
+    function folderZipDownloadUrl(treePath) {
+      const treeUrl = `${REPO_TREE}/${treePath}`;
+      return `https://download-directory.github.io/?url=${encodeURIComponent(treeUrl)}`;
+    }
+
     function thumbHtml(hasPreview, previewUrl, altText) {
+      const alt = escapeHtml(altText);
       return `
         <div class="thumb-wrap">
           ${hasPreview
-            ? `<img src="${previewUrl}" alt="${altText} preview"
+            ? `<img src="${escapeHtml(previewUrl)}" alt="${alt} preview"
                 onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">`
             : ""}
           <div class="thumb-fallback ${hasPreview ? "hidden" : ""}">No Preview Yet</div>
         </div>`;
     }
 
-    function makeToolCard({ category, slug, hasPreview, name: nameOverride }) {
+    function actionsHtml(downloadHref, label) {
+      if (!downloadHref) return "";
+      const safeLabel = escapeHtml(label || "Download");
+      return `
+        <div class="card-actions">
+          <a class="btn-download" href="${escapeHtml(downloadHref)}" target="_blank" rel="noopener noreferrer">
+            ${downloadIconSvg}
+            ${safeLabel}
+          </a>
+        </div>`;
+    }
+
+    function toolDownloadPath(entry) {
+      if (entry.downloadUrl) return entry.downloadUrl;
+      if (entry.treePath) return folderZipDownloadUrl(entry.treePath);
+      const { category, slug } = entry;
+      if (category && slug) return folderZipDownloadUrl(`tools/${category}/${slug}`);
+      return "";
+    }
+
+    function pluginDownloadPath(entry) {
+      if (entry.downloadUrl) return entry.downloadUrl;
+      if (entry.treePath) return folderZipDownloadUrl(entry.treePath);
+      const { slug, type } = entry;
+      if (!slug) return "";
+      if (type === "script") return folderZipDownloadUrl(`tools/scripts/${slug}`);
+      return folderZipDownloadUrl(`plugins/${slug}`);
+    }
+
+    function makeToolCard(entry, staggerIndex) {
+      const { category, slug, hasPreview, name: nameOverride } = entry;
       const link    = `${SITE_BASE}/${category}/${slug}/`;
       const preview = `${SITE_BASE}/${category}/${slug}/preview.png`;
       const name    = nameOverride || titleCase(prettifyName(slug));
+      const dl      = toolDownloadPath(entry);
 
-      const card = document.createElement("a");
-      card.className = "tool-card";
-      card.href = link;
-      card.target = "_blank";
-      card.rel = "noopener noreferrer";
-      card.innerHTML = `
-        ${thumbHtml(hasPreview, preview, name)}
-        <div class="card-body">
-          <h2 class="tool-name">${name}</h2>
-          <div class="tool-meta">${titleCase(prettifyName(category))}</div>
-        </div>`;
-      return card;
+      const article = document.createElement("article");
+      article.className = "tool-card";
+      article.style.setProperty("--stagger", String(staggerIndex));
+
+      article.innerHTML = `
+        <a class="tool-card__main" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">
+          ${thumbHtml(hasPreview, preview, name)}
+          <div class="card-body">
+            <h2 class="tool-name">${escapeHtml(name)}</h2>
+            <div class="tool-meta">${escapeHtml(titleCase(prettifyName(category)))}</div>
+          </div>
+        </a>
+        ${actionsHtml(dl, "Download")}`;
+
+      return article;
     }
 
-    function makePluginCard({ slug, type, app, hasPreview, repoUrl, previewBase }) {
+    function makePluginCard(entry, staggerIndex) {
+      const { slug, type, app, hasPreview, repoUrl, previewBase } = entry;
       const base    = previewBase || PLUGIN_BASE;
       const preview = `${base}/${slug}/preview.png`;
       const name    = titleCase(prettifyName(slug));
       const typeLabel = type === "script" ? "Script" : "Plugin";
+      const dl        = pluginDownloadPath(entry);
 
-      const card = document.createElement(repoUrl ? "a" : "div");
-      card.className = "tool-card";
-      if (repoUrl) {
-        card.href   = repoUrl;
-        card.target = "_blank";
-        card.rel    = "noopener noreferrer";
-      }
-      card.innerHTML = `
-        ${thumbHtml(hasPreview, preview, name)}
-        <div class="card-body">
-          <h2 class="tool-name">${name}</h2>
-          <div class="tool-meta">${typeLabel}</div>
-          ${app ? `<span class="plugin-badge">${app}</span>` : ""}
-        </div>`;
-      return card;
+      const article = document.createElement("article");
+      article.className = "tool-card";
+      article.style.setProperty("--stagger", String(staggerIndex));
+
+      const mainHref = repoUrl
+        ? escapeHtml(repoUrl)
+        : "";
+      const mainTag = repoUrl ? "a" : "div";
+      const mainAttrs = repoUrl
+        ? ` class="tool-card__main" href="${mainHref}" target="_blank" rel="noopener noreferrer"`
+        : ` class="tool-card__main" tabindex="-1"`;
+
+      article.innerHTML = `
+        <${mainTag}${mainAttrs}>
+          ${thumbHtml(hasPreview, preview, name)}
+          <div class="card-body">
+            <h2 class="tool-name">${escapeHtml(name)}</h2>
+            <div class="tool-meta">${escapeHtml(typeLabel)}</div>
+            ${app ? `<span class="plugin-badge">${escapeHtml(app)}</span>` : ""}
+          </div>
+        </${mainTag}>
+        ${actionsHtml(dl, "Download zip")}`;
+
+      return article;
     }
 
     async function loadAll() {
@@ -342,35 +667,97 @@
         fetch(PLUG_MANIFEST),
       ]);
 
-      let toolCount = 0, pluginCount = 0;
+      let toolCount = 0;
+      let pluginCount = 0;
+      const errs = [];
 
       if (toolsRes.status === "fulfilled" && toolsRes.value.ok) {
         const tools = await toolsRes.value.json();
-        tools.forEach(t => galleryTools.appendChild(makeToolCard(t)));
+        tools.forEach((t, i) => galleryTools.appendChild(makeToolCard(t, i)));
         toolCount = tools.length;
+      } else {
+        errs.push("tools manifest");
       }
 
       if (pluginsRes.status === "fulfilled" && pluginsRes.value.ok) {
         const plugins = await pluginsRes.value.json();
-        plugins.forEach(p => galleryPlugins.appendChild(makePluginCard(p)));
+        plugins.forEach((p, i) => galleryPlugins.appendChild(makePluginCard(p, i)));
         pluginCount = plugins.length;
+      } else {
+        errs.push("plugins manifest");
       }
 
-      statusEl.textContent = `${toolCount} tools · ${pluginCount} plugin${pluginCount !== 1 ? "s" : ""}`;
+      if (errs.length) {
+        statusEl.classList.add("is-error");
+        statusEl.textContent =
+          toolCount || pluginCount
+            ? `${toolCount} tools · ${pluginCount} plugins · could not load ${errs.join(" & ")}`
+            : `Could not load ${errs.join(" & ")}. Open this page over HTTPS or check the network.`;
+      } else {
+        statusEl.textContent = `${toolCount} tools · ${pluginCount} plugin${pluginCount !== 1 ? "s" : ""}`;
+      }
     }
 
-    // Tab switching
+    /* Tabs */
     const tabs = document.querySelectorAll(".tab");
     tabs.forEach(tab => {
       tab.addEventListener("click", () => {
-        tabs.forEach(t => t.classList.remove("active"));
+        tabs.forEach(t => {
+          t.classList.remove("active");
+          t.setAttribute("aria-selected", "false");
+        });
         tab.classList.add("active");
+        tab.setAttribute("aria-selected", "true");
         const target = tab.dataset.tab;
-        galleryTools.classList.toggle("hidden", target !== "tools");
-        galleryPlugins.classList.toggle("hidden", target !== "plugins");
+        const showTools = target === "tools";
+        galleryTools.classList.toggle("hidden", !showTools);
+        galleryPlugins.classList.toggle("hidden", showTools);
+        galleryTools.hidden = !showTools;
+        galleryPlugins.hidden = showTools;
       });
     });
 
+    /* Custom cursor: smooth follow + hover scale */
+    function initCursor() {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const fine = window.matchMedia("(pointer: fine)").matches;
+      if (reduce || !fine) return;
+
+      document.body.classList.add("use-custom-cursor");
+
+      let mx = window.innerWidth / 2;
+      let my = window.innerHeight / 2;
+      let cx = mx;
+      let cy = my;
+      let raf = 0;
+
+      const lerp = (a, b, t) => a + (b - a) * t;
+
+      function tick() {
+        const k = 0.22;
+        cx = lerp(cx, mx, k);
+        cy = lerp(cy, my, k);
+        cursorDot.style.left = `${cx}px`;
+        cursorDot.style.top = `${cy}px`;
+        raf = requestAnimationFrame(tick);
+      }
+
+      window.addEventListener("mousemove", e => {
+        mx = e.clientX;
+        my = e.clientY;
+      }, { passive: true });
+
+      window.addEventListener("mouseover", e => {
+        const el = e.target;
+        if (!(el instanceof Element)) return;
+        const hit = el.closest("a, button, input, textarea, select, [data-cursor-hover]");
+        cursorDot.classList.toggle("is-hover", !!hit);
+      });
+
+      raf = requestAnimationFrame(tick);
+    }
+
+    initCursor();
     loadAll();
   </script>
 </body>
