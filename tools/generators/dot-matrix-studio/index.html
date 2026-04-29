@@ -579,7 +579,7 @@
         break;
       }
     }
-    v = Math.pow(Math.max(0, Math.min(1, v)), 1 / state.contrastO);
+    v = Math.pow(Math.max(0, Math.min(1, v)), state.contrastO);
     return v;
   }
 
@@ -755,7 +755,7 @@
             const idx = (j * cols + i) * 4;
             let v = 1 - (data[idx + ch] / 255);
             v += state.brightness;
-            v = Math.pow(Math.max(0, Math.min(1, v)), 1 / state.contrast);
+            v = Math.pow(Math.max(0, Math.min(1, v)), state.contrast);
             if (state.invert) v = 1 - v;
             const r = v * maxRV;
             const cx = (i + 0.5) * cellV + dx;
@@ -772,7 +772,7 @@
           const r_ = data[idx], g_ = data[idx + 1], b_ = data[idx + 2];
           let bri = (0.299 * r_ + 0.587 * g_ + 0.114 * b_) / 255;
           bri += state.brightness;
-          bri = Math.pow(Math.max(0, Math.min(1, bri)), 1 / state.contrast);
+          bri = Math.pow(Math.max(0, Math.min(1, bri)), state.contrast);
           if (state.invert) bri = 1 - bri;
           const r = bri * maxRV;
           const cx = (i + 0.5) * cellV;
