@@ -378,6 +378,11 @@
       flex: 1;
     }
 
+    /* Tools: no download row — match bottom padding to plugin cards */
+    .tool-card > a.tool-card__main:last-child .card-body {
+      padding-bottom: 18px;
+    }
+
     .tool-name {
       margin: 0;
       font-size: 14px;
@@ -586,14 +591,6 @@
         </div>`;
     }
 
-    function toolDownloadPath(entry) {
-      if (entry.downloadUrl) return entry.downloadUrl;
-      if (entry.treePath) return folderZipDownloadUrl(entry.treePath);
-      const { category, slug } = entry;
-      if (category && slug) return folderZipDownloadUrl(`tools/${category}/${slug}`);
-      return "";
-    }
-
     function pluginDownloadPath(entry) {
       if (entry.downloadUrl) return entry.downloadUrl;
       if (entry.treePath) return folderZipDownloadUrl(entry.treePath);
@@ -608,7 +605,6 @@
       const link    = `${SITE_BASE}/${category}/${slug}/`;
       const preview = `${SITE_BASE}/${category}/${slug}/preview.png`;
       const name    = nameOverride || titleCase(prettifyName(slug));
-      const dl      = toolDownloadPath(entry);
 
       const article = document.createElement("article");
       article.className = "tool-card";
@@ -621,8 +617,7 @@
             <h2 class="tool-name">${escapeHtml(name)}</h2>
             <div class="tool-meta">${escapeHtml(titleCase(prettifyName(category)))}</div>
           </div>
-        </a>
-        ${actionsHtml(dl, "Download")}`;
+        </a>`;
 
       return article;
     }
@@ -734,7 +729,8 @@
       const lerp = (a, b, t) => a + (b - a) * t;
 
       function tick() {
-        const k = 0.22;
+        /* Higher k = snappier cursor (was 0.22, felt laggy for navigation) */
+        const k = 0.58;
         cx = lerp(cx, mx, k);
         cy = lerp(cy, my, k);
         cursorDot.style.left = `${cx}px`;
