@@ -107,60 +107,60 @@ button.btn.ghost:hover { background: #f5f5f5; }
   <div class="section">
     <div class="section-title">Look</div>
     <div class="ctrl">
-      <label>Radial streaks <span class="val" id="v-n">3200</span></label>
-      <input type="range" id="sl-n" min="400" max="8000" step="100" value="3200" />
+      <label>Radial streaks <span class="val" id="v-n">400</span></label>
+      <input type="range" id="sl-n" min="400" max="8000" step="100" value="400" />
     </div>
     <div class="ctrl">
-      <label>Core blobs <span class="val" id="v-blobs">36</span></label>
-      <input type="range" id="sl-blobs" min="0" max="96" value="36" />
+      <label>Core blobs <span class="val" id="v-blobs">0</span></label>
+      <input type="range" id="sl-blobs" min="0" max="120" value="0" />
     </div>
     <div class="ctrl">
-      <label>Streak length <span class="val" id="v-len">0.14</span></label>
-      <input type="range" id="sl-len" min="2" max="40" value="14" />
+      <label>Streak length <span class="val" id="v-len">0.40</span></label>
+      <input type="range" id="sl-len" min="2" max="48" value="40" />
     </div>
     <div class="ctrl">
-      <label>Streak thickness <span class="val" id="v-th">0.018</span></label>
-      <input type="range" id="sl-th" min="3" max="35" value="18" />
+      <label>Streak thickness <span class="val" id="v-th">0.003</span></label>
+      <input type="range" id="sl-th" min="1" max="48" value="3" />
     </div>
     <div class="ctrl">
-      <label>Core hotness <span class="val" id="v-core">0.55</span></label>
-      <input type="range" id="sl-core" min="0" max="100" value="55" />
+      <label>Core hotness <span class="val" id="v-core">1.00</span></label>
+      <input type="range" id="sl-core" min="0" max="100" value="100" />
     </div>
     <div class="ctrl">
-      <label>Edge softness <span class="val" id="v-soft">0.72</span></label>
-      <input type="range" id="sl-soft" min="20" max="98" value="72" />
+      <label>Edge softness <span class="val" id="v-soft">0.98</span></label>
+      <input type="range" id="sl-soft" min="20" max="98" value="98" />
     </div>
   </div>
 
   <div class="section">
     <div class="section-title">Motion</div>
     <div class="ctrl">
-      <label>Radial speed <span class="val" id="v-sp">1.0</span></label>
-      <input type="range" id="sl-sp" min="5" max="200" value="100" />
+      <label>Radial speed <span class="val" id="v-sp">0.05</span></label>
+      <input type="range" id="sl-sp" min="5" max="200" value="5" />
     </div>
     <div class="ctrl">
-      <label>Drift / swirl <span class="val" id="v-sw">0.12</span></label>
-      <input type="range" id="sl-sw" min="0" max="80" value="12" />
+      <label>Drift / swirl <span class="val" id="v-sw">0.00</span></label>
+      <input type="range" id="sl-sw" min="0" max="80" value="0" />
     </div>
     <div class="ctrl">
       <label>Camera orbit <span class="val" id="v-orb">0.35</span></label>
       <input type="range" id="sl-orb" min="0" max="100" value="35" />
     </div>
     <div class="ctrl">
-      <label>Depth spread <span class="val" id="v-z">0.55</span></label>
-      <input type="range" id="sl-z" min="10" max="100" value="55" />
+      <label>Depth spread <span class="val" id="v-z">0.10</span></label>
+      <input type="range" id="sl-z" min="10" max="100" value="10" />
     </div>
   </div>
 
   <div class="section">
     <div class="section-title">Bloom</div>
     <div class="ctrl">
-      <label>Bloom mix <span class="val" id="v-bl">0.85</span></label>
-      <input type="range" id="sl-bl" min="0" max="150" value="85" />
+      <label>Bloom mix <span class="val" id="v-bl">0.37</span></label>
+      <input type="range" id="sl-bl" min="0" max="150" value="37" />
     </div>
     <div class="ctrl">
-      <label>Bloom blur px <span class="val" id="v-bpx">6</span></label>
-      <input type="range" id="sl-bpx" min="0" max="20" value="6" />
+      <label>Bloom blur px <span class="val" id="v-bpx">4</span></label>
+      <input type="range" id="sl-bpx" min="0" max="20" value="4" />
     </div>
   </div>
 
@@ -169,15 +169,15 @@ button.btn.ghost:hover { background: #f5f5f5; }
     <div class="ctrl">
       <label>Layer blend</label>
       <select id="sel-blend">
-        <option value="normal" selected>Normal — visible on light backgrounds</option>
-        <option value="additive">Additive glow — best on dark / gray</option>
+        <option value="normal">Normal — visible on light backgrounds</option>
+        <option value="additive" selected>Additive glow — best on dark / gray</option>
       </select>
     </div>
     <div class="ctrl">
       <label>Palette</label>
       <select id="sel-pal">
-        <option value="studio" selected>Studio (ref tones)</option>
-        <option value="neon">Neon burst</option>
+        <option value="studio">Studio (ref tones)</option>
+        <option value="neon" selected>Neon burst</option>
         <option value="sunset">Sunset core</option>
         <option value="aqua">Aqua lime</option>
         <option value="mono">Mono heat</option>
@@ -186,9 +186,21 @@ button.btn.ghost:hover { background: #f5f5f5; }
     <div class="ctrl">
       <label>Background</label>
       <div class="swatch-row">
-        <div class="swatch-wrap"><input type="color" id="cp-bg" value="#f2f0ed" /></div>
-        <span style="font-size:11px;color:var(--text-dim)">Light neutral reads “glow on mist”</span>
+        <div class="swatch-wrap"><input type="color" id="cp-bg" value="#000000" /></div>
+        <span style="font-size:11px;color:var(--text-dim)">Black + additive matches neon burst previews</span>
       </div>
+    </div>
+    <div class="ctrl">
+      <label>Saturation <span class="val" id="v-csat">100%</span></label>
+      <input type="range" id="sl-csat" min="30" max="220" value="100" />
+    </div>
+    <div class="ctrl">
+      <label>Hue shift <span class="val" id="v-chue">0°</span></label>
+      <input type="range" id="sl-chue" min="0" max="360" value="0" />
+    </div>
+    <div class="ctrl">
+      <label>Brightness <span class="val" id="v-cgain">100%</span></label>
+      <input type="range" id="sl-cgain" min="40" max="220" value="100" />
     </div>
   </div>
 
@@ -263,43 +275,58 @@ layout(location = 2) in vec3 a_color;
 layout(location = 3) in vec4 a_meta; /* size, lenScale, zFade, kind (0=streak, 1=blob) */
 
 uniform mat4 u_mvp;
-uniform vec2 u_streak; /* halfLen, halfThick in NDC */
+uniform vec3 u_eye;     /* world-space camera — orient streaks in 3D */
+uniform vec2 u_streak; /* length / thickness scale from UI → mapped to world units here */
 
 out vec2 v_uv;
 out vec3 v_col;
 out float v_axial;
+out float v_camDist;
 flat out float v_kind;
 
 void main() {
-  vec4 clip0 = u_mvp * vec4(a_world, 1.0);
-  vec2 ndc = clip0.xy / clip0.w;
-  vec2 rad = length(ndc) > 1e-5 ? normalize(ndc) : vec2(1.0, 0.0);
-  vec2 perp = vec2(-rad.y, rad.x);
-
+  vec3 C = a_world;
   float kind = a_meta.w;
   v_kind = kind;
-  float rn = length(ndc);
-  /* Reference: streaks read thicker toward the rim; core is amorphous blobs (short, fat). */
-  float thickRamp = smoothstep(0.03, 0.78, rn);
-
-  float hl;
-  float ht;
-  if (kind > 0.5) {
-    hl = u_streak.x * a_meta.y * 0.38;
-    ht = u_streak.y * a_meta.x * 3.15;
-  } else {
-    hl = u_streak.x * a_meta.y * (0.82 + 0.82 * thickRamp);
-    ht = u_streak.y * a_meta.x * (0.68 + 1.22 * thickRamp);
-  }
-
-  vec2 offset = rad * (a_corner.x * hl) + perp * (a_corner.y * ht);
-  vec2 ndc1 = ndc + offset;
-
   v_uv = a_corner;
   v_col = a_color;
   v_axial = a_corner.x;
+  v_camDist = length(u_eye - C);
 
-  gl_Position = vec4(ndc1 * clip0.w, clip0.z, clip0.w);
+  /* zFade 0..1 = position in radial shell — drives thickness like reference rim weight */
+  float thickRamp = smoothstep(0.04, 0.96, a_meta.z);
+
+  const float WL = 0.92;  /* world half-length scale from u_streak.x */
+  const float WT = 24.0;  /* world half-thickness scale from u_streak.y (UI th is small) */
+
+  vec3 pos;
+  if (kind > 0.5) {
+    /* Core blob: view-facing ellipse (soft mass toward camera) */
+    vec3 vd = normalize(u_eye - C);
+    vec3 upRef = abs(vd.y) < 0.92 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+    vec3 side = normalize(cross(upRef, vd));
+    vec3 upm = normalize(cross(vd, side));
+    float rx = u_streak.x * a_meta.y * 0.34 * WL;
+    float ry = u_streak.y * a_meta.x * 4.05 * WT * 0.042;
+    pos = C + side * (a_corner.x * rx) + upm * (a_corner.y * ry);
+  } else {
+    /* Streak: long axis = world radial from burst center; thin axis ⊥ radial in view plane */
+    vec3 ax = length(C) > 1e-6 ? normalize(C) : vec3(0.0, 0.0, 1.0);
+    vec3 vd = normalize(u_eye - C);
+    vec3 side = cross(ax, vd);
+    float sl = length(side);
+    if (sl < 1e-5) {
+      vec3 upRef = abs(ax.y) < 0.92 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+      side = normalize(cross(ax, upRef));
+    } else {
+      side /= sl;
+    }
+    float hl = u_streak.x * a_meta.y * (1.02 + 1.05 * thickRamp) * WL;
+    float ht = u_streak.y * a_meta.x * (0.88 + 1.55 * thickRamp) * WT;
+    pos = C + ax * (a_corner.x * hl) + side * (a_corner.y * ht);
+  }
+
+  gl_Position = u_mvp * vec4(pos, 1.0);
 }
 `;
 
@@ -308,33 +335,65 @@ precision highp float;
 in vec2 v_uv;
 in vec3 v_col;
 in float v_axial;
+in float v_camDist;
 flat in float v_kind;
 
 uniform float u_core;     /* 0..1 core weight */
 uniform float u_soft;   /* edge softness 0..1 */
 uniform int u_blendMode;  /* 0 = alpha-over (visible on light bg), 1 = additive (dark bg) */
-uniform vec3 u_bg;      /* plate color (sRGB) — fringes ease toward this */
+uniform vec3 u_bg;      /* plate color (sRGB) */
+uniform float u_colHue; /* 0..1 full rotation */
+uniform float u_colSat; /* chroma multiplier (≈0.3–2.2 from UI) */
+uniform float u_colGain;/* brightness on graded rgb */
 
 out vec4 fragColor;
 
+vec3 saturateRgb(vec3 c, float k) {
+  float L = dot(c, vec3(0.299, 0.587, 0.114));
+  return clamp(mix(vec3(L), c, k), 0.0, 1.0);
+}
+
+vec3 hueShiftYiq(vec3 rgb, float t) {
+  const mat3 kRGBToYIQ = mat3(
+    0.299, 0.587, 0.114,
+    0.596926, -0.274578, -0.321348,
+    0.211470, -0.522591, 0.311210);
+  const mat3 kYIQToRGB = mat3(
+    1.0, 0.95629572, 0.621024,
+    1.0, -0.27212266, -0.64738096,
+    1.0, -1.1068845, 1.7046149);
+  vec3 yiq = kRGBToYIQ * rgb;
+  float ang = t * 6.28318530718;
+  float co = cos(ang), si = sin(ang);
+  float i2 = yiq.y * co - yiq.z * si;
+  float q2 = yiq.y * si + yiq.z * co;
+  return clamp(kYIQToRGB * vec3(yiq.x, i2, q2), 0.0, 1.0);
+}
+
 void main() {
+  float dof = 1.0 + clamp(v_camDist - 1.15, 0.0, 2.8) * 0.11;
+
+  vec3 Cc = hueShiftYiq(v_col, u_colHue);
+  Cc = saturateRgb(Cc, clamp(u_colSat, 0.05, 4.0));
+
   if (v_kind > 0.5) {
-    /* Central mass: nearly isotropic soft blob, high luminance */
     float dd = length(v_uv);
-    float capb = 1.0 - smoothstep(0.22, 1.02 + u_soft * 0.45, dd);
-    capb = pow(max(capb, 0.0), 0.88);
-    float coreb = exp(-dd * dd * (2.2 + u_core * 5.0));
-    vec3 rgb = v_col * (0.5 + coreb * (1.15 + u_core * 1.2));
-    rgb = mix(rgb, vec3(1.0, 0.96, 0.88), coreb * 0.22);
-    float a = capb * (0.28 + coreb * 0.82);
-    a *= 0.62 + u_core * 0.38;
+    float capb = 1.0 - smoothstep(0.18, 1.05 + u_soft * 0.42 * dof, dd);
+    capb = pow(max(capb, 0.0), 0.82);
+    float coreb = exp(-dd * dd * (1.9 + u_core * 5.5));
+    vec3 rgb = Cc * (0.58 + coreb * (1.35 + u_core * 1.45));
+    rgb = saturateRgb(rgb, 1.42);
+    rgb = mix(rgb, vec3(1.0, 0.94, 0.82), coreb * 0.18);
+    rgb *= u_colGain;
+    float a = capb * (0.32 + coreb * 0.88);
+    a *= 0.58 + u_core * 0.42;
     if (u_blendMode == 1) {
-      fragColor = vec4(rgb * a * 1.45, 1.0);
+      fragColor = vec4(rgb * a * 1.55, 1.0);
     } else {
-      float aa = clamp(a * 1.08, 0.0, 1.0);
-      vec3 pc = min(rgb * 1.18, vec3(1.0));
-      float lift = pow(1.0 - aa, 1.15);
-      pc = mix(pc, u_bg, lift * 0.5);
+      float aa = clamp(a * 1.06, 0.0, 1.0);
+      vec3 pc = min(rgb * 1.28, vec3(1.0));
+      float lift = pow(1.0 - aa, 1.35);
+      pc = mix(pc, u_bg, lift * 0.22);
       fragColor = vec4(pc, aa);
     }
     return;
@@ -342,27 +401,28 @@ void main() {
 
   float ax = abs(v_axial);
   float rad = length(v_uv);
-  float cap = 1.0 - smoothstep(0.65, 1.0 + u_soft * 0.35, max(ax * 0.92 + rad * 0.38, rad));
-  cap = pow(max(cap, 0.0), 1.15);
+  float cap = 1.0 - smoothstep(0.62, 1.0 + u_soft * 0.32 * dof, max(ax * 0.9 + rad * 0.36, rad));
+  cap = pow(max(cap, 0.0), 1.08);
 
-  float core = exp(-ax * ax * (2.0 + u_core * 6.0)) * exp(-rad * rad * (1.5 + u_core * 4.0));
-  float rim = smoothstep(0.15, 1.0, rad + ax * 0.25);
+  float core = exp(-ax * ax * (1.85 + u_core * 6.5)) * exp(-rad * rad * (1.35 + u_core * 4.2));
+  float rim = smoothstep(0.12, 1.0, rad + ax * 0.22);
 
-  vec3 rgb = v_col * (0.35 + core * (0.9 + u_core * 1.4));
-  rgb += v_col * (1.0 - rim) * 0.15;
-  /* Slight axial lift toward hot tip (reference streak read) */
-  rgb = mix(rgb, min(rgb * vec3(1.15, 1.08, 1.02), vec3(1.0)), smoothstep(0.15, 0.95, ax) * 0.2);
+  vec3 rgb = Cc * (0.5 + core * (1.2 + u_core * 1.75));
+  rgb += Cc * (1.0 - rim) * 0.22;
+  rgb = saturateRgb(rgb, 1.48);
+  rgb = mix(rgb, min(rgb * vec3(1.2, 1.1, 1.04), vec3(1.0)), smoothstep(0.1, 0.95, ax) * 0.28);
+  rgb *= u_colGain;
 
-  float a = cap * (0.15 + core * 0.95);
-  a *= 0.55 + u_core * 0.45;
+  float a = cap * (0.2 + core * 1.02);
+  a *= 0.52 + u_core * 0.48;
 
   if (u_blendMode == 1) {
-    fragColor = vec4(rgb * a * 1.35, 1.0);
+    fragColor = vec4(rgb * a * 1.48, 1.0);
   } else {
-    float aa = clamp(a * 1.05, 0.0, 1.0);
-    vec3 pc = min(rgb * 1.12, vec3(1.0));
-    float lift = pow(1.0 - aa, 1.25);
-    pc = mix(pc, u_bg, lift * 0.55);
+    float aa = clamp(a * 1.08, 0.0, 1.0);
+    vec3 pc = min(rgb * 1.32, vec3(1.0));
+    float lift = pow(1.0 - aa, 1.4);
+    pc = mix(pc, u_bg, lift * 0.2);
     fragColor = vec4(pc, aa);
   }
 }
@@ -374,6 +434,33 @@ out vec2 v_uv;
 void main() {
   v_uv = a_pos * 0.5 + 0.5;
   gl_Position = vec4(a_pos, 0.0, 1.0);
+}
+`;
+
+  /* Big warm under-painting like the reference “solar core” — drawn before streaks */
+  const FS_HUB = `#version 300 es
+precision highp float;
+in vec2 v_uv;
+uniform float u_t;
+uniform vec2 u_aspect; /* width/height, height/height = 1 */
+out vec4 fragColor;
+
+void main() {
+  vec2 p = (v_uv - 0.5) * vec2(u_aspect.x, 1.0) * 2.2;
+  float r = length(p);
+  float ang = atan(p.y, p.x);
+  float wob = 0.14 * sin(ang * 4.0 + u_t * 1.1) + 0.08 * sin(ang * 7.0 - u_t * 0.9);
+  float body = exp(-(r + wob) * (r + wob) * 0.95);
+  float tight = exp(-r * r * 4.2) * 0.55;
+  vec3 cA = vec3(1.0, 0.42, 0.05);
+  vec3 cB = vec3(1.0, 0.78, 0.28);
+  vec3 cC = vec3(1.0, 0.52, 0.38);
+  vec3 rgb = mix(cA, cB, smoothstep(0.0, 0.55, r));
+  rgb = mix(rgb, cC, tight);
+  rgb = mix(rgb, vec3(1.0, 0.92, 0.55), body * 0.25);
+  float a = body * 0.62 + tight * 0.38;
+  a *= 0.72 + 0.06 * sin(u_t * 0.35);
+  fragColor = vec4(rgb, clamp(a, 0.0, 0.92));
 }
 `;
 
@@ -462,22 +549,29 @@ void main() {
 `;
 
   const pOrb = link(compile(gl.VERTEX_SHADER, VS_ORBS), compile(gl.FRAGMENT_SHADER, FS_ORBS));
+  const pHub = link(compile(gl.VERTEX_SHADER, VS_FULL), compile(gl.FRAGMENT_SHADER, FS_HUB));
   const pBH = link(compile(gl.VERTEX_SHADER, VS_FULL), compile(gl.FRAGMENT_SHADER, FS_BLUR_H));
   const pBV = link(compile(gl.VERTEX_SHADER, VS_FULL), compile(gl.FRAGMENT_SHADER, FS_BLUR_V));
   const pComp = link(compile(gl.VERTEX_SHADER, VS_FULL), compile(gl.FRAGMENT_SHADER, FS_COMP));
-  if (!pOrb || !pBH || !pBV || !pComp) {
+  if (!pOrb || !pHub || !pBH || !pBV || !pComp) {
     fb.textContent = 'Shader compile failed (see console).';
     fb.classList.add('show');
     return;
   }
 
   const loc = {
+    hub_t: gl.getUniformLocation(pHub, 'u_t'),
+    hub_aspect: gl.getUniformLocation(pHub, 'u_aspect'),
     mvp: gl.getUniformLocation(pOrb, 'u_mvp'),
+    eye: gl.getUniformLocation(pOrb, 'u_eye'),
     streak: gl.getUniformLocation(pOrb, 'u_streak'),
     core: gl.getUniformLocation(pOrb, 'u_core'),
     soft: gl.getUniformLocation(pOrb, 'u_soft'),
     blendMode: gl.getUniformLocation(pOrb, 'u_blendMode'),
     orb_bg: gl.getUniformLocation(pOrb, 'u_bg'),
+    col_hue: gl.getUniformLocation(pOrb, 'u_colHue'),
+    col_sat: gl.getUniformLocation(pOrb, 'u_colSat'),
+    col_gain: gl.getUniformLocation(pOrb, 'u_colGain'),
     bh_tex: gl.getUniformLocation(pBH, 'u_tex'),
     bh_px: gl.getUniformLocation(pBH, 'u_px'),
     bh_bg: gl.getUniformLocation(pBH, 'u_bg'),
@@ -566,10 +660,11 @@ void main() {
   }
 
   const PAL = {
-    /* Motion-ref tones: magenta, cyan, lime, royal, orange, violet */
+    /* Deep cinematic primaries — reads closer to motion-ref than pastel neons */
     studio: [
-      [0.95, 0.18, 0.52], [0.05, 0.78, 1.0], [0.52, 0.98, 0.18],
-      [0.22, 0.12, 0.92], [1.0, 0.42, 0.08], [0.62, 0.22, 0.95]
+      [0.9, 0.02, 0.38], [0.0, 0.48, 0.88], [0.28, 0.88, 0.02],
+      [0.08, 0.04, 0.72], [0.95, 0.22, 0.02], [0.48, 0.0, 0.68],
+      [0.02, 0.72, 0.62], [0.88, 0.65, 0.0]
     ],
     neon: [
       [0.98, 0.35, 0.12], [1.0, 0.75, 0.08], [0.55, 0.98, 0.2],
@@ -590,8 +685,8 @@ void main() {
   };
 
   const WARM = [
-    [1.0, 0.48, 0.12], [1.0, 0.72, 0.2], [1.0, 0.88, 0.34],
-    [0.98, 0.36, 0.14], [1.0, 0.58, 0.26]
+    [1.0, 0.35, 0.02], [1.0, 0.55, 0.08], [1.0, 0.72, 0.18],
+    [0.98, 0.28, 0.06], [1.0, 0.48, 0.22], [1.0, 0.25, 0.45]
   ];
 
   const MAX_INST = 9000;
@@ -628,7 +723,7 @@ void main() {
   }
 
   function respawnBlob(i) {
-    const R = rnd(0.012, 0.26);
+    const R = rnd(0.014, 0.3);
     const [x, y, z] = fibSphere(i, Math.max(24, blobCount), R);
     world[i * 3] = x;
     world[i * 3 + 1] = y;
@@ -657,7 +752,7 @@ void main() {
     color[i * 3 + 2] = c[2];
     meta[i * 4] = 1.05 + Math.random() * 1.15;
     meta[i * 4 + 1] = 0.1 + Math.random() * 0.12;
-    meta[i * 4 + 2] = R / 0.26;
+    meta[i * 4 + 2] = R / 0.3;
     meta[i * 4 + 3] = 1.0;
   }
 
@@ -704,12 +799,12 @@ void main() {
     gl.bufferData(gl.ARRAY_BUFFER, meta.subarray(0, n * 4), gl.DYNAMIC_DRAW);
   }
 
-  let streakCount = 3200;
-  let blobCount = 36;
+  let streakCount = 400;
+  let blobCount = 0;
   let totalInstances = streakCount + blobCount;
   let innerR = 0.08;
   let outerR = 1.05;
-  let palKey = 'studio';
+  let palKey = 'neon';
 
   /** Column-major: out = a * b */
   function mulMat4(a, b, out) {
@@ -816,7 +911,8 @@ void main() {
     gl.viewport(0, 0, W, H);
     allocFbos();
     const aspect = W / H;
-    persp((50 * Math.PI) / 180, aspect, 0.05, 8, mProj);
+    /* Wider FOV reads closer to motion-ref “tunnel” / speed toward camera */
+    persp((58 * Math.PI) / 180, aspect, 0.05, 8, mProj);
   }
 
   function readUI() {
@@ -835,7 +931,10 @@ void main() {
       bpx: +$('sl-bpx').value,
       bg: $('cp-bg').value,
       pal: $('sel-pal').value,
-      blend: $('sel-blend').value
+      blend: $('sel-blend').value,
+      colHue: +$('sl-chue').value / 360,
+      colSat: +$('sl-csat').value / 100,
+      colGain: +$('sl-cgain').value / 100
     };
   }
 
@@ -852,7 +951,10 @@ void main() {
       ['sl-orb', 'v-orb', (v) => (+v / 100).toFixed(2)],
       ['sl-z', 'v-z', (v) => (+v / 100).toFixed(2)],
       ['sl-bl', 'v-bl', (v) => (+v / 100).toFixed(2)],
-      ['sl-bpx', 'v-bpx', (v) => String(v)]
+      ['sl-bpx', 'v-bpx', (v) => String(v)],
+      ['sl-csat', 'v-csat', (v) => `${v}%`],
+      ['sl-chue', 'v-chue', (v) => `${v}°`],
+      ['sl-cgain', 'v-cgain', (v) => `${v}%`]
     ];
     for (const [sl, lab, fn] of map) {
       const el = $(sl);
@@ -932,8 +1034,17 @@ void main() {
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     }
 
+    if (!additive) {
+      gl.useProgram(pHub);
+      gl.uniform1f(loc.hub_t, u.time);
+      gl.uniform2f(loc.hub_aspect, W / Math.max(H, 1), 1);
+      gl.bindVertexArray(vaoQuad);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+
     gl.useProgram(pOrb);
     gl.uniformMatrix4fv(loc.mvp, false, mVP);
+    gl.uniform3f(loc.eye, eye[0], eye[1], eye[2]);
     gl.uniform2f(loc.streak, u.len * 1.25, u.th * 1.1);
     gl.uniform1f(loc.core, u.core);
     gl.uniform1f(loc.soft, u.soft);
@@ -942,6 +1053,9 @@ void main() {
       const b = hexRgb(u.bg);
       gl.uniform3f(loc.orb_bg, b[0], b[1], b[2]);
     }
+    gl.uniform1f(loc.col_hue, u.colHue);
+    gl.uniform1f(loc.col_sat, u.colSat);
+    gl.uniform1f(loc.col_gain, u.colGain);
 
     gl.bindVertexArray(vaoOrb);
     gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, totalInstances);
@@ -1005,7 +1119,7 @@ void main() {
     gl.useProgram(pComp);
     gl.uniform1i(loc.c_scene, 0);
     gl.uniform1i(loc.c_bloom, 1);
-    const bloomAmt = u.bpx < 0.5 ? 0 : u.bloom * 1.1;
+    const bloomAmt = u.bpx < 0.5 ? 0 : u.bloom * 1.22;
     gl.uniform1f(loc.c_mix, bloomAmt);
 
     gl.activeTexture(gl.TEXTURE0);
@@ -1027,7 +1141,7 @@ void main() {
     const u = readUI();
 
     const wantStreak = Math.min(8000, Math.max(400, u.n | 0));
-    const wantBlob = Math.min(96, Math.max(0, u.blobs | 0));
+    const wantBlob = Math.min(120, Math.max(0, u.blobs | 0));
     if (wantStreak !== streakCount || wantBlob !== blobCount) {
       streakCount = wantStreak;
       blobCount = wantBlob;
@@ -1041,7 +1155,7 @@ void main() {
     const camR = 2.35;
     const eye = [Math.sin(ang) * camR, 0.15 + Math.sin(time * 0.27) * 0.08, Math.cos(ang) * camR];
 
-    drawParticlesToCanvas(u, eye);
+    drawParticlesToCanvas({ ...u, time }, eye);
     drawBlurChain(u.bpx, u.bg);
     composite(u);
 
@@ -1052,7 +1166,7 @@ void main() {
   resize();
   palKey = $('sel-pal').value;
   streakCount = Math.min(8000, Math.max(400, +$('sl-n').value | 0));
-  blobCount = Math.min(96, Math.max(0, +$('sl-blobs').value | 0));
+  blobCount = Math.min(120, Math.max(0, +$('sl-blobs').value | 0));
   totalInstances = Math.min(MAX_INST, streakCount + blobCount);
   initAllParticles();
   requestAnimationFrame(frame);
