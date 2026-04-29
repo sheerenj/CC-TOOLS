@@ -1,29 +1,29 @@
 /*
- * hty-tools.css — Hear The Youth · unified tools UI system
- * ────────────────────────────────────────────────────────────
- * Every browser-based tool should link this stylesheet (only path differs):
+ * hty-tools.css — Hear The Youth · Tools UI System
+ * ─────────────────────────────────────────────────
+ * Link this in every tool:
+ *   <link rel="stylesheet" href="../../shared/hty-tools.css">
+ *
+ * Adjust the relative path to match the tool's depth:
  *   generators/my-tool/index.html  →  ../../shared/hty-tools.css
  *   image/my-tool/index.html       →  ../../shared/hty-tools.css
+ *   typography/my-tool/index.html  →  ../../shared/hty-tools.css
  *
- * Required outer structure:
- *   <body class="tool-shell">
- *     <header class="tool-topbar">… title … optional actions …</header>
- *     <div class="tool-workspace">
- *       <aside id="sidebar"> … controls … </aside>
- *       <main id="canvas-area"> … preview / canvas … </main>
- *     </div>
+ * HTML structure expected:
+ *   <body>
+ *     <aside id="sidebar"> … </aside>
+ *     <main id="canvas-area"> … </main>
  *   </body>
  *
- * Optional: stack canvas + fixed bottom strip (ASCII Studio style):
- *   <div class="tool-stage">
- *     <main id="canvas-area">…</main>
- *     <footer class="tool-bottom-bar">…</footer>
- *   </div>
- *
- * Alternate canvas id used by some tools — covered by shared rules:
- *   #canvas-wrap
- *
- * Tool-specific overrides only in each index.html’s small <style> block.
+ * Component classes available:
+ *   Layout      .section  .section-title  .control  .btn-row  .size-row  .divider
+ *   Brand       .brand-row  .brand  .brand-sub  .corner-brand  .corner-page
+ *   Tabs        .mode-tabs
+ *   Inputs      input[range]  input[color]  input[number]  select
+ *   Buttons     button.btn  .ghost  .accent  .rec
+ *   Palette     .palette-grid  .swatch  .add-swatch
+ *   Toggle      .toggle  .toggle-switch  (.on)
+ *   Misc        .hint  .status-pill  (.ok  .err  .rec)
  */
 
 /* ─── Tokens ──────────────────────────────────────────────────────────────── */
@@ -34,10 +34,8 @@
   --text-dim:    #6b6b6b;
   --line:        #e4e4e4;
   --line-2:      #d4d4d4;
-  --accent:      #d4fc4e;
+  --accent:      #d4fc4e;   /* neon highlighter yellow */
   --canvas-bg:   #0a0a0a;
-  --sidebar-width: 400px;
-  --topbar-height: 52px;
   --radius-xl:   28px;
   --radius-lg:   20px;
   --radius-md:   14px;
@@ -46,717 +44,217 @@
 
 /* ─── Reset ───────────────────────────────────────────────────────────────── */
 * { box-sizing: border-box; }
-
-html {
-  height: 100%;
-}
-
-html,
-body.tool-shell {
-  margin: 0;
-  padding: 0;
-}
-
-body.tool-shell {
-  min-height: 100vh;
-  height: 100vh;
-  overflow: hidden;
-  background: var(--bg);
-  color: var(--text);
+html, body {
+  margin: 0; padding: 0; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--text);
   font-family: -apple-system, "Inter", "Helvetica Neue", BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "ss01", "cv11";
-  display: flex;
-  flex-direction: column;
 }
+body { display: flex; height: 100vh; }
 
-/* ─── Top bar (always-visible title strip — like Cavalry / host app chrome) ─ */
-.tool-topbar {
-  flex: 0 0 var(--topbar-height);
-  min-height: var(--topbar-height);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 18px 0 16px;
-  background: var(--card);
-  border-bottom: 1px solid var(--line);
-  z-index: 50;
-}
-
-.tool-topbar-start {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
-.tool-topbar-mark {
-  width: 4px;
-  height: 22px;
-  background: #000;
-  border-radius: 1px;
-  flex-shrink: 0;
-}
-
-.tool-title {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-family: ui-monospace, "SF Mono", "Menlo", monospace;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.tool-topbar-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
-
-.tool-topbar-actions button.btn {
-  width: auto;
-  padding: 8px 16px;
-  font-size: 12px;
-}
-
-.tool-topbar-meta {
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  font-family: ui-monospace, "SF Mono", monospace;
-}
-
-/* ─── Workspace row: sidebar + canvas ─────────────────────────────────────── */
-.tool-workspace {
-  flex: 1;
-  display: flex;
-  flex-direction: row;
-  min-height: 0;
-  min-width: 0;
-}
-
-/* Optional vertical stack when canvas + bottom toolbar */
-.tool-stage {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-}
-
-.tool-stage > #canvas-area,
-.tool-stage > #canvas-wrap {
-  flex: 1;
-  min-height: 0;
-}
-
-.tool-bottom-bar {
-  flex-shrink: 0;
-  border-top: 1px solid var(--line);
-  background: var(--card);
-  padding: 10px 14px;
-  display: flex;
-  align-items: stretch;
-  gap: 10px;
-  overflow-x: auto;
-}
-
-/* ─── Sidebar (wide panel — editing-app style) ───────────────────────────── */
+/* ─── Sidebar ─────────────────────────────────────────────────────────────── */
 #sidebar {
-  width: var(--sidebar-width);
-  flex-shrink: 0;
-  background: var(--bg);
-  padding: 18px;
-  overflow-y: auto;
-  overflow-x: hidden;
+  width: 340px; flex-shrink: 0; background: var(--bg);
+  padding: 18px; overflow-y: auto; height: 100vh;
   border-right: 1px solid var(--line);
-  align-self: stretch;
-  min-height: 0;
 }
+#sidebar::-webkit-scrollbar { width: 8px; }
+#sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 4px; }
+#sidebar::-webkit-scrollbar-thumb:hover { background: #bababa; }
 
-#sidebar::-webkit-scrollbar {
-  width: 8px;
-}
-
-#sidebar::-webkit-scrollbar-thumb {
-  background: #cfcfcf;
-  border-radius: 4px;
-}
-
-#sidebar::-webkit-scrollbar-thumb:hover {
-  background: #bababa;
-}
-
-/* ─── Canvas / preview region ─────────────────────────────────────────────── */
-#canvas-area,
-#canvas-wrap {
-  flex: 1;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--canvas-bg);
-  overflow: hidden;
-  min-width: 0;
-  min-height: 0;
-}
-
-/* Preview on light gray instead of black (override per tool in local CSS) */
-#canvas-area.is-light-canvas,
-#canvas-wrap.is-light-canvas {
-  background: var(--bg);
-}
-
-/* ─── Brand header (inside sidebar — optional) ────────────────────────────── */
+/* ─── Brand header ────────────────────────────────────────────────────────── */
 .brand-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 18px;
-  padding: 0 4px;
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 18px; padding: 0 4px;
 }
-
 .brand {
-  font-size: 17px;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  font-family: "Inter", -apple-system, sans-serif;
-  font-stretch: 110%;
+  font-size: 19px; font-weight: 900; letter-spacing: -0.02em;
+  font-family: "Inter", -apple-system, sans-serif; font-stretch: 110%;
 }
-
 .brand .dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  background: #000;
-  border-radius: 50%;
-  vertical-align: baseline;
-  margin-left: 1px;
-  margin-bottom: 1px;
+  display: inline-block; width: 6px; height: 6px; background: #000;
+  border-radius: 50%; vertical-align: baseline; margin-left: 1px; margin-bottom: 1px;
 }
-
-.brand .reg {
-  font-size: 10px;
-  font-weight: 700;
-  vertical-align: super;
-  margin-left: 2px;
-}
-
+.brand .reg { font-size: 10px; font-weight: 700; vertical-align: super; margin-left: 2px; }
 .brand-sub {
-  font-size: 11px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-weight: 600;
+  font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.12em; font-weight: 600;
 }
 
 /* ─── Mode tabs ───────────────────────────────────────────────────────────── */
 .mode-tabs {
-  display: flex;
-  background: #dcdcdc;
-  border-radius: var(--radius-pill);
-  padding: 4px;
-  margin-bottom: 14px;
+  display: flex; background: #dcdcdc; border-radius: var(--radius-pill);
+  padding: 4px; margin-bottom: 14px;
 }
-
 .mode-tabs button {
-  flex: 1;
-  padding: 9px 12px;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-pill);
-  color: #333;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
+  flex: 1; padding: 9px 12px; background: transparent; border: none;
+  border-radius: var(--radius-pill); color: #333; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; font-family: inherit;
 }
-
-.mode-tabs button.active {
-  background: #000;
-  color: #fff;
-}
+.mode-tabs button.active { background: #000; color: #fff; }
 
 /* ─── Section card ────────────────────────────────────────────────────────── */
 .section {
-  background: var(--card);
-  border-radius: var(--radius-lg);
-  padding: 16px 16px 18px;
-  margin-bottom: 10px;
+  background: var(--card); border-radius: var(--radius-lg);
+  padding: 16px 16px 18px; margin-bottom: 10px;
 }
-
-.section-title,
-.section-label {
-  display: inline-block;
-  background: var(--accent);
-  color: #000;
-  padding: 3px 7px;
-  font-family: ui-monospace, "SF Mono", "Menlo", monospace;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 12px;
-  border-radius: 3px;
+.section-title {
+  display: inline-block; background: var(--accent); color: #000;
+  padding: 3px 7px; font-family: ui-monospace, "SF Mono", "Menlo", monospace;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px; border-radius: 3px;
 }
 
 /* ─── Control row ─────────────────────────────────────────────────────────── */
-.control {
-  margin-bottom: 12px;
-}
-
-.control:last-child {
-  margin-bottom: 0;
-}
-
+.control { margin-bottom: 12px; }
+.control:last-child { margin-bottom: 0; }
 .control label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: var(--text);
-  margin-bottom: 6px;
-  font-weight: 500;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; color: var(--text); margin-bottom: 6px; font-weight: 500;
 }
-
 .control label .val {
-  color: var(--text-dim);
-  font-variant-numeric: tabular-nums;
-  font-size: 11px;
-  font-family: ui-monospace, "SF Mono", monospace;
-}
-
-/* Legacy alias: some tools use .ctrl instead of .control */
-.ctrl {
-  margin-bottom: 12px;
-}
-
-.ctrl:last-child {
-  margin-bottom: 0;
-}
-
-.ctrl > label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  font-weight: 500;
-  margin-bottom: 6px;
-}
-
-.ctrl > label .val {
-  color: var(--text-dim);
-  font-size: 11px;
-  font-family: ui-monospace, "SF Mono", monospace;
+  color: var(--text-dim); font-variant-numeric: tabular-nums;
+  font-size: 11px; font-family: ui-monospace, "SF Mono", monospace;
 }
 
 /* ─── Range slider ────────────────────────────────────────────────────────── */
 input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 4px;
-  background: #d4d4d4;
-  border-radius: 2px;
-  outline: none;
-  cursor: pointer;
+  -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+  background: #d4d4d4; border-radius: 2px; outline: none; cursor: pointer;
 }
-
 input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #000;
-  cursor: pointer;
-  border: none;
-  transition: transform 0.1s;
+  -webkit-appearance: none; appearance: none; width: 16px; height: 16px;
+  border-radius: 50%; background: #000; cursor: pointer; border: none; transition: transform 0.1s;
 }
-
-input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
-}
-
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
 input[type="range"]::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #000;
-  cursor: pointer;
-  border: none;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #000; cursor: pointer; border: none;
 }
 
 /* ─── Color picker ────────────────────────────────────────────────────────── */
 input[type="color"] {
-  -webkit-appearance: none;
-  appearance: none;
-  border: 1px solid var(--line-2);
-  background: transparent;
-  width: 100%;
-  height: 34px;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  padding: 0;
+  -webkit-appearance: none; appearance: none; border: 1px solid var(--line-2);
+  background: transparent; width: 100%; height: 34px;
+  border-radius: var(--radius-md); cursor: pointer; padding: 0;
 }
-
-input[type="color"]::-webkit-color-swatch-wrapper {
-  padding: 3px;
-}
-
-input[type="color"]::-webkit-color-swatch {
-  border: none;
-  border-radius: 10px;
-}
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 3px; }
+input[type="color"]::-webkit-color-swatch { border: none; border-radius: 10px; }
 
 /* ─── Select ──────────────────────────────────────────────────────────────── */
 select {
-  width: 100%;
-  background: #f4f4f4;
-  border: 1px solid var(--line);
-  color: var(--text);
-  padding: 9px 12px;
-  border-radius: var(--radius-pill);
-  font-size: 13px;
-  outline: none;
-  cursor: pointer;
-  font-family: inherit;
-  font-weight: 500;
-  appearance: none;
-  -webkit-appearance: none;
+  width: 100%; background: #f4f4f4; border: 1px solid var(--line); color: var(--text);
+  padding: 9px 12px; border-radius: var(--radius-pill); font-size: 13px;
+  outline: none; cursor: pointer; font-family: inherit; font-weight: 500;
+  appearance: none; -webkit-appearance: none;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  padding-right: 32px;
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 32px;
 }
 
 /* ─── Number input ────────────────────────────────────────────────────────── */
 input[type="number"] {
-  width: 100%;
-  background: #f4f4f4;
-  border: 1px solid var(--line);
-  color: var(--text);
-  padding: 9px 12px;
-  border-radius: var(--radius-pill);
-  font-size: 13px;
-  outline: none;
-  font-family: inherit;
-  font-weight: 500;
+  width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+  color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
+  font-size: 13px; outline: none; font-family: inherit; font-weight: 500;
   -moz-appearance: textfield;
 }
-
 input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-}
-
-/* ─── Text fields (shared) ────────────────────────────────────────────────── */
-input[type="text"],
-input[type="search"],
-textarea {
-  font-family: inherit;
-}
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 
 /* ─── Buttons ─────────────────────────────────────────────────────────────── */
 button.btn {
-  width: 100%;
-  background: #000;
-  color: #fff;
-  border: none;
-  padding: 10px 14px;
-  border-radius: var(--radius-pill);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: inherit;
+  width: 100%; background: #000; color: #fff; border: none; padding: 10px 14px;
+  border-radius: var(--radius-pill); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; font-family: inherit;
 }
+button.btn:hover               { background: #222; }
+button.btn.ghost               { background: #fff; color: #000; border: 1px solid var(--line-2); }
+button.btn.ghost:hover         { background: #f5f5f5; }
+button.btn.accent              { background: var(--accent); color: #000; }
+button.btn.accent:hover        { background: #c2ea3c; }
+button.btn.rec                 { background: #e53535; color: #fff; }
+button.btn.rec:hover           { background: #c42b2b; }
 
-button.btn:hover {
-  background: #222;
-}
-
-button.btn.ghost {
-  background: #fff;
-  color: #000;
-  border: 1px solid var(--line-2);
-}
-
-button.btn.ghost:hover {
-  background: #f5f5f5;
-}
-
-button.btn.accent {
-  background: var(--accent);
-  color: #000;
-}
-
-button.btn.accent:hover {
-  background: #c2ea3c;
-}
-
-button.btn.rec {
-  background: #e53535;
-  color: #fff;
-}
-
-button.btn.rec:hover {
-  background: #c42b2b;
-}
-
-.btn-row {
-  display: flex;
-  gap: 8px;
-}
-
-.btn-row button {
-  flex: 1;
-}
+.btn-row              { display: flex; gap: 8px; }
+.btn-row button       { flex: 1; }
 
 /* ─── Layout helpers ──────────────────────────────────────────────────────── */
-.size-row {
-  display: flex;
-  gap: 8px;
-}
-
-.size-row .control {
-  flex: 1;
-  margin-bottom: 0;
-}
-
-.divider {
-  height: 1px;
-  background: var(--line);
-  margin: 12px 0;
-}
+.size-row             { display: flex; gap: 8px; }
+.size-row .control    { flex: 1; margin-bottom: 0; }
+.divider              { height: 1px; background: var(--line); margin: 12px 0; }
 
 /* ─── Colour palette ──────────────────────────────────────────────────────── */
-.palette-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
+.palette-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
 .swatch {
-  position: relative;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  border: 1px solid var(--line-2);
-  overflow: hidden;
-  background: #fff;
+  position: relative; width: 38px; height: 38px; border-radius: 10px;
+  border: 1px solid var(--line-2); overflow: hidden; background: #fff;
 }
-
-.swatch input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-}
-
+.swatch input    { position: absolute; inset: 0; width: 100%; height: 100%; border: none; cursor: pointer; padding: 0; }
 .swatch .x {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  width: 18px;
-  height: 18px;
-  background: #000;
-  color: #fff;
-  border-radius: 50%;
-  font-size: 12px;
-  line-height: 16px;
-  text-align: center;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s;
-  z-index: 2;
-  font-weight: 600;
+  position: absolute; top: -5px; right: -5px; width: 18px; height: 18px;
+  background: #000; color: #fff; border-radius: 50%; font-size: 12px; line-height: 16px;
+  text-align: center; cursor: pointer; opacity: 0; transition: opacity 0.15s; z-index: 2; font-weight: 600;
 }
-
-.swatch:hover .x {
-  opacity: 1;
-}
-
+.swatch:hover .x { opacity: 1; }
 .add-swatch {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  border: 1px dashed var(--line-2);
-  background: transparent;
-  color: var(--text-dim);
-  font-size: 20px;
-  cursor: pointer;
-  font-family: inherit;
+  width: 38px; height: 38px; border-radius: 10px; border: 1px dashed var(--line-2);
+  background: transparent; color: var(--text-dim); font-size: 20px;
+  cursor: pointer; font-family: inherit;
 }
-
-.add-swatch:hover {
-  border-color: #000;
-  color: #000;
-}
+.add-swatch:hover { border-color: #000; color: #000; }
 
 /* ─── Toggle switch ───────────────────────────────────────────────────────── */
-.toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.toggle label {
-  font-size: 12px;
-  font-weight: 500;
-  margin-bottom: 0;
-}
-
+.toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.toggle label { font-size: 12px; font-weight: 500; margin-bottom: 0; }
 .toggle-switch {
-  position: relative;
-  width: 38px;
-  height: 22px;
-  background: #d4d4d4;
-  border-radius: 11px;
-  cursor: pointer;
-  transition: background 0.15s;
-  flex-shrink: 0;
+  position: relative; width: 38px; height: 22px; background: #d4d4d4;
+  border-radius: 11px; cursor: pointer; transition: background 0.15s; flex-shrink: 0;
 }
-
 .toggle-switch::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 18px;
-  height: 18px;
-  background: #fff;
-  border-radius: 50%;
-  transition: all 0.2s;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+  background: #fff; border-radius: 50%; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
-
-.toggle-switch.on {
-  background: #000;
-}
-
-.toggle-switch.on::after {
-  left: 18px;
-}
+.toggle-switch.on           { background: #000; }
+.toggle-switch.on::after    { left: 18px; }
 
 /* ─── Hint text ───────────────────────────────────────────────────────────── */
-.hint {
-  font-size: 11px;
-  color: var(--text-dim);
-  line-height: 1.5;
-  margin-top: 6px;
-}
+.hint { font-size: 11px; color: var(--text-dim); line-height: 1.5; margin-top: 6px; }
 
 /* ─── Status pill ─────────────────────────────────────────────────────────── */
 .status-pill {
-  display: inline-block;
-  padding: 4px 10px;
-  background: #f4f4f4;
-  border-radius: var(--radius-pill);
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-top: 8px;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: ui-monospace, "SF Mono", monospace;
+  display: inline-block; padding: 4px 10px; background: #f4f4f4;
+  border-radius: var(--radius-pill); font-size: 11px; color: var(--text-dim);
+  margin-top: 8px; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; font-family: ui-monospace, "SF Mono", monospace;
+}
+.status-pill.ok  { background: var(--accent); color: #000; }
+.status-pill.err { background: #ffe4e4; color: #b00; }
+.status-pill.rec { background: #e53535; color: #fff; }
+
+/* ─── Main canvas/preview area ────────────────────────────────────────────── */
+#canvas-area {
+  flex: 1; position: relative; display: flex; align-items: center; justify-content: center;
+  background: var(--canvas-bg); overflow: hidden;
 }
 
-.status-pill.ok {
-  background: var(--accent);
-  color: #000;
-}
-
-.status-pill.err {
-  background: #ffe4e4;
-  color: #b00;
-}
-
-.status-pill.rec {
-  background: #e53535;
-  color: #fff;
-}
-
-/* ─── Corner branding on dark canvas ─────────────────────────────────────── */
+/* ─── Corner branding ─────────────────────────────────────────────────────── */
 .corner-brand {
-  position: absolute;
-  bottom: 18px;
-  left: 18px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  z-index: 5;
-  pointer-events: none;
+  position: absolute; bottom: 18px; left: 18px; display: flex;
+  align-items: center; gap: 8px; z-index: 5; pointer-events: none;
 }
-
 .corner-brand .wm {
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  color: rgba(255,255,255,0.55); font-size: 11px; font-weight: 800; letter-spacing: -0.01em;
 }
-
 .corner-page {
-  position: absolute;
-  bottom: 18px;
-  right: 18px;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  z-index: 5;
-  font-family: ui-monospace, monospace;
-  pointer-events: none;
-}
-
-.hidden {
-  display: none !important;
+  position: absolute; bottom: 18px; right: 18px; color: rgba(255,255,255,0.4);
+  font-size: 11px; font-variant-numeric: tabular-nums; z-index: 5;
+  font-family: ui-monospace, monospace; pointer-events: none;
 }
 
 /* ─── Mobile ──────────────────────────────────────────────────────────────── */
-@media (max-width: 900px) {
-  :root {
-    --sidebar-width: min(92vw, 400px);
-  }
-}
-
 @media (max-width: 720px) {
-  body.tool-shell .tool-workspace {
-    flex-direction: column;
-  }
-
-  body.tool-shell #sidebar {
-    width: 100%;
-    height: 44vh;
-    max-height: 360px;
-    border-right: none;
-    border-bottom: 1px solid var(--line);
-  }
-
-  body.tool-shell #canvas-area,
-  body.tool-shell #canvas-wrap {
-    min-height: 40vh;
-    flex: 1;
-  }
-
-  body.tool-shell .tool-stage {
-    flex: 1;
-    min-height: 0;
-  }
+  body { flex-direction: column; }
+  #sidebar { width: 100%; height: 52vh; border-right: none; border-bottom: 1px solid var(--line); }
+  #canvas-area { height: 48vh; }
 }

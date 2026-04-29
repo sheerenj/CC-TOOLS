@@ -4,30 +4,128 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Reaction Diffusion</title>
-<link rel="stylesheet" href="../../shared/hty-tools.css">
 <style>
-html { background: #000; }
-body.tool-shell { background: #000; }
-#canvas-area { background: #000; align-items: stretch; justify-content: stretch; }
-#c { display: block; flex: 1; min-width: 0; min-height: 0; width: 100%; height: 100%; }
-#fx { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
+:root {
+  --bg: #ececec;
+  --card: #ffffff;
+  --text: #000000;
+  --text-dim: #6b6b6b;
+  --line: #e4e4e4;
+  --line-2: #d4d4d4;
+  --accent: #d4fc4e;
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-pill: 999px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: #000; overflow: hidden;
+  font-family: -apple-system, "Inter", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased; }
+
+#c { display: block; width: 100vw; height: 100vh; }
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+
 #status {
-  position: absolute; bottom: 10px; left: 14px; z-index: 20;
+  position: fixed; bottom: 10px; left: 14px; z-index: 20;
   font-family: ui-monospace, monospace; font-size: 10px;
   letter-spacing: 0.08em; text-transform: uppercase;
   color: rgba(255,255,255,0.22); pointer-events: none;
   opacity: 0; transition: opacity 0.5s;
 }
 #status.show { opacity: 1; }
+
+#ctrl-btn {
+  position: fixed; top: 16px; right: 16px; z-index: 50;
+  background: #000; color: #fff; border: none;
+  padding: 8px 16px; border-radius: var(--radius-pill);
+  font-size: 12px; font-weight: 600; font-family: inherit;
+  cursor: pointer; letter-spacing: 0.01em; transition: background 0.15s;
+}
+#ctrl-btn:hover { background: #222; }
+
+#panel {
+  position: fixed; top: 0; right: 0; z-index: 40;
+  width: 320px; height: 100vh; background: var(--bg);
+  border-left: 1px solid var(--line-2);
+  overflow-y: auto; overflow-x: hidden;
+  transform: translateX(100%); transition: transform 0.22s ease;
+  padding: 16px;
+}
+#panel.open { transform: translateX(0); }
+#panel::-webkit-scrollbar { width: 6px; }
+#panel::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 3px; }
+
+.brand-row { display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 16px; padding: 2px 4px; }
+.brand { font-size: 17px; font-weight: 900; letter-spacing: -0.02em; }
+.brand .dot { display: inline-block; width: 5px; height: 5px; background: #000;
+  border-radius: 50%; vertical-align: baseline; margin-left: 1px; margin-bottom: 1px; }
+.brand .reg { font-size: 10px; font-weight: 700; vertical-align: super; margin-left: 1px; }
+.brand-sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.12em; font-weight: 600; }
+
+.section { background: var(--card); border-radius: var(--radius-lg);
+  padding: 14px 14px 16px; margin-bottom: 10px; }
+.section-title { display: inline-block; background: var(--accent); color: #000;
+  padding: 3px 7px; font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px; border-radius: 3px; }
+
+.control { margin-bottom: 12px; }
+.control:last-child { margin-bottom: 0; }
+.control > label { display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
+.control > label .val { color: var(--text-dim); font-variant-numeric: tabular-nums;
+  font-size: 11px; font-family: ui-monospace, monospace; }
+
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+  background: #d4d4d4; border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer;
+  transition: transform 0.1s; }
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+  color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
+  font-size: 13px; outline: none; cursor: pointer; font-family: inherit; font-weight: 500;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 32px; }
+
+/* 3-stop color row */
 .color-stops { display: flex; gap: 8px; margin-bottom: 8px; }
 .color-stop { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
 .color-stop-swatch { width: 100%; height: 42px; border-radius: 10px;
   border: 1px solid var(--line-2); overflow: hidden; position: relative; }
 .color-stop-swatch input[type=color] { position: absolute; inset: -4px;
-  width: calc(100% + 8px); height: calc(100% + 8px); border: none; cursor: pointer; padding: 0; }
+  width: calc(100%+8px); height: calc(100%+8px); border: none; cursor: pointer; padding: 0; }
 .color-stop-label { font-size: 10px; color: var(--text-dim); font-weight: 500;
   text-transform: uppercase; letter-spacing: 0.07em; }
+
+.toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.toggle:last-child { margin-bottom: 0; }
+.toggle > label { font-size: 12px; font-weight: 500; }
+.toggle-switch { position: relative; width: 38px; height: 22px; background: #d4d4d4;
+  border-radius: 11px; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
+.toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+.toggle-switch.on { background: #000; }
+.toggle-switch.on::after { left: 18px; }
+
+button.btn { width: 100%; background: #000; color: #fff; border: none; padding: 10px 14px;
+  border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s; font-family: inherit; }
+button.btn:hover { background: #222; }
+button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line-2); }
+button.btn.ghost:hover { background: #f5f5f5; }
+button.btn.accent { background: var(--accent); color: #000; border: none; }
+button.btn.accent:hover { background: #c2ea3c; }
+button.btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+.btn-row { display: flex; gap: 8px; }
 .btn-row button { flex: 1; }
+.hint { font-size: 11px; color: var(--text-dim); line-height: 1.5; margin-top: 6px; }
 
 #progress {
   position: fixed; inset: 0; z-index: 100;
@@ -43,23 +141,24 @@ body.tool-shell { background: #000; }
 #prog-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.08s; }
 </style>
 </head>
-<body class="tool-shell">
+<body>
 
-<header class="tool-topbar">
-  <div class="tool-topbar-start">
-    <span class="tool-topbar-mark" aria-hidden="true"></span>
-    <h1 class="tool-title">Reaction Diffusion</h1>
-  </div>
-  <span class="tool-topbar-meta">Generators</span>
-</header>
+<canvas id="c"></canvas>
+<div id="fx"></div>
+<div id="status"></div>
 
-<div class="tool-workspace">
+<div id="progress">
+  <div id="prog-label">Rendering…</div>
+  <div id="prog-track"><div id="prog-fill"></div></div>
+</div>
 
-<aside id="sidebar">
+<button id="ctrl-btn">Controls</button>
+
+<div id="panel">
   <div class="brand-row">
     <div>
       <div class="brand">HEAR THE YOUTH<span class="dot"></span><span class="reg">®</span></div>
-      <div class="brand-sub">Gray–Scott lab</div>
+      <div class="brand-sub">Reaction Diffusion</div>
     </div>
   </div>
 
@@ -249,21 +348,8 @@ body.tool-shell { background: #000; }
   </div>
 
   <div class="hint" style="padding:4px 0 8px;text-align:center">
-    R — reseed &nbsp;·&nbsp; S — screenshot &nbsp;·&nbsp; Space — pause
+    R — reseed &nbsp;·&nbsp; S — screenshot &nbsp;·&nbsp; Space — pause &nbsp;·&nbsp; C — controls
   </div>
-</aside>
-
-<main id="canvas-area">
-  <canvas id="c"></canvas>
-  <div id="fx"></div>
-  <div id="status"></div>
-</main>
-
-</div>
-
-<div id="progress">
-  <div id="prog-label">Rendering…</div>
-  <div id="prog-track"><div id="prog-fill"></div></div>
 </div>
 
 <script>
@@ -273,19 +359,16 @@ body.tool-shell { background: #000; }
 // ── canvas ─────────────────────────────────────────────────────────────────
 const canvas = document.getElementById('c');
 const ctx    = canvas.getContext('2d');
-const wrap   = document.getElementById('canvas-area');
 const dpr    = window.devicePixelRatio || 1;
 let CW, CH;
 function resizeCanvas() {
-  const r = wrap.getBoundingClientRect();
-  CW = Math.max(1, Math.floor(r.width));
-  CH = Math.max(1, Math.floor(r.height));
+  CW = window.innerWidth; CH = window.innerHeight;
   canvas.width  = Math.round(CW * dpr);
   canvas.height = Math.round(CH * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 resizeCanvas();
-new ResizeObserver(resizeCanvas).observe(wrap);
+window.addEventListener('resize', resizeCanvas);
 
 // ── PRNG ──────────────────────────────────────────────────────────────────
 let seed = (Math.random() * 0xffffffff) >>> 0;
@@ -514,15 +597,9 @@ function doGlitch() {
 
 // ── mouse ──────────────────────────────────────────────────────────────────
 let mx=-1,my=-1;
-function canvasXY(e) {
-  const r = canvas.getBoundingClientRect();
-  const x = ((e.clientX - r.left) / Math.max(1, r.width)) * GW;
-  const y = ((e.clientY - r.top) / Math.max(1, r.height)) * GH;
-  return [(x | 0), (y | 0)];
-}
-canvas.addEventListener('mousemove',e=>{[mx,my]=canvasXY(e);});
+canvas.addEventListener('mousemove',e=>{mx=(e.clientX/CW*GW)|0;my=(e.clientY/CH*GH)|0;});
 canvas.addEventListener('mouseleave',()=>{mx=-1;my=-1;});
-canvas.addEventListener('click',e=>{const [gx,gy]=canvasXY(e);perturb(gx,gy,13,1.0);});
+canvas.addEventListener('click',e=>{perturb((e.clientX/CW*GW)|0,(e.clientY/CH*GH)|0,13,1.0);});
 
 // ── main loop ──────────────────────────────────────────────────────────────
 let paused=false,exporting=false,lastT=performance.now();
@@ -764,6 +841,11 @@ document.getElementById('btn-reseed').addEventListener('click',()=>{
   zT=pT=0;glitchIn=3+rand()*8;
 });
 
+const panelEl=document.getElementById('panel');
+const ctrlBtn=document.getElementById('ctrl-btn');
+function togglePanel(){panelEl.classList.toggle('open');ctrlBtn.textContent=panelEl.classList.contains('open')?'Close':'Controls';}
+ctrlBtn.addEventListener('click',togglePanel);
+
 const statusEl=document.getElementById('status');
 let statusTimer;
 function showStatus(){clearTimeout(statusTimer);statusEl.classList.add('show');statusTimer=setTimeout(()=>statusEl.classList.remove('show'),3000);}
@@ -773,6 +855,7 @@ window.addEventListener('keydown',e=>{
   if(e.code==='Space'){e.preventDefault();paused=!paused;document.getElementById('btn-pause').textContent=paused?'Resume':'Pause';showStatus();}
   if(e.code==='KeyR'){seed=(Math.random()*0xffffffff)>>>0;initGrid();const ze=document.getElementById('sel-zone');if(ze.value==='auto'){zFrom=rand()*ZONES.length|0;zTo=rand()*ZONES.length|0;}const pe=document.getElementById('sel-palette');if(pe.value==='auto'){pFrom=rand()*PRESETS.length|0;pTo=(pFrom+1)%PRESETS.length;}zT=pT=0;glitchIn=3+rand()*8;showStatus();}
   if(e.code==='KeyS'){const a=document.createElement('a');a.download=`reaction-diffusion-${Date.now()}.png`;a.href=canvas.toDataURL('image/png');a.click();}
+  if(e.code==='KeyC')togglePanel();
 });
 
 })();

@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Boothclub Halftone Lines</title>
-<link rel="stylesheet" href="../../shared/hty-tools.css">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -14,21 +13,19 @@
     --mono: ui-monospace, monospace; --sans: -apple-system, "Inter", "Helvetica Neue", sans-serif;
   }
 
-  body.tool-shell { font-family: var(--sans); }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh;
+    display: grid; grid-template-columns: 320px 1fr; grid-template-rows: 56px 1fr; }
 
+  header { grid-column: 1 / -1; background: #ffffff; border-bottom: 1px solid var(--border); display: flex;
+    align-items: center; padding: 0 24px; gap: 16px; }
   .logo { font-family: var(--mono); font-weight: 700; font-size: 15px; letter-spacing: 0.12em; color: var(--text); }
   .logo-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.08em; }
   .sep { flex: 1; }
   .credit { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.07em; }
   .badge { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; color: var(--muted); border: 1px solid var(--border-md); padding: 3px 8px; border-radius: 999px; }
 
-  #sidebar {
-    background: #ffffff;
-    padding: 24px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 22px;
-  }
+  aside { background: #ffffff; border-right: 1px solid var(--border); padding: 24px 20px; display: flex;
+    flex-direction: column; gap: 22px; overflow-y: auto; }
 
   .section-label { display: inline-block; background: var(--accent); color: #000; padding: 3px 7px;
     font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase;
@@ -79,18 +76,10 @@
     overflow: hidden; position: relative; flex-shrink: 0; }
   #colorPicker, #bgColorPicker { opacity: 0; position: absolute; width: 0; height: 0; }
 
-  #canvas-area.bca-canvas {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    position: relative;
-    overflow: hidden;
-    gap: 16px;
-  }
-  .canvas-wrap { max-width: 100%; max-height: calc(100vh - var(--topbar-height) - 96px); }
-  #outputCanvas { display: block; max-width: 100%; max-height: calc(100vh - var(--topbar-height) - 96px); }
+  main { display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px; background: var(--bg); position: relative; overflow: hidden; gap: 16px; }
+  .canvas-wrap { max-width: 100%; max-height: calc(100vh - 56px - 96px); }
+  #outputCanvas { display: block; max-width: 100%; max-height: calc(100vh - 56px - 96px); }
 
   .video-controls { display: none; align-items: center; gap: 10px; width: 100%; max-width: 900px; }
   .video-controls.show { display: flex; }
@@ -127,24 +116,16 @@
   .hint { font-family: var(--mono); font-size: 9px; color: var(--muted); line-height: 1.6; margin-top: 6px; }
 </style>
 </head>
-<body class="tool-shell">
+<body>
 
-<header class="tool-topbar">
-  <div class="tool-topbar-start">
-    <span class="tool-topbar-mark" aria-hidden="true"></span>
-    <div>
-      <h1 class="tool-title" style="margin:0;">BCA Halftone Lines</h1>
-      <div class="logo-sub">Halftone line renderer</div>
-    </div>
-  </div>
-  <div class="sep" style="flex:1"></div>
-  <span class="credit">Built by The Youth.® (2026)</span>
-  <span class="tool-topbar-meta">v4.0</span>
+<header>
+  <div><div class="logo">BCA GENERATOR</div><div class="logo-sub">halftone line renderer</div></div>
+  <div class="sep"></div>
+  <div class="credit">Built by The Youth.® (2026)</div>
+  <div class="badge">v4.0</div>
 </header>
 
-<div class="tool-workspace">
-
-<aside id="sidebar">
+<aside>
 
   <div>
     <div class="section-label">Mode</div>
@@ -288,7 +269,7 @@
 
 </aside>
 
-<main id="canvas-area" class="is-light-canvas bca-canvas">
+<main>
   <div id="emptyState">
     <div class="empty-grid">
       <div class="empty-line" style="width:24px"></div><div class="empty-line" style="width:18px"></div><div class="empty-line" style="width:22px"></div><div class="empty-line" style="width:14px"></div><div class="empty-line" style="width:20px"></div><div class="empty-line" style="width:24px"></div><div class="empty-line" style="width:16px"></div><div class="empty-line" style="width:22px"></div>
@@ -307,8 +288,6 @@
   </div>
   <div class="proc" id="procIndicator"><span class="blink">■</span> RENDERING</div>
 </main>
-
-</div>
 
 <canvas id="sourceCanvas" style="display:none;"></canvas>
 <video id="hiddenVideo" style="display:none;" playsinline preload="metadata" crossorigin="anonymous"></video>
