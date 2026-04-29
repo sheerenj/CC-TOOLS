@@ -54,6 +54,9 @@ body { display: flex; }
 .ctrl > label { display: flex; justify-content: space-between; align-items: center;
   font-size: 12px; font-weight: 500; margin-bottom: 6px; }
 .ctrl > label .val { color: var(--text-dim); font-size: 11px; font-family: ui-monospace, monospace; }
+.ctrl label.hub-check { justify-content: flex-start; gap: 8px; cursor: pointer; }
+fieldset#hub-field { border: none; padding: 0; margin: 0; min-width: 0; }
+fieldset#hub-field:disabled { opacity: 0.45; pointer-events: none; }
 
 input[type=range] { -webkit-appearance: none; width: 100%; height: 4px;
   background: var(--line-2); border-radius: 2px; outline: none; cursor: pointer; }
@@ -81,6 +84,13 @@ button.btn:hover { background: #222; }
 button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line-2); }
 button.btn.ghost:hover { background: #f5f5f5; }
 .hint { font-size: 11px; color: var(--text-dim); line-height: 1.55; margin-top: 8px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-row .btn, .btn-row .btn.ghost { flex: 1; min-width: 0; }
+#export-status { font-size: 11px; color: var(--text-dim); margin-top: 8px; min-height: 2.8em; }
+input[type="number"].num-in {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px;
+  font-size: 12px; font-family: ui-monospace, monospace; background: #fafafa;
+}
 
 #canvas-wrap {
   flex: 1; display: flex; align-items: center; justify-content: center;
@@ -102,6 +112,27 @@ button.btn.ghost:hover { background: #f5f5f5; }
       <div class="brand">HEAR THE YOUTH<span class="dot"></span></div>
       <div class="brand-sub">Orb Burst Studio</div>
     </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Canvas</div>
+    <div class="ctrl">
+      <label>Output size</label>
+      <select id="sel-canvas">
+        <option value="fit" selected>Preview — fit panel (square)</option>
+        <option value="1920x1080">1920 × 1080 — Full HD</option>
+        <option value="1280x720">1280 × 720 — HD</option>
+        <option value="1080x1920">1080 × 1920 — Story / vertical</option>
+        <option value="1080x1080">1080 × 1080 — Square social</option>
+        <option value="1200x630">1200 × 630 — Open Graph / link</option>
+        <option value="1600x900">1600 × 900</option>
+        <option value="1440x900">1440 × 900</option>
+        <option value="800x600">800 × 600</option>
+        <option value="512x512">512 × 512</option>
+        <option value="3840x2160">3840 × 2160 — 4K (may cap)</option>
+      </select>
+    </div>
+    <p class="hint">Fixed sizes use exact pixel buffers (scaled down in the panel). Very large presets are clamped to your GPU texture limit.</p>
   </div>
 
   <div class="section">
@@ -165,6 +196,34 @@ button.btn.ghost:hover { background: #f5f5f5; }
   </div>
 
   <div class="section">
+    <div class="section-title">Center gradient</div>
+    <div class="ctrl">
+      <label class="hub-check"><input type="checkbox" id="ck-hub" /> Radial wash behind streaks</label>
+    </div>
+    <fieldset id="hub-field" disabled>
+      <div class="ctrl">
+        <label>Wash color</label>
+        <div class="swatch-row">
+          <div class="swatch-wrap"><input type="color" id="cp-hub" value="#ff6a2e" /></div>
+          <span style="font-size:11px;color:var(--text-dim)">Works on light or dark plate (alpha blend)</span>
+        </div>
+      </div>
+      <div class="ctrl">
+        <label>Spread <span class="val" id="v-hub-sp">50%</span></label>
+        <input type="range" id="sl-hub-sp" min="5" max="100" value="53" />
+      </div>
+      <div class="ctrl">
+        <label>Falloff <span class="val" id="v-hub-fall">1.15</span></label>
+        <input type="range" id="sl-hub-fall" min="40" max="280" value="115" />
+      </div>
+      <div class="ctrl">
+        <label>Opacity <span class="val" id="v-hub-op">55%</span></label>
+        <input type="range" id="sl-hub-op" min="0" max="100" value="55" />
+      </div>
+    </fieldset>
+  </div>
+
+  <div class="section">
     <div class="section-title">Color</div>
     <div class="ctrl">
       <label>Layer blend</label>
@@ -206,9 +265,41 @@ button.btn.ghost:hover { background: #f5f5f5; }
 
   <div class="section">
     <div class="section-title">Export</div>
-    <button type="button" class="btn ghost" id="btn-png">Save PNG</button>
-    <p class="hint">
-      <strong>Blend:</strong> additive stacking adds light on top of the page color — on white there is almost no headroom, so colors vanish. Use <strong>Normal</strong> for off-white or white, or switch to <strong>Additive</strong> with a darker background for the “luminous overlap” look.
+    <button type="button" class="btn ghost" id="btn-png">Save PNG (current frame)</button>
+    <div class="ctrl" style="margin-top:12px">
+      <label>Sequence — frames</label>
+      <input type="number" class="num-in" id="in-seq-frames" min="1" max="600" value="90" />
+    </div>
+    <div class="ctrl">
+      <label>Sequence — FPS</label>
+      <select id="sel-seq-fps">
+        <option value="24">24</option>
+        <option value="25">25</option>
+        <option value="30" selected>30</option>
+        <option value="60">60</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label class="hub-check"><input type="checkbox" id="ck-seq-alpha" /> Transparent PNGs (straight alpha, no bloom)</label>
+    </div>
+    <p class="hint" style="margin-top:0">Alpha export draws the scene buffer only (bloom disabled for that pass). Normal blend gives the cleanest edges; additive uses a luminance-based alpha estimate.</p>
+    <button type="button" class="btn" id="btn-seq-png">Render PNG sequence</button>
+    <div class="ctrl" style="margin-top:12px">
+      <label>Record — duration (s)</label>
+      <select id="sel-rec-sec">
+        <option value="3">3</option>
+        <option value="5" selected>5</option>
+        <option value="8">8</option>
+        <option value="12">12</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn ghost" id="btn-rec-webm">Record WebM / MP4</button>
+    </div>
+    <p class="hint"><strong>Video:</strong> uses <code>MediaRecorder</code>. Safari / Chrome may offer <strong>MP4 (H.264)</strong>; otherwise <strong>WebM (VP9/VP8)</strong>. Re-encode in Resolve / FFmpeg if you need another wrapper.</p>
+    <div id="export-status"></div>
+    <p class="hint" style="margin-top:10px">
+      <strong>Blend:</strong> additive on white has little headroom — use <strong>Normal</strong> for light plates or a dark background for additive glow.
     </p>
   </div>
 </div>
@@ -346,6 +437,7 @@ uniform vec3 u_bg;      /* plate color (sRGB) */
 uniform float u_colHue; /* 0..1 full rotation */
 uniform float u_colSat; /* chroma multiplier (≈0.3–2.2 from UI) */
 uniform float u_colGain;/* brightness on graded rgb */
+uniform int u_transparentPlate; /* 1 = straight alpha for PNG (no plate tint in rgb) */
 
 out vec4 fragColor;
 
@@ -389,13 +481,23 @@ void main() {
     float a = capb * (0.32 + coreb * 0.88);
     a *= 0.58 + u_core * 0.42;
     if (u_blendMode == 1) {
-      fragColor = vec4(rgb * a * 1.55, 1.0);
+      vec3 em = rgb * a * 1.55;
+      if (u_transparentPlate == 1) {
+        float al = clamp(max(max(em.r, em.g), em.b), 0.05, 1.0);
+        fragColor = vec4(em * al, al);
+      } else {
+        fragColor = vec4(em, 1.0);
+      }
     } else {
       float aa = clamp(a * 1.06, 0.0, 1.0);
       vec3 pc = min(rgb * 1.28, vec3(1.0));
-      float lift = pow(1.0 - aa, 1.35);
-      pc = mix(pc, u_bg, lift * 0.22);
-      fragColor = vec4(pc, aa);
+      if (u_transparentPlate == 1) {
+        fragColor = vec4(pc, aa);
+      } else {
+        float lift = pow(1.0 - aa, 1.35);
+        pc = mix(pc, u_bg, lift * 0.22);
+        fragColor = vec4(pc, aa);
+      }
     }
     return;
   }
@@ -418,13 +520,23 @@ void main() {
   a *= 0.52 + u_core * 0.48;
 
   if (u_blendMode == 1) {
-    fragColor = vec4(rgb * a * 1.48, 1.0);
+    vec3 em = rgb * a * 1.48;
+    if (u_transparentPlate == 1) {
+      float al = clamp(max(max(em.r, em.g), em.b), 0.05, 1.0);
+      fragColor = vec4(em * al, al);
+    } else {
+      fragColor = vec4(em, 1.0);
+    }
   } else {
     float aa = clamp(a * 1.08, 0.0, 1.0);
     vec3 pc = min(rgb * 1.32, vec3(1.0));
-    float lift = pow(1.0 - aa, 1.4);
-    pc = mix(pc, u_bg, lift * 0.2);
-    fragColor = vec4(pc, aa);
+    if (u_transparentPlate == 1) {
+      fragColor = vec4(pc, aa);
+    } else {
+      float lift = pow(1.0 - aa, 1.4);
+      pc = mix(pc, u_bg, lift * 0.2);
+      fragColor = vec4(pc, aa);
+    }
   }
 }
 `;
@@ -438,30 +550,30 @@ void main() {
 }
 `;
 
-  /* Big warm under-painting like the reference “solar core” — drawn before streaks */
+  /* Optional fullscreen radial — drawn before particles, SRC_ALPHA blend (any plate). */
   const FS_HUB = `#version 300 es
 precision highp float;
 in vec2 v_uv;
+uniform vec2 u_aspect;
+uniform vec3 u_col;
+uniform float u_spread;  /* 0 tight … 1 wide */
+uniform float u_pow;     /* >1 = sharper edge, <1 = softer */
+uniform float u_opacity;
 uniform float u_t;
-uniform vec2 u_aspect; /* width/height, height/height = 1 */
+
 out vec4 fragColor;
 
 void main() {
-  vec2 p = (v_uv - 0.5) * vec2(u_aspect.x, 1.0) * 2.2;
+  vec2 p = (v_uv - 0.5) * vec2(u_aspect.x, 1.0) * 2.12;
   float r = length(p);
   float ang = atan(p.y, p.x);
-  float wob = 0.14 * sin(ang * 4.0 + u_t * 1.1) + 0.08 * sin(ang * 7.0 - u_t * 0.9);
-  float body = exp(-(r + wob) * (r + wob) * 0.95);
-  float tight = exp(-r * r * 4.2) * 0.55;
-  vec3 cA = vec3(1.0, 0.42, 0.05);
-  vec3 cB = vec3(1.0, 0.78, 0.28);
-  vec3 cC = vec3(1.0, 0.52, 0.38);
-  vec3 rgb = mix(cA, cB, smoothstep(0.0, 0.55, r));
-  rgb = mix(rgb, cC, tight);
-  rgb = mix(rgb, vec3(1.0, 0.92, 0.55), body * 0.25);
-  float a = body * 0.62 + tight * 0.38;
-  a *= 0.72 + 0.06 * sin(u_t * 0.35);
-  fragColor = vec4(rgb, clamp(a, 0.0, 0.92));
+  float wob = 0.07 * sin(ang * 3.0 + u_t * 0.75);
+  float k = mix(4.2, 0.38, clamp(u_spread, 0.0, 1.0));
+  float m = exp(-(r + wob) * (r + wob) * k);
+  float pf = max(u_pow, 0.12);
+  m = pow(clamp(m, 0.0, 1.0), pf);
+  float a = clamp(m * u_opacity, 0.0, 1.0);
+  fragColor = vec4(u_col, a);
 }
 `;
 
@@ -561,8 +673,12 @@ void main() {
   }
 
   const loc = {
-    hub_t: gl.getUniformLocation(pHub, 'u_t'),
     hub_aspect: gl.getUniformLocation(pHub, 'u_aspect'),
+    hub_col: gl.getUniformLocation(pHub, 'u_col'),
+    hub_spread: gl.getUniformLocation(pHub, 'u_spread'),
+    hub_pow: gl.getUniformLocation(pHub, 'u_pow'),
+    hub_opacity: gl.getUniformLocation(pHub, 'u_opacity'),
+    hub_t: gl.getUniformLocation(pHub, 'u_t'),
     mvp: gl.getUniformLocation(pOrb, 'u_mvp'),
     eye: gl.getUniformLocation(pOrb, 'u_eye'),
     streak: gl.getUniformLocation(pOrb, 'u_streak'),
@@ -573,6 +689,7 @@ void main() {
     col_hue: gl.getUniformLocation(pOrb, 'u_colHue'),
     col_sat: gl.getUniformLocation(pOrb, 'u_colSat'),
     col_gain: gl.getUniformLocation(pOrb, 'u_colGain'),
+    transparent_plate: gl.getUniformLocation(pOrb, 'u_transparentPlate'),
     bh_tex: gl.getUniformLocation(pBH, 'u_tex'),
     bh_px: gl.getUniformLocation(pBH, 'u_px'),
     bh_bg: gl.getUniformLocation(pBH, 'u_bg'),
@@ -604,12 +721,11 @@ void main() {
   let instMeta = gl.createBuffer();
 
   let W = 0, H = 0, dpr = 1;
-  /** Scene color for blur: filled via blit from default FB (copyTexSubImage2D from same canvas is unreliable / often black). */
+  /** Scene + bloom source: particles render directly into texScene (no default-FB blit). */
   let texScene = null;
   let fboScene = null;
   let fboBlurA = null, texBlurA = null;
   let fboBlurB = null, texBlurB = null;
-  /** False if blit default→texScene failed — keep particle draw on canvas, skip composite. */
   let sceneTexReady = false;
 
   function destroyFbos() {
@@ -897,23 +1013,48 @@ void main() {
   }
   const vaoQuad = vaoFullScreen();
 
+  function canvasIsFit() {
+    return $('sel-canvas').value === 'fit';
+  }
+
+  function pixelScaleForBloom() {
+    return canvasIsFit() ? dpr : 1;
+  }
+
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     const wrap = canvas.parentElement;
     const cw = Math.max(320, wrap.clientWidth - 32);
     const ch = Math.max(320, wrap.clientHeight - 32);
-    const side = Math.floor(Math.min(cw, ch) * dpr);
-    W = side;
-    H = side;
+    const preset = $('sel-canvas').value;
+    if (preset === 'fit') {
+      const side = Math.floor(Math.min(cw, ch) * dpr);
+      W = side;
+      H = side;
+      canvas.style.width = (W / dpr) + 'px';
+      canvas.style.height = (H / dpr) + 'px';
+    } else {
+      const parts = preset.split('x');
+      let pw = Math.max(32, +parts[0] | 0);
+      let ph = Math.max(32, +parts[1] | 0);
+      const maxTex = Math.min(8192, gl.getParameter(gl.MAX_TEXTURE_SIZE) || 8192);
+      const ml = Math.max(pw, ph);
+      if (ml > maxTex) {
+        const sc = maxTex / ml;
+        pw = Math.floor(pw * sc);
+        ph = Math.floor(ph * sc);
+      }
+      W = pw;
+      H = ph;
+      const scale = Math.min(cw / W, ch / H, 1);
+      canvas.style.width = (W * scale) + 'px';
+      canvas.style.height = (H * scale) + 'px';
+    }
     canvas.width = W;
     canvas.height = H;
-    canvas.style.width = (W / dpr) + 'px';
-    canvas.style.height = (H / dpr) + 'px';
     gl.viewport(0, 0, W, H);
     allocFbos();
-    const aspect = W / H;
-    /* Wider FOV reads closer to motion-ref “tunnel” / speed toward camera */
-    persp((58 * Math.PI) / 180, aspect, 0.05, 8, mProj);
+    persp((58 * Math.PI) / 180, W / Math.max(H, 1e-6), 0.05, 8, mProj);
   }
 
   function readUI() {
@@ -935,7 +1076,12 @@ void main() {
       blend: $('sel-blend').value,
       colHue: +$('sl-chue').value / 360,
       colSat: +$('sl-csat').value / 100,
-      colGain: +$('sl-cgain').value / 100
+      colGain: +$('sl-cgain').value / 100,
+      hubOn: $('ck-hub').checked,
+      hubHex: $('cp-hub').value,
+      hubSpread: Math.max(0, Math.min(1, (+$('sl-hub-sp').value - 5) / 95)),
+      hubFall: +$('sl-hub-fall').value / 100,
+      hubOpacity: +$('sl-hub-op').value / 100
     };
   }
 
@@ -955,7 +1101,10 @@ void main() {
       ['sl-bpx', 'v-bpx', (v) => String(v)],
       ['sl-csat', 'v-csat', (v) => `${v}%`],
       ['sl-chue', 'v-chue', (v) => `${v}°`],
-      ['sl-cgain', 'v-cgain', (v) => `${v}%`]
+      ['sl-cgain', 'v-cgain', (v) => `${v}%`],
+      ['sl-hub-sp', 'v-hub-sp', (v) => `${Math.round((+v - 5) / 95 * 100)}%`],
+      ['sl-hub-fall', 'v-hub-fall', (v) => (+v / 100).toFixed(2)],
+      ['sl-hub-op', 'v-hub-op', (v) => `${v}%`]
     ];
     for (const [sl, lab, fn] of map) {
       const el = $(sl);
@@ -966,6 +1115,14 @@ void main() {
     }
   }
   bindSliders();
+
+  (function hubFieldset() {
+    const ck = $('ck-hub');
+    const fd = $('hub-field');
+    const sync = () => { fd.disabled = !ck.checked; };
+    ck.addEventListener('change', sync);
+    sync();
+  })();
 
   $('sel-pal').addEventListener('change', () => {
     palKey = $('sel-pal').value;
@@ -1017,33 +1174,61 @@ void main() {
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, meta.subarray(0, totalInstances * 4));
   }
 
-  function drawParticlesToCanvas(u, eye) {
+  function drawParticlesToCanvas(u, eye, transparentPass) {
+    const tp = !!transparentPass;
     lookAt(eye, [0, 0, 0], [0, 1, 0], mView);
     mulMat4(mProj, mView, mVP);
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    sceneTexReady = false;
+    if (!fboScene || !texScene || W < 2 || H < 2) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      return;
+    }
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fboScene);
+    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texScene, 0);
+    if (gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      sceneTexReady = false;
+      return;
+    }
+
     gl.viewport(0, 0, W, H);
-    const bg = hexRgb(u.bg);
-    gl.clearColor(bg[0], bg[1], bg[2], 1);
+    if (tp) {
+      gl.clearColor(0, 0, 0, 0);
+    } else {
+      const bg = hexRgb(u.bg);
+      gl.clearColor(bg[0], bg[1], bg[2], 1);
+    }
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.disable(gl.DEPTH_TEST);
     gl.enable(gl.BLEND);
+
+    if (u.hubOn && u.hubOpacity > 0.001) {
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.useProgram(pHub);
+      const hc = hexRgb(u.hubHex);
+      gl.uniform3f(loc.hub_col, hc[0], hc[1], hc[2]);
+      gl.uniform2f(loc.hub_aspect, W / Math.max(H, 1), 1);
+      gl.uniform1f(loc.hub_spread, u.hubSpread);
+      gl.uniform1f(loc.hub_pow, Math.max(0.15, u.hubFall));
+      gl.uniform1f(loc.hub_opacity, u.hubOpacity);
+      gl.uniform1f(loc.hub_t, u.time);
+      gl.bindVertexArray(vaoQuad);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+
     const additive = u.blend === 'additive';
-    if (additive) {
+    if (tp) {
+      gl.blendFunc(additive ? gl.ONE : gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    } else if (additive) {
       gl.blendFunc(gl.ONE, gl.ONE);
     } else {
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     }
 
-    if (!additive) {
-      gl.useProgram(pHub);
-      gl.uniform1f(loc.hub_t, u.time);
-      gl.uniform2f(loc.hub_aspect, W / Math.max(H, 1), 1);
-      gl.bindVertexArray(vaoQuad);
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-    }
-
     gl.useProgram(pOrb);
+    gl.uniform1i(loc.transparent_plate, tp ? 1 : 0);
     gl.uniformMatrix4fv(loc.mvp, false, mVP);
     gl.uniform3f(loc.eye, eye[0], eye[1], eye[2]);
     gl.uniform2f(loc.streak, u.len * 1.25, Math.max(u.th, 1e-8));
@@ -1062,30 +1247,16 @@ void main() {
     gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, totalInstances);
     gl.bindVertexArray(null);
 
+    gl.uniform1i(loc.transparent_plate, 0);
     gl.disable(gl.BLEND);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-    /*
-     * Put the same pixels into texScene for the blur chain.
-     * copyTexSubImage2D from the default drawing buffer often yields black / fails in-browser;
-     * blitFramebuffer (WebGL2) is the supported path default → texture FBO.
-     */
-    sceneTexReady = false;
-    if (fboScene && texScene && W > 0 && H > 0) {
-      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fboScene);
-      gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texScene, 0);
-      if (gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE) {
-        gl.blitFramebuffer(0, 0, W, H, 0, 0, W, H, gl.COLOR_BUFFER_BIT, gl.NEAREST);
-        if (gl.getError() === gl.NO_ERROR) sceneTexReady = true;
-      }
-      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
-    }
+    sceneTexReady = true;
   }
 
   function drawBlurChain(bpx, bgHex) {
     if (bpx < 0.5 || !texScene || !sceneTexReady) return;
-    const s = bpx * dpr;
+    const s = bpx * pixelScaleForBloom();
     const b = hexRgb(bgHex);
     gl.disable(gl.BLEND);
 
@@ -1114,6 +1285,7 @@ void main() {
 
   function composite(u) {
     if (!sceneTexReady) return;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, W, H);
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);
@@ -1134,8 +1306,125 @@ void main() {
     gl.activeTexture(gl.TEXTURE0);
   }
 
+  let exportBusy = false;
+  let mediaRecorder = null;
+  let recChunks = [];
+  let recStopAt = 0;
+  let raf = 0;
   let last = performance.now();
+
+  function flipRgbaVertical(src, width, height) {
+    const row = width * 4;
+    const out = new Uint8Array(src.length);
+    for (let y = 0; y < height; y++) {
+      out.set(src.subarray((height - 1 - y) * row, (height - y) * row), y * row);
+    }
+    return out;
+  }
+
+  function readFboSceneRgbaFlipped() {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fboScene);
+    const row = W * 4;
+    const buf = new Uint8Array(row * H);
+    gl.pixelStorei(gl.PACK_ALIGNMENT, 1);
+    gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+    gl.pixelStorei(gl.PACK_ALIGNMENT, 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return flipRgbaVertical(buf, W, H);
+  }
+
+  function rgbaToPngBlob(rgba, width, height) {
+    return new Promise((resolve) => {
+      const c = document.createElement('canvas');
+      c.width = width;
+      c.height = height;
+      const ctx = c.getContext('2d');
+      const im = ctx.createImageData(width, height);
+      im.data.set(rgba);
+      ctx.putImageData(im, 0, 0);
+      c.toBlob((b) => resolve(b), 'image/png');
+    });
+  }
+
+  function downloadBlob(blob, name) {
+    if (!blob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function padFrame(i, n) {
+    const s = String(i);
+    return s.length >= n ? s : '0'.repeat(n - s.length) + s;
+  }
+
+  async function runPngSequence() {
+    if (exportBusy) return;
+    exportBusy = true;
+    const snapW = new Float32Array(world);
+    const snapV = new Float32Array(vel);
+    const snapC = new Float32Array(color);
+    const snapM = new Float32Array(meta);
+    const t0 = time;
+    const st = $('export-status');
+    try {
+      const transparent = $('ck-seq-alpha').checked;
+      const n = Math.max(1, Math.min(600, (+$('in-seq-frames').value | 0) || 90));
+      const fps = Math.max(8, Math.min(120, +$('sel-seq-fps').value || 30));
+      const dt = 1 / fps;
+      for (let i = 0; i < n; i++) {
+        st.textContent = `Rendering ${i + 1} / ${n}…`;
+        const u = readUI();
+        const sub = 2;
+        for (let s = 0; s < sub; s++) updateParticles(dt / sub, u);
+        time += dt;
+        const ang = time * (0.08 + u.orb * 0.35);
+        const camR = 2.35;
+        const eye = [Math.sin(ang) * camR, 0.15 + Math.sin(time * 0.27) * 0.08, Math.cos(ang) * camR];
+        const uT = { ...u, time, bpx: transparent ? 0 : u.bpx };
+        drawParticlesToCanvas(uT, eye, transparent);
+        const idx = padFrame(i + 1, 5);
+        if (transparent) {
+          const rgba = readFboSceneRgbaFlipped();
+          const blob = await rgbaToPngBlob(rgba, W, H);
+          downloadBlob(blob, `orb-burst_${idx}.png`);
+        } else {
+          if (uT.bpx > 0.5) drawBlurChain(uT.bpx, uT.bg);
+          composite(uT);
+          await new Promise((res) => {
+            canvas.toBlob((blob) => {
+              downloadBlob(blob, `orb-burst_${idx}.png`);
+              res();
+            }, 'image/png');
+          });
+        }
+        await new Promise((r) => setTimeout(r, 0));
+      }
+      st.textContent = `Saved ${n} PNGs (transparent: ${transparent ? 'yes' : 'no'}).`;
+    } catch (e) {
+      console.error(e);
+      st.textContent = String(e && e.message ? e.message : e);
+    } finally {
+      world.set(snapW);
+      vel.set(snapV);
+      color.set(snapC);
+      meta.set(snapM);
+      time = t0;
+      gl.bindBuffer(gl.ARRAY_BUFFER, instWorld);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, world.subarray(0, totalInstances * 3));
+      gl.bindBuffer(gl.ARRAY_BUFFER, instColor);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, color.subarray(0, totalInstances * 3));
+      gl.bindBuffer(gl.ARRAY_BUFFER, instMeta);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, meta.subarray(0, totalInstances * 4));
+      exportBusy = false;
+    }
+  }
+
   function frame(now) {
+    raf = requestAnimationFrame(frame);
+    if (exportBusy) return;
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     time += dt;
@@ -1156,31 +1445,77 @@ void main() {
     const camR = 2.35;
     const eye = [Math.sin(ang) * camR, 0.15 + Math.sin(time * 0.27) * 0.08, Math.cos(ang) * camR];
 
-    drawParticlesToCanvas({ ...u, time }, eye);
+    drawParticlesToCanvas({ ...u, time }, eye, false);
     drawBlurChain(u.bpx, u.bg);
     composite(u);
 
-    requestAnimationFrame(frame);
+    if (mediaRecorder && mediaRecorder.state === 'recording' && recStopAt > 0 && now >= recStopAt) {
+      mediaRecorder.stop();
+      recStopAt = 0;
+    }
   }
 
   window.addEventListener('resize', resize);
+  $('sel-canvas').addEventListener('change', () => resize());
   resize();
   palKey = $('sel-pal').value;
   streakCount = Math.min(8000, Math.max(400, +$('sl-n').value | 0));
   blobCount = Math.min(120, Math.max(0, +$('sl-blobs').value | 0));
   totalInstances = Math.min(MAX_INST, streakCount + blobCount);
   initAllParticles();
-  requestAnimationFrame(frame);
+  raf = requestAnimationFrame(frame);
 
   $('btn-png').addEventListener('click', () => {
     canvas.toBlob((blob) => {
       if (!blob) return;
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'orb-burst.png';
-      a.click();
-      URL.revokeObjectURL(a.href);
+      downloadBlob(blob, 'orb-burst.png');
     }, 'image/png');
+  });
+
+  $('btn-seq-png').addEventListener('click', () => { runPngSequence(); });
+
+  $('btn-rec-webm').addEventListener('click', () => {
+    const st = $('export-status');
+    if (!window.MediaRecorder) {
+      st.textContent = 'MediaRecorder not supported in this browser.';
+      return;
+    }
+    if (mediaRecorder && mediaRecorder.state === 'recording') return;
+    const candidates = [
+      'video/mp4; codecs=avc1.42E01E',
+      'video/mp4',
+      'video/webm; codecs=vp9',
+      'video/webm; codecs=vp8',
+      'video/webm'
+    ];
+    let mime = '';
+    for (const m of candidates) {
+      if (MediaRecorder.isTypeSupported(m)) {
+        mime = m;
+        break;
+      }
+    }
+    if (!mime) {
+      st.textContent = 'No supported video MIME for MediaRecorder.';
+      return;
+    }
+    const fps = Math.max(15, Math.min(60, +$('sel-seq-fps').value || 30));
+    const stream = canvas.captureStream(fps);
+    recChunks = [];
+    mediaRecorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12e6 });
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size) recChunks.push(e.data);
+    };
+    mediaRecorder.onstop = () => {
+      const ext = mime.indexOf('mp4') >= 0 ? 'mp4' : 'webm';
+      downloadBlob(new Blob(recChunks, { type: mime }), `orb-burst.${ext}`);
+      st.textContent = `Saved orb-burst.${ext}`;
+      mediaRecorder = null;
+    };
+    mediaRecorder.start(200);
+    const sec = Math.max(1, +$('sel-rec-sec').value || 5);
+    recStopAt = performance.now() + sec * 1000;
+    st.textContent = `Recording… ${sec}s (${mime})`;
   });
 })();
 </script>
