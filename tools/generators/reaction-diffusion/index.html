@@ -216,15 +216,17 @@ button.btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
         <option value="8">Flowers</option>
       </select>
     </div>
-    <div id="fk-controls" style="display:none; margin-top:10px">
+    <div style="margin-top:10px">
       <div class="control">
-        <label>F rate <span class="val" id="val-f">0.0545</span></label>
-        <input type="range" id="sl-f" min="0.005" max="0.10" step="0.0001" value="0.0545" />
+        <label>Feed rate (f) <span class="val" id="val-f">0.0545</span></label>
+        <input type="range" id="sl-f" min="0.005" max="0.095" step="0.0001" value="0.0545" />
       </div>
+      <div class="hint" style="margin-bottom:10px">Procreation / food supply. Higher = open, hole-like forms.</div>
       <div class="control">
-        <label>K rate <span class="val" id="val-k">0.0620</span></label>
-        <input type="range" id="sl-k" min="0.040" max="0.075" step="0.0001" value="0.0620" />
+        <label>Kill rate (k) <span class="val" id="val-k">0.0620</span></label>
+        <input type="range" id="sl-k" min="0.035" max="0.080" step="0.0001" value="0.0620" />
       </div>
+      <div class="hint">Die-off rate of organism. Higher = sparser stripes. Lower = spots &amp; blobs.</div>
     </div>
     <div class="control" style="margin-top:10px">
       <label>Chaos <span class="val" id="val-chaos">40</span></label>
@@ -239,10 +241,15 @@ button.btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
   <div class="section">
     <div class="section-title">Simulation</div>
     <div class="control">
-      <label>Diffusion ratio <span class="val" id="val-dv">0.50</span></label>
-      <input type="range" id="sl-dv" min="0.1" max="0.9" step="0.01" value="0.5" />
+      <label>Diffusion U <span class="val" id="val-du">1.00</span></label>
+      <input type="range" id="sl-du" min="0.2" max="2.0" step="0.01" value="1.0" />
     </div>
-    <div class="hint" style="margin-bottom:10px">Lower = tight spots. Higher = diffuse, connected blobs.</div>
+    <div class="hint" style="margin-bottom:10px">How fast the food (U) spreads. Higher = larger, looser patterns.</div>
+    <div class="control">
+      <label>Diffusion V <span class="val" id="val-dv">0.50</span></label>
+      <input type="range" id="sl-dv" min="0.05" max="1.0" step="0.01" value="0.5" />
+    </div>
+    <div class="hint" style="margin-bottom:10px">How fast the organism (V) spreads. Du/Dv ratio shapes pattern scale.</div>
     <div class="control">
       <label>Noise <span class="val" id="val-noise">0.00</span></label>
       <input type="range" id="sl-noise" min="0" max="0.05" step="0.001" value="0" />
@@ -456,8 +463,8 @@ function getActivePalette() {
 const ts = { breath:true, glitch:true, pixel:false, scan:false, vig:false, grad:true, invert:false };
 
 // ── simulation params ──────────────────────────────────────────────────────
-const Du = 1.0;
-let Dv   = 0.5;
+let Du = 1.0;
+let Dv = 0.5;
 
 function currentFk() {
   const zoneVal=document.getElementById('sel-zone').value;
@@ -634,7 +641,7 @@ function frame(now) {
     injectNoise(noiseAmt);
 
     document.getElementById('status').textContent=
-      `${ZONES[zFrom].name}→${ZONES[zTo].name}  f:${f.toFixed(4)}  k:${k.toFixed(4)}  Dv:${Dv.toFixed(2)}`;
+      `${ZONES[zFrom].name}→${ZONES[zTo].name}  f:${f.toFixed(4)}  k:${k.toFixed(4)}  Du:${Du.toFixed(2)}  Dv:${Dv.toFixed(2)}`;
   }
   render();
 }
@@ -768,14 +775,14 @@ wire('sl-drift','val-drift',v=>Math.round(v));
 wire('sl-chaos','val-chaos',v=>Math.round(v));
 wire('sl-dur','val-dur',v=>v+'s');
 wire('sl-speed','val-speed',v=>{const m=Math.pow(16,v/100-0.5);return m<1?m.toFixed(2)+'×':m.toFixed(1)+'×';});
+wire('sl-du','val-du',v=>{Du=+v;return(+v).toFixed(2);});
 wire('sl-dv','val-dv',v=>{Dv=+v;return(+v).toFixed(2);});
 wire('sl-noise','val-noise',v=>(+v).toFixed(3));
 wire('sl-f','val-f',v=>{manualF=+v;return(+v).toFixed(4);});
 wire('sl-k','val-k',v=>{manualK=+v;return(+v).toFixed(4);});
 
-// Zone select → show F/K sliders + reseed
+// Zone select → load preset F/K values into sliders
 document.getElementById('sel-zone').addEventListener('change',e=>{
-  const fkDiv=document.getElementById('fk-controls');
   if(e.target.value!=='auto'){
     const zi=+e.target.value;
     zFrom=zi;zTo=zi;zT=0;
@@ -784,10 +791,7 @@ document.getElementById('sel-zone').addEventListener('change',e=>{
     document.getElementById('sl-k').value=manualK;
     document.getElementById('val-f').textContent=manualF.toFixed(4);
     document.getElementById('val-k').textContent=manualK.toFixed(4);
-    fkDiv.style.display='';
     initGrid();glitchIn=3+rand()*8;
-  } else {
-    fkDiv.style.display='none';
   }
 });
 
