@@ -263,6 +263,76 @@
       color: #8a3d3d;
     }
 
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .search-row {
+      margin-top: 22px;
+      max-width: 520px;
+    }
+
+    .search-field-wrap {
+      position: relative;
+    }
+
+    .search-field-wrap svg {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: var(--text-soft);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 12px 16px 12px 46px;
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: var(--panel);
+      color: var(--text);
+      transition:
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
+    }
+
+    .search-input::placeholder {
+      color: var(--text-soft);
+    }
+
+    .search-input:hover {
+      border-color: var(--stroke-strong);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--text);
+      box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+    }
+
+    .search-hint {
+      margin: 10px 0 0 4px;
+      font-size: 11px;
+      color: var(--text-soft);
+      line-height: 1.4;
+      min-height: 1.4em;
+    }
+
     /* Galleries */
     .gallery {
       display: grid;
@@ -322,6 +392,27 @@
       transform: translateY(-6px);
       border-color: var(--stroke-strong);
       box-shadow: var(--shadow-hover);
+    }
+
+    .tool-card.is-filtered-out {
+      display: none !important;
+    }
+
+    .gallery-empty {
+      grid-column: 1 / -1;
+      margin: 0;
+      padding: 28px 20px;
+      border: 1px dashed var(--stroke-strong);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.6);
+      color: var(--text-soft);
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .gallery-empty.hidden {
+      display: none;
     }
 
     .tool-card__main {
@@ -480,6 +571,7 @@
       .thumb-wrap { margin: 12px 12px 0; }
       .card-body { padding: 14px 16px 10px; }
       .card-actions { padding: 0 16px 16px; }
+      .search-row { max-width: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -511,6 +603,24 @@
         <p class="lead">
           A live gallery of generators, scripts, image tools, typography tools, and visual experiments.
         </p>
+        <div class="search-row">
+          <label class="visually-hidden" for="gallery-search">Search tools and plugins</label>
+          <div class="search-field-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"/>
+              <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input
+              type="search"
+              id="gallery-search"
+              class="search-input"
+              placeholder="Search name, category, app…"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <p class="search-hint" id="search-hint" aria-live="polite"></p>
+        </div>
         <div class="hero-bottom">
           <div class="tabs" role="tablist" aria-label="Gallery sections">
             <button type="button" class="tab active" role="tab" aria-selected="true" data-tab="tools" id="tab-tools">Tools</button>
@@ -521,8 +631,12 @@
       </div>
     </section>
 
-    <section class="gallery" id="gallery-tools" role="tabpanel" aria-labelledby="tab-tools"></section>
-    <section class="gallery hidden" id="gallery-plugins" role="tabpanel" aria-labelledby="tab-plugins" hidden></section>
+    <section class="gallery" id="gallery-tools" role="tabpanel" aria-labelledby="tab-tools">
+      <p class="gallery-empty hidden" id="gallery-tools-empty">No tools match your search.</p>
+    </section>
+    <section class="gallery hidden" id="gallery-plugins" role="tabpanel" aria-labelledby="tab-plugins" hidden>
+      <p class="gallery-empty hidden" id="gallery-plugins-empty">No plugins or scripts match your search.</p>
+    </section>
   </main>
 
   <script>
@@ -539,6 +653,7 @@
     const galleryPlugins = document.getElementById("gallery-plugins");
     const statusEl       = document.getElementById("status");
     const cursorDot      = document.getElementById("cursor-dot");
+    const searchInput    = document.getElementById("gallery-search");
 
     const downloadIconSvg = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -619,6 +734,13 @@
           </div>
         </a>`;
 
+      article.setAttribute(
+        "data-search",
+        [name, category, slug, prettifyName(slug), titleCase(prettifyName(category))]
+          .join(" ")
+          .toLowerCase()
+      );
+
       return article;
     }
 
@@ -653,7 +775,70 @@
         </${mainTag}>
         ${actionsHtml(dl, "Download zip")}`;
 
+      article.setAttribute(
+        "data-search",
+        [name, typeLabel, slug, prettifyName(slug), app || ""].join(" ").toLowerCase()
+      );
+
       return article;
+    }
+
+    function cardMatchesQuery(card, rawQuery) {
+      const q = rawQuery.trim().toLowerCase();
+      if (!q) return true;
+      const blob = card.getAttribute("data-search") || "";
+      const words = q.split(/\s+/).filter(Boolean);
+      return words.every(w => blob.includes(w));
+    }
+
+    function applySearchFilter() {
+      const q = searchInput ? searchInput.value : "";
+      const toolCards = galleryTools.querySelectorAll(".tool-card");
+      const pluginCards = galleryPlugins.querySelectorAll(".tool-card");
+
+      toolCards.forEach(c => {
+        c.classList.toggle("is-filtered-out", !cardMatchesQuery(c, q));
+      });
+      pluginCards.forEach(c => {
+        c.classList.toggle("is-filtered-out", !cardMatchesQuery(c, q));
+      });
+
+      const visibleTools = galleryTools.querySelectorAll(".tool-card:not(.is-filtered-out)").length;
+      const visiblePlugins = galleryPlugins.querySelectorAll(".tool-card:not(.is-filtered-out)").length;
+      const totalT = toolCards.length;
+      const totalP = pluginCards.length;
+
+      const toolsEmptyEl = document.getElementById("gallery-tools-empty");
+      const pluginsEmptyEl = document.getElementById("gallery-plugins-empty");
+      const hasQuery = q.trim().length > 0;
+
+      if (toolsEmptyEl) {
+        toolsEmptyEl.classList.toggle("hidden", !(hasQuery && visibleTools === 0 && totalT > 0));
+      }
+      if (pluginsEmptyEl) {
+        pluginsEmptyEl.classList.toggle("hidden", !(hasQuery && visiblePlugins === 0 && totalP > 0));
+      }
+
+      const hint = document.getElementById("search-hint");
+      if (!hint) return;
+
+      if (!hasQuery) {
+        hint.textContent = "";
+        return;
+      }
+
+      const activeTab = document.querySelector(".tab.active")?.dataset.tab;
+      if (activeTab === "tools") {
+        hint.textContent =
+          visibleTools === 0
+            ? "No tools match."
+            : `${visibleTools} of ${totalT} tool${totalT === 1 ? "" : "s"}`;
+      } else {
+        hint.textContent =
+          visiblePlugins === 0
+            ? "No plugins or scripts match."
+            : `${visiblePlugins} of ${totalP} match`;
+      }
     }
 
     async function loadAll() {
@@ -691,6 +876,13 @@
       } else {
         statusEl.textContent = `${toolCount} tools · ${pluginCount} plugin${pluginCount !== 1 ? "s" : ""}`;
       }
+
+      applySearchFilter();
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener("input", applySearchFilter);
+      searchInput.addEventListener("search", applySearchFilter);
     }
 
     /* Tabs */
@@ -709,6 +901,7 @@
         galleryPlugins.classList.toggle("hidden", showTools);
         galleryTools.hidden = !showTools;
         galleryPlugins.hidden = showTools;
+        applySearchFilter();
       });
     });
 
