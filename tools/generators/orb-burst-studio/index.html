@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orb Burst Studio</title>
+<style>
+:root {
+  --bg: #ececec;
+  --card: #ffffff;
+  --text: #000000;
+  --text-dim: #6b6b6b;
+  --line: #e4e4e4;
+  --line-2: #d4d4d4;
+  --accent: #d4fc4e;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-pill: 999px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg);
+  font-family: -apple-system, "Inter", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+body { display: flex; }
+
+#sidebar {
+  width: 300px; flex-shrink: 0; background: var(--bg);
+  padding: 16px; overflow-y: auto; height: 100vh;
+  border-right: 1px solid var(--line-2);
+}
+#sidebar::-webkit-scrollbar { width: 6px; }
+#sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 3px; }
+
+.brand-row { display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 14px; padding: 0 2px; }
+.brand { font-size: 16px; font-weight: 900; letter-spacing: -0.02em; }
+.brand .dot { display: inline-block; width: 5px; height: 5px; background: #000;
+  border-radius: 50%; vertical-align: baseline; margin-left: 1px; margin-bottom: 1px; }
+.brand-sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.1em; font-weight: 700; }
+
+.section { background: var(--card); border-radius: var(--radius-lg);
+  padding: 14px 14px 16px; margin-bottom: 10px; }
+.section-title { display: inline-block; background: var(--accent); color: #000;
+  padding: 3px 7px; font-family: ui-monospace, monospace; font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px; border-radius: 3px; }
+
+.ctrl { margin-bottom: 12px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl > label { display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+.ctrl > label .val { color: var(--text-dim); font-size: 11px; font-family: ui-monospace, monospace; }
+
+input[type=range] { -webkit-appearance: none; width: 100%; height: 4px;
+  background: var(--line-2); border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
+  width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+  color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
+  font-size: 12px; outline: none; cursor: pointer; font-family: inherit; font-weight: 500;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
+
+.swatch-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.swatch-wrap { position: relative; width: 40px; height: 32px; border: 1px solid var(--line-2);
+  border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+.swatch-wrap input[type=color] { position: absolute; inset: -4px; width: calc(100% + 8px);
+  height: calc(100% + 8px); border: none; cursor: pointer; padding: 0; }
+
+button.btn { width: 100%; background: #000; color: #fff; border: none;
+  padding: 10px 14px; border-radius: var(--radius-pill); font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: background 0.15s; font-family: inherit; }
+button.btn:hover { background: #222; }
+button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line-2); }
+button.btn.ghost:hover { background: #f5f5f5; }
+.hint { font-size: 11px; color: var(--text-dim); line-height: 1.55; margin-top: 8px; }
+
+#canvas-wrap {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  background: #ddd; overflow: hidden; position: relative; min-width: 0;
+}
+#c { display: block; max-width: 100%; max-height: 100%; background: #f4f4f4; }
+#webgl-fallback {
+  position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+  padding: 24px; text-align: center; font-size: 13px; color: var(--text-dim);
+}
+#webgl-fallback.show { display: flex; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="brand-row">
+    <div>
+      <div class="brand">HEAR THE YOUTH<span class="dot"></span></div>
+      <div class="brand-sub">Orb Burst Studio</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Look</div>
+    <div class="ctrl">
+      <label>Particles <span class="val" id="v-n">3200</span></label>
+      <input type="range" id="sl-n" min="400" max="8000" step="100" value="3200" />
+    </div>
+    <div class="ctrl">
+      <label>Streak length <span class="val" id="v-len">0.14</span></label>
+      <input type="range" id="sl-len" min="2" max="40" value="14" />
+    </div>
+    <div class="ctrl">
+      <label>Streak thickness <span class="val" id="v-th">0.018</span></label>
+      <input type="range" id="sl-th" min="3" max="35" value="18" />
+    </div>
+    <div class="ctrl">
+      <label>Core hotness <span class="val" id="v-core">0.55</span></label>
+      <input type="range" id="sl-core" min="0" max="100" value="55" />
+    </div>
+    <div class="ctrl">
+      <label>Edge softness <span class="val" id="v-soft">0.72</span></label>
+      <input type="range" id="sl-soft" min="20" max="98" value="72" />
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Motion</div>
+    <div class="ctrl">
+      <label>Radial speed <span class="val" id="v-sp">1.0</span></label>
+      <input type="range" id="sl-sp" min="5" max="200" value="100" />
+    </div>
+    <div class="ctrl">
+      <label>Drift / swirl <span class="val" id="v-sw">0.12</span></label>
+      <input type="range" id="sl-sw" min="0" max="80" value="12" />
+    </div>
+    <div class="ctrl">
+      <label>Camera orbit <span class="val" id="v-orb">0.35</span></label>
+      <input type="range" id="sl-orb" min="0" max="100" value="35" />
+    </div>
+    <div class="ctrl">
+      <label>Depth spread <span class="val" id="v-z">0.55</span></label>
+      <input type="range" id="sl-z" min="10" max="100" value="55" />
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Bloom</div>
+    <div class="ctrl">
+      <label>Bloom mix <span class="val" id="v-bl">0.85</span></label>
+      <input type="range" id="sl-bl" min="0" max="150" value="85" />
+    </div>
+    <div class="ctrl">
+      <label>Bloom blur px <span class="val" id="v-bpx">6</span></label>
+      <input type="range" id="sl-bpx" min="0" max="20" value="6" />
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Color</div>
+    <div class="ctrl">
+      <label>Palette</label>
+      <select id="sel-pal">
+        <option value="neon" selected>Neon burst</option>
+        <option value="sunset">Sunset core</option>
+        <option value="aqua">Aqua lime</option>
+        <option value="mono">Mono heat</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>Background</label>
+      <div class="swatch-row">
+        <div class="swatch-wrap"><input type="color" id="cp-bg" value="#f2f0ed" /></div>
+        <span style="font-size:11px;color:var(--text-dim)">Light neutral reads “glow on mist”</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Export</div>
+    <button type="button" class="btn ghost" id="btn-png">Save PNG</button>
+    <p class="hint">
+      <strong>Aesthetic (shader targets):</strong> radial streak quads in NDC, not spheres;
+      per-streak gradient (core → rim); <code>blendFunc(SRC_ALPHA, ONE)</code> for luminous overlap;
+      separable blur on the HDR-ish pass for the “liquid tunnel” bleed.
+    </p>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <canvas id="c"></canvas>
+  <div id="webgl-fallback"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+  const canvas = $('c');
+  const fb = $('webgl-fallback');
+
+  /** @type {WebGL2RenderingContext | null} */
+  let gl = canvas.getContext('webgl2', {
+    alpha: false,
+    antialias: false,
+    premultipliedAlpha: false,
+    preserveDrawingBuffer: true
+  });
+  if (!gl) {
+    fb.textContent = 'WebGL2 is required for this tool.';
+    fb.classList.add('show');
+    return;
+  }
+
+  function compile(type, src) {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(sh));
+      gl.deleteShader(sh);
+      return null;
+    }
+    return sh;
+  }
+
+  function link(vs, fs) {
+    const p = gl.createProgram();
+    gl.attachShader(p, vs);
+    gl.attachShader(p, fs);
+    gl.linkProgram(p);
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+      console.error(gl.getProgramInfoLog(p));
+      gl.deleteProgram(p);
+      return null;
+    }
+    return p;
+  }
+
+  const VS_ORBS = `#version 300 es
+layout(location = 0) in vec2 a_corner;
+layout(location = 1) in vec3 a_world;
+layout(location = 2) in vec3 a_color;
+layout(location = 3) in vec4 a_meta; /* size, lenScale, zFade, pad */
+
+uniform mat4 u_mvp;
+uniform vec2 u_streak; /* halfLen, halfThick in NDC */
+
+out vec2 v_uv;
+out vec3 v_col;
+out float v_axial; /* -1..1 along streak for gradient */
+
+void main() {
+  vec4 clip0 = u_mvp * vec4(a_world, 1.0);
+  vec2 ndc = clip0.xy / clip0.w;
+  vec2 rad = length(ndc) > 1e-5 ? normalize(ndc) : vec2(1.0, 0.0);
+  vec2 perp = vec2(-rad.y, rad.x);
+
+  float hl = u_streak.x * a_meta.y;
+  float ht = u_streak.y * a_meta.x;
+
+  vec2 offset = rad * (a_corner.x * hl) + perp * (a_corner.y * ht);
+  vec2 ndc1 = ndc + offset;
+
+  v_uv = a_corner;
+  v_col = a_color;
+  v_axial = a_corner.x;
+
+  gl_Position = vec4(ndc1 * clip0.w, clip0.z, clip0.w);
+}
+`;
+
+  const FS_ORBS = `#version 300 es
+precision highp float;
+in vec2 v_uv;
+in vec3 v_col;
+in float v_axial;
+
+uniform float u_core;     /* 0..1 core weight */
+uniform float u_soft;   /* edge softness 0..1 */
+
+out vec4 fragColor;
+
+void main() {
+  float ax = abs(v_axial);
+  float rad = length(v_uv);
+  /* Soft capsule: tight along x, gaussian-ish falloff radially */
+  float cap = 1.0 - smoothstep(0.65, 1.0 + u_soft * 0.35, max(ax * 0.92 + rad * 0.38, rad));
+  cap = pow(max(cap, 0.0), 1.15);
+
+  float core = exp(-ax * ax * (2.0 + u_core * 6.0)) * exp(-rad * rad * (1.5 + u_core * 4.0));
+  float rim = smoothstep(0.15, 1.0, rad + ax * 0.25);
+
+  vec3 rgb = v_col * (0.35 + core * (0.9 + u_core * 1.4));
+  rgb += v_col * (1.0 - rim) * 0.15;
+
+  float a = cap * (0.15 + core * 0.95);
+  a *= 0.55 + u_core * 0.45;
+
+  fragColor = vec4(rgb * a, a);
+}
+`;
+
+  const VS_FULL = `#version 300 es
+layout(location = 0) in vec2 a_pos;
+out vec2 v_uv;
+void main() {
+  v_uv = a_pos * 0.5 + 0.5;
+  gl_Position = vec4(a_pos, 0.0, 1.0);
+}
+`;
+
+  const FS_BLUR_H = `#version 300 es
+precision highp float;
+uniform sampler2D u_tex;
+uniform vec2 u_px; /* 1/width, 0 */
+in vec2 v_uv;
+out vec4 o;
+void main() {
+  vec2 d = u_px;
+  vec4 c =
+    texture(u_tex, v_uv + d * -4.0) * 0.05 +
+    texture(u_tex, v_uv + d * -3.0) * 0.09 +
+    texture(u_tex, v_uv + d * -2.0) * 0.12 +
+    texture(u_tex, v_uv + d * -1.0) * 0.15 +
+    texture(u_tex, v_uv) * 0.18 +
+    texture(u_tex, v_uv + d * 1.0) * 0.15 +
+    texture(u_tex, v_uv + d * 2.0) * 0.12 +
+    texture(u_tex, v_uv + d * 3.0) * 0.09 +
+    texture(u_tex, v_uv + d * 4.0) * 0.05;
+  o = c;
+}
+`;
+
+  const FS_BLUR_V = `#version 300 es
+precision highp float;
+uniform sampler2D u_tex;
+uniform vec2 u_px; /* 0, 1/height */
+in vec2 v_uv;
+out vec4 o;
+void main() {
+  vec2 d = u_px;
+  vec4 c =
+    texture(u_tex, v_uv + d * -4.0) * 0.05 +
+    texture(u_tex, v_uv + d * -3.0) * 0.09 +
+    texture(u_tex, v_uv + d * -2.0) * 0.12 +
+    texture(u_tex, v_uv + d * -1.0) * 0.15 +
+    texture(u_tex, v_uv) * 0.18 +
+    texture(u_tex, v_uv + d * 1.0) * 0.15 +
+    texture(u_tex, v_uv + d * 2.0) * 0.12 +
+    texture(u_tex, v_uv + d * 3.0) * 0.09 +
+    texture(u_tex, v_uv + d * 4.0) * 0.05;
+  o = c;
+}
+`;
+
+  const FS_COMP = `#version 300 es
+precision highp float;
+uniform sampler2D u_scene;
+uniform sampler2D u_bloom;
+uniform float u_bloomMix;
+in vec2 v_uv;
+out vec4 o;
+void main() {
+  vec3 scene = texture(u_scene, v_uv).rgb;
+  vec3 bloom = texture(u_bloom, v_uv).rgb;
+  o = vec4(scene + u_bloomMix * bloom, 1.0);
+}
+`;
+
+  const pOrb = link(compile(gl.VERTEX_SHADER, VS_ORBS), compile(gl.FRAGMENT_SHADER, FS_ORBS));
+  const pBH = link(compile(gl.VERTEX_SHADER, VS_FULL), compile(gl.FRAGMENT_SHADER, FS_BLUR_H));
+  const pBV = link(compile(gl.VERTEX_SHADER, VS_FULL), compile(gl.FRAGMENT_SHADER, FS_BLUR_V));
+  const pComp = link(compile(gl.VERTEX_SHADER, VS_FULL), compile(gl.FRAGMENT_SHADER, FS_COMP));
+  if (!pOrb || !pBH || !pBV || !pComp) {
+    fb.textContent = 'Shader compile failed (see console).';
+    fb.classList.add('show');
+    return;
+  }
+
+  const loc = {
+    mvp: gl.getUniformLocation(pOrb, 'u_mvp'),
+    streak: gl.getUniformLocation(pOrb, 'u_streak'),
+    core: gl.getUniformLocation(pOrb, 'u_core'),
+    soft: gl.getUniformLocation(pOrb, 'u_soft'),
+    bh_tex: gl.getUniformLocation(pBH, 'u_tex'),
+    bh_px: gl.getUniformLocation(pBH, 'u_px'),
+    bv_tex: gl.getUniformLocation(pBV, 'u_tex'),
+    bv_px: gl.getUniformLocation(pBV, 'u_px'),
+    c_scene: gl.getUniformLocation(pComp, 'u_scene'),
+    c_bloom: gl.getUniformLocation(pComp, 'u_bloom'),
+    c_mix: gl.getUniformLocation(pComp, 'u_bloomMix')
+  };
+
+  const quadVBO = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1, -1, 1, -1, -1, 1,
+    -1, 1, 1, -1, 1, 1
+  ]), gl.STATIC_DRAW);
+
+  const corners = new Float32Array([
+    -1, -1, 1, -1, -1, 1,
+    -1, 1, 1, -1, 1, 1
+  ]);
+  const cornerVBO = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, cornerVBO);
+  gl.bufferData(gl.ARRAY_BUFFER, corners, gl.STATIC_DRAW);
+
+  let instWorld = gl.createBuffer();
+  let instColor = gl.createBuffer();
+  let instMeta = gl.createBuffer();
+
+  let W = 0, H = 0, dpr = 1;
+  let fboScene = null, texScene = null;
+  let fboBlurA = null, texBlurA = null;
+  let fboBlurB = null, texBlurB = null;
+
+  function destroyFbos() {
+    if (texScene) gl.deleteTexture(texScene);
+    if (texBlurA) gl.deleteTexture(texBlurA);
+    if (texBlurB) gl.deleteTexture(texBlurB);
+    if (fboScene) gl.deleteFramebuffer(fboScene);
+    if (fboBlurA) gl.deleteFramebuffer(fboBlurA);
+    if (fboBlurB) gl.deleteFramebuffer(fboBlurB);
+    texScene = texBlurA = texBlurB = null;
+    fboScene = fboBlurA = fboBlurB = null;
+  }
+
+  function makeTex(w, h) {
+    const t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    return t;
+  }
+
+  function allocFbos() {
+    destroyFbos();
+    texScene = makeTex(W, H);
+    texBlurA = makeTex(W, H);
+    texBlurB = makeTex(W, H);
+    fboScene = gl.createFramebuffer();
+    fboBlurA = gl.createFramebuffer();
+    fboBlurB = gl.createFramebuffer();
+
+    for (const [fbo, tex] of [[fboScene, texScene], [fboBlurA, texBlurA], [fboBlurB, texBlurB]]) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+      const st = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+      if (st !== gl.FRAMEBUFFER_COMPLETE) console.warn('FBO incomplete', st);
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
+
+  const PAL = {
+    neon: [
+      [0.98, 0.35, 0.12], [1.0, 0.75, 0.08], [0.55, 0.98, 0.2],
+      [0.1, 0.92, 0.85], [0.95, 0.15, 0.55], [0.45, 0.2, 0.95]
+    ],
+    sunset: [
+      [1.0, 0.55, 0.2], [1.0, 0.85, 0.35], [0.95, 0.25, 0.35],
+      [0.75, 0.35, 0.9], [0.3, 0.7, 1.0]
+    ],
+    aqua: [
+      [0.15, 0.95, 0.75], [0.35, 1.0, 0.45], [0.2, 0.55, 1.0],
+      [0.85, 1.0, 0.35], [0.5, 0.35, 1.0]
+    ],
+    mono: [
+      [1.0, 0.55, 0.12], [1.0, 0.82, 0.35], [1.0, 0.95, 0.75],
+      [0.95, 0.4, 0.1], [0.75, 0.75, 0.78]
+    ]
+  };
+
+  let maxParticles = 8000;
+  const world = new Float32Array(maxParticles * 3);
+  const vel = new Float32Array(maxParticles * 3);
+  const color = new Float32Array(maxParticles * 3);
+  const meta = new Float32Array(maxParticles * 4);
+  const rnd = (a, b) => a + Math.random() * (b - a);
+
+  function hexRgb(hex) {
+    const h = hex.replace('#', '');
+    return [
+      parseInt(h.slice(0, 2), 16) / 255,
+      parseInt(h.slice(2, 4), 16) / 255,
+      parseInt(h.slice(4, 6), 16) / 255
+    ];
+  }
+
+  function fibSphere(i, n, radius) {
+    const t = (i + 0.5) / n;
+    const phi = Math.acos(1 - 2 * t);
+    const th = Math.PI * (1 + Math.sqrt(5)) * i;
+    const sp = Math.sin(phi);
+    return [
+      radius * sp * Math.cos(th),
+      radius * sp * Math.sin(th),
+      radius * Math.cos(phi)
+    ];
+  }
+
+  function pickPal(name) {
+    const arr = PAL[name] || PAL.neon;
+    return (i, n) => arr[i % arr.length];
+  }
+
+  function respawn(i, n, palFn, r0, r1) {
+    const R = rnd(r0, r1);
+    const [x, y, z] = fibSphere(i, n, R);
+    world[i * 3] = x;
+    world[i * 3 + 1] = y;
+    world[i * 3 + 2] = z;
+    const len = Math.max(1e-4, Math.hypot(x, y, z));
+    const inv = 1 / len;
+    vel[i * 3] = x * inv;
+    vel[i * 3 + 1] = y * inv;
+    vel[i * 3 + 2] = z * inv;
+    const c = palFn(i, n);
+    color[i * 3] = c[0];
+    color[i * 3 + 1] = c[1];
+    color[i * 3 + 2] = c[2];
+    const zf = (R - r0) / Math.max(1e-3, r1 - r0);
+    meta[i * 4] = 0.55 + Math.random() * 0.9; /* size scale */
+    meta[i * 4 + 1] = 0.65 + Math.random() * 0.95; /* length scale */
+    meta[i * 4 + 2] = zf;
+    meta[i * 4 + 3] = rnd(0, 1000);
+  }
+
+  function initParticles(n, palName, r0, r1) {
+    const palFn = pickPal(palName);
+    for (let i = 0; i < n; i++) respawn(i, n, palFn, r0, r1);
+    uploadInstance(n);
+  }
+
+  function uploadInstance(n) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, instWorld);
+    gl.bufferData(gl.ARRAY_BUFFER, world.subarray(0, n * 3), gl.DYNAMIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, instColor);
+    gl.bufferData(gl.ARRAY_BUFFER, color.subarray(0, n * 3), gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, instMeta);
+    gl.bufferData(gl.ARRAY_BUFFER, meta.subarray(0, n * 4), gl.DYNAMIC_DRAW);
+  }
+
+  let particleCount = 3200;
+  let innerR = 0.08;
+  let outerR = 1.05;
+  let palKey = 'neon';
+
+  /** Column-major: out = a * b */
+  function mulMat4(a, b, out) {
+    for (let c = 0; c < 4; c++) {
+      const b0 = b[c * 4 + 0], b1 = b[c * 4 + 1], b2 = b[c * 4 + 2], b3 = b[c * 4 + 3];
+      out[c * 4 + 0] = a[0] * b0 + a[4] * b1 + a[8] * b2 + a[12] * b3;
+      out[c * 4 + 1] = a[1] * b0 + a[5] * b1 + a[9] * b2 + a[13] * b3;
+      out[c * 4 + 2] = a[2] * b0 + a[6] * b1 + a[10] * b2 + a[14] * b3;
+      out[c * 4 + 3] = a[3] * b0 + a[7] * b1 + a[11] * b2 + a[15] * b3;
+    }
+    return out;
+  }
+
+  function persp(fov, aspect, near, far, out) {
+    const f = 1 / Math.tan(fov / 2);
+    const nf = 1 / (near - far);
+    out[0] = f / aspect; out[1] = 0; out[2] = 0; out[3] = 0;
+    out[4] = 0; out[5] = f; out[6] = 0; out[7] = 0;
+    out[8] = 0; out[9] = 0; out[10] = (far + near) * nf; out[11] = -1;
+    out[12] = 0; out[13] = 0; out[14] = 2 * far * near * nf; out[15] = 0;
+    return out;
+  }
+
+  function lookAt(eye, center, up, out) {
+    let zx = eye[0] - center[0], zy = eye[1] - center[1], zz = eye[2] - center[2];
+    let len = Math.hypot(zx, zy, zz);
+    zx /= len; zy /= len; zz /= len;
+    let xx = up[1] * zz - up[2] * zy;
+    let xy = up[2] * zx - up[0] * zz;
+    let xz = up[0] * zy - up[1] * zx;
+    len = Math.hypot(xx, xy, xz);
+    xx /= len; xy /= len; xz /= len;
+    const yx = zy * xz - zz * xy;
+    const yy = zz * xx - zx * xz;
+    const yz = zx * xy - zy * xx;
+    out[0] = xx; out[1] = yx; out[2] = zx; out[3] = 0;
+    out[4] = xy; out[5] = yy; out[6] = zy; out[7] = 0;
+    out[8] = xz; out[9] = yz; out[10] = zz; out[11] = 0;
+    out[12] = -(xx * eye[0] + xy * eye[1] + xz * eye[2]);
+    out[13] = -(yx * eye[0] + yy * eye[1] + yz * eye[2]);
+    out[14] = -(zx * eye[0] + zy * eye[1] + zz * eye[2]);
+    out[15] = 1;
+    return out;
+  }
+
+  const mProj = new Float32Array(16);
+  const mView = new Float32Array(16);
+  const mVP = new Float32Array(16);
+
+  let time = 0;
+  let vaoOrb = null;
+
+  function setupVao() {
+    if (vaoOrb) gl.deleteVertexArray(vaoOrb);
+    vaoOrb = gl.createVertexArray();
+    gl.bindVertexArray(vaoOrb);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, cornerVBO);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 8, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, instWorld);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 12, 0);
+    gl.vertexAttribDivisor(1, 1);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, instColor);
+    gl.enableVertexAttribArray(2);
+    gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 12, 0);
+    gl.vertexAttribDivisor(2, 1);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, instMeta);
+    gl.enableVertexAttribArray(3);
+    gl.vertexAttribPointer(3, 4, gl.FLOAT, false, 16, 0);
+    gl.vertexAttribDivisor(3, 1);
+
+    gl.bindVertexArray(null);
+  }
+  setupVao();
+
+  function vaoFullScreen() {
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 8, 0);
+    gl.bindVertexArray(null);
+    return vao;
+  }
+  const vaoQuad = vaoFullScreen();
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const wrap = canvas.parentElement;
+    const cw = Math.max(320, wrap.clientWidth - 32);
+    const ch = Math.max(320, wrap.clientHeight - 32);
+    const side = Math.floor(Math.min(cw, ch) * dpr);
+    W = side;
+    H = side;
+    canvas.width = W;
+    canvas.height = H;
+    canvas.style.width = (W / dpr) + 'px';
+    canvas.style.height = (H / dpr) + 'px';
+    gl.viewport(0, 0, W, H);
+    allocFbos();
+    const aspect = W / H;
+    persp((50 * Math.PI) / 180, aspect, 0.05, 8, mProj);
+  }
+
+  function readUI() {
+    return {
+      n: +$('sl-n').value,
+      len: +$('sl-len').value / 100,
+      th: +$('sl-th').value / 1000,
+      core: +$('sl-core').value / 100,
+      soft: +$('sl-soft').value / 100,
+      sp: +$('sl-sp').value / 100,
+      sw: +$('sl-sw').value / 100,
+      orb: +$('sl-orb').value / 100,
+      zspread: +$('sl-z').value / 100,
+      bloom: +$('sl-bl').value / 100,
+      bpx: +$('sl-bpx').value,
+      bg: $('cp-bg').value,
+      pal: $('sel-pal').value
+    };
+  }
+
+  function bindSliders() {
+    const map = [
+      ['sl-n', 'v-n', (v) => String(v)],
+      ['sl-len', 'v-len', (v) => (+v / 100).toFixed(2)],
+      ['sl-th', 'v-th', (v) => (+v / 1000).toFixed(3)],
+      ['sl-core', 'v-core', (v) => (+v / 100).toFixed(2)],
+      ['sl-soft', 'v-soft', (v) => (+v / 100).toFixed(2)],
+      ['sl-sp', 'v-sp', (v) => (+v / 100).toFixed(2)],
+      ['sl-sw', 'v-sw', (v) => (+v / 100).toFixed(2)],
+      ['sl-orb', 'v-orb', (v) => (+v / 100).toFixed(2)],
+      ['sl-z', 'v-z', (v) => (+v / 100).toFixed(2)],
+      ['sl-bl', 'v-bl', (v) => (+v / 100).toFixed(2)],
+      ['sl-bpx', 'v-bpx', (v) => String(v)]
+    ];
+    for (const [sl, lab, fn] of map) {
+      const el = $(sl);
+      const out = $(lab);
+      const upd = () => { out.textContent = fn(el.value); };
+      el.addEventListener('input', upd);
+      upd();
+    }
+  }
+  bindSliders();
+
+  $('sel-pal').addEventListener('change', () => {
+    palKey = $('sel-pal').value;
+    initParticles(particleCount, palKey, innerR, outerR);
+  });
+
+  function updateParticles(dt, u) {
+    const palFn = pickPal(palKey);
+    const speed = u.sp * 0.85;
+    const swirl = u.sw * 0.65;
+    const zfac = 0.25 + u.zspread * 1.1;
+    for (let i = 0; i < particleCount; i++) {
+      let x = world[i * 3], y = world[i * 3 + 1], z = world[i * 3 + 2];
+      const vx = vel[i * 3], vy = vel[i * 3 + 1], vz = vel[i * 3 + 2];
+      x += vx * speed * dt * zfac;
+      y += vy * speed * dt * zfac;
+      z += vz * speed * dt * zfac;
+      /* gentle swirl around Y */
+      const ca = Math.cos(swirl * dt * 0.35), sa = Math.sin(swirl * dt * 0.35);
+      const nx = ca * x - sa * z;
+      const nz = sa * x + ca * z;
+      x = nx; z = nz;
+
+      const dist = Math.hypot(x, y, z);
+      if (dist > outerR + 0.15 || dist < innerR * 0.5) {
+        respawn(i, particleCount, palFn, innerR, outerR);
+      } else {
+        world[i * 3] = x;
+        world[i * 3 + 1] = y;
+        world[i * 3 + 2] = z;
+        const zf = (dist - innerR) / Math.max(1e-3, outerR - innerR);
+        meta[i * 4 + 2] = zf;
+      }
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, instWorld);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, world.subarray(0, particleCount * 3));
+    gl.bindBuffer(gl.ARRAY_BUFFER, instMeta);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, meta.subarray(0, particleCount * 4));
+  }
+
+  function drawSceneToFBO(u, eye) {
+    lookAt(eye, [0, 0, 0], [0, 1, 0], mView);
+    mulMat4(mProj, mView, mVP);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fboScene);
+    const bg = hexRgb(u.bg);
+    gl.clearColor(bg[0], bg[1], bg[2], 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.disable(gl.DEPTH_TEST);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+
+    gl.useProgram(pOrb);
+    gl.uniformMatrix4fv(loc.mvp, false, mVP);
+    gl.uniform2f(loc.streak, u.len * 1.25, u.th * 1.1);
+    gl.uniform1f(loc.core, u.core);
+    gl.uniform1f(loc.soft, u.soft);
+
+    gl.bindVertexArray(vaoOrb);
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, particleCount);
+    gl.bindVertexArray(null);
+
+    gl.blendFunc(gl.ONE, gl.ZERO);
+    gl.disable(gl.BLEND);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
+
+  function drawBlurChain(bpx) {
+    if (bpx < 0.5 || !texScene) return;
+    const s = bpx * dpr;
+    gl.disable(gl.BLEND);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fboBlurA);
+    gl.viewport(0, 0, W, H);
+    gl.useProgram(pBH);
+    gl.uniform1i(loc.bh_tex, 0);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texScene);
+    gl.uniform2f(loc.bh_px, s / W, 0);
+    gl.bindVertexArray(vaoQuad);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fboBlurB);
+    gl.useProgram(pBV);
+    gl.uniform1i(loc.bv_tex, 0);
+    gl.bindTexture(gl.TEXTURE_2D, texBlurA);
+    gl.uniform2f(loc.bv_px, 0, s / H);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.bindVertexArray(null);
+  }
+
+  function composite(u) {
+    gl.viewport(0, 0, W, H);
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.BLEND);
+    gl.useProgram(pComp);
+    gl.uniform1i(loc.c_scene, 0);
+    gl.uniform1i(loc.c_bloom, 1);
+    const bloomAmt = u.bpx < 0.5 ? 0 : u.bloom * 1.1;
+    gl.uniform1f(loc.c_mix, bloomAmt);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texScene);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, texBlurB);
+
+    gl.bindVertexArray(vaoQuad);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.bindVertexArray(null);
+    gl.activeTexture(gl.TEXTURE0);
+  }
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    time += dt;
+    const u = readUI();
+
+    if (u.n !== particleCount) {
+      particleCount = Math.min(maxParticles, Math.max(400, u.n | 0));
+      $('v-n').textContent = String(particleCount);
+      initParticles(particleCount, palKey, innerR, outerR);
+    }
+
+    updateParticles(dt, u);
+
+    const ang = time * (0.08 + u.orb * 0.35);
+    const camR = 2.35;
+    const eye = [Math.sin(ang) * camR, 0.15 + Math.sin(time * 0.27) * 0.08, Math.cos(ang) * camR];
+
+    drawSceneToFBO(u, eye);
+    drawBlurChain(u.bpx);
+    composite(u);
+
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  palKey = $('sel-pal').value;
+  initParticles(particleCount, palKey, innerR, outerR);
+  requestAnimationFrame(frame);
+
+  $('btn-png').addEventListener('click', () => {
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'orb-burst.png';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }, 'image/png');
+  });
+})();
+</script>
+</body>
+</html>
