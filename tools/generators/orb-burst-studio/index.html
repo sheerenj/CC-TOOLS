@@ -163,6 +163,13 @@ button.btn.ghost:hover { background: #f5f5f5; }
   <div class="section">
     <div class="section-title">Color</div>
     <div class="ctrl">
+      <label>Layer blend</label>
+      <select id="sel-blend">
+        <option value="normal" selected>Normal — visible on light backgrounds</option>
+        <option value="additive">Additive glow — best on dark / gray</option>
+      </select>
+    </div>
+    <div class="ctrl">
       <label>Palette</label>
       <select id="sel-pal">
         <option value="neon" selected>Neon burst</option>
@@ -184,9 +191,7 @@ button.btn.ghost:hover { background: #f5f5f5; }
     <div class="section-title">Export</div>
     <button type="button" class="btn ghost" id="btn-png">Save PNG</button>
     <p class="hint">
-      <strong>Aesthetic (shader targets):</strong> radial streak quads in NDC, not spheres;
-      per-streak gradient (core → rim); <code>blendFunc(SRC_ALPHA, ONE)</code> for luminous overlap;
-      separable blur on the HDR-ish pass for the “liquid tunnel” bleed.
+      <strong>Blend:</strong> additive stacking adds light on top of the page color — on white there is almost no headroom, so colors vanish. Use <strong>Normal</strong> for off-white or white, or switch to <strong>Additive</strong> with a darker background for the “luminous overlap” look.
     </p>
   </div>
 </div>
@@ -208,6 +213,8 @@ button.btn.ghost:hover { background: #f5f5f5; }
   let gl = canvas.getContext('webgl2', {
     alpha: false,
     antialias: false,
+    depth: false,
+    stencil: false,
     premultipliedAlpha: false,
     preserveDrawingBuffer: true
   });
@@ -285,6 +292,7 @@ in float v_axial;
 
 uniform float u_core;     /* 0..1 core weight */
 uniform float u_soft;   /* edge softness 0..1 */
+uniform int u_blendMode;  /* 0 = alpha-over (visible on light bg), 1 = additive (dark bg) */
 
 out vec4 fragColor;
 
@@ -304,7 +312,13 @@ void main() {
   float a = cap * (0.15 + core * 0.95);
   a *= 0.55 + u_core * 0.45;
 
-  fragColor = vec4(rgb * a, a);
+  if (u_blendMode == 1) {
+    /* Additive: needs headroom on the background — best on mid/dark tones */
+    fragColor = vec4(rgb * a * 1.35, 1.0);
+  } else {
+    /* Alpha-over: SRC_ALPHA × rgb + dst × (1−α) — reads on white */
+    fragColor = vec4(min(rgb * 1.12, vec3(1.0)), clamp(a * 1.05, 0.0, 1.0));
+  }
 }
 `;
 
@@ -390,6 +404,7 @@ void main() {
     streak: gl.getUniformLocation(pOrb, 'u_streak'),
     core: gl.getUniformLocation(pOrb, 'u_core'),
     soft: gl.getUniformLocation(pOrb, 'u_soft'),
+    blendMode: gl.getUniformLocation(pOrb, 'u_blendMode'),
     bh_tex: gl.getUniformLocation(pBH, 'u_tex'),
     bh_px: gl.getUniformLocation(pBH, 'u_px'),
     bv_tex: gl.getUniformLocation(pBV, 'u_tex'),
@@ -419,7 +434,8 @@ void main() {
   let instMeta = gl.createBuffer();
 
   let W = 0, H = 0, dpr = 1;
-  let fboScene = null, texScene = null;
+  /** Scene color copied from the default framebuffer each frame (avoids RGBA8 FBO issues on some GPUs). */
+  let texScene = null;
   let fboBlurA = null, texBlurA = null;
   let fboBlurB = null, texBlurB = null;
 
@@ -427,11 +443,10 @@ void main() {
     if (texScene) gl.deleteTexture(texScene);
     if (texBlurA) gl.deleteTexture(texBlurA);
     if (texBlurB) gl.deleteTexture(texBlurB);
-    if (fboScene) gl.deleteFramebuffer(fboScene);
     if (fboBlurA) gl.deleteFramebuffer(fboBlurA);
     if (fboBlurB) gl.deleteFramebuffer(fboBlurB);
     texScene = texBlurA = texBlurB = null;
-    fboScene = fboBlurA = fboBlurB = null;
+    fboBlurA = fboBlurB = null;
   }
 
   function makeTex(w, h) {
@@ -450,15 +465,14 @@ void main() {
     texScene = makeTex(W, H);
     texBlurA = makeTex(W, H);
     texBlurB = makeTex(W, H);
-    fboScene = gl.createFramebuffer();
     fboBlurA = gl.createFramebuffer();
     fboBlurB = gl.createFramebuffer();
 
-    for (const [fbo, tex] of [[fboScene, texScene], [fboBlurA, texBlurA], [fboBlurB, texBlurB]]) {
+    for (const [fbo, tex] of [[fboBlurA, texBlurA], [fboBlurB, texBlurB]]) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
       const st = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-      if (st !== gl.FRAMEBUFFER_COMPLETE) console.warn('FBO incomplete', st);
+      if (st !== gl.FRAMEBUFFER_COMPLETE) console.warn('Orb Burst: blur FBO incomplete', st);
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
@@ -679,7 +693,8 @@ void main() {
       bloom: +$('sl-bl').value / 100,
       bpx: +$('sl-bpx').value,
       bg: $('cp-bg').value,
-      pal: $('sel-pal').value
+      pal: $('sel-pal').value,
+      blend: $('sel-blend').value
     };
   }
 
@@ -746,31 +761,41 @@ void main() {
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, meta.subarray(0, particleCount * 4));
   }
 
-  function drawSceneToFBO(u, eye) {
+  function drawParticlesToCanvas(u, eye) {
     lookAt(eye, [0, 0, 0], [0, 1, 0], mView);
     mulMat4(mProj, mView, mVP);
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fboScene);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, W, H);
     const bg = hexRgb(u.bg);
     gl.clearColor(bg[0], bg[1], bg[2], 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.disable(gl.DEPTH_TEST);
     gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+    const additive = u.blend === 'additive';
+    if (additive) {
+      gl.blendFunc(gl.ONE, gl.ONE);
+    } else {
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    }
 
     gl.useProgram(pOrb);
     gl.uniformMatrix4fv(loc.mvp, false, mVP);
     gl.uniform2f(loc.streak, u.len * 1.25, u.th * 1.1);
     gl.uniform1f(loc.core, u.core);
     gl.uniform1f(loc.soft, u.soft);
+    gl.uniform1i(loc.blendMode, additive ? 1 : 0);
 
     gl.bindVertexArray(vaoOrb);
     gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, particleCount);
     gl.bindVertexArray(null);
 
-    gl.blendFunc(gl.ONE, gl.ZERO);
     gl.disable(gl.BLEND);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    /* Copy canvas color into texScene for blur (avoids rendering particles into an RGBA8 FBO). */
+    gl.bindTexture(gl.TEXTURE_2D, texScene);
+    gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, W, H);
+    gl.bindTexture(gl.TEXTURE_2D, null);
   }
 
   function drawBlurChain(bpx) {
@@ -839,7 +864,7 @@ void main() {
     const camR = 2.35;
     const eye = [Math.sin(ang) * camR, 0.15 + Math.sin(time * 0.27) * 0.08, Math.cos(ang) * camR];
 
-    drawSceneToFBO(u, eye);
+    drawParticlesToCanvas(u, eye);
     drawBlurChain(u.bpx);
     composite(u);
 
