@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Boothclub Halftone Lines</title>
+<link rel="stylesheet" href="../../shared/hty-tools.css">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -19,24 +20,8 @@
     --sans: -apple-system, "Inter", "Helvetica Neue", sans-serif;
   }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
+  body.tool-shell {
     font-family: var(--sans);
-    min-height: 100vh;
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    grid-template-rows: 56px 1fr;
-  }
-
-  header {
-    grid-column: 1 / -1;
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 24px;
-    gap: 16px;
   }
 
   .logo {
@@ -66,14 +51,12 @@
     border-radius: 999px;
   }
 
-  aside {
+  #sidebar {
     background: var(--panel);
-    border-right: 1px solid var(--border);
-    padding: 24px 20px;
+    gap: 28px;
     display: flex;
     flex-direction: column;
-    gap: 28px;
-    overflow-y: auto;
+    padding: 24px 20px;
   }
 
   .section-label {
@@ -266,12 +249,11 @@
     background: transparent;
   }
 
-  main {
+  #canvas-area.bca-canvas {
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 32px;
-    background: var(--bg);
     position: relative;
     overflow: hidden;
   }
@@ -285,7 +267,7 @@
   #outputCanvas {
     display: block;
     max-width: 100%;
-    max-height: calc(100vh - 56px - 64px);
+    max-height: calc(100vh - var(--topbar-height) - 64px);
     object-fit: contain;
     image-rendering: pixelated;
   }
@@ -336,19 +318,24 @@
   .blink { animation: blink 0.8s infinite; }
 </style>
 </head>
-<body>
+<body class="tool-shell">
 
-<header>
-  <div>
-    <div class="logo">BCA GENERATOR</div>
-    <div class="logo-sub">halftone line renderer</div>
+<header class="tool-topbar">
+  <div class="tool-topbar-start">
+    <span class="tool-topbar-mark" aria-hidden="true"></span>
+    <div>
+      <h1 class="tool-title" style="margin:0;">BCA Halftone Lines</h1>
+      <div class="logo-sub">Halftone line renderer</div>
+    </div>
   </div>
-  <div class="sep"></div>
-  <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.07em;">Built by The Youth.® (2026)</div>
-  <div class="badge">v3.0</div>
+  <div class="sep" style="flex:1"></div>
+  <span style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.07em;">Built by The Youth.® (2026)</span>
+  <span class="tool-topbar-meta">v3.0</span>
 </header>
 
-<aside>
+<div class="tool-workspace">
+
+<aside id="sidebar">
 
   <div>
     <div class="section-label">Input</div>
@@ -500,7 +487,7 @@
 
 </aside>
 
-<main>
+<main id="canvas-area" class="is-light-canvas bca-canvas">
   <div id="emptyState">
     <div class="empty-grid">
       <div class="empty-line" style="width:24px"></div><div class="empty-line" style="width:18px"></div><div class="empty-line" style="width:22px"></div><div class="empty-line" style="width:14px"></div><div class="empty-line" style="width:20px"></div><div class="empty-line" style="width:24px"></div><div class="empty-line" style="width:16px"></div><div class="empty-line" style="width:22px"></div>
@@ -516,6 +503,8 @@
   </div>
   <div class="processing-indicator" id="procIndicator"><span class="blink">■</span> RENDERING</div>
 </main>
+
+</div>
 
 <canvas id="sourceCanvas" style="display:none;"></canvas>
 

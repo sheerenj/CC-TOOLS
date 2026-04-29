@@ -5,98 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Moiré Studio</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="stylesheet" href="../../shared/hty-tools.css">
 <style>
-:root {
-  --bg: #ececec; --card: #ffffff; --text: #000000; --dim: #6b6b6b;
-  --line: #e4e4e4; --line2: #d4d4d4; --accent: #d4fc4e;
-  --radius-lg: 20px; --radius-md: 14px; --radius-pill: 999px;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; overflow: hidden;
-  background: var(--bg); color: var(--text);
-  font-family: -apple-system, "Inter", "Helvetica Neue", sans-serif;
-  -webkit-font-smoothing: antialiased; }
-body { display: flex; }
-
-#sidebar {
-  width: 296px; flex-shrink: 0; background: var(--bg);
-  padding: 16px; overflow-y: auto; height: 100vh;
-  border-right: 1px solid var(--line2);
-}
-#sidebar::-webkit-scrollbar { width: 6px; }
-#sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 3px; }
-
-.brand-row { display: flex; align-items: baseline; justify-content: space-between;
-  margin-bottom: 16px; padding: 0 2px; }
-.brand { font-size: 16px; font-weight: 900; letter-spacing: -0.02em; }
-.brand-sub { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 900; }
-
-.section { background: var(--card); border-radius: var(--radius-lg);
-  padding: 14px 14px 16px; margin-bottom: 10px; }
-.section-title { display: inline-block; background: var(--accent); color: #000;
-  padding: 3px 7px; font-family: ui-monospace, monospace; font-size: 10px;
-  font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-  margin-bottom: 12px; border-radius: 3px; }
-
-.ctrl { margin-bottom: 12px; }
-.ctrl:last-child { margin-bottom: 0; }
-.ctrl > label { display: flex; justify-content: space-between; align-items: center;
-  font-size: 12px; font-weight: 500; margin-bottom: 6px; }
-.ctrl > label .val { color: var(--dim); font-size: 11px; font-family: ui-monospace, monospace; }
-
-input[type=range] { -webkit-appearance: none; width: 100%; height: 4px;
-  background: var(--line2); border-radius: 2px; outline: none; cursor: pointer; }
-input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
-  width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer;
-  transition: transform 0.1s; }
-input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
-
-select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
-  color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
-  font-size: 12px; outline: none; cursor: pointer; font-family: inherit; font-weight: 500;
-  appearance: none; -webkit-appearance: none;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
-  background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
-
-button.btn { width: 100%; background: #000; color: #fff; border: none;
-  padding: 10px 14px; border-radius: var(--radius-pill); font-size: 13px;
-  font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit;
-  margin-bottom: 8px; }
-button.btn:last-of-type { margin-bottom: 0; }
-button.btn:hover:not(:disabled) { background: #222; }
-button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line2); }
-button.btn.ghost:hover:not(:disabled) { background: #f5f5f5; }
-button.btn.accent { background: var(--accent); color: #000; }
-button.btn.accent:hover:not(:disabled) { background: #c2ea3c; }
-button.btn.recording { background: #e53e3e; color: #fff; }
-button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.swatch-row { display: flex; align-items: center; gap: 8px; }
-.swatch-wrap { position: relative; width: 36px; height: 28px; border: 1px solid var(--line2);
-  border-radius: 8px; overflow: hidden; cursor: pointer; flex-shrink: 0; }
-.swatch-wrap input[type=color] { position: absolute; inset: -4px; opacity: 0; cursor: pointer;
-  width: calc(100% + 8px); height: calc(100% + 8px); }
-.swatch-hex { font-size: 11px; font-family: ui-monospace, monospace; color: var(--dim); }
-
-.hint { font-size: 10px; color: var(--dim); margin-top: 8px; line-height: 1.6; }
-
-.custom-res-wrap { margin-top: 8px; display: none; }
-.custom-res-wrap.visible { display: block; }
-.custom-res-row { display: flex; gap: 6px; align-items: center; }
-.custom-res-row input[type=number] { flex: 1; background: #f4f4f4; border: 1px solid var(--line);
-  color: #000; padding: 7px 9px; border-radius: var(--radius-md); font-size: 12px;
-  outline: none; font-family: inherit; min-width: 0; }
-.custom-res-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-.custom-res-sep { font-size: 11px; color: var(--dim); flex-shrink: 0; }
-
-#canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center;
-  background: #111; overflow: hidden; }
-#c { display: block; cursor: crosshair; }
+  /* Moiré Motion Studio — tool-specific */
+  button.btn { margin-bottom: 8px; }
+  button.btn:last-of-type { margin-bottom: 0; }
+  button.btn.recording { background: #e53e3e; color: #fff; }
+  button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .hint { font-size: 10px; margin-top: 8px; line-height: 1.6; }
+  .swatch-row { display: flex; align-items: center; gap: 8px; }
+  .swatch-wrap { position: relative; width: 36px; height: 28px; border: 1px solid var(--line-2);
+    border-radius: 8px; overflow: hidden; cursor: pointer; flex-shrink: 0; }
+  .swatch-wrap input[type=color] { position: absolute; inset: -4px; opacity: 0; cursor: pointer;
+    width: calc(100% + 8px); height: calc(100% + 8px); }
+  .swatch-hex { font-size: 11px; font-family: ui-monospace, monospace; color: var(--text-dim); }
+  .custom-res-wrap { margin-top: 8px; display: none; }
+  .custom-res-wrap.visible { display: block; }
+  .custom-res-row { display: flex; gap: 6px; align-items: center; }
+  .custom-res-row input[type=number] { flex: 1; background: #f4f4f4; border: 1px solid var(--line);
+    color: #000; padding: 7px 9px; border-radius: var(--radius-md); font-size: 12px;
+    outline: none; font-family: inherit; min-width: 0; }
+  .custom-res-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .custom-res-sep { font-size: 11px; color: var(--text-dim); flex-shrink: 0; }
+  #canvas-area { background: #111; }
+  #c { display: block; cursor: crosshair; }
 </style>
 </head>
-<body>
+<body class="tool-shell">
 
-<div id="sidebar">
+<header class="tool-topbar">
+  <div class="tool-topbar-start">
+    <span class="tool-topbar-mark" aria-hidden="true"></span>
+    <h1 class="tool-title">Moiré Motion Studio</h1>
+  </div>
+  <span class="tool-topbar-meta">Generators</span>
+</header>
+
+<div class="tool-workspace">
+
+<aside id="sidebar">
   <div class="brand-row">
     <span class="brand">Moiré</span>
     <span class="brand-sub" style="color:var(--accent)">Studio</span>
@@ -272,10 +219,12 @@ button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
     <button class="btn ghost" id="btn-seq">↓ Export PNG Sequence</button>
     <p class="hint">Video exports as WebM/MP4 depending on browser. Sequence exports as ZIP of PNGs at display resolution.</p>
   </div>
-</div>
+</aside>
 
-<div id="canvas-wrap">
+<main id="canvas-area">
   <canvas id="c"></canvas>
+</main>
+
 </div>
 
 <script>
@@ -284,7 +233,7 @@ button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 const canvas = document.getElementById('c');
 const ctx    = canvas.getContext('2d');
-const wrap   = document.getElementById('canvas-wrap');
+const wrap   = document.getElementById('canvas-area');
 
 // ── Sizing ────────────────────────────────────────────────────────────────────
 let exportW = 1920, exportH = 1080, DW = 960, DH = 540;

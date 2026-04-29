@@ -7,60 +7,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/hty-tools.css">
 <style>
-  :root {
-    --bg: #ececec; --card: #ffffff; --text: #000000; --text-dim: #6b6b6b;
-    --line: #e4e4e4; --line-2: #d4d4d4; --accent: #d4fc4e;
-    --radius-lg: 20px; --radius-md: 14px; --radius-pill: 999px;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden;
-    background: var(--bg); color: var(--text);
-    font-family: "Inter", -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
-  body { display: flex; height: 100vh; }
-
-  #sidebar { width: 300px; flex-shrink: 0; background: var(--bg); padding: 18px;
-    overflow-y: auto; height: 100vh; border-right: 1px solid var(--line); }
-  #sidebar::-webkit-scrollbar { width: 8px; }
-  #sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 4px; }
-
-  .brand-row { display: flex; align-items: baseline; justify-content: space-between;
-    margin-bottom: 18px; padding: 0 4px; }
-  .brand { font-size: 19px; font-weight: 900; letter-spacing: -0.02em; }
-  .brand .dot { display: inline-block; width: 6px; height: 6px; background: #000;
-    border-radius: 50%; vertical-align: baseline; margin-left: 1px; margin-bottom: 1px; }
-  .brand .reg { font-size: 10px; font-weight: 700; vertical-align: super; margin-left: 2px; }
-  .brand-sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase;
-    letter-spacing: 0.12em; font-weight: 600; }
-
-  .section { background: var(--card); border-radius: var(--radius-lg);
-    padding: 16px 16px 18px; margin-bottom: 10px; }
-  .section-title { display: inline-block; background: var(--accent); color: #000;
-    padding: 3px 7px; font-family: ui-monospace, monospace; font-size: 10px;
-    font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-    margin-bottom: 12px; border-radius: 3px; }
-
-  .control { margin-bottom: 12px; }
-  .control:last-child { margin-bottom: 0; }
-  .control label { display: flex; justify-content: space-between; align-items: center;
-    font-size: 12px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
-  .control label .val { color: var(--text-dim); font-variant-numeric: tabular-nums;
-    font-size: 11px; font-family: ui-monospace, monospace; }
-
-  input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
-    background: #d4d4d4; border-radius: 2px; outline: none; cursor: pointer; }
-  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px;
-    border-radius: 50%; background: #000; cursor: pointer; border: none; transition: transform 0.1s; }
-  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
-  input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%;
-    background: #000; cursor: pointer; border: none; }
-
+  body.tool-shell { font-family: "Inter", -apple-system, sans-serif; }
+  button.btn { margin-bottom: 8px; }
+  button.btn:last-of-type { margin-bottom: 0; }
+  button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 6px; }
+  .btn-row button.btn { margin-bottom: 0; }
   input[type="text"] { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
     color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
     font-size: 18px; font-weight: 700; letter-spacing: 0.05em; outline: none;
     font-family: ui-monospace, monospace; }
   input[type="text"]:focus { border-color: var(--line-2); background: #fff; }
-
   input[type="number"] { background: #f4f4f4; border: 1px solid var(--line);
     color: var(--text); padding: 8px 10px; border-radius: var(--radius-md);
     font-size: 13px; outline: none; font-family: ui-monospace, monospace; width: 100%;
@@ -68,49 +27,10 @@
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
   input[type="number"]:focus { border-color: var(--line-2); background: #fff; }
-
-  select { width: 100%; background: #f4f4f4; border: 1px solid var(--line); color: var(--text);
-    padding: 9px 12px; border-radius: var(--radius-pill); font-size: 13px; outline: none;
-    cursor: pointer; font-family: inherit; font-weight: 500;
-    appearance: none; -webkit-appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
-    background-repeat: no-repeat; background-position: right 14px center; padding-right: 32px; }
-
-  input[type="color"] { -webkit-appearance: none; border: 1px solid var(--line-2);
-    background: transparent; width: 100%; height: 34px; border-radius: var(--radius-md);
-    cursor: pointer; padding: 0; }
-  input[type="color"]::-webkit-color-swatch-wrapper { padding: 3px; }
-  input[type="color"]::-webkit-color-swatch { border: none; border-radius: 10px; }
-
   .color-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
   .color-row:last-child { margin-bottom: 0; }
   .color-label { font-size: 12px; font-weight: 500; flex: 1; }
-  .color-row input[type="color"] { width: 44px; flex-shrink: 0; }
-
-  .toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .toggle:last-child { margin-bottom: 0; }
-  .toggle label { font-size: 12px; font-weight: 500; }
-  .toggle-switch { position: relative; width: 38px; height: 22px; background: #d4d4d4;
-    border-radius: 11px; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
-  .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px;
-    width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: all 0.2s;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-  .toggle-switch.on { background: #000; }
-  .toggle-switch.on::after { left: 18px; }
-
-  button.btn { width: 100%; background: #000; color: #fff; border: none; padding: 10px 14px;
-    border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; cursor: pointer;
-    transition: all 0.15s; font-family: inherit; margin-bottom: 8px; }
-  button.btn:last-of-type { margin-bottom: 0; }
-  button.btn:hover:not(:disabled) { background: #222; }
-  button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line-2); }
-  button.btn.ghost:hover:not(:disabled) { background: #f5f5f5; }
-  button.btn.accent { background: var(--accent); color: #000; }
-  button.btn.accent:hover:not(:disabled) { background: #c2ea3c; }
-  button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
-  .btn-row { display: flex; gap: 6px; }
-  .btn-row button.btn { margin-bottom: 0; }
-
+  .color-row input[type="color"] { width: 44px; flex-shrink: 0; height: 34px; }
   .upload-btn { display: block; width: 100%; padding: 9px 12px; background: #f4f4f4;
     border: 1px dashed var(--line-2); color: var(--text-dim); border-radius: var(--radius-pill);
     font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit;
@@ -118,26 +38,16 @@
   .upload-btn:hover { border-color: #000; color: #000; background: #fff; }
   #font-name { font-size: 11px; color: var(--text-dim); margin-top: 6px;
     text-align: center; min-height: 14px; font-family: ui-monospace, monospace; }
-
-  .status-pill { display: block; padding: 6px 10px; background: #f4f4f4;
-    border-radius: var(--radius-pill); font-size: 11px; color: var(--text-dim);
-    margin-top: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    font-family: ui-monospace, monospace; text-align: center; }
-  .status-pill.ok { background: var(--accent); color: #000; }
-
-  #canvas-wrap { flex: 1; position: relative; overflow: hidden; background: #1a1a1a; }
+  .status-pill { display: block; text-align: center; margin-top: 8px; }
+  #canvas-area { background: #1a1a1a; }
   #c { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: block; }
-
   #preview-c { display: block; width: 100%; height: 80px; border-radius: var(--radius-md);
     margin-top: 10px; background: #0a0a0a; }
-
   #timeline-section { display: none; }
   .frame-count { font-size: 11px; color: var(--text-dim); font-family: ui-monospace, monospace; }
-
   .dim-row { display: flex; align-items: center; gap: 8px; }
   .dim-row input[type="number"] { flex: 1; }
   .dim-sep { font-size: 14px; font-weight: 500; color: var(--text-dim); flex-shrink: 0; }
-
   .color-entry { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
   .color-entry:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
   .color-entry-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -149,18 +59,29 @@
   .color-entry-pct { font-size: 11px; color: var(--text-dim); font-family: ui-monospace, monospace;
     min-width: 30px; text-align: right; }
   .color-entry-remove { background: none; border: none; font-size: 18px; color: var(--text-dim);
-    cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0; }
+    cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0; width: auto; }
   .color-entry-remove:hover { color: #000; }
   #color-list-label { font-size: 11px; font-weight: 600; text-transform: uppercase;
     letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 10px; display: block; }
 </style>
 </head>
-<body>
-<div id="sidebar">
+<body class="tool-shell">
+
+<header class="tool-topbar">
+  <div class="tool-topbar-start">
+    <span class="tool-topbar-mark" aria-hidden="true"></span>
+    <h1 class="tool-title">Particle Typeface</h1>
+  </div>
+  <span class="tool-topbar-meta">Typography</span>
+</header>
+
+<div class="tool-workspace">
+
+<aside id="sidebar">
 
   <div class="brand-row">
     <div class="brand">HTY<span class="dot"></span><span class="reg">®</span></div>
-    <div class="brand-sub">Particle Typeface</div>
+    <div class="brand-sub">Particle engine</div>
   </div>
 
   <!-- Text -->
@@ -339,16 +260,18 @@
     <div id="status" class="status-pill">Type text and click Animate</div>
   </div>
 
-</div>
+</aside>
 
-<div id="canvas-wrap"><canvas id="c"></canvas></div>
+<main id="canvas-area"><canvas id="c"></canvas></main>
+
+</div>
 
 <script>
 (function () {
 
 const canvas = document.getElementById('c');
 const ctx    = canvas.getContext('2d');
-const wrap   = document.getElementById('canvas-wrap');
+const wrap   = document.getElementById('canvas-area');
 const dpr    = window.devicePixelRatio || 1;
 
 let W, H;
