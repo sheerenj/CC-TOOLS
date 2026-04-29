@@ -119,8 +119,8 @@ button.btn.ghost:hover { background: #f5f5f5; }
       <input type="range" id="sl-len" min="2" max="48" value="40" />
     </div>
     <div class="ctrl">
-      <label>Streak thickness <span class="val" id="v-th">0.003</span></label>
-      <input type="range" id="sl-th" min="1" max="48" value="3" />
+      <label>Streak thickness <span class="val" id="v-th">0.0030</span></label>
+      <input type="range" id="sl-th" min="0" max="200" value="30" />
     </div>
     <div class="ctrl">
       <label>Core hotness <span class="val" id="v-core">1.00</span></label>
@@ -296,8 +296,9 @@ void main() {
   /* zFade 0..1 = position in radial shell — drives thickness like reference rim weight */
   float thickRamp = smoothstep(0.04, 0.96, a_meta.z);
 
-  const float WL = 0.92;  /* world half-length scale from u_streak.x */
-  const float WT = 24.0;  /* world half-thickness scale from u_streak.y (UI th is small) */
+  const float WL = 0.92;       /* world half-length scale from u_streak.x */
+  const float WT_BLOB = 24.0; /* blobs stay volumetric */
+  const float WT_STREAK = 6.8; /* streaks: lower than old 24 so UI “hair” values read thin again */
 
   vec3 pos;
   if (kind > 0.5) {
@@ -307,7 +308,7 @@ void main() {
     vec3 side = normalize(cross(upRef, vd));
     vec3 upm = normalize(cross(vd, side));
     float rx = u_streak.x * a_meta.y * 0.34 * WL;
-    float ry = u_streak.y * a_meta.x * 4.05 * WT * 0.042;
+    float ry = u_streak.y * a_meta.x * 4.05 * WT_BLOB * 0.042;
     pos = C + side * (a_corner.x * rx) + upm * (a_corner.y * ry);
   } else {
     /* Streak: long axis = world radial from burst center; thin axis ⊥ radial in view plane */
@@ -322,7 +323,7 @@ void main() {
       side /= sl;
     }
     float hl = u_streak.x * a_meta.y * (1.02 + 1.05 * thickRamp) * WL;
-    float ht = u_streak.y * a_meta.x * (0.88 + 1.55 * thickRamp) * WT;
+    float ht = u_streak.y * a_meta.x * (0.88 + 1.55 * thickRamp) * WT_STREAK;
     pos = C + ax * (a_corner.x * hl) + side * (a_corner.y * ht);
   }
 
@@ -920,7 +921,7 @@ void main() {
       n: +$('sl-n').value,
       blobs: +$('sl-blobs').value,
       len: +$('sl-len').value / 100,
-      th: +$('sl-th').value / 1000,
+      th: Math.max(0, +$('sl-th').value) / 10000,
       core: +$('sl-core').value / 100,
       soft: +$('sl-soft').value / 100,
       sp: +$('sl-sp').value / 100,
@@ -943,7 +944,7 @@ void main() {
       ['sl-n', 'v-n', (v) => String(v)],
       ['sl-blobs', 'v-blobs', (v) => String(v)],
       ['sl-len', 'v-len', (v) => (+v / 100).toFixed(2)],
-      ['sl-th', 'v-th', (v) => (+v / 1000).toFixed(3)],
+      ['sl-th', 'v-th', (v) => (+v / 10000).toFixed(4)],
       ['sl-core', 'v-core', (v) => (+v / 100).toFixed(2)],
       ['sl-soft', 'v-soft', (v) => (+v / 100).toFixed(2)],
       ['sl-sp', 'v-sp', (v) => (+v / 100).toFixed(2)],
@@ -1045,7 +1046,7 @@ void main() {
     gl.useProgram(pOrb);
     gl.uniformMatrix4fv(loc.mvp, false, mVP);
     gl.uniform3f(loc.eye, eye[0], eye[1], eye[2]);
-    gl.uniform2f(loc.streak, u.len * 1.25, u.th * 1.1);
+    gl.uniform2f(loc.streak, u.len * 1.25, Math.max(u.th, 1e-8));
     gl.uniform1f(loc.core, u.core);
     gl.uniform1f(loc.soft, u.soft);
     gl.uniform1i(loc.blendMode, additive ? 1 : 0);
