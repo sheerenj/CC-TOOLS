@@ -434,19 +434,24 @@ void main() {
   let instMeta = gl.createBuffer();
 
   let W = 0, H = 0, dpr = 1;
-  /** Scene color copied from the default framebuffer each frame (avoids RGBA8 FBO issues on some GPUs). */
+  /** Scene color for blur: filled via blit from default FB (copyTexSubImage2D from same canvas is unreliable / often black). */
   let texScene = null;
+  let fboScene = null;
   let fboBlurA = null, texBlurA = null;
   let fboBlurB = null, texBlurB = null;
+  /** False if blit default→texScene failed — keep particle draw on canvas, skip composite. */
+  let sceneTexReady = false;
 
   function destroyFbos() {
     if (texScene) gl.deleteTexture(texScene);
     if (texBlurA) gl.deleteTexture(texBlurA);
     if (texBlurB) gl.deleteTexture(texBlurB);
+    if (fboScene) gl.deleteFramebuffer(fboScene);
     if (fboBlurA) gl.deleteFramebuffer(fboBlurA);
     if (fboBlurB) gl.deleteFramebuffer(fboBlurB);
     texScene = texBlurA = texBlurB = null;
-    fboBlurA = fboBlurB = null;
+    fboScene = fboBlurA = fboBlurB = null;
+    sceneTexReady = false;
   }
 
   function makeTex(w, h) {
@@ -465,8 +470,16 @@ void main() {
     texScene = makeTex(W, H);
     texBlurA = makeTex(W, H);
     texBlurB = makeTex(W, H);
+    fboScene = gl.createFramebuffer();
     fboBlurA = gl.createFramebuffer();
     fboBlurB = gl.createFramebuffer();
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fboScene);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texScene, 0);
+    const stScene = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+    if (stScene !== gl.FRAMEBUFFER_COMPLETE) {
+      console.warn('Orb Burst: scene texture FBO incomplete', stScene);
+    }
 
     for (const [fbo, tex] of [[fboBlurA, texBlurA], [fboBlurB, texBlurB]]) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
@@ -504,12 +517,12 @@ void main() {
   const rnd = (a, b) => a + Math.random() * (b - a);
 
   function hexRgb(hex) {
-    const h = hex.replace('#', '');
-    return [
-      parseInt(h.slice(0, 2), 16) / 255,
-      parseInt(h.slice(2, 4), 16) / 255,
-      parseInt(h.slice(4, 6), 16) / 255
-    ];
+    const h = (hex || '#f2f0ed').replace('#', '');
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    const c = (x) => (Number.isFinite(x) ? Math.max(0, Math.min(255, x)) / 255 : 0.95);
+    return [c(r), c(g), c(b)];
   }
 
   function fibSphere(i, n, radius) {
@@ -792,14 +805,27 @@ void main() {
 
     gl.disable(gl.BLEND);
 
-    /* Copy canvas color into texScene for blur (avoids rendering particles into an RGBA8 FBO). */
-    gl.bindTexture(gl.TEXTURE_2D, texScene);
-    gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, W, H);
-    gl.bindTexture(gl.TEXTURE_2D, null);
+    /*
+     * Put the same pixels into texScene for the blur chain.
+     * copyTexSubImage2D from the default drawing buffer often yields black / fails in-browser;
+     * blitFramebuffer (WebGL2) is the supported path default → texture FBO.
+     */
+    sceneTexReady = false;
+    if (fboScene && texScene && W > 0 && H > 0) {
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fboScene);
+      gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texScene, 0);
+      if (gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE) {
+        gl.blitFramebuffer(0, 0, W, H, 0, 0, W, H, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+        if (gl.getError() === gl.NO_ERROR) sceneTexReady = true;
+      }
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+    }
   }
 
   function drawBlurChain(bpx) {
-    if (bpx < 0.5 || !texScene) return;
+    if (bpx < 0.5 || !texScene || !sceneTexReady) return;
     const s = bpx * dpr;
     gl.disable(gl.BLEND);
 
@@ -825,6 +851,7 @@ void main() {
   }
 
   function composite(u) {
+    if (!sceneTexReady) return;
     gl.viewport(0, 0, W, H);
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);
