@@ -4,7 +4,7 @@
   { "category": "generators",  "slug": "geometric-emblem-generator",    "hasPreview": true,  "name": "Geometric Emblem"         },
   { "category": "generators",  "slug": "reaction-diffusion",            "hasPreview": true                                      },
   { "category": "generators",  "slug": "moire-studio",                  "hasPreview": true,  "name": "Moiré Motion Studio"      },
-  { "category": "generators",  "slug": "moire-svg-studio",              "hasPreview": false, "name": "Moiré SVG Studio"         },
+  { "category": "generators",  "slug": "moire-svg-studio",              "hasPreview": true,  "name": "Moiré SVG Studio"         },
   { "category": "image",       "slug": "BCA-halftone-lines-image",      "hasPreview": true,  "name": "Boothclub Halftone Lines" },
   { "category": "image",       "slug": "halftone-dot-studio",           "hasPreview": true,  "name": "Halftone Dots"            },
   { "category": "image",       "slug": "chromatic-bloom",               "hasPreview": true,  "name": "Chromatic Bloom"          },
