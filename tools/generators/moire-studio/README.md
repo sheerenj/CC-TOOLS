@@ -46,7 +46,7 @@ XOR mode concatenates the path data from both layers into a single `<path fill-r
 
 | | Pixel Studio | SVG Studio |
 |---|---|---|
-| File | `index.html` | `moire-svg-studio.html` |
+| File | `moire-studio/index.html` | `moire-svg-studio/index.html` |
 | Output type | Raster (pixels) | Vector (paths) |
 | Scales without loss | No | Yes |
 | Animation / video | Yes | No |
