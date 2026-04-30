@@ -39,8 +39,8 @@ select { width:100%; background:#f4f4f4; border:1px solid var(--line); padding:9
       <input type="range" id="sl-n" min="32" max="420" step="8" value="120" /></div>
     <div class="ctrl"><label>Capsule length <span class="val" id="v-len">0.36</span></label>
       <input type="range" id="sl-len" min="8" max="100" value="36" /></div>
-    <div class="ctrl"><label>Thickness <span class="val" id="v-rad">0.12</span></label>
-      <input type="range" id="sl-rad" min="4" max="40" value="12" /></div>
+    <div class="ctrl"><label>Thickness <span class="val" id="v-rad">0.14</span></label>
+      <input type="range" id="sl-rad" min="4" max="40" value="14" /></div>
     <div class="ctrl"><label>Radial speed <span class="val" id="v-sp">0.12</span></label>
       <input type="range" id="sl-sp" min="0" max="80" value="12" /></div>
     <div class="ctrl"><label>Camera orbit <span class="val" id="v-orb">0.28</span></label>
@@ -70,7 +70,7 @@ select { width:100%; background:#f4f4f4; border:1px solid var(--line); padding:9
   <div class="section">
     <div class="section-title">Export</div>
     <button type="button" class="btn ghost" id="btn-png">Save PNG</button>
-    <p class="hint">Multi-pass wide Gaussian + gel shading: heavy defocus and colored “light on the plate” over a light background.</p>
+    <p class="hint">Heavy multi-pass blur, central chroma “cloud”, varied pill scales/radii, double-subdivided spheres for rounder caps, earthier palette.</p>
   </div>
 </div>
 <div id="canvas-wrap"><canvas id="c"></canvas><div id="fb"></div></div>
@@ -151,11 +151,11 @@ void main() {
   float body = 0.45 + 0.55 * v_core;
   vec3 base = v_col * wrap * body * (0.42 + 0.55 * rim);
   vec3 gel = v_col * (0.28 + 0.72 * v_core) * (0.55 + 0.45 * rim);
-  vec3 emit = v_col * (fres * 1.85 + rim * 1.1);
-  vec3 rgb = base + gel * 0.55 + emit;
-  rgb = satBoost(rgb, 1.35 + 0.22 * v_core);
-  rgb = pow(max(rgb, vec3(1e-5)), vec3(0.86));
-  o_color = vec4(clamp(rgb * 1.12, 0.0, 1.0), 1.0);
+  vec3 emit = v_col * (fres * 1.15 + rim * 0.75);
+  vec3 rgb = base + gel * 0.48 + emit;
+  rgb = satBoost(rgb, 1.05 + 0.12 * v_core);
+  rgb = pow(max(rgb, vec3(1e-5)), vec3(0.92));
+  o_color = vec4(clamp(rgb * 1.02, 0.0, 1.0), 1.0);
 }`;
 
   const VS_FULL = `#version 300 es
@@ -203,6 +203,11 @@ float linDepth(float d) {
   return (2.0 * u_near * u_far) / (u_far + u_near - z * (u_far - u_near));
 }
 
+vec3 satPick(vec3 c, float k) {
+  float y = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  return clamp(mix(vec3(y), c, k), 0.0, 1.0);
+}
+
 void main() {
   float d0 = texture(u_depth, v_uv).r;
   float L0 = linDepth(d0);
@@ -210,19 +215,23 @@ void main() {
   float norm = clamp(cocRaw / max(u_maxPx, 1.0), 0.0, 1.0);
   norm = pow(max(norm, 0.001), mix(0.65, 1.02, u_bokehBias));
   float tBase = smoothstep(0.0, 0.88, norm);
-  /* Minimum soft mix so edges always smear (gel / plate look); more when out of focus */
-  float t = min(1.0, tBase * 1.14 + 0.3);
+  float t = min(1.0, tBase * 1.18 + 0.34);
 
   vec3 sharp = texture(u_sharp, v_uv).rgb;
   vec3 soft = texture(u_soft, v_uv).rgb;
   vec3 bg = u_bg;
 
-  vec3 col = mix(sharp, soft, t);
-  /* Colored light on the “white plate”: excess chroma from the smeared layer */
-  vec3 bleed = max(soft - bg, vec3(0.0));
-  float bleedW = 0.55 + 0.45 * norm;
-  col += bleed * bleedW * 1.25;
-  col = mix(col, soft, 0.12 * (1.0 - norm * 0.35));
+  vec2 dc = v_uv - vec2(0.5);
+  float hub = exp(-dot(dc, dc) / (2.0 * 0.14 * 0.14));
+  float hubWide = exp(-dot(dc, dc) / (2.0 * 0.32 * 0.32));
+  vec3 softCore = satPick(soft, 1.0 + hub * 1.55 + hubWide * 0.35);
+  vec3 softUse = mix(soft, softCore, clamp(hub * 0.85 + hubWide * 0.25, 0.0, 1.0));
+
+  vec3 col = mix(sharp, softUse, t);
+  vec3 bleed = max(softUse - bg, vec3(0.0));
+  col += bleed * (0.45 + 0.55 * norm) * (1.0 + hub * 0.9);
+  col += (softCore - soft) * hub * 0.38;
+  col = mix(col, softUse, 0.1 * (1.0 - norm * 0.3));
 
   float edge = smoothstep(0.999, 1.0, d0);
   col = mix(col, bg, edge * 0.08);
@@ -275,10 +284,12 @@ void main() {
     ];
     const basePos = new Float32Array(pos);
     const baseIdx = new Uint16Array(idx);
-    return subdivideIco(basePos, baseIdx);
+    let mesh = subdivideIco(basePos, baseIdx);
+    mesh = subdivideIco(mesh.pos, mesh.idx);
+    return mesh;
   }
 
-  /** One midpoint subdivision → smoother capsules (less “flat hex” look). */
+  /** Midpoint subdivision → smoother sphere (twice ≈ rounded pill caps, not needles). */
   function subdivideIco(basePos, baseIdx) {
     const pos = Array.from(basePos);
     const midCache = new Map();
@@ -471,10 +482,11 @@ void main() {
 
   const PAL = {
     reference: [
-      [0.42, 0.26, 0.14], [0.58, 0.4, 0.26], [0.76, 0.54, 0.34], [0.92, 0.62, 0.18],
-      [0.96, 0.12, 0.52], [0.05, 0.62, 0.52], [0.14, 0.42, 0.1], [0.04, 0.1, 0.38],
-      [0.52, 0.28, 0.62], [0.22, 0.14, 0.36], [0.98, 0.86, 0.12], [0.58, 0.54, 0.48],
-      [0.38, 0.3, 0.24], [0.08, 0.48, 0.78], [0.72, 0.12, 0.1]
+      [0.28, 0.17, 0.1], [0.42, 0.28, 0.18], [0.52, 0.38, 0.24], [0.68, 0.48, 0.3],
+      [0.18, 0.12, 0.08], [0.35, 0.22, 0.2], [0.22, 0.32, 0.26], [0.12, 0.2, 0.34],
+      [0.38, 0.24, 0.36], [0.2, 0.14, 0.22], [0.55, 0.42, 0.22], [0.48, 0.44, 0.4],
+      [0.08, 0.1, 0.14], [0.5, 0.14, 0.12], [0.15, 0.38, 0.42], [0.32, 0.35, 0.3],
+      [0.58, 0.22, 0.38], [0.25, 0.3, 0.18]
     ],
     warmFilm: [
       [0.55, 0.35, 0.2], [0.85, 0.5, 0.25], [0.95, 0.35, 0.2], [0.25, 0.15, 0.1],
@@ -491,6 +503,8 @@ void main() {
   const world = new Float32Array(MAX * 3);
   const vel = new Float32Array(MAX * 3);
   const colArr = new Float32Array(MAX * 3);
+  const pillLenMul = new Float32Array(MAX);
+  const pillRadMul = new Float32Array(MAX);
   let nInst = 120;
   const rnd = (a, b) => a + Math.random() * (b - a);
 
@@ -499,13 +513,40 @@ void main() {
     return x - Math.floor(x);
   }
 
-  function fibSphere(i, n, R) {
-    const t = (i + 0.5) / n;
-    const phi = Math.acos(1 - 2 * t);
-    const jitter = (hash01(i) - 0.5) * 0.62;
-    const th = Math.PI * (1 + Math.sqrt(5)) * i + jitter;
-    const sp = Math.sin(phi);
-    return [R * sp * Math.cos(th), R * sp * Math.sin(th), R * Math.cos(phi)];
+  function rollPillGeometry(i) {
+    pillLenMul[i] = (0.38 + hash01(i * 3.17) * 1.42) * (0.72 + hash01(i * 7.91) * 0.56);
+    pillRadMul[i] = (0.52 + hash01(i * 5.73) * 1.05) * (0.62 + hash01(i * 2.29) * 0.58);
+  }
+
+  /** Chaotic shell: mixed Fibonacci + random sphere, power-law radius, tangential jitter. */
+  function chaoticShell(i, n) {
+    let R;
+    if (hash01(i * 1.73) < 0.58) {
+      const pow = 0.28 + hash01(i * 4.07) * 0.95;
+      R = 0.12 + Math.pow(rnd(0, 1), pow) * 1.08;
+    } else {
+      R = rnd(0.18, 1.06);
+    }
+    if (hash01(i * 11.2) > 0.7) R *= rnd(0.42, 0.92);
+    let th;
+    let ph;
+    if (hash01(i * 13.4) < 0.38) {
+      ph = Math.acos(1 - 2 * rnd(0, 1));
+      th = rnd(0, Math.PI * 2);
+    } else {
+      const t = (i + 0.5) / Math.max(n, 1);
+      ph = Math.acos(1 - 2 * t);
+      th = Math.PI * (1 + Math.sqrt(5)) * i + (hash01(i * 6.1) - 0.5) * 1.55;
+    }
+    const sp = Math.sin(ph);
+    let x = R * sp * Math.cos(th);
+    let y = R * sp * Math.sin(th);
+    let z = R * Math.cos(ph);
+    const j = 0.11 * R;
+    x += (hash01(i * 17.3) - 0.5) * j;
+    y += (hash01(i * 19.1) - 0.5) * j;
+    z += (hash01(i * 23.7) - 0.5) * j;
+    return [x, y, z];
   }
 
   function hexRgb(hex) {
@@ -559,18 +600,21 @@ void main() {
 
   function initParticles() {
     const pal = PAL[palKey] || PAL.reference;
-    const inner = 0.36;
-    const outer = 1.02;
+    const nn = Math.max(40, nInst);
     for (let i = 0; i < nInst; i++) {
-      const R = rnd(inner, outer);
-      const [x, y, z] = fibSphere(i, Math.max(40, nInst), R);
+      rollPillGeometry(i);
+      const [x, y, z] = chaoticShell(i, nn);
       world[i * 3] = x;
       world[i * 3 + 1] = y;
       world[i * 3 + 2] = z;
       const L = Math.hypot(x, y, z) || 1;
-      vel[i * 3] = x / L;
-      vel[i * 3 + 1] = y / L;
-      vel[i * 3 + 2] = z / L;
+      const vx = x / L + (hash01(i * 29.3) - 0.5) * 0.14;
+      const vy = y / L + (hash01(i * 31.1) - 0.5) * 0.14;
+      const vz = z / L + (hash01(i * 33.9) - 0.5) * 0.14;
+      const vL = Math.hypot(vx, vy, vz) || 1;
+      vel[i * 3] = vx / vL;
+      vel[i * 3 + 1] = vy / vL;
+      vel[i * 3 + 2] = vz / vL;
       const c = pal[i % pal.length];
       colArr[i * 3] = c[0];
       colArr[i * 3 + 1] = c[1];
@@ -580,12 +624,16 @@ void main() {
   }
 
   function uploadInst() {
-    const halfLen = (+$('sl-len').value / 100) * 0.55;
-    const rad = (+$('sl-rad').value / 100) * 0.38;
+    const baseHL = (+$('sl-len').value / 100) * 0.55;
+    const baseR = (+$('sl-rad').value / 100) * 0.38;
     for (let i = 0; i < nInst; i++) {
       const o = i * 20;
       const x = world[i * 3], y = world[i * 3 + 1], z = world[i * 3 + 2];
       const ax = x, ay = y, az = z;
+      let halfLen = baseHL * pillLenMul[i];
+      let rad = baseR * pillRadMul[i];
+      const maxAR = 2.75 + hash01(i * 41.2) * 0.65;
+      if (halfLen > rad * maxAR) halfLen = rad * maxAR;
       mat4Pill(x, y, z, ax, ay, az, halfLen, rad, inst, o);
       inst[o + 16] = colArr[i * 3];
       inst[o + 17] = colArr[i * 3 + 1];
@@ -700,21 +748,26 @@ void main() {
 
   function updateParticles(dt, u) {
     const speed = u.sp * 0.9;
-    const inner = 0.34;
-    const outer = 1.08;
+    const inner = 0.1;
+    const outer = 1.12;
     const pal = PAL[palKey] || PAL.reference;
+    const nn = Math.max(40, nInst);
     for (let i = 0; i < nInst; i++) {
       let x = world[i * 3], y = world[i * 3 + 1], z = world[i * 3 + 2];
       x += vel[i * 3] * speed * dt;
       y += vel[i * 3 + 1] * speed * dt;
       z += vel[i * 3 + 2] * speed * dt;
       const d = Math.hypot(x, y, z);
-      if (d > outer + 0.08 || d < inner * 0.4) {
-        const R = rnd(inner, outer);
-        const [nx, ny, nz] = fibSphere(i, Math.max(40, nInst), R);
+      if (d > outer + 0.1 || d < inner) {
+        rollPillGeometry(i);
+        const [nx, ny, nz] = chaoticShell(i, nn);
         world[i * 3] = nx; world[i * 3 + 1] = ny; world[i * 3 + 2] = nz;
         const L = Math.hypot(nx, ny, nz) || 1;
-        vel[i * 3] = nx / L; vel[i * 3 + 1] = ny / L; vel[i * 3 + 2] = nz / L;
+        const vx = nx / L + (hash01(i * 47.1 + 1) - 0.5) * 0.14;
+        const vy = ny / L + (hash01(i * 51.3 + 1) - 0.5) * 0.14;
+        const vz = nz / L + (hash01(i * 53.7 + 1) - 0.5) * 0.14;
+        const vL = Math.hypot(vx, vy, vz) || 1;
+        vel[i * 3] = vx / vL; vel[i * 3 + 1] = vy / vL; vel[i * 3 + 2] = vz / vL;
         const c = pal[i % pal.length];
         colArr[i * 3] = c[0]; colArr[i * 3 + 1] = c[1]; colArr[i * 3 + 2] = c[2];
       } else {
@@ -749,9 +802,9 @@ void main() {
   function drawPost(u) {
     if (!texBlurH || !texBlurV) return;
     const bg = hexRgb(u.bg);
-    const sigma = Math.max(4.0, u.bpx * 0.58);
+    const sigma = Math.max(4.8, u.bpx * 0.66);
     let srcTex = texColor;
-    const rounds = 4;
+    const rounds = 5;
     for (let r = 0; r < rounds; r++) {
       drawBlurPass(srcTex, fboBlurH, 1 / W, 0, sigma);
       drawBlurPass(texBlurH, fboBlurV, 0, 1 / H, sigma);
