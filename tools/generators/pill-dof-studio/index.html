@@ -52,8 +52,8 @@ select { width:100%; background:#f4f4f4; border:1px solid var(--line); padding:9
       <input type="range" id="sl-dof" min="0" max="250" value="135" /></div>
     <div class="ctrl"><label>Focus distance <span class="val" id="v-foc">2.1</span></label>
       <input type="range" id="sl-foc" min="40" max="320" value="210" /></div>
-    <div class="ctrl"><label>Max blur px <span class="val" id="v-bpx">22</span></label>
-      <input type="range" id="sl-bpx" min="2" max="56" value="22" /></div>
+    <div class="ctrl"><label>Max blur px <span class="val" id="v-bpx">48</span></label>
+      <input type="range" id="sl-bpx" min="8" max="120" value="48" /></div>
     <div class="ctrl"><label>Bokeh shape <span class="val" id="v-bok">0.55</span></label>
       <input type="range" id="sl-bok" min="10" max="100" value="55" /></div>
   </div>
@@ -65,12 +65,12 @@ select { width:100%; background:#f4f4f4; border:1px solid var(--line); padding:9
         <option value="warmFilm">Warm film</option>
         <option value="coolMuted">Cool muted</option>
       </select></div>
-    <div class="ctrl"><label>Background</label><div class="swatch-wrap"><input type="color" id="cp-bg" value="#e8e6e4" /></div></div>
+    <div class="ctrl"><label>Background</label><div class="swatch-wrap"><input type="color" id="cp-bg" value="#f4f3f8" /></div></div>
   </div>
   <div class="section">
     <div class="section-title">Export</div>
     <button type="button" class="btn ghost" id="btn-png">Save PNG</button>
-    <p class="hint">Separable Gaussian blur for smooth defocus, then depth-based mix so sharp color stays in the “core” while edges fall off softly.</p>
+    <p class="hint">Multi-pass wide Gaussian + gel shading: heavy defocus and colored “light on the plate” over a light background.</p>
   </div>
 </div>
 <div id="canvas-wrap"><canvas id="c"></canvas><div id="fb"></div></div>
@@ -116,6 +116,7 @@ uniform mat4 u_vp;
 out vec3 v_norW;
 out vec3 v_col;
 out float v_core;
+out vec3 v_world;
 void main() {
   mat4 M = mat4(u_m0, u_m1, u_m2, u_m3);
   vec4 w = M * vec4(a_pos, 1.0);
@@ -124,14 +125,17 @@ void main() {
   v_col = u_col.rgb;
   float along = abs(a_pos.y);
   v_core = pow(max(1.0 - along, 0.0), 0.5);
+  v_world = w.xyz;
   gl_Position = u_vp * w;
 }`;
 
   const FS_CAP = `#version 300 es
 precision highp float;
+uniform vec3 u_eye;
 in vec3 v_norW;
 in vec3 v_col;
 in float v_core;
+in vec3 v_world;
 out vec4 o_color;
 vec3 satBoost(vec3 c, float amt) {
   float y = dot(c, vec3(0.2126, 0.7152, 0.0722));
@@ -139,13 +143,19 @@ vec3 satBoost(vec3 c, float amt) {
 }
 void main() {
   vec3 n = normalize(v_norW);
-  float wrap = 0.42 + 0.58 * (0.5 + 0.5 * abs(n.y));
-  float rim = pow(clamp(1.0 - n.z * 0.5 - n.x * 0.18, 0.0, 1.0), 1.05);
-  float body = 0.72 + 0.38 * v_core;
-  vec3 rgb = v_col * wrap * (0.62 + 0.85 * rim) * body;
-  rgb = satBoost(rgb, 1.28 + 0.18 * v_core);
-  rgb = pow(max(rgb, vec3(1e-5)), vec3(0.88));
-  o_color = vec4(clamp(rgb * 1.08, 0.0, 1.0), 1.0);
+  vec3 V = normalize(u_eye - v_world);
+  float ndv = clamp(abs(dot(n, V)), 0.0, 1.0);
+  float fres = pow(1.0 - ndv, 2.35);
+  float wrap = 0.38 + 0.62 * (0.5 + 0.5 * abs(n.y));
+  float rim = pow(clamp(1.0 - n.z * 0.48 - n.x * 0.16, 0.0, 1.0), 0.95);
+  float body = 0.45 + 0.55 * v_core;
+  vec3 base = v_col * wrap * body * (0.42 + 0.55 * rim);
+  vec3 gel = v_col * (0.28 + 0.72 * v_core) * (0.55 + 0.45 * rim);
+  vec3 emit = v_col * (fres * 1.85 + rim * 1.1);
+  vec3 rgb = base + gel * 0.55 + emit;
+  rgb = satBoost(rgb, 1.35 + 0.22 * v_core);
+  rgb = pow(max(rgb, vec3(1e-5)), vec3(0.86));
+  o_color = vec4(clamp(rgb * 1.12, 0.0, 1.0), 1.0);
 }`;
 
   const VS_FULL = `#version 300 es
@@ -163,10 +173,10 @@ out vec4 o;
 void main() {
   vec3 acc = vec3(0.0);
   float wsum = 0.0;
-  for (int i = -6; i <= 6; i++) {
+  for (int i = -14; i <= 14; i++) {
     float fi = float(i);
-    float w = exp(-(fi * fi) / (2.0 * u_sigmaPx * u_sigmaPx + 0.25));
-    vec2 suv = clamp(v_uv + u_stepUv * fi, vec2(0.0003), vec2(0.9997));
+    float w = exp(-(fi * fi) / (2.0 * u_sigmaPx * u_sigmaPx + 0.2));
+    vec2 suv = clamp(v_uv + u_stepUv * fi, vec2(0.0002), vec2(0.9998));
     acc += texture(u_tex, suv).rgb * w;
     wsum += w;
   }
@@ -193,33 +203,30 @@ float linDepth(float d) {
   return (2.0 * u_near * u_far) / (u_far + u_near - z * (u_far - u_near));
 }
 
-vec3 sat(vec3 c, float k) {
-  float y = dot(c, vec3(0.2126, 0.7152, 0.0722));
-  return clamp(mix(vec3(y), c, k), 0.0, 1.0);
-}
-
 void main() {
   float d0 = texture(u_depth, v_uv).r;
   float L0 = linDepth(d0);
-  float cocRaw = abs(L0 - u_focusLin) * u_dofStr * 3.85;
+  float cocRaw = abs(L0 - u_focusLin) * u_dofStr * 4.35;
   float norm = clamp(cocRaw / max(u_maxPx, 1.0), 0.0, 1.0);
-  norm = pow(max(norm, 0.002), mix(0.72, 1.08, u_bokehBias));
-  float t = smoothstep(0.06, 0.98, norm);
+  norm = pow(max(norm, 0.001), mix(0.65, 1.02, u_bokehBias));
+  float tBase = smoothstep(0.0, 0.88, norm);
+  /* Minimum soft mix so edges always smear (gel / plate look); more when out of focus */
+  float t = min(1.0, tBase * 1.14 + 0.3);
 
   vec3 sharp = texture(u_sharp, v_uv).rgb;
   vec3 soft = texture(u_soft, v_uv).rgb;
-  vec3 sharpCore = sat(sharp, 1.22);
-
-  vec3 col = mix(sharpCore, soft, t);
-  float shoulder = smoothstep(0.16, 0.58, norm) * (1.0 - smoothstep(0.58, 0.94, norm));
-  col = mix(col, sharpCore, shoulder * 0.32);
-  float micro = exp(-norm * norm * 8.5);
-  col = mix(col, sharpCore, micro * t * 0.16);
-
   vec3 bg = u_bg;
+
+  vec3 col = mix(sharp, soft, t);
+  /* Colored light on the “white plate”: excess chroma from the smeared layer */
+  vec3 bleed = max(soft - bg, vec3(0.0));
+  float bleedW = 0.55 + 0.45 * norm;
+  col += bleed * bleedW * 1.25;
+  col = mix(col, soft, 0.12 * (1.0 - norm * 0.35));
+
   float edge = smoothstep(0.999, 1.0, d0);
-  col = mix(col, bg, edge * 0.1);
-  o = vec4(col, 1.0);
+  col = mix(col, bg, edge * 0.08);
+  o = vec4(clamp(col, 0.0, 1.0), 1.0);
 }`;
 
   const pCap = link(compile(gl.VERTEX_SHADER, VS_CAP), compile(gl.FRAGMENT_SHADER, FS_CAP));
@@ -229,13 +236,13 @@ void main() {
 
   const loc = {
     cap_vp: gl.getUniformLocation(pCap, 'u_vp'),
+    cap_eye: gl.getUniformLocation(pCap, 'u_eye'),
     blur_tex: gl.getUniformLocation(pBlur, 'u_tex'),
     blur_step: gl.getUniformLocation(pBlur, 'u_stepUv'),
     blur_sigma: gl.getUniformLocation(pBlur, 'u_sigmaPx'),
     dof_sharp: gl.getUniformLocation(pDof, 'u_sharp'),
     dof_soft: gl.getUniformLocation(pDof, 'u_soft'),
     dof_depth: gl.getUniformLocation(pDof, 'u_depth'),
-    dof_invRes: gl.getUniformLocation(pDof, 'u_invRes'),
     dof_bg: gl.getUniformLocation(pDof, 'u_bg'),
     dof_near: gl.getUniformLocation(pDof, 'u_near'),
     dof_far: gl.getUniformLocation(pDof, 'u_far'),
@@ -731,6 +738,7 @@ void main() {
     gl.disable(gl.BLEND);
     gl.useProgram(pCap);
     gl.uniformMatrix4fv(loc.cap_vp, false, mVP);
+    gl.uniform3f(loc.cap_eye, eye[0], eye[1], eye[2]);
     uploadInst();
     gl.bindVertexArray(vaoGeo);
     gl.drawElementsInstanced(gl.TRIANGLES, indexCount, gl.UNSIGNED_SHORT, 0, nInst);
@@ -741,9 +749,14 @@ void main() {
   function drawPost(u) {
     if (!texBlurH || !texBlurV) return;
     const bg = hexRgb(u.bg);
-    const sigma = Math.max(1.35, u.bpx * 0.4);
-    drawBlurPass(texColor, fboBlurH, 1 / W, 0, sigma);
-    drawBlurPass(texBlurH, fboBlurV, 0, 1 / H, sigma);
+    const sigma = Math.max(4.0, u.bpx * 0.58);
+    let srcTex = texColor;
+    const rounds = 4;
+    for (let r = 0; r < rounds; r++) {
+      drawBlurPass(srcTex, fboBlurH, 1 / W, 0, sigma);
+      drawBlurPass(texBlurH, fboBlurV, 0, 1 / H, sigma);
+      srcTex = texBlurV;
+    }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, W, H);
