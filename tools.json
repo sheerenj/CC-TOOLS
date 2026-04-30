@@ -6,11 +6,13 @@
   { "category": "generators",  "slug": "moire-studio",                  "hasPreview": true,  "name": "Moiré Motion Studio"      },
   { "category": "generators",  "slug": "moire-svg-studio",              "hasPreview": true,  "name": "Moiré SVG Studio"         },
   { "category": "generators",  "slug": "orb-burst-studio",              "hasPreview": true,  "name": "Orb Burst Studio"         },
+  { "category": "generators",  "slug": "pill-dof-studio",               "hasPreview": true,  "name": "Pill Orb DOF"             },
   { "category": "image",       "slug": "BCA-halftone-lines-image",      "hasPreview": true,  "name": "Boothclub Halftone Lines" },
   { "category": "image",       "slug": "halftone-dot-studio",           "hasPreview": true,  "name": "Halftone Dots"            },
   { "category": "image",       "slug": "chromatic-bloom",               "hasPreview": true,  "name": "Chromatic Bloom"          },
   { "category": "templates",   "slug": "ascii-template-tool",           "hasPreview": true,  "name": "BOOTHCLUB ASCII Template" },
   { "category": "typography",  "slug": "experimental-type-tool",        "hasPreview": true,  "name": "Experimental Type"        },
   { "category": "typography",  "slug": "particle-typeface",             "hasPreview": true                                      },
+  { "category": "typography",  "slug": "topotype",                      "hasPreview": false, "name": "Topotype"                 },
   { "category": "video",       "slug": "BCA-halftone-lines-video",      "hasPreview": true,  "name": "Boothclub Halftone Lines" }
 ]

@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pill Orb DOF</title>
+<style>
+:root { --bg:#ececec; --card:#fff; --dim:#6b6b6b; --line:#e4e4e4; --accent:#d4fc4e; --lg:20px; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); font-family:-apple-system,Inter,sans-serif; }
+body { display:flex; }
+#sidebar { width:300px; flex-shrink:0; background:var(--bg); padding:16px; overflow-y:auto; height:100vh; border-right:1px solid #d4d4d4; }
+.section { background:var(--card); border-radius:var(--lg); padding:14px 16px; margin-bottom:10px; }
+.section-title { display:inline-block; background:var(--accent); color:#000; padding:3px 7px; font:700 10px ui-monospace,monospace; text-transform:uppercase; margin-bottom:12px; border-radius:3px; }
+.ctrl { margin-bottom:12px; }
+.ctrl > label { display:flex; justify-content:space-between; font-size:12px; font-weight:500; margin-bottom:6px; }
+.ctrl > label .val { color:var(--dim); font:11px ui-monospace,monospace; }
+input[type=range] { -webkit-appearance:none; width:100%; height:4px; background:#d4d4d4; border-radius:2px; cursor:pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#000; cursor:pointer; }
+select { width:100%; background:#f4f4f4; border:1px solid var(--line); padding:9px 12px; border-radius:999px; font-size:12px; }
+.swatch-wrap { width:40px; height:32px; border-radius:8px; overflow:hidden; border:1px solid #d4d4d4; position:relative; margin-top:4px; }
+.swatch-wrap input { position:absolute; inset:-4px; width:calc(100%+8px); height:calc(100%+8px); border:none; cursor:pointer; }
+.btn { width:100%; background:#000; color:#fff; border:none; padding:10px 14px; border-radius:999px; font:600 13px inherit; cursor:pointer; }
+.btn.ghost { background:#fff; color:#000; border:1px solid #d4d4d4; }
+.hint { font-size:11px; color:var(--dim); line-height:1.55; margin-top:8px; }
+#canvas-wrap { flex:1; display:flex; align-items:center; justify-content:center; background:#ddd; min-width:200px; min-height:200px; position:relative; }
+#c { display:block; max-width:100%; max-height:100%; }
+#fb { position:absolute; inset:0; display:none; align-items:center; justify-content:center; padding:24px; font-size:13px; color:var(--dim); }
+#fb.show { display:flex; }
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <div style="font-weight:900;font-size:16px">HEAR THE YOUTH</div>
+  <div style="font-size:11px;color:var(--dim);text-transform:uppercase;font-weight:700;margin:4px 0 14px">Pill Orb DOF</div>
+  <div class="section">
+    <div class="section-title">Scene</div>
+    <div class="ctrl"><label>Pills <span class="val" id="v-n">120</span></label>
+      <input type="range" id="sl-n" min="32" max="420" step="8" value="120" /></div>
+    <div class="ctrl"><label>Capsule length <span class="val" id="v-len">0.36</span></label>
+      <input type="range" id="sl-len" min="8" max="100" value="36" /></div>
+    <div class="ctrl"><label>Thickness <span class="val" id="v-rad">0.12</span></label>
+      <input type="range" id="sl-rad" min="4" max="40" value="12" /></div>
+    <div class="ctrl"><label>Radial speed <span class="val" id="v-sp">0.12</span></label>
+      <input type="range" id="sl-sp" min="0" max="80" value="12" /></div>
+    <div class="ctrl"><label>Camera orbit <span class="val" id="v-orb">0.28</span></label>
+      <input type="range" id="sl-orb" min="0" max="100" value="28" /></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Depth of field</div>
+    <div class="ctrl"><label>DOF strength <span class="val" id="v-dof">1.35</span></label>
+      <input type="range" id="sl-dof" min="0" max="250" value="135" /></div>
+    <div class="ctrl"><label>Focus distance <span class="val" id="v-foc">2.1</span></label>
+      <input type="range" id="sl-foc" min="40" max="320" value="210" /></div>
+    <div class="ctrl"><label>Max blur px <span class="val" id="v-bpx">22</span></label>
+      <input type="range" id="sl-bpx" min="2" max="56" value="22" /></div>
+    <div class="ctrl"><label>Bokeh shape <span class="val" id="v-bok">0.55</span></label>
+      <input type="range" id="sl-bok" min="10" max="100" value="55" /></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Color</div>
+    <div class="ctrl"><label>Palette</label>
+      <select id="sel-pal">
+        <option value="reference" selected>Reference — browns / brights / dark / muted</option>
+        <option value="warmFilm">Warm film</option>
+        <option value="coolMuted">Cool muted</option>
+      </select></div>
+    <div class="ctrl"><label>Background</label><div class="swatch-wrap"><input type="color" id="cp-bg" value="#e8e6e4" /></div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Export</div>
+    <button type="button" class="btn ghost" id="btn-png">Save PNG</button>
+    <p class="hint">Separable Gaussian blur for smooth defocus, then depth-based mix so sharp color stays in the “core” while edges fall off softly.</p>
+  </div>
+</div>
+<div id="canvas-wrap"><canvas id="c"></canvas><div id="fb"></div></div>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const canvas = $('c');
+  const fb = $('fb');
+  const gl = canvas.getContext('webgl2', { alpha: false, antialias: false, depth: false, stencil: false, preserveDrawingBuffer: true });
+  if (!gl) { fb.textContent = 'WebGL2 required.'; fb.classList.add('show'); return; }
+
+  const NEAR = 0.08;
+  const FAR = 16;
+
+  function compile(type, src) {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) { console.error(gl.getShaderInfoLog(sh)); gl.deleteShader(sh); return null; }
+    return sh;
+  }
+  function link(vs, fs) {
+    const p = gl.createProgram();
+    gl.attachShader(p, vs);
+    gl.attachShader(p, fs);
+    gl.linkProgram(p);
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) { console.error(gl.getProgramInfoLog(p)); gl.deleteProgram(p); return null; }
+    return p;
+  }
+
+  const VS_CAP = `#version 300 es
+layout(location=0) in vec3 a_pos;
+layout(location=1) in vec3 a_nor;
+layout(location=2) in vec4 u_m0;
+layout(location=3) in vec4 u_m1;
+layout(location=4) in vec4 u_m2;
+layout(location=5) in vec4 u_m3;
+layout(location=6) in vec4 u_col;
+uniform mat4 u_vp;
+out vec3 v_norW;
+out vec3 v_col;
+out float v_core;
+void main() {
+  mat4 M = mat4(u_m0, u_m1, u_m2, u_m3);
+  vec4 w = M * vec4(a_pos, 1.0);
+  mat3 R = mat3(u_m0.xyz, u_m1.xyz, u_m2.xyz);
+  v_norW = normalize(R * a_nor);
+  v_col = u_col.rgb;
+  float along = abs(a_pos.y);
+  v_core = pow(max(1.0 - along, 0.0), 0.5);
+  gl_Position = u_vp * w;
+}`;
+
+  const FS_CAP = `#version 300 es
+precision highp float;
+in vec3 v_norW;
+in vec3 v_col;
+in float v_core;
+out vec4 o_color;
+vec3 satBoost(vec3 c, float amt) {
+  float y = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  return clamp(mix(vec3(y), c, amt), 0.0, 1.0);
+}
+void main() {
+  vec3 n = normalize(v_norW);
+  float wrap = 0.42 + 0.58 * (0.5 + 0.5 * abs(n.y));
+  float rim = pow(clamp(1.0 - n.z * 0.5 - n.x * 0.18, 0.0, 1.0), 1.05);
+  float body = 0.72 + 0.38 * v_core;
+  vec3 rgb = v_col * wrap * (0.62 + 0.85 * rim) * body;
+  rgb = satBoost(rgb, 1.28 + 0.18 * v_core);
+  rgb = pow(max(rgb, vec3(1e-5)), vec3(0.88));
+  o_color = vec4(clamp(rgb * 1.08, 0.0, 1.0), 1.0);
+}`;
+
+  const VS_FULL = `#version 300 es
+layout(location=0) in vec2 a_p;
+out vec2 v_uv;
+void main() { v_uv = a_p * 0.5 + 0.5; gl_Position = vec4(a_p, 0.0, 1.0); }`;
+
+  const FS_BLUR_SEP = `#version 300 es
+precision highp float;
+uniform sampler2D u_tex;
+uniform vec2 u_stepUv;
+uniform float u_sigmaPx;
+in vec2 v_uv;
+out vec4 o;
+void main() {
+  vec3 acc = vec3(0.0);
+  float wsum = 0.0;
+  for (int i = -6; i <= 6; i++) {
+    float fi = float(i);
+    float w = exp(-(fi * fi) / (2.0 * u_sigmaPx * u_sigmaPx + 0.25));
+    vec2 suv = clamp(v_uv + u_stepUv * fi, vec2(0.0003), vec2(0.9997));
+    acc += texture(u_tex, suv).rgb * w;
+    wsum += w;
+  }
+  o = vec4(acc / max(wsum, 1e-4), 1.0);
+}`;
+
+  const FS_DOF_COMP = `#version 300 es
+precision highp float;
+uniform sampler2D u_sharp;
+uniform sampler2D u_soft;
+uniform sampler2D u_depth;
+uniform vec3 u_bg;
+uniform float u_near;
+uniform float u_far;
+uniform float u_focusLin;
+uniform float u_dofStr;
+uniform float u_maxPx;
+uniform float u_bokehBias;
+in vec2 v_uv;
+out vec4 o;
+
+float linDepth(float d) {
+  float z = d * 2.0 - 1.0;
+  return (2.0 * u_near * u_far) / (u_far + u_near - z * (u_far - u_near));
+}
+
+vec3 sat(vec3 c, float k) {
+  float y = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  return clamp(mix(vec3(y), c, k), 0.0, 1.0);
+}
+
+void main() {
+  float d0 = texture(u_depth, v_uv).r;
+  float L0 = linDepth(d0);
+  float cocRaw = abs(L0 - u_focusLin) * u_dofStr * 3.85;
+  float norm = clamp(cocRaw / max(u_maxPx, 1.0), 0.0, 1.0);
+  norm = pow(max(norm, 0.002), mix(0.72, 1.08, u_bokehBias));
+  float t = smoothstep(0.06, 0.98, norm);
+
+  vec3 sharp = texture(u_sharp, v_uv).rgb;
+  vec3 soft = texture(u_soft, v_uv).rgb;
+  vec3 sharpCore = sat(sharp, 1.22);
+
+  vec3 col = mix(sharpCore, soft, t);
+  float shoulder = smoothstep(0.16, 0.58, norm) * (1.0 - smoothstep(0.58, 0.94, norm));
+  col = mix(col, sharpCore, shoulder * 0.32);
+  float micro = exp(-norm * norm * 8.5);
+  col = mix(col, sharpCore, micro * t * 0.16);
+
+  vec3 bg = u_bg;
+  float edge = smoothstep(0.999, 1.0, d0);
+  col = mix(col, bg, edge * 0.1);
+  o = vec4(col, 1.0);
+}`;
+
+  const pCap = link(compile(gl.VERTEX_SHADER, VS_CAP), compile(gl.FRAGMENT_SHADER, FS_CAP));
+  const pBlur = link(compile(gl.VERTEX_SHADER, VS_FULL), compile(gl.FRAGMENT_SHADER, FS_BLUR_SEP));
+  const pDof = link(compile(gl.VERTEX_SHADER, VS_FULL), compile(gl.FRAGMENT_SHADER, FS_DOF_COMP));
+  if (!pCap || !pBlur || !pDof) { fb.textContent = 'Shader compile failed.'; fb.classList.add('show'); return; }
+
+  const loc = {
+    cap_vp: gl.getUniformLocation(pCap, 'u_vp'),
+    blur_tex: gl.getUniformLocation(pBlur, 'u_tex'),
+    blur_step: gl.getUniformLocation(pBlur, 'u_stepUv'),
+    blur_sigma: gl.getUniformLocation(pBlur, 'u_sigmaPx'),
+    dof_sharp: gl.getUniformLocation(pDof, 'u_sharp'),
+    dof_soft: gl.getUniformLocation(pDof, 'u_soft'),
+    dof_depth: gl.getUniformLocation(pDof, 'u_depth'),
+    dof_invRes: gl.getUniformLocation(pDof, 'u_invRes'),
+    dof_bg: gl.getUniformLocation(pDof, 'u_bg'),
+    dof_near: gl.getUniformLocation(pDof, 'u_near'),
+    dof_far: gl.getUniformLocation(pDof, 'u_far'),
+    dof_focus: gl.getUniformLocation(pDof, 'u_focusLin'),
+    dof_str: gl.getUniformLocation(pDof, 'u_dofStr'),
+    dof_max: gl.getUniformLocation(pDof, 'u_maxPx'),
+    dof_bok: gl.getUniformLocation(pDof, 'u_bokehBias')
+  };
+
+  function buildIcoSphere() {
+    const t = (1 + Math.sqrt(5)) / 2;
+    const raw = [
+      [-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0],
+      [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
+      [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]
+    ];
+    const pos = [];
+    const nor = [];
+    for (let i = 0; i < raw.length; i++) {
+      const [x, y, z] = raw[i];
+      const L = Math.hypot(x, y, z);
+      pos.push(x / L, y / L, z / L);
+      nor.push(x / L, y / L, z / L);
+    }
+    const idx = [
+      0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11,
+      1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8,
+      3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9,
+      4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1
+    ];
+    const basePos = new Float32Array(pos);
+    const baseIdx = new Uint16Array(idx);
+    return subdivideIco(basePos, baseIdx);
+  }
+
+  /** One midpoint subdivision → smoother capsules (less “flat hex” look). */
+  function subdivideIco(basePos, baseIdx) {
+    const pos = Array.from(basePos);
+    const midCache = new Map();
+    function keyEdge(a, b) {
+      return a < b ? a * 4096 + b : b * 4096 + a;
+    }
+    function getMid(i, j) {
+      const k = keyEdge(i, j);
+      if (midCache.has(k)) return midCache.get(k);
+      const ia = i * 3;
+      const ib = j * 3;
+      let mx = pos[ia] + pos[ib];
+      let my = pos[ia + 1] + pos[ib + 1];
+      let mz = pos[ia + 2] + pos[ib + 2];
+      const L = Math.hypot(mx, my, mz) || 1;
+      mx /= L;
+      my /= L;
+      mz /= L;
+      const ni = (pos.length / 3) | 0;
+      pos.push(mx, my, mz);
+      midCache.set(k, ni);
+      return ni;
+    }
+    const outIdx = [];
+    for (let t = 0; t < baseIdx.length; t += 3) {
+      const v0 = baseIdx[t];
+      const v1 = baseIdx[t + 1];
+      const v2 = baseIdx[t + 2];
+      const a = getMid(v0, v1);
+      const b = getMid(v1, v2);
+      const c = getMid(v2, v0);
+      outIdx.push(v0, a, c, v1, b, a, v2, c, b, a, b, c);
+    }
+    const p = new Float32Array(pos);
+    return { pos: p, nor: p, idx: new Uint16Array(outIdx) };
+  }
+
+  const ico = buildIcoSphere();
+  const vaoGeo = gl.createVertexArray();
+  const bufPos = gl.createBuffer();
+  const bufNor = gl.createBuffer();
+  const bufIdx = gl.createBuffer();
+  gl.bindVertexArray(vaoGeo);
+  gl.bindBuffer(gl.ARRAY_BUFFER, bufPos);
+  gl.bufferData(gl.ARRAY_BUFFER, ico.pos, gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 12, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, bufNor);
+  gl.bufferData(gl.ARRAY_BUFFER, ico.nor, gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(1);
+  gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 12, 0);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufIdx);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, ico.idx, gl.STATIC_DRAW);
+  const indexCount = ico.idx.length;
+
+  const MAX = 420;
+  const STRIDE = 20 * 4;
+  const bufInst = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, bufInst);
+  gl.bufferData(gl.ARRAY_BUFFER, MAX * STRIDE, gl.DYNAMIC_DRAW);
+  for (let k = 0; k < 4; k++) {
+    const locId = 2 + k;
+    gl.enableVertexAttribArray(locId);
+    gl.vertexAttribPointer(locId, 4, gl.FLOAT, false, STRIDE, k * 16);
+    gl.vertexAttribDivisor(locId, 1);
+  }
+  gl.enableVertexAttribArray(6);
+  gl.vertexAttribPointer(6, 4, gl.FLOAT, false, STRIDE, 64);
+  gl.vertexAttribDivisor(6, 1);
+  gl.bindVertexArray(null);
+
+  const quadVBO = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+  const vaoQuad = gl.createVertexArray();
+  gl.bindVertexArray(vaoQuad);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 8, 0);
+  gl.bindVertexArray(null);
+
+  let W = 0, H = 0, dpr = 1;
+  let texColor = null, texDepth = null, fboScene = null;
+  let texBlurH = null, texBlurV = null, fboBlurH = null, fboBlurV = null;
+  /** 0 = DEPTH_COMPONENT24 + UNSIGNED_INT; 1 = DEPTH24_STENCIL8 (some drivers reject the first combo) */
+  let depthTexMode = 0;
+
+  function destroyFbo() {
+    if (texColor) gl.deleteTexture(texColor);
+    if (texDepth) gl.deleteTexture(texDepth);
+    if (fboScene) gl.deleteFramebuffer(fboScene);
+    if (texBlurH) gl.deleteTexture(texBlurH);
+    if (texBlurV) gl.deleteTexture(texBlurV);
+    if (fboBlurH) gl.deleteFramebuffer(fboBlurH);
+    if (fboBlurV) gl.deleteFramebuffer(fboBlurV);
+    texColor = texDepth = fboScene = null;
+    texBlurH = texBlurV = fboBlurH = fboBlurV = null;
+  }
+
+  function allocFbo() {
+    destroyFbo();
+    if (W < 1 || H < 1) return;
+    texColor = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texColor);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+    texDepth = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texDepth);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    /* UNSIGNED_INT_24_8 is for DEPTH24_STENCIL8, not plain DEPTH_COMPONENT24 — wrong combo → incomplete FBO → black canvas */
+    if (depthTexMode === 0) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, W, H, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
+    } else {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH24_STENCIL8, W, H, 0, gl.DEPTH_STENCIL, gl.UNSIGNED_INT_24_8, null);
+    }
+
+    fboScene = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fboScene);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texColor, 0);
+    if (depthTexMode === 0) {
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, texDepth, 0);
+    } else {
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, texDepth, 0);
+    }
+    const st = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    if (st !== gl.FRAMEBUFFER_COMPLETE) {
+      if (depthTexMode === 0) {
+        depthTexMode = 1;
+        destroyFbo();
+        allocFbo();
+        return;
+      }
+      console.warn('pill-dof FBO incomplete', st);
+      fb.textContent = 'Framebuffer incomplete (GPU). Try another browser or update drivers.';
+      fb.classList.add('show');
+      destroyFbo();
+      return;
+    }
+    fb.classList.remove('show');
+
+    texBlurH = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texBlurH);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+    texBlurV = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texBlurV);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+    fboBlurH = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fboBlurH);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texBlurH, 0);
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) console.warn('blurH FBO');
+
+    fboBlurV = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fboBlurV);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texBlurV, 0);
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) console.warn('blurV FBO');
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
+
+  function drawBlurPass(srcTex, dstFbo, stepUx, stepVy, sigmaPx) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, dstFbo);
+    gl.viewport(0, 0, W, H);
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.BLEND);
+    gl.useProgram(pBlur);
+    gl.uniform1i(loc.blur_tex, 0);
+    gl.uniform2f(loc.blur_step, stepUx, stepVy);
+    gl.uniform1f(loc.blur_sigma, sigmaPx);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, srcTex);
+    gl.bindVertexArray(vaoQuad);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.bindVertexArray(null);
+  }
+
+  const PAL = {
+    reference: [
+      [0.42, 0.26, 0.14], [0.58, 0.4, 0.26], [0.76, 0.54, 0.34], [0.92, 0.62, 0.18],
+      [0.96, 0.12, 0.52], [0.05, 0.62, 0.52], [0.14, 0.42, 0.1], [0.04, 0.1, 0.38],
+      [0.52, 0.28, 0.62], [0.22, 0.14, 0.36], [0.98, 0.86, 0.12], [0.58, 0.54, 0.48],
+      [0.38, 0.3, 0.24], [0.08, 0.48, 0.78], [0.72, 0.12, 0.1]
+    ],
+    warmFilm: [
+      [0.55, 0.35, 0.2], [0.85, 0.5, 0.25], [0.95, 0.35, 0.2], [0.25, 0.15, 0.1],
+      [0.7, 0.6, 0.45], [0.4, 0.3, 0.5]
+    ],
+    coolMuted: [
+      [0.35, 0.45, 0.5], [0.5, 0.55, 0.58], [0.25, 0.32, 0.38], [0.55, 0.4, 0.45],
+      [0.3, 0.5, 0.45], [0.45, 0.38, 0.52]
+    ]
+  };
+
+  let palKey = 'reference';
+  const inst = new Float32Array(MAX * 20);
+  const world = new Float32Array(MAX * 3);
+  const vel = new Float32Array(MAX * 3);
+  const colArr = new Float32Array(MAX * 3);
+  let nInst = 120;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+
+  function hash01(i) {
+    const x = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
+    return x - Math.floor(x);
+  }
+
+  function fibSphere(i, n, R) {
+    const t = (i + 0.5) / n;
+    const phi = Math.acos(1 - 2 * t);
+    const jitter = (hash01(i) - 0.5) * 0.62;
+    const th = Math.PI * (1 + Math.sqrt(5)) * i + jitter;
+    const sp = Math.sin(phi);
+    return [R * sp * Math.cos(th), R * sp * Math.sin(th), R * Math.cos(phi)];
+  }
+
+  function hexRgb(hex) {
+    const h = (hex || '#e8e6e4').replace('#', '');
+    return [
+      parseInt(h.slice(0, 2), 16) / 255,
+      parseInt(h.slice(2, 4), 16) / 255,
+      parseInt(h.slice(4, 6), 16) / 255
+    ];
+  }
+
+  function normalize3(x, y, z) {
+    const L = Math.hypot(x, y, z) || 1;
+    return [x / L, y / L, z / L];
+  }
+  function cross3(ax, ay, az, bx, by, bz) {
+    return [ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx];
+  }
+
+  function mat4Pill(px, py, pz, ax, ay, az, halfLen, radius, out, off) {
+    const [nx, ny, nz] = normalize3(ax, ay, az);
+    let upx = 0, upy = 1, upz = 0;
+    if (Math.abs(ny) > 0.92) { upx = 1; upy = 0; upz = 0; }
+    let rx = upy * nz - upz * ny;
+    let ry = upz * nx - upx * nz;
+    let rz = upx * ny - upy * nx;
+    let rl = Math.hypot(rx, ry, rz) || 1;
+    rx /= rl; ry /= rl; rz /= rl;
+    let ux = ny * rz - nz * ry;
+    let uy = nz * rx - nx * rz;
+    let uz = nx * ry - ny * rx;
+    const ul = Math.hypot(ux, uy, uz) || 1;
+    ux /= ul; uy /= ul; uz /= ul;
+    out[off + 0] = rx * radius;
+    out[off + 1] = ry * radius;
+    out[off + 2] = rz * radius;
+    out[off + 3] = 0;
+    out[off + 4] = nx * halfLen;
+    out[off + 5] = ny * halfLen;
+    out[off + 6] = nz * halfLen;
+    out[off + 7] = 0;
+    out[off + 8] = ux * radius;
+    out[off + 9] = uy * radius;
+    out[off + 10] = uz * radius;
+    out[off + 11] = 0;
+    out[off + 12] = px;
+    out[off + 13] = py;
+    out[off + 14] = pz;
+    out[off + 15] = 1;
+  }
+
+  function initParticles() {
+    const pal = PAL[palKey] || PAL.reference;
+    const inner = 0.36;
+    const outer = 1.02;
+    for (let i = 0; i < nInst; i++) {
+      const R = rnd(inner, outer);
+      const [x, y, z] = fibSphere(i, Math.max(40, nInst), R);
+      world[i * 3] = x;
+      world[i * 3 + 1] = y;
+      world[i * 3 + 2] = z;
+      const L = Math.hypot(x, y, z) || 1;
+      vel[i * 3] = x / L;
+      vel[i * 3 + 1] = y / L;
+      vel[i * 3 + 2] = z / L;
+      const c = pal[i % pal.length];
+      colArr[i * 3] = c[0];
+      colArr[i * 3 + 1] = c[1];
+      colArr[i * 3 + 2] = c[2];
+    }
+    uploadInst();
+  }
+
+  function uploadInst() {
+    const halfLen = (+$('sl-len').value / 100) * 0.55;
+    const rad = (+$('sl-rad').value / 100) * 0.38;
+    for (let i = 0; i < nInst; i++) {
+      const o = i * 20;
+      const x = world[i * 3], y = world[i * 3 + 1], z = world[i * 3 + 2];
+      const ax = x, ay = y, az = z;
+      mat4Pill(x, y, z, ax, ay, az, halfLen, rad, inst, o);
+      inst[o + 16] = colArr[i * 3];
+      inst[o + 17] = colArr[i * 3 + 1];
+      inst[o + 18] = colArr[i * 3 + 2];
+      inst[o + 19] = 1;
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufInst);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, inst.subarray(0, nInst * 20));
+  }
+
+  const mProj = new Float32Array(16);
+  const mView = new Float32Array(16);
+  const mVP = new Float32Array(16);
+
+  function persp(fov, aspect, near, far, out) {
+    const f = 1 / Math.tan(fov / 2);
+    const nf = 1 / (near - far);
+    out[0] = f / aspect; out[1] = 0; out[2] = 0; out[3] = 0;
+    out[4] = 0; out[5] = f; out[6] = 0; out[7] = 0;
+    out[8] = 0; out[9] = 0; out[10] = (far + near) * nf; out[11] = -1;
+    out[12] = 0; out[13] = 0; out[14] = 2 * far * near * nf; out[15] = 0;
+    return out;
+  }
+  function lookAt(eye, center, up, out) {
+    let zx = eye[0] - center[0], zy = eye[1] - center[1], zz = eye[2] - center[2];
+    let len = Math.hypot(zx, zy, zz);
+    zx /= len; zy /= len; zz /= len;
+    let xx = up[1] * zz - up[2] * zy;
+    let xy = up[2] * zx - up[0] * zz;
+    let xz = up[0] * zy - up[1] * zx;
+    len = Math.hypot(xx, xy, xz);
+    xx /= len; xy /= len; xz /= len;
+    const yx = zy * xz - zz * xy;
+    const yy = zz * xx - zx * xz;
+    const yz = zx * xy - zy * xx;
+    out[0] = xx; out[1] = yx; out[2] = zx; out[3] = 0;
+    out[4] = xy; out[5] = yy; out[6] = zy; out[7] = 0;
+    out[8] = xz; out[9] = yz; out[10] = zz; out[11] = 0;
+    out[12] = -(xx * eye[0] + xy * eye[1] + xz * eye[2]);
+    out[13] = -(yx * eye[0] + yy * eye[1] + yz * eye[2]);
+    out[14] = -(zx * eye[0] + zy * eye[1] + zz * eye[2]);
+    out[15] = 1;
+    return out;
+  }
+  function mulMat4(a, b, out) {
+    for (let c = 0; c < 4; c++) {
+      const b0 = b[c * 4 + 0], b1 = b[c * 4 + 1], b2 = b[c * 4 + 2], b3 = b[c * 4 + 3];
+      out[c * 4 + 0] = a[0] * b0 + a[4] * b1 + a[8] * b2 + a[12] * b3;
+      out[c * 4 + 1] = a[1] * b0 + a[5] * b1 + a[9] * b2 + a[13] * b3;
+      out[c * 4 + 2] = a[2] * b0 + a[6] * b1 + a[10] * b2 + a[14] * b3;
+      out[c * 4 + 3] = a[3] * b0 + a[7] * b1 + a[11] * b2 + a[15] * b3;
+    }
+    return out;
+  }
+
+  let time = 0;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const wrap = canvas.parentElement;
+    const cw = Math.max(280, wrap.clientWidth - 24);
+    const ch = Math.max(280, wrap.clientHeight - 24);
+    const side = Math.floor(Math.min(cw, ch) * dpr);
+    W = side;
+    H = side;
+    canvas.width = W;
+    canvas.height = H;
+    canvas.style.width = (W / dpr) + 'px';
+    canvas.style.height = (H / dpr) + 'px';
+    gl.viewport(0, 0, W, H);
+    allocFbo();
+    persp((52 * Math.PI) / 180, W / H, NEAR, FAR, mProj);
+  }
+
+  function readUI() {
+    return {
+      n: +$('sl-n').value | 0,
+      sp: +$('sl-sp').value / 100,
+      orb: +$('sl-orb').value / 100,
+      dof: +$('sl-dof').value / 100,
+      foc: +$('sl-foc').value / 100,
+      bpx: +$('sl-bpx').value,
+      bok: +$('sl-bok').value / 100,
+      bg: $('cp-bg').value
+    };
+  }
+
+  function bindSliders() {
+    const map = [
+      ['sl-n', 'v-n', (v) => String(v)],
+      ['sl-len', 'v-len', (v) => (+v / 100).toFixed(2)],
+      ['sl-rad', 'v-rad', (v) => (+v / 100).toFixed(2)],
+      ['sl-sp', 'v-sp', (v) => (+v / 100).toFixed(2)],
+      ['sl-orb', 'v-orb', (v) => (+v / 100).toFixed(2)],
+      ['sl-dof', 'v-dof', (v) => (+v / 100).toFixed(2)],
+      ['sl-foc', 'v-foc', (v) => (+v / 100).toFixed(2)],
+      ['sl-bpx', 'v-bpx', (v) => String(v)],
+      ['sl-bok', 'v-bok', (v) => (+v / 100).toFixed(2)]
+    ];
+    for (const [sl, lab, fn] of map) {
+      const el = $(sl);
+      const out = $(lab);
+      const u = () => { out.textContent = fn(el.value); };
+      el.addEventListener('input', u);
+      u();
+    }
+  }
+  bindSliders();
+  $('sel-pal').addEventListener('change', () => {
+    palKey = $('sel-pal').value;
+    initParticles();
+  });
+
+  function updateParticles(dt, u) {
+    const speed = u.sp * 0.9;
+    const inner = 0.34;
+    const outer = 1.08;
+    const pal = PAL[palKey] || PAL.reference;
+    for (let i = 0; i < nInst; i++) {
+      let x = world[i * 3], y = world[i * 3 + 1], z = world[i * 3 + 2];
+      x += vel[i * 3] * speed * dt;
+      y += vel[i * 3 + 1] * speed * dt;
+      z += vel[i * 3 + 2] * speed * dt;
+      const d = Math.hypot(x, y, z);
+      if (d > outer + 0.08 || d < inner * 0.4) {
+        const R = rnd(inner, outer);
+        const [nx, ny, nz] = fibSphere(i, Math.max(40, nInst), R);
+        world[i * 3] = nx; world[i * 3 + 1] = ny; world[i * 3 + 2] = nz;
+        const L = Math.hypot(nx, ny, nz) || 1;
+        vel[i * 3] = nx / L; vel[i * 3 + 1] = ny / L; vel[i * 3 + 2] = nz / L;
+        const c = pal[i % pal.length];
+        colArr[i * 3] = c[0]; colArr[i * 3 + 1] = c[1]; colArr[i * 3 + 2] = c[2];
+      } else {
+        world[i * 3] = x; world[i * 3 + 1] = y; world[i * 3 + 2] = z;
+      }
+    }
+  }
+
+  function drawScene(eye, u) {
+    lookAt(eye, [0, 0, 0], [0, 1, 0], mView);
+    mulMat4(mProj, mView, mVP);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fboScene);
+    gl.viewport(0, 0, W, H);
+    const bg = hexRgb(u.bg);
+    gl.clearColor(bg[0], bg[1], bg[2], 1);
+    gl.clearDepth(1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
+    gl.useProgram(pCap);
+    gl.uniformMatrix4fv(loc.cap_vp, false, mVP);
+    uploadInst();
+    gl.bindVertexArray(vaoGeo);
+    gl.drawElementsInstanced(gl.TRIANGLES, indexCount, gl.UNSIGNED_SHORT, 0, nInst);
+    gl.bindVertexArray(null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
+
+  function drawPost(u) {
+    if (!texBlurH || !texBlurV) return;
+    const bg = hexRgb(u.bg);
+    const sigma = Math.max(1.35, u.bpx * 0.4);
+    drawBlurPass(texColor, fboBlurH, 1 / W, 0, sigma);
+    drawBlurPass(texBlurH, fboBlurV, 0, 1 / H, sigma);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, W, H);
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.BLEND);
+    gl.useProgram(pDof);
+    gl.uniform1i(loc.dof_sharp, 0);
+    gl.uniform1i(loc.dof_soft, 1);
+    gl.uniform1i(loc.dof_depth, 2);
+    gl.uniform3f(loc.dof_bg, bg[0], bg[1], bg[2]);
+    gl.uniform1f(loc.dof_near, NEAR);
+    gl.uniform1f(loc.dof_far, FAR);
+    gl.uniform1f(loc.dof_focus, u.foc * 1.28);
+    gl.uniform1f(loc.dof_str, u.dof * 2.2);
+    gl.uniform1f(loc.dof_max, u.bpx);
+    gl.uniform1f(loc.dof_bok, u.bok);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texColor);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, texBlurV);
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, texDepth);
+    gl.bindVertexArray(vaoQuad);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.bindVertexArray(null);
+    gl.activeTexture(gl.TEXTURE0);
+  }
+
+  let last = performance.now();
+  function frame(now) {
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    time += dt;
+    const u = readUI();
+    const wantN = Math.min(MAX, Math.max(32, u.n));
+    if (wantN !== nInst) {
+      nInst = wantN;
+      initParticles();
+    }
+    updateParticles(dt, u);
+    const ang = time * (0.06 + u.orb * 0.4);
+    const camR = 2.55;
+    const eye = [Math.sin(ang) * camR, 0.12 + Math.sin(time * 0.22) * 0.06, Math.cos(ang) * camR];
+    drawScene(eye, u);
+    drawPost(u);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  nInst = +$('sl-n').value | 0;
+  initParticles();
+  requestAnimationFrame(frame);
+
+  $('btn-png').addEventListener('click', () => {
+    canvas.toBlob((b) => {
+      if (!b) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(b);
+      a.download = 'pill-orb-dof.png';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }, 'image/png');
+  });
+})();
+</script>
+</body>
+</html>

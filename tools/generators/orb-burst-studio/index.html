@@ -120,19 +120,21 @@ input[type="number"].num-in {
       <label>Output size</label>
       <select id="sel-canvas">
         <option value="fit" selected>Preview — fit panel (square)</option>
-        <option value="1920x1080">1920 × 1080 — Full HD</option>
-        <option value="1280x720">1280 × 720 — HD</option>
-        <option value="1080x1920">1080 × 1920 — Story / vertical</option>
-        <option value="1080x1080">1080 × 1080 — Square social</option>
-        <option value="1200x630">1200 × 630 — Open Graph / link</option>
-        <option value="1600x900">1600 × 900</option>
-        <option value="1440x900">1440 × 900</option>
-        <option value="800x600">800 × 600</option>
-        <option value="512x512">512 × 512</option>
-        <option value="3840x2160">3840 × 2160 — 4K (may cap)</option>
+        <option value="1920x1080">1920 × 1080</option>
+        <option value="1280x720">1280 × 720</option>
+        <option value="1080x1080">1080 × 1080</option>
+        <option value="1080x1920">1080 × 1920</option>
+        <option value="3840x2160">3840 × 2160 (may cap)</option>
+        <option value="custom">Custom width × height</option>
       </select>
     </div>
-    <p class="hint">Fixed sizes use exact pixel buffers (scaled down in the panel). Very large presets are clamped to your GPU texture limit.</p>
+    <div class="ctrl" id="wrap-canvas-custom" style="display:none">
+      <label>Width (px)</label>
+      <input type="number" class="num-in" id="in-canvas-w" min="32" max="8192" value="1920" step="1" />
+      <label style="margin-top:10px;display:block">Height (px)</label>
+      <input type="number" class="num-in" id="in-canvas-h" min="32" max="8192" value="1080" step="1" />
+    </div>
+    <p class="hint">Fixed sizes use exact pixel buffers (scaled in the panel). Large sizes are clamped to your GPU max texture size.</p>
   </div>
 
   <div class="section">
@@ -146,12 +148,12 @@ input[type="number"].num-in {
       <input type="range" id="sl-blobs" min="0" max="120" value="0" />
     </div>
     <div class="ctrl">
-      <label>Streak length <span class="val" id="v-len">0.40</span></label>
-      <input type="range" id="sl-len" min="2" max="48" value="40" />
+      <label>Streak length <span class="val" id="v-len">0.48</span></label>
+      <input type="range" id="sl-len" min="2" max="48" value="48" />
     </div>
     <div class="ctrl">
-      <label>Streak thickness <span class="val" id="v-th">0.0030</span></label>
-      <input type="range" id="sl-th" min="0" max="200" value="30" />
+      <label>Streak thickness <span class="val" id="v-th">0.0003</span></label>
+      <input type="range" id="sl-th" min="0" max="200" value="3" />
     </div>
     <div class="ctrl">
       <label>Core hotness <span class="val" id="v-core">1.00</span></label>
@@ -294,9 +296,9 @@ input[type="number"].num-in {
       </select>
     </div>
     <div class="btn-row">
-      <button type="button" class="btn ghost" id="btn-rec-webm">Record WebM / MP4</button>
+      <button type="button" class="btn ghost" id="btn-rec-webm">Record video</button>
     </div>
-    <p class="hint"><strong>Video:</strong> uses <code>MediaRecorder</code>. Safari / Chrome may offer <strong>MP4 (H.264)</strong>; otherwise <strong>WebM (VP9/VP8)</strong>. Re-encode in Resolve / FFmpeg if you need another wrapper.</p>
+    <p class="hint"><strong>Video:</strong> <code>MediaRecorder</code> — MP4 when supported, otherwise WebM. Re-encode in Resolve or FFmpeg if needed.</p>
     <div id="export-status"></div>
     <p class="hint" style="margin-top:10px">
       <strong>Blend:</strong> additive on white has little headroom — use <strong>Normal</strong> for light plates or a dark background for additive glow.
@@ -1017,6 +1019,15 @@ void main() {
     return $('sel-canvas').value === 'fit';
   }
 
+  function canvasIsCustom() {
+    return $('sel-canvas').value === 'custom';
+  }
+
+  function syncCanvasCustomPanel() {
+    const on = canvasIsCustom();
+    $('wrap-canvas-custom').style.display = on ? 'block' : 'none';
+  }
+
   function pixelScaleForBloom() {
     return canvasIsFit() ? dpr : 1;
   }
@@ -1034,9 +1045,16 @@ void main() {
       canvas.style.width = (W / dpr) + 'px';
       canvas.style.height = (H / dpr) + 'px';
     } else {
-      const parts = preset.split('x');
-      let pw = Math.max(32, +parts[0] | 0);
-      let ph = Math.max(32, +parts[1] | 0);
+      let pw;
+      let ph;
+      if (preset === 'custom') {
+        pw = Math.max(32, +$('in-canvas-w').value | 0);
+        ph = Math.max(32, +$('in-canvas-h').value | 0);
+      } else {
+        const parts = preset.split('x');
+        pw = Math.max(32, +parts[0] | 0);
+        ph = Math.max(32, +parts[1] | 0);
+      }
       const maxTex = Math.min(8192, gl.getParameter(gl.MAX_TEXTURE_SIZE) || 8192);
       const ml = Math.max(pw, ph);
       if (ml > maxTex) {
@@ -1456,7 +1474,18 @@ void main() {
   }
 
   window.addEventListener('resize', resize);
-  $('sel-canvas').addEventListener('change', () => resize());
+  $('sel-canvas').addEventListener('change', () => {
+    syncCanvasCustomPanel();
+    resize();
+  });
+  function maybeResizeCustom() {
+    if (canvasIsCustom()) resize();
+  }
+  $('in-canvas-w').addEventListener('change', maybeResizeCustom);
+  $('in-canvas-h').addEventListener('change', maybeResizeCustom);
+  $('in-canvas-w').addEventListener('input', maybeResizeCustom);
+  $('in-canvas-h').addEventListener('input', maybeResizeCustom);
+  syncCanvasCustomPanel();
   resize();
   palKey = $('sel-pal').value;
   streakCount = Math.min(8000, Math.max(400, +$('sl-n').value | 0));
