@@ -90,7 +90,10 @@ button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .custom-res-sep { font-size: 11px; color: var(--dim); flex-shrink: 0; }
 
 #canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center;
-  background: #111; overflow: hidden; }
+  overflow: hidden;
+  background-color: #444;
+  background-image: repeating-conic-gradient(#555 0% 25%, #333 0% 50%);
+  background-size: 16px 16px; }
 #c { display: block; cursor: crosshair; }
 </style>
 </head>
@@ -194,6 +197,10 @@ button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
       </div>
     </div>
     <div class="ctrl">
+      <label>Opacity A <span class="val" id="v-aa">100</span>%</label>
+      <input type="range" id="sl-aa" min="0" max="100" value="100" step="1"/>
+    </div>
+    <div class="ctrl">
       <label>Color B</label>
       <div class="swatch-row">
         <div class="swatch-wrap" id="sw-cb" style="background:#000000">
@@ -201,6 +208,10 @@ button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
         </div>
         <span class="swatch-hex" id="v-cb">#000000</span>
       </div>
+    </div>
+    <div class="ctrl">
+      <label>Opacity B <span class="val" id="v-ab">100</span>%</label>
+      <input type="range" id="sl-ab" min="0" max="100" value="100" step="1"/>
     </div>
     <div class="ctrl">
       <label>Sharpness <span class="val" id="v-sharp">85</span>%</label>
@@ -213,11 +224,11 @@ button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
     <div class="section-title">Animate</div>
     <div class="ctrl">
       <label>L1 speed <span class="val" id="v-sp1">1.0</span></label>
-      <input type="range" id="sl-sp1" min="-8" max="8" value="1" step="0.1"/>
+      <input type="range" id="sl-sp1" min="-30" max="30" value="1" step="0.1"/>
     </div>
     <div class="ctrl">
       <label>L2 speed <span class="val" id="v-sp2">-1.0</span></label>
-      <input type="range" id="sl-sp2" min="-8" max="8" value="-1" step="0.1"/>
+      <input type="range" id="sl-sp2" min="-30" max="30" value="-1" step="0.1"/>
     </div>
     <button class="btn ghost" id="btn-anim">▶ Play</button>
   </div>
@@ -336,6 +347,8 @@ const SL = {
   'sl-cy2':     ['v-cy2',     v => Math.round(v)],
   'sl-ph2':     ['v-ph2',     v => Math.round(v)],
   'sl-sharp':   ['v-sharp',   v => Math.round(v)],
+  'sl-aa':      ['v-aa',      v => Math.round(v)],
+  'sl-ab':      ['v-ab',      v => Math.round(v)],
   'sl-sp1':     ['v-sp1',     v => (+v).toFixed(1)],
   'sl-sp2':     ['v-sp2',     v => (+v).toFixed(1)],
   'sl-rec-dur': ['v-rec-dur', v => Math.round(v)],
@@ -414,6 +427,8 @@ function renderTo(tCtx, W, H, extraPh1, extraPh2) {
 
   const [ar,ag,ab] = hexToRgb(document.getElementById('inp-ca').value);
   const [br,bg,bb] = hexToRgb(document.getElementById('inp-cb').value);
+  const alphaA = g('sl-aa') / 100;
+  const alphaB = g('sl-ab') / 100;
 
   // Adaptive edge width for smooth threshold — eliminates hard pixel stairstepping
   // At the crossing point, the signal gradient ≈ 2π·freq/W per pixel.
@@ -440,7 +455,7 @@ function renderTo(tCtx, W, H, extraPh1, extraPh2) {
       d[i]   = Math.round(br + (ar - br) * t);
       d[i+1] = Math.round(bg + (ag - bg) * t);
       d[i+2] = Math.round(bb + (ab - bb) * t);
-      d[i+3] = 255;
+      d[i+3] = Math.round((alphaB + (alphaA - alphaB) * t) * 255);
     }
   }
   tCtx.putImageData(img, 0, 0);
@@ -527,20 +542,19 @@ document.getElementById('btn-export').addEventListener('click', () => {
 });
 
 // ── Video Recording ───────────────────────────────────────────────────────────
+// Uses a dedicated off-screen canvas + setInterval for deterministic frame timing.
+// requestFrame() pushes each rendered canvas state explicitly to the MediaRecorder
+// stream — no dropped or duplicated frames from display-canvas contention.
+let recTimer = null;
 document.getElementById('btn-record').addEventListener('click', () => {
-  const btn      = document.getElementById('btn-record');
+  const btn = document.getElementById('btn-record');
+
+  // Stop early if already recording
+  if (btn.dataset.recording === 'true') return;
+
   const duration = Math.round(g('sl-rec-dur'));
   const fps      = parseInt(gv('sel-fps'));
-
-  // Ensure animation is running during record
-  const wasPlaying = animPlaying;
-  if (!animPlaying) {
-    animPlaying = true;
-    document.getElementById('btn-anim').textContent = '⏸ Pause';
-    document.getElementById('btn-anim').classList.remove('ghost');
-    document.getElementById('btn-anim').classList.add('playing');
-    animLoop();
-  }
+  const frameMs  = 1000 / fps;
 
   const mimeType =
     MediaRecorder.isTypeSupported('video/mp4; codecs=avc1') ? 'video/mp4; codecs=avc1' :
@@ -548,12 +562,28 @@ document.getElementById('btn-record').addEventListener('click', () => {
     'video/webm';
   const ext = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
 
-  const stream   = canvas.captureStream(fps);
-  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 10_000_000 });
-  const chunks   = [];
+  // Off-screen canvas — independent of the display canvas
+  const rc   = document.createElement('canvas');
+  rc.width   = DW; rc.height = DH;
+  const rCtx = rc.getContext('2d');
+
+  // Phase advances sp*1.5 per ~60fps RAF frame in animLoop → sp*90 deg/sec
+  let recPh1 = animPh1, recPh2 = animPh2;
+  const step1 = g('sl-sp1') * 90 / fps;
+  const step2 = g('sl-sp2') * 90 / fps;
+
+  // Render frame 0 before starting stream
+  renderTo(rCtx, DW, DH, recPh1, recPh2);
+
+  // captureStream(0) = manual frame control via requestFrame()
+  const stream  = rc.captureStream(0);
+  const track   = stream.getVideoTracks()[0];
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 16_000_000 });
+  const chunks  = [];
 
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
   recorder.onstop = () => {
+    clearInterval(recTimer);
     const blob = new Blob(chunks, { type: mimeType.split(';')[0] });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
@@ -562,20 +592,23 @@ document.getElementById('btn-record').addEventListener('click', () => {
     btn.textContent = '⏺ Record Video';
     btn.classList.remove('recording'); btn.classList.add('ghost');
     btn.disabled = false;
-    if (!wasPlaying) {
-      cancelAnimationFrame(animFrame); animPlaying = false;
-      document.getElementById('btn-anim').textContent = '▶ Play';
-      document.getElementById('btn-anim').classList.remove('playing');
-      document.getElementById('btn-anim').classList.add('ghost');
-      renderDisplay(2);
-    }
+    delete btn.dataset.recording;
   };
 
-  recorder.start(100);
+  // Push one frame immediately, then tick at exact intervals
+  track.requestFrame();
+  recTimer = setInterval(() => {
+    recPh1 += step1;
+    recPh2 += step2;
+    renderTo(rCtx, DW, DH, recPh1, recPh2);
+    track.requestFrame();
+  }, frameMs);
+
+  recorder.start(50);
+  btn.dataset.recording = 'true';
   btn.textContent = `⏹ Stop (${duration}s)`;
   btn.classList.remove('ghost'); btn.classList.add('recording');
 
-  // Auto-stop after duration
   setTimeout(() => { if (recorder.state !== 'inactive') recorder.stop(); }, duration * 1000);
 });
 

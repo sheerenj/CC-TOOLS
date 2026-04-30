@@ -298,7 +298,16 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
     </div>
     <button class="btn accent" id="btn-svg" disabled>↓ Export SVG</button>
     <button class="btn ghost" id="btn-png" disabled>↓ Export PNG</button>
+    <button class="btn ghost" id="btn-png-alpha" disabled>↓ PNG + α</button>
     <button class="btn ghost" id="btn-reseed">↺ Re-randomize</button>
+
+    <div style="height:1px;background:var(--line);margin:12px 0"></div>
+    <div class="ctrl">
+      <label>Seq frames <span class="val" id="v-seq-n">24</span></label>
+      <input type="range" id="sl-seq-n" min="6" max="120" value="24" step="6"/>
+    </div>
+    <button class="btn ghost" id="btn-seq-alpha" disabled>↓ PNG Sequence + α</button>
+    <p style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.6;">Transparent bg — varies random seed per frame. Import as image sequence in AE/Premiere.</p>
   </div>
 </div>
 
@@ -464,6 +473,8 @@ function loadFile(file) {
     empty.classList.add('hidden');
     document.getElementById('btn-svg').disabled = false;
     document.getElementById('btn-png').disabled = false;
+    document.getElementById('btn-png-alpha').disabled = false;
+    document.getElementById('btn-seq-alpha').disabled = false;
     processImage();
     render();
   };
@@ -657,6 +668,122 @@ document.getElementById('btn-png').addEventListener('click', () => {
     URL.revokeObjectURL(url);
   };
   im.src = url;
+});
+
+// ── ZIP builder (stored, no compression) ─────────────────────────────────────
+const _crcTable = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c; }
+  return t;
+})();
+function _crc32(buf) { let c = 0xFFFFFFFF; for (let i = 0; i < buf.length; i++) c = _crcTable[(c ^ buf[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function buildZip(files) {
+  const enc = new TextEncoder(), parts = [], cdParts = [];
+  let offset = 0;
+  const w32 = (dv, o, v) => dv.setUint32(o, v, true);
+  const w16 = (dv, o, v) => dv.setUint16(o, v, true);
+  for (const f of files) {
+    const nb = enc.encode(f.name), crc = _crc32(f.data), sz = f.data.length;
+    const lh = new DataView(new ArrayBuffer(30 + nb.length));
+    w32(lh,0,0x04034b50);w16(lh,4,20);w16(lh,6,0);w16(lh,8,0);w16(lh,10,0);w16(lh,12,0);
+    w32(lh,14,crc);w32(lh,18,sz);w32(lh,22,sz);w16(lh,26,nb.length);w16(lh,28,0);
+    new Uint8Array(lh.buffer, 30).set(nb);
+    parts.push(new Uint8Array(lh.buffer), f.data);
+    const cd = new DataView(new ArrayBuffer(46 + nb.length));
+    w32(cd,0,0x02014b50);w16(cd,4,20);w16(cd,6,20);w16(cd,8,0);w16(cd,10,0);w16(cd,12,0);
+    w16(cd,14,0);w32(cd,16,crc);w32(cd,20,sz);w32(cd,24,sz);w16(cd,28,nb.length);
+    w16(cd,30,0);w16(cd,32,0);w16(cd,34,0);w16(cd,36,0);w32(cd,38,0);w32(cd,42,offset);
+    new Uint8Array(cd.buffer, 46).set(nb);
+    cdParts.push(new Uint8Array(cd.buffer));
+    offset += 30 + nb.length + sz;
+  }
+  const cdSize = cdParts.reduce((s, b) => s + b.length, 0);
+  const eocd = new DataView(new ArrayBuffer(22));
+  w32(eocd,0,0x06054b50);w16(eocd,4,0);w16(eocd,6,0);w16(eocd,8,files.length);
+  w16(eocd,10,files.length);w32(eocd,12,cdSize);w32(eocd,16,offset);w16(eocd,20,0);
+  const all = [...parts, ...cdParts, new Uint8Array(eocd.buffer)];
+  const total = all.reduce((s, b) => s + b.length, 0);
+  const out = new Uint8Array(total); let pos = 0;
+  for (const p of all) { out.set(p, pos); pos += p.length; }
+  return out;
+}
+function dataURLtoBytes(url) {
+  const bin = atob(url.split(',')[1]);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+// ── SVG → PNG with transparent background ────────────────────────────────────
+function svgToAlphaPNG() {
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('width', exportW);
+  clone.setAttribute('height', exportH);
+  const bgRect = clone.querySelector('#svg-bg');
+  if (bgRect) bgRect.setAttribute('fill', 'none');
+  const str  = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([str], { type: 'image/svg+xml;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  return new Promise(res => {
+    const im = new Image();
+    im.onload = () => {
+      const ec = document.createElement('canvas');
+      ec.width = exportW; ec.height = exportH;
+      ec.getContext('2d').drawImage(im, 0, 0);
+      URL.revokeObjectURL(url);
+      res(ec.toDataURL('image/png'));
+    };
+    im.src = url;
+  });
+}
+
+// ── PNG + α (single frame) ────────────────────────────────────────────────────
+document.getElementById('btn-png-alpha').addEventListener('click', async () => {
+  const dataURL = await svgToAlphaPNG();
+  const a = document.createElement('a');
+  a.download = `halftone-dot-alpha-${Date.now()}.png`;
+  a.href = dataURL;
+  a.click();
+});
+
+// ── PNG Sequence + α ──────────────────────────────────────────────────────────
+document.getElementById('sl-seq-n').addEventListener('input', function () {
+  document.getElementById('v-seq-n').textContent = this.value;
+});
+
+document.getElementById('btn-seq-alpha').addEventListener('click', async () => {
+  if (!img) return;
+  const btn = document.getElementById('btn-seq-alpha');
+  const nFrames = parseInt(document.getElementById('sl-seq-n').value);
+  btn.disabled = true;
+
+  const savedSeed = _renderSeed;
+  const files = [];
+
+  for (let fi = 0; fi < nFrames; fi++) {
+    // Vary seed per frame using a simple hash to get independent-looking sequences
+    _renderSeed = ((savedSeed >>> 0) ^ (fi * 0x9e3779b9 + 0x6c62272e)) >>> 0;
+    render();
+    const dataURL = await svgToAlphaPNG();
+    files.push({
+      name: `frame_${String(fi + 1).padStart(4, '0')}.png`,
+      data: dataURLtoBytes(dataURL),
+    });
+    btn.textContent = `${fi + 1} / ${nFrames}…`;
+    await new Promise(r => setTimeout(r, 0));
+  }
+
+  _renderSeed = savedSeed;
+  render();
+
+  const zip = buildZip(files);
+  const a = document.createElement('a');
+  a.download = `halftone-seq-${Date.now()}.zip`;
+  a.href = URL.createObjectURL(new Blob([zip], { type: 'application/zip' }));
+  a.click();
+
+  btn.disabled = false;
+  btn.textContent = '↓ PNG Sequence + α';
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
