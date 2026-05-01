@@ -19,7 +19,7 @@
   --mn:'BoothclubMono','Courier New',monospace
 }
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,"Inter","Helvetica Neue",sans-serif}
-.app{display:flex;flex-direction:column;height:100vh}
+.app{display:flex;flex-direction:column;height:100vh;min-height:0}
 .hdr{display:flex;align-items:stretch;border-bottom:1px solid var(--line);flex-shrink:0;background:#fff;height:42px}
 .brand{display:flex;align-items:center;flex:1;gap:12px;padding:0 18px;font-family:var(--mn)}
 .brand .bm{font-size:10px;font-weight:700;letter-spacing:.28em;color:#000}
@@ -28,8 +28,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .tab{padding:0 20px;background:transparent;border:none;border-right:1px solid var(--line);color:var(--dim);font-family:var(--mn);font-size:9px;font-weight:700;letter-spacing:.18em;cursor:pointer;transition:.15s;text-transform:uppercase}
 .tab.on{background:var(--bg);color:#000}
 .tab:hover:not(.on){color:#000}
-.ws{display:flex;flex:1;overflow:hidden}
-.ca{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);overflow:hidden;position:relative;gap:10px}
+.ws{display:flex;flex:1;overflow:hidden;min-width:0;flex-direction:row-reverse}
+.ca{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);overflow:hidden;position:relative;gap:10px;min-width:0}
+.ca.dropTarget{outline:2px dashed rgba(0,0,0,.35);outline-offset:-6px}
 .cbg{position:absolute;inset:0;background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:20px 20px;opacity:.7}
 .cw{position:relative;z-index:1;line-height:0;box-shadow:0 0 0 1px var(--line2);overflow:hidden}
 #c{display:block}
@@ -45,7 +46,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .vb:hover{border-color:#000;color:#000}
 .vb.on{background:#000;border-color:#000;color:#fff}
 .vt{font-size:8px;letter-spacing:.1em;color:var(--dim);margin-left:auto}
-.sb{width:320px;flex-shrink:0;background:#fff;border-left:1px solid var(--line);overflow-y:auto;display:flex;flex-direction:column;padding:10px 10px 14px}
+.sb{width:320px;flex-shrink:0;background:#fff;border-right:1px solid var(--line);overflow-y:auto;display:flex;flex-direction:column;padding:10px 10px 14px}
 .sb::-webkit-scrollbar{width:4px}
 .sb::-webkit-scrollbar-thumb{background:#cfcfcf}
 .sec{border:1px solid var(--line);border-radius:var(--r);padding:14px 14px;margin-bottom:10px;background:#fafafa}
@@ -78,7 +79,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;background:#000;borde
 .eb:hover{background:#222}
 .cb{width:100%;padding:8px;background:#fff;border:1px solid var(--line2);color:var(--dim);font-family:var(--mn);font-size:9px;letter-spacing:.12em;cursor:pointer;margin-top:6px;transition:.15s;border-radius:999px}
 .cb:hover{border-color:#000;color:#000}
-.stbar{padding:6px 16px;font-size:8px;letter-spacing:.14em;color:var(--dim);border-top:1px solid var(--line);background:#fff;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+.stbar{padding:8px 16px;font-size:8px;letter-spacing:.14em;line-height:1.45;color:var(--dim);border-top:1px solid var(--line);background:#fff;flex-shrink:0;min-width:0;width:100%;box-sizing:border-box;white-space:normal;word-break:break-word;text-transform:uppercase}
 .cr{display:flex;align-items:center;gap:8px}
 .sw{width:22px;height:22px;border:1px solid var(--line2);cursor:pointer;flex-shrink:0;position:relative;border-radius:var(--r-sm)}
 .sw input[type=color]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border:none;padding:0}
@@ -131,7 +132,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;background:#000;borde
 <div class="ca" id="ca">
   <div class="cbg"></div>
   <div class="cw"><canvas id="c"></canvas></div>
-  <div class="drag-hint as" id="dragHint" style="display:none">DRAG TO PAN &nbsp;·&nbsp; SCROLL TO ZOOM</div>
+  <div class="drag-hint as" id="dragHint" style="display:none">DROP IMAGE/VIDEO &nbsp;·&nbsp; DRAG TO PAN &nbsp;·&nbsp; SCROLL TO ZOOM</div>
   <!-- ASCII video controls -->
   <div class="vc" id="avc">
     <div class="tl"><div class="tl-bg"></div><div class="tl-f" id="aTf"></div><div class="tl-th" id="aTth"></div><input class="tl-in" type="range" id="aTin" min="0" max="1000" value="0" oninput="aSeek(this.value)" onmousedown="aSc=1" onmouseup="aSc=0"></div>
@@ -358,11 +359,13 @@ function aSeek(val){if(A.vid&&A.vid.duration)A.vid.currentTime=(val/1000)*A.vid.
    ASCII SOURCE
 ══════════════════════════════════════════ */
 function aSetSrc(t){A.isVid=t==='vid';stopAR();gI('aSI').classList.toggle('on',!A.isVid);gI('aSV').classList.toggle('on',A.isVid);gI('aFile').accept=A.isVid?'video/*':'image/*';gI('aUL').textContent=A.isVid?'+ UPLOAD VIDEO':'+ UPLOAD IMAGE';updEB(A.isVid);aRem();}
-function aLoad(input){const file=input.files[0];if(!file)return;
+function aLoadFile(file){
+  if(!file)return;
   if(A.isVid){const url=URL.createObjectURL(file),v2=document.createElement('video');v2.muted=A.muted;v2.loop=A.loop;v2.playsInline=true;
     v2.onloadedmetadata=()=>{A.vid=v2;A.vR=true;gI('aMC').style.display='block';gI('aUL').textContent='+ '+file.name.toUpperCase().slice(0,20);const t=gI('aVT2');t.src=url;t.style.display='block';gI('avc').classList.add('show');fitC();startAR();};v2.src=url;}
   else{const img=new Image();img.onload=()=>{A.img=img;A.d=1;gI('aMC').style.display='block';gI('aUL').textContent='+ '+file.name.toUpperCase().slice(0,20);const t=gI('aIT');t.src=img.src;t.style.display='block';{cv.style.cursor='grab';gI('dragHint').style.display='block';}aFitCover();};img.src=URL.createObjectURL(file);}
 }
+function aLoad(input){aLoadFile(input.files[0]);}
 function aRem(){stopAR();if(A.vid){A.vid.pause();A.vid.src='';A.vid=null;}A.vR=false;A.img=null;A.cache=null;A.d=1;gI('aMC').style.display='none';gI('aIT').style.display='none';gI('aVT2').style.display='none';gI('aVT2').src='';gI('avc').classList.remove('show');gI('aUL').textContent=A.isVid?'+ UPLOAD VIDEO':'+ UPLOAD IMAGE';gI('aFile').value='';gI('dragHint').style.display='none';cv.style.cursor='crosshair';fitC();go();}
 
 function _aNatural(){
@@ -393,6 +396,22 @@ function aFitContain(){
 ══════════════════════════════════════════ */
 function cellFromEvt(e){const rect=cv.getBoundingClientRect();return{r:Math.floor(((e.clientY-rect.top)*(cv.height/rect.height))/cH),c:Math.floor(((e.clientX-rect.left)*(cv.width/rect.width))/cW)};}
 function validCell(r,c){return r>=0&&r<Math.floor(CH()/cH)&&c>=0&&c<Math.floor(CW()/cW);}
+
+const caEl=gI('ca');
+caEl.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';});
+caEl.addEventListener('dragenter',e=>{
+  if(e.dataTransfer.types&&[...e.dataTransfer.types].includes('Files')){e.preventDefault();caEl.classList.add('dropTarget');}
+});
+caEl.addEventListener('dragleave',e=>{if(!e.relatedTarget||!caEl.contains(e.relatedTarget))caEl.classList.remove('dropTarget');});
+caEl.addEventListener('drop',e=>{
+  e.preventDefault();
+  caEl.classList.remove('dropTarget');
+  const files=e.dataTransfer.files;
+  if(!files||!files.length)return;
+  const arr=[...files];
+  const file=A.isVid?arr.find(f=>f.type.startsWith('video/')):arr.find(f=>f.type.startsWith('image/'));
+  if(file)aLoadFile(file);
+});
 
 /* Drag state for ASCII pan */
 let drag={active:false,lastX:0,lastY:0};
