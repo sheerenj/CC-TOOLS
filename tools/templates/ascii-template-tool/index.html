@@ -20,12 +20,13 @@
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,"Inter","Helvetica Neue",sans-serif}
 .app{display:flex;flex-direction:column;height:100vh}
 .hdr{display:flex;align-items:stretch;border-bottom:1px solid var(--line);flex-shrink:0;background:#fff;height:42px}
-.brand{display:flex;align-items:center;padding:0 18px;font-size:10px;font-weight:700;letter-spacing:.3em;color:#000;border-right:1px solid var(--line);flex-shrink:0;font-family:var(--mn)}
+.brand{display:flex;align-items:center;flex:1;gap:12px;padding:0 18px;font-family:var(--mn)}
+.brand .bm{font-size:10px;font-weight:700;letter-spacing:.28em;color:#000}
+.brand .bi{font-size:9px;font-weight:700;letter-spacing:.14em;color:var(--dim)}
 .tabs{display:flex;align-items:stretch;flex:1}
 .tab{padding:0 20px;background:transparent;border:none;border-right:1px solid var(--line);color:var(--dim);font-family:var(--mn);font-size:9px;font-weight:700;letter-spacing:.18em;cursor:pointer;transition:.15s;text-transform:uppercase}
 .tab.on{background:var(--bg);color:#000}
 .tab:hover:not(.on){color:#000}
-.hsub{display:flex;align-items:center;padding:0 18px;font-size:8px;letter-spacing:.2em;color:var(--dim);border-left:1px solid var(--line);margin-left:auto;flex-shrink:0}
 .ws{display:flex;flex:1;overflow:hidden}
 .ca{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);overflow:hidden;position:relative;gap:10px}
 .cbg{position:absolute;inset:0;background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:20px 20px;opacity:.7}
@@ -120,8 +121,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;background:#000;borde
 <body>
 <div class="app">
 <div class="hdr">
-  <div class="brand">BOOTHCLUB ASCII</div>
-  <div class="hsub">Illustration Tool</div>
+  <div class="brand"><span class="bm">BOOTHCLUB ASCII</span><span class="bi">Illustration Tool</span></div>
 </div>
 <div class="ws">
 <div class="ca" id="ca">
@@ -762,12 +762,13 @@ function expSVG(){
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:var(--mn)}
 .app{display:flex;flex-direction:column;height:100vh}
 .hdr{display:flex;align-items:stretch;border-bottom:1px solid var(--bd);flex-shrink:0;background:var(--panel);height:42px}
-.brand{display:flex;align-items:center;padding:0 18px;font-size:10px;font-weight:700;letter-spacing:.3em;color:#fff;border-right:1px solid var(--bd);flex-shrink:0}
+.brand{display:flex;align-items:center;flex:1;gap:12px;padding:0 18px;font-family:var(--mn)}
+.brand .bm{font-size:10px;font-weight:700;letter-spacing:.28em;color:#fff}
+.brand .bi{font-size:9px;font-weight:700;letter-spacing:.14em;color:var(--dm)}
 .tabs{display:flex;align-items:stretch;flex:1}
 .tab{padding:0 20px;background:transparent;border:none;border-right:1px solid var(--bd);color:var(--dm);font-family:var(--mn);font-size:9px;font-weight:700;letter-spacing:.18em;cursor:pointer;transition:.15s;text-transform:uppercase}
 .tab.on{background:var(--bg);color:#fff}
 .tab:hover:not(.on){color:var(--tx)}
-.hsub{display:flex;align-items:center;padding:0 18px;font-size:8px;letter-spacing:.2em;color:var(--dm2);border-left:1px solid var(--bd);margin-left:auto;flex-shrink:0}
 .ws{display:flex;flex:1;overflow:hidden}
 .ca{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);overflow:hidden;position:relative;gap:10px}
 .cbg{position:absolute;inset:0;background-image:radial-gradient(var(--bd) 1px,transparent 1px);background-size:20px 20px;opacity:.7}
