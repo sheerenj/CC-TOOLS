@@ -189,17 +189,6 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;background:#000;borde
   <div class="tr" style="margin-top:5px"><span class="trl">Invert halftone</span><div class="tog" id="togAInv" onclick="A.inv=!A.inv;this.classList.toggle('on',A.inv);A.d=1;go()"></div></div>
 </div>
 <div class="sec as">
-  <div class="st">Characters</div>
-  <input class="chin" id="charSet" value=" -()[]/|\">
-  <div class="pbt">
-    <button class="pb" onclick="sCh(' -/|\\')">CROSS</button>
-    <button class="pb" onclick="sCh(' .-+|/\\#@')">CLASSIC</button>
-    <button class="pb" onclick="sCh(' ()[]{}/\\|')">BRACKETS</button>
-    <button class="pb" onclick="sCh(' .:-=+*#%@')">DENSE</button>
-    <button class="pb" onclick="sCh(' -()[]/|\\')">RESET</button>
-  </div>
-</div>
-<div class="sec as">
   <div class="st">Appearance</div>
   <div class="tr"><span class="trl">Char color</span><div class="cr"><div class="sw" id="aFgS" style="background:#ff1f1f"><input type="color" id="aFgP" value="#ff1f1f" oninput="A.col=this.value;gI('aFgS').style.background=this.value;gI('aFgH').textContent=this.value.toUpperCase();go()"></div><span class="hl" id="aFgH">#FF1F1F</span></div></div>
   <div class="tr" style="margin-top:6px"><span class="trl">BG color</span><div class="cr"><div class="sw" id="aBgS" style="background:#0a0000"><input type="color" id="aBgP" value="#111111" oninput="A.bg=this.value;gI('aBgS').style.background=this.value;gI('aBgH').textContent=this.value.toUpperCase();go()"></div><span class="hl" id="aBgH">#0A0000</span></div></div>
@@ -247,7 +236,8 @@ const CW=()=>SH.fmt==='custom'?SH.cw:1080;
 const CH=()=>SH.fmt==='1350'?1350:SH.fmt==='1920'?1920:SH.ch;
 
 /* ASCII state */
-const A={isVid:false,img:null,vid:null,vR:false,raf:null,loop:true,muted:true,cache:null,d:true,ix:50,iy:50,sc:100,rot:0,bri:100,con:100,gam:1,inv:false,col:'#ff1f1f',bg:'#111111',bgTransp:false,mode:'view',tg:{},cur:null,mt:0,mb:0,ml:0,mr:0,chars:' -()[]/|\\'};
+const ASCII_CHARS=' .-';
+const A={isVid:false,img:null,vid:null,vR:false,raf:null,loop:true,muted:true,cache:null,d:true,ix:50,iy:50,sc:100,rot:0,bri:100,con:100,gam:1,inv:false,col:'#ff1f1f',bg:'#111111',bgTransp:false,mode:'view',tg:{},cur:null,mt:0,mb:0,ml:0,mr:0,chars:ASCII_CHARS};
 
 function initCanvas(){
   cv.width=CW();cv.height=CH();
@@ -274,7 +264,6 @@ function syncA(){
   A.sc=+gI('slAS').value;A.rot=+gI('slAR').value;
   A.bri=+gI('slBri').value;A.con=+gI('slCon').value;
   A.gam=+gI('slGam').value/100;
-  A.chars=gI('charSet').value;
 }
 function go(){
   syncSH();syncA();mCell();
@@ -426,8 +415,6 @@ function aFit11(){
   const pct=(1/coverSc)*100;
   _aSetSliders(pct,50,50);
 }
-function sCh(ch){gI('charSet').value=ch;A.chars=ch;go();}
-gI('charSet').addEventListener('input',()=>{A.chars=gI('charSet').value;go();});
 function aMode(m){
   A.mode=m;A.cur=null;
   gI('aMV').classList.toggle('on',m==='view');
@@ -905,7 +892,6 @@ window.addEventListener('resize',()=>{fitC();rAscii();});
 document.fonts.ready.then(()=>{
   fontReady=true;
   initCanvas();
-  A.chars=gI('charSet').value;
   updEB(false);
   rAscii();
   gI('aBl').classList.add('on');
