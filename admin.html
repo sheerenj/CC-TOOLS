@@ -284,6 +284,7 @@ header {
 .drag-grip:active { cursor: grabbing; }
 
 .thumb {
+  position: relative;
   flex-shrink: 0;
   width: 48px;
   height: 30px;
@@ -291,7 +292,11 @@ header {
   overflow: hidden;
   background: var(--bg);
   border: 1px solid var(--stroke);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
 }
+
+.thumb:hover { border-color: var(--stroke-strong); }
 
 .thumb img {
   width: 100%;
@@ -308,6 +313,46 @@ header {
   color: var(--stroke-strong);
   font-size: 8px;
 }
+
+.thumb-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.52);
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.thumb:hover .thumb-overlay { opacity: 1; }
+
+.thumb-overlay svg {
+  width: 13px;
+  height: 13px;
+  color: #fff;
+  pointer-events: none;
+}
+
+.thumb.uploading .thumb-overlay {
+  opacity: 1;
+  background: rgba(0,0,0,0.65);
+}
+
+.thumb.uploading .thumb-overlay svg { display: none; }
+
+.upload-spinner {
+  display: none;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.thumb.uploading .upload-spinner { display: block; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .card-info {
   flex: 1;
@@ -502,6 +547,58 @@ async function ghPut(path, content, sha, message) {
   return data.content.sha;
 }
 
+async function ghGetSha(path) {
+  const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, {
+    headers: { Authorization: `token ${getToken()}` },
+  });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return (await r.json()).sha;
+}
+
+async function ghPutBinary(path, base64, sha, message) {
+  const body = { message, content: base64, branch: BRANCH };
+  if (sha) body.sha = sha;
+  const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, {
+    method: 'PUT',
+    headers: { Authorization: `token ${getToken()}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    throw new Error(e.message || `HTTP ${r.status}`);
+  }
+}
+
+function resizeImage(file, maxW = 900) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      c.toBlob(blob => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      }, 'image/png');
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function previewRepoPath(entry, inArchive) {
+  return inArchive
+    ? `tools/ARCHIVE/${entry.slug}/preview.png`
+    : `tools/${entry.category}/${entry.slug}/preview.png`;
+}
+
 // ── State ────────────────────────────────────
 
 let toolsSha   = null;
@@ -578,14 +675,17 @@ function makeCard(entry, inArchive) {
   const displayName = entry.name || prettify(entry.slug);
   const imgUrl = thumbUrl(entry, inArchive);
 
+  const uploadIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
+
   li.innerHTML = `
     <span class="drag-grip" title="Drag to reorder">⠿</span>
-    <div class="thumb">
+    <div class="thumb" title="Click to upload preview image">
       ${imgUrl
         ? `<img src="${imgUrl}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">
            <div class="thumb-placeholder" style="display:none">—</div>`
         : `<div class="thumb-placeholder">—</div>`
       }
+      <div class="thumb-overlay">${uploadIcon}<div class="upload-spinner"></div></div>
     </div>
     <div class="card-info">
       <div class="card-name" contenteditable="false" title="Click to rename">${displayName}</div>
@@ -594,6 +694,58 @@ function makeCard(entry, inArchive) {
     <div class="card-actions">
       <button class="btn-action move-btn">${inArchive ? '← Restore' : '→ Archive'}</button>
     </div>`;
+
+  // Preview upload
+  const thumbEl  = li.querySelector('.thumb');
+  const fileInput = document.createElement('input');
+  fileInput.type   = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.style.display = 'none';
+  li.appendChild(fileInput);
+
+  thumbEl.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    fileInput.value = '';
+
+    thumbEl.classList.add('uploading');
+    setStatus(`Uploading preview for ${entry.slug}…`);
+
+    try {
+      const base64 = await resizeImage(file);
+      const repoPath = previewRepoPath(JSON.parse(li.dataset.entry), li.parentElement === archiveList);
+      const sha = await ghGetSha(repoPath);
+      await ghPutBinary(repoPath, base64, sha, `Update preview for ${entry.slug} [admin]`);
+
+      // Update img in card
+      const e = JSON.parse(li.dataset.entry);
+      e.hasPreview = true;
+      li.dataset.entry = JSON.stringify(e);
+
+      const freshUrl = `${thumbUrl(e, li.parentElement === archiveList)}?t=${Date.now()}`;
+      let imgEl = thumbEl.querySelector('img');
+      if (!imgEl) {
+        imgEl = document.createElement('img');
+        imgEl.alt = '';
+        thumbEl.insertBefore(imgEl, thumbEl.firstChild);
+        const placeholder = thumbEl.querySelector('.thumb-placeholder');
+        if (placeholder) placeholder.style.display = 'none';
+      }
+      imgEl.style.display = '';
+      imgEl.src = freshUrl;
+
+      markDirty();
+      setStatus('');
+      showToast(`Preview updated for ${e.name || prettify(e.slug)}`);
+    } catch (err) {
+      setStatus(`Upload failed: ${err.message}`, 'error');
+      showToast(`Upload error: ${err.message}`, 'error');
+    } finally {
+      thumbEl.classList.remove('uploading');
+    }
+  });
 
   // Inline rename
   const nameEl = li.querySelector('.card-name');
