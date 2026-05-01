@@ -13,6 +13,5 @@
   { "category": "templates",   "slug": "ascii-template-tool",           "hasPreview": true,  "name": "BOOTHCLUB ASCII Template" },
   { "category": "typography",  "slug": "experimental-type-tool",        "hasPreview": true,  "name": "Experimental Type"        },
   { "category": "typography",  "slug": "particle-typeface",             "hasPreview": true                                      },
-  { "category": "typography",  "slug": "topotype",                      "hasPreview": false, "name": "Topotype"                 },
   { "category": "video",       "slug": "BCA-halftone-lines-video",      "hasPreview": true,  "name": "Boothclub Halftone Lines" }
 ]

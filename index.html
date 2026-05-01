@@ -553,6 +553,24 @@
       flex-shrink: 0;
     }
 
+    .archive-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      font-size: 10px;
+      color: var(--text-soft);
+      letter-spacing: 0.06em;
+      align-self: flex-start;
+      margin-top: 2px;
+    }
+
+    .tool-card.is-archived .thumb-wrap {
+      filter: saturate(0.75);
+    }
+
     .hidden { display: none !important; }
 
     @media (max-width: 1100px) {
@@ -625,6 +643,7 @@
           <div class="tabs" role="tablist" aria-label="Gallery sections">
             <button type="button" class="tab active" role="tab" aria-selected="true" data-tab="tools" id="tab-tools">Tools</button>
             <button type="button" class="tab" role="tab" aria-selected="false" data-tab="plugins" id="tab-plugins">Plugins + Scripts</button>
+            <button type="button" class="tab" role="tab" aria-selected="false" data-tab="archive" id="tab-archive">Archive</button>
           </div>
           <p class="status" id="status">Loading…</p>
         </div>
@@ -637,20 +656,25 @@
     <section class="gallery hidden" id="gallery-plugins" role="tabpanel" aria-labelledby="tab-plugins" hidden>
       <p class="gallery-empty hidden" id="gallery-plugins-empty">No plugins or scripts match your search.</p>
     </section>
+    <section class="gallery hidden" id="gallery-archive" role="tabpanel" aria-labelledby="tab-archive" hidden>
+      <p class="gallery-empty hidden" id="gallery-archive-empty">No archived tools match your search.</p>
+    </section>
   </main>
 
   <script>
-    const OWNER        = "sheerenj";
-    const REPO         = "CC-TY";
-    const BRANCH       = "main";
-    const SITE_BASE    = `https://${OWNER}.github.io/${REPO}/tools`;
-    const PLUGIN_BASE  = `https://${OWNER}.github.io/${REPO}/plugins`;
-    const MANIFEST     = `https://${OWNER}.github.io/${REPO}/tools.json`;
-    const PLUG_MANIFEST= `https://${OWNER}.github.io/${REPO}/plugins.json`;
-    const REPO_TREE    = `https://github.com/${OWNER}/${REPO}/tree/${BRANCH}`;
+    const OWNER          = "sheerenj";
+    const REPO           = "CC-TY";
+    const BRANCH         = "main";
+    const SITE_BASE      = `https://${OWNER}.github.io/${REPO}/tools`;
+    const PLUGIN_BASE    = `https://${OWNER}.github.io/${REPO}/plugins`;
+    const MANIFEST       = `https://${OWNER}.github.io/${REPO}/tools.json`;
+    const PLUG_MANIFEST  = `https://${OWNER}.github.io/${REPO}/plugins.json`;
+    const ARCH_MANIFEST  = `https://${OWNER}.github.io/${REPO}/archive.json`;
+    const REPO_TREE      = `https://github.com/${OWNER}/${REPO}/tree/${BRANCH}`;
 
     const galleryTools   = document.getElementById("gallery-tools");
     const galleryPlugins = document.getElementById("gallery-plugins");
+    const galleryArchive = document.getElementById("gallery-archive");
     const statusEl       = document.getElementById("status");
     const cursorDot      = document.getElementById("cursor-dot");
     const searchInput    = document.getElementById("gallery-search");
@@ -744,6 +768,35 @@
       return article;
     }
 
+    function makeArchiveCard(entry, staggerIndex) {
+      const { slug, hasPreview, name: nameOverride, category } = entry;
+      const link    = `${SITE_BASE}/ARCHIVE/${slug}/`;
+      const preview = `${SITE_BASE}/ARCHIVE/${slug}/preview.png`;
+      const name    = nameOverride || titleCase(prettifyName(slug));
+      const cat     = category ? titleCase(prettifyName(category)) : "";
+
+      const article = document.createElement("article");
+      article.className = "tool-card is-archived";
+      article.style.setProperty("--stagger", String(staggerIndex));
+
+      article.innerHTML = `
+        <a class="tool-card__main" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">
+          ${thumbHtml(hasPreview, preview, name)}
+          <div class="card-body">
+            <h2 class="tool-name">${escapeHtml(name)}</h2>
+            ${cat ? `<div class="tool-meta">${escapeHtml(cat)}</div>` : ""}
+            <span class="archive-badge">Archive</span>
+          </div>
+        </a>`;
+
+      article.setAttribute(
+        "data-search",
+        [name, cat, slug, prettifyName(slug), "archive"].join(" ").toLowerCase()
+      );
+
+      return article;
+    }
+
     function makePluginCard(entry, staggerIndex) {
       const { slug, type, app, hasPreview, repoUrl, previewBase } = entry;
       const base    = previewBase || PLUGIN_BASE;
@@ -793,62 +846,55 @@
 
     function applySearchFilter() {
       const q = searchInput ? searchInput.value : "";
-      const toolCards = galleryTools.querySelectorAll(".tool-card");
-      const pluginCards = galleryPlugins.querySelectorAll(".tool-card");
+      const toolCards    = galleryTools.querySelectorAll(".tool-card");
+      const pluginCards  = galleryPlugins.querySelectorAll(".tool-card");
+      const archiveCards = galleryArchive.querySelectorAll(".tool-card");
 
-      toolCards.forEach(c => {
-        c.classList.toggle("is-filtered-out", !cardMatchesQuery(c, q));
-      });
-      pluginCards.forEach(c => {
-        c.classList.toggle("is-filtered-out", !cardMatchesQuery(c, q));
+      [toolCards, pluginCards, archiveCards].forEach(list => {
+        list.forEach(c => c.classList.toggle("is-filtered-out", !cardMatchesQuery(c, q)));
       });
 
-      const visibleTools = galleryTools.querySelectorAll(".tool-card:not(.is-filtered-out)").length;
+      const visibleTools   = galleryTools.querySelectorAll(".tool-card:not(.is-filtered-out)").length;
       const visiblePlugins = galleryPlugins.querySelectorAll(".tool-card:not(.is-filtered-out)").length;
+      const visibleArchive = galleryArchive.querySelectorAll(".tool-card:not(.is-filtered-out)").length;
       const totalT = toolCards.length;
       const totalP = pluginCards.length;
+      const totalA = archiveCards.length;
 
-      const toolsEmptyEl = document.getElementById("gallery-tools-empty");
-      const pluginsEmptyEl = document.getElementById("gallery-plugins-empty");
       const hasQuery = q.trim().length > 0;
 
-      if (toolsEmptyEl) {
-        toolsEmptyEl.classList.toggle("hidden", !(hasQuery && visibleTools === 0 && totalT > 0));
-      }
-      if (pluginsEmptyEl) {
-        pluginsEmptyEl.classList.toggle("hidden", !(hasQuery && visiblePlugins === 0 && totalP > 0));
-      }
+      [
+        ["gallery-tools-empty",   hasQuery && visibleTools   === 0 && totalT > 0],
+        ["gallery-plugins-empty", hasQuery && visiblePlugins === 0 && totalP > 0],
+        ["gallery-archive-empty", hasQuery && visibleArchive === 0 && totalA > 0],
+      ].forEach(([id, show]) => {
+        document.getElementById(id)?.classList.toggle("hidden", !show);
+      });
 
       const hint = document.getElementById("search-hint");
       if (!hint) return;
-
-      if (!hasQuery) {
-        hint.textContent = "";
-        return;
-      }
+      if (!hasQuery) { hint.textContent = ""; return; }
 
       const activeTab = document.querySelector(".tab.active")?.dataset.tab;
       if (activeTab === "tools") {
-        hint.textContent =
-          visibleTools === 0
-            ? "No tools match."
-            : `${visibleTools} of ${totalT} tool${totalT === 1 ? "" : "s"}`;
+        hint.textContent = visibleTools === 0 ? "No tools match." : `${visibleTools} of ${totalT} tool${totalT === 1 ? "" : "s"}`;
+      } else if (activeTab === "archive") {
+        hint.textContent = visibleArchive === 0 ? "No archived tools match." : `${visibleArchive} of ${totalA}`;
       } else {
-        hint.textContent =
-          visiblePlugins === 0
-            ? "No plugins or scripts match."
-            : `${visiblePlugins} of ${totalP} match`;
+        hint.textContent = visiblePlugins === 0 ? "No plugins or scripts match." : `${visiblePlugins} of ${totalP} match`;
       }
     }
 
     async function loadAll() {
-      const [toolsRes, pluginsRes] = await Promise.allSettled([
+      const [toolsRes, pluginsRes, archiveRes] = await Promise.allSettled([
         fetch(MANIFEST),
         fetch(PLUG_MANIFEST),
+        fetch(ARCH_MANIFEST),
       ]);
 
       let toolCount = 0;
       let pluginCount = 0;
+      let archiveCount = 0;
       const errs = [];
 
       if (toolsRes.status === "fulfilled" && toolsRes.value.ok) {
@@ -867,6 +913,12 @@
         errs.push("plugins manifest");
       }
 
+      if (archiveRes.status === "fulfilled" && archiveRes.value.ok) {
+        const archived = await archiveRes.value.json();
+        archived.forEach((a, i) => galleryArchive.appendChild(makeArchiveCard(a, i)));
+        archiveCount = archived.length;
+      }
+
       if (errs.length) {
         statusEl.classList.add("is-error");
         statusEl.textContent =
@@ -874,7 +926,7 @@
             ? `${toolCount} tools · ${pluginCount} plugins · could not load ${errs.join(" & ")}`
             : `Could not load ${errs.join(" & ")}. Open this page over HTTPS or check the network.`;
       } else {
-        statusEl.textContent = `${toolCount} tools · ${pluginCount} plugin${pluginCount !== 1 ? "s" : ""}`;
+        statusEl.textContent = `${toolCount} tools · ${pluginCount} plugin${pluginCount !== 1 ? "s" : ""} · ${archiveCount} archived`;
       }
 
       applySearchFilter();
@@ -887,6 +939,12 @@
 
     /* Tabs */
     const tabs = document.querySelectorAll(".tab");
+    const galleries = {
+      tools:   galleryTools,
+      plugins: galleryPlugins,
+      archive: galleryArchive,
+    };
+
     tabs.forEach(tab => {
       tab.addEventListener("click", () => {
         tabs.forEach(t => {
@@ -896,11 +954,11 @@
         tab.classList.add("active");
         tab.setAttribute("aria-selected", "true");
         const target = tab.dataset.tab;
-        const showTools = target === "tools";
-        galleryTools.classList.toggle("hidden", !showTools);
-        galleryPlugins.classList.toggle("hidden", showTools);
-        galleryTools.hidden = !showTools;
-        galleryPlugins.hidden = showTools;
+        Object.entries(galleries).forEach(([key, el]) => {
+          const show = key === target;
+          el.classList.toggle("hidden", !show);
+          el.hidden = !show;
+        });
         applySearchFilter();
       });
     });
