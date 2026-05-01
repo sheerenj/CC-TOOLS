@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BOOTHCLUB ASCII Template</title>
+<title>BOOTHCLUB ASCII Illustration Tool</title>
 <style>
 @font-face {
   font-family: 'BoothclubMono';
@@ -120,13 +120,8 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;background:#000;borde
 <body>
 <div class="app">
 <div class="hdr">
-  <div class="brand">ASCII BRAND STUDIO</div>
-  <div class="tabs">
-    <button class="tab on" id="tabA" onclick="switchTab('ascii')">ASCII HALFTONE</button>
-    <button class="tab" id="tabL" onclick="switchTab('layout')">TEXT LAYOUT</button>
-    <button class="tab" id="tabF" onclick="switchTab('film')">FILM LAB</button>
-  </div>
-  <div class="hsub">PHOTO BOOTH CO.</div>
+  <div class="brand">BOOTHCLUB ASCII</div>
+  <div class="hsub">Illustration Tool</div>
 </div>
 <div class="ws">
 <div class="ca" id="ca">
@@ -137,16 +132,6 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;background:#000;borde
   <div class="vc" id="avc">
     <div class="tl"><div class="tl-bg"></div><div class="tl-f" id="aTf"></div><div class="tl-th" id="aTth"></div><input class="tl-in" type="range" id="aTin" min="0" max="1000" value="0" oninput="aSeek(this.value)" onmousedown="aSc=1" onmouseup="aSc=0"></div>
     <div class="vbtns"><button class="vb" id="aBp" onclick="aPlay()">&#9654; PLAY</button><button class="vb" onclick="aRestart()">&#10227; RESTART</button><button class="vb on" id="aBl" onclick="aLoopT()">&#8635; LOOP</button><button class="vb" id="aBm" onclick="aMuteT()">&#9834; MUTE</button><span class="vt" id="aVT">0:00 / 0:00</span></div>
-  </div>
-  <!-- Layout video controls -->
-  <div class="vc" id="lvc">
-    <div class="tl"><div class="tl-bg"></div><div class="tl-f" id="lTf"></div><div class="tl-th" id="lTth"></div><input class="tl-in" type="range" id="lTin" min="0" max="1000" value="0" oninput="lSeek(this.value)" onmousedown="lSc=1" onmouseup="lSc=0"></div>
-    <div class="vbtns"><button class="vb" id="lBp" onclick="lPlay()">&#9654; PLAY</button><button class="vb" onclick="lRestart()">&#10227; RESTART</button><button class="vb on" id="lBl" onclick="lLoopT()">&#8635; LOOP</button><button class="vb" id="lBm" onclick="lMuteT()">&#9834; MUTE</button><span class="vt" id="lVT">0:00 / 0:00</span></div>
-  </div>
-  <!-- Film video controls -->
-  <div class="vc" id="fvc">
-    <div class="tl"><div class="tl-bg"></div><div class="tl-f" id="fTf"></div><div class="tl-th" id="fTth"></div><input class="tl-in" type="range" id="fTin" min="0" max="1000" value="0" oninput="fSeek(this.value)" onmousedown="fSc=1" onmouseup="fSc=0"></div>
-    <div class="vbtns"><button class="vb" id="fBp" onclick="fPlay()">&#9654; PLAY</button><button class="vb" onclick="fRestart()">&#10227; RESTART</button><button class="vb on" id="fBl" onclick="fLoopT()">&#8635; LOOP</button><button class="vb" id="fBm" onclick="fMuteT()">&#9834; MUTE</button><span class="vt" id="fVT">0:00 / 0:00</span></div>
   </div>
 </div>
 
@@ -224,107 +209,6 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;background:#000;borde
   <button class="cb" onclick="A.tg={};go()">CLEAR ALL TEXT</button>
 </div>
 
-<!-- ══ LAYOUT SECTIONS ══ -->
-<div class="sec ls" style="display:none">
-  <div class="st">Background</div>
-  <div class="btns" style="margin-bottom:8px"><button class="btn on" id="lSI" onclick="lSetSrc('img')">IMAGE</button><button class="btn" id="lSV" onclick="lSetSrc('vid')">VIDEO</button></div>
-  <label class="uz"><input type="file" id="lFile" accept="image/*" onchange="lLoad(this)"><span id="lUL">+ UPLOAD IMAGE</span></label>
-  <img id="lIT" class="thumb" alt=""><video id="lVT2" class="thumb" muted playsinline loop></video>
-  <div id="lMC" style="margin-top:9px;display:none">
-    <div class="row"><span class="lbl">Pan X</span><input type="range" id="slLX" min="0" max="100" value="50" step="1" oninput="v('vLX',this.value,'%');if(!L.isVid)lRen()"><span class="val" id="vLX">50%</span></div>
-    <div class="row"><span class="lbl">Pan Y</span><input type="range" id="slLY" min="0" max="100" value="50" step="1" oninput="v('vLY',this.value,'%');if(!L.isVid)lRen()"><span class="val" id="vLY">50%</span></div>
-    <div class="row"><span class="lbl">Zoom</span><input type="range" id="slLZ" min="100" max="400" value="100" step="1" oninput="v('vLZ',this.value,'%');if(!L.isVid)lRen()"><span class="val" id="vLZ">100%</span></div>
-    <button class="cb" onclick="lRem()">REMOVE BG</button>
-  </div>
-  <div class="tr" style="margin-top:8px"><span class="trl">Canvas BG</span><div class="cr"><div class="sw" id="lBgS" style="background:#000000"><input type="color" id="lBgP" value="#000000" oninput="L.bgCol=this.value;gI('lBgS').style.background=this.value;if(!L.isVid)lRen()"></div><span class="hl">#000000</span></div></div>
-</div>
-<div class="sec ls" style="display:none">
-  <div class="st">Cell Style</div>
-  <div class="tr"><span class="trl">Fill color</span><div class="cr"><div class="sw" id="lFiS" style="background:#ff1f1f"><input type="color" id="lFiP" value="#ff1f1f" oninput="setLFill(this.value)"></div><span class="hl" id="lFiH">#FF1F1F</span></div></div>
-  <div class="row" style="margin-top:5px"><span class="lbl">Opacity</span><input type="range" id="slLOp" min="0" max="100" value="90" step="1" oninput="v('vLOp',this.value,'%');L.fillOp=+this.value"><span class="val" id="vLOp">90%</span></div>
-  <div class="pal" id="lpal"></div>
-  <div class="tr" style="margin-top:7px"><span class="trl">Text color</span><div class="cr"><div class="sw" id="lTxS" style="background:#ffffff"><input type="color" id="lTxP" value="#ffffff" oninput="L.textCol=this.value;gI('lTxS').style.background=this.value"></div><span class="hl">#FFFFFF</span></div></div>
-  <button class="cb" onclick="L.g={};if(!L.isVid)lRen()">CLEAR ALL CELLS</button>
-</div>
-<div class="sec ls" style="display:none">
-  <div class="st">Tools</div>
-  <div class="tbts"><button class="tb on" id="ltxt" onclick="lTool('text')">TEXT</button><button class="tb" id="lpnt" onclick="lTool('paint')">PAINT</button><button class="tb" id="lers" onclick="lTool('erase')">ERASE</button></div>
-  <div class="hint" id="lTH">CLICK CELL → TYPE<br>ARROWS: NAVIGATE<br>ESC: DESELECT</div>
-  <div class="tr" style="margin-top:8px"><span class="trl">Grid lines</span><div class="tog on" id="togLGL" onclick="L.gl=!L.gl;this.classList.toggle('on',L.gl);if(!L.isVid)lRen()"></div></div>
-</div>
-
-<!-- ══ FILM LAB SECTIONS ══ -->
-<div class="sec fl" style="display:none">
-  <div class="st">Film Base</div>
-  <div class="tr"><span class="trl">Acetate color</span><div class="cr"><div class="sw" id="fBaSw" style="background:#080000"><input type="color" id="fBaP" value="#080000" oninput="F.base=this.value;gI('fBaSw').style.background=this.value;if(!F.vid)fRen()"></div><span class="hl" id="fBaH">#080000</span></div></div>
-  <div class="tr" style="margin-top:6px"><span class="trl">Contact print</span><div class="tog" id="togCP" onclick="F.cp=!F.cp;this.classList.toggle('on',F.cp);if(!F.vid)fRen()"></div></div>
-  <div class="note" style="margin-top:5px">INVERTS EMULSION LAYERS — OVERCOAT UNAFFECTED</div>
-</div>
-
-<div class="sec fl" style="display:none">
-  <div class="st">Emulsion Stack</div>
-  <div class="ll" id="layList"></div>
-  <div style="display:flex;gap:4px;margin-bottom:8px">
-    <button class="cb" style="margin:0;flex:1" onclick="addLayer()">+ ADD</button>
-    <button class="cb" style="margin:0;flex:1" onclick="removeLayer()">— REMOVE</button>
-  </div>
-  <label class="uz"><input type="file" id="fCMY" accept="image/*" onchange="cmySplit(this)"><span>⚗ CMY AUTO-SPLIT</span></label>
-  <div class="note">ONE IMAGE → THREE C/M/Y EMULSION LAYERS</div>
-</div>
-
-<div class="sec fl" style="display:none" id="fLaySec">
-  <div class="st" id="fLayT">LAYER 1</div>
-  <label class="uz" style="margin-bottom:5px"><input type="file" id="fLFile" accept="image/*" onchange="setLayImg(this)"><span id="fLUL">+ LAYER IMAGE</span></label>
-  <button class="cb" style="margin-top:0;margin-bottom:8px" onclick="clearLayImg()">REMOVE LAYER IMAGE</button>
-  <div class="st">Channel</div>
-  <div class="chg" id="chg">
-    <button class="chb on" id="chFull" onclick="setLayCh('full')">FULL</button>
-    <button class="chb" id="chC" onclick="setLayCh('C')">C</button>
-    <button class="chb" id="chM" onclick="setLayCh('M')">M</button>
-    <button class="chb" id="chY" onclick="setLayCh('Y')">Y</button>
-    <button class="chb" id="chR" onclick="setLayCh('R')">R</button>
-    <button class="chb" id="chG" onclick="setLayCh('G')">G</button>
-    <button class="chb" id="chB" onclick="setLayCh('B')">B</button>
-  </div>
-  <div class="st" style="margin-top:8px">Characters</div>
-  <input class="chin" id="fLCh" value=" -()[]/|\\" oninput="setLayChars(this.value)">
-  <div class="tr"><span class="trl">Color</span><div class="cr"><div class="sw" id="fLCS" style="background:#00eeff"><input type="color" id="fLCP" value="#00eeff" oninput="setLayCol(this.value)"></div><span class="hl" id="fLCH">#00EEFF</span></div></div>
-  <div class="st" style="margin-top:8px">Blend Mode</div>
-  <div class="btns">
-    <button class="btn on" id="blS" onclick="setLayBlend('screen')">SCREEN</button>
-    <button class="btn" id="blM" onclick="setLayBlend('multiply')">MULT</button>
-    <button class="btn" id="blO" onclick="setLayBlend('overlay')">OVER</button>
-    <button class="btn" id="blN" onclick="setLayBlend('normal')">NORM</button>
-  </div>
-  <div class="row" style="margin-top:8px"><span class="lbl">Opacity</span><input type="range" id="slFOp" min="0" max="100" value="100" step="1" oninput="v('vFOp',this.value,'%');setLayP('opacity',+this.value)"><span class="val" id="vFOp">100%</span></div>
-  <div class="row"><span class="lbl">Reg X</span><input type="range" id="slFDX" min="-20" max="20" value="0" step="1" oninput="v('vFDX',this.value,'');setLayP('dx',+this.value)"><span class="val" id="vFDX">0</span></div>
-  <div class="row"><span class="lbl">Reg Y</span><input type="range" id="slFDY" min="-20" max="20" value="0" step="1" oninput="v('vFDY',this.value,'');setLayP('dy',+this.value)"><span class="val" id="vFDY">0</span></div>
-  <div class="row"><span class="lbl">Brightness</span><input type="range" id="slFBri" min="0" max="300" value="100" step="1" oninput="v('vFBri',this.value,'%');setLayP('bri',+this.value)"><span class="val" id="vFBri">100%</span></div>
-  <div class="row"><span class="lbl">Contrast</span><input type="range" id="slFCon" min="0" max="500" value="150" step="1" oninput="v('vFCon',this.value,'%');setLayP('con',+this.value)"><span class="val" id="vFCon">150%</span></div>
-  <div class="row"><span class="lbl">Gamma</span><input type="range" id="slFGam" min="10" max="400" value="100" step="1" oninput="v('vFGam',(this.value/100).toFixed(1),'');setLayP('gam',+this.value/100)"><span class="val" id="vFGam">1.0</span></div>
-  <div class="tr"><span class="trl">Invert layer</span><div class="tog" id="togFI" onclick="toggleLayInv()"></div></div>
-</div>
-
-<div class="sec fl" style="display:none">
-  <div class="st">Shared Video</div>
-  <label class="uz"><input type="file" id="fVFile" accept="video/*" onchange="loadFVid(this)"><span id="fVUL">+ UPLOAD VIDEO</span></label>
-  <video id="fVT2" class="thumb" muted playsinline loop></video>
-  <button class="cb" onclick="removeFVid()">REMOVE VIDEO</button>
-  <div class="note">SHARED ACROSS LAYERS WITHOUT A PER-LAYER IMAGE</div>
-</div>
-
-<div class="sec fl" style="display:none">
-  <div class="st">Overcoat</div>
-  <div class="tbts"><button class="tb on" id="fttxt" onclick="fTool('text')">TEXT</button><button class="tb" id="ftpnt" onclick="fTool('paint')">PAINT</button><button class="tb" id="fters" onclick="fTool('erase')">ERASE</button></div>
-  <div class="hint" id="fTH">CLICK CELL → TYPE<br>ARROWS: NAVIGATE<br>ESC: DESELECT</div>
-  <div class="tr" style="margin-top:7px"><span class="trl">Fill color</span><div class="cr"><div class="sw" id="fFiS" style="background:#ff1f1f"><input type="color" id="fFiP" value="#ff1f1f" oninput="setFFill(this.value)"></div><span class="hl" id="fFiH">#FF1F1F</span></div></div>
-  <div class="row" style="margin-top:5px"><span class="lbl">Opacity</span><input type="range" id="slFFOp" min="0" max="100" value="90" step="1" oninput="v('vFFOp',this.value,'%');F.fillOp=+this.value"><span class="val" id="vFFOp">90%</span></div>
-  <div class="pal" id="fpal"></div>
-  <div class="tr" style="margin-top:7px"><span class="trl">Text color</span><div class="cr"><div class="sw" id="fTxS" style="background:#ffffff"><input type="color" id="fTxP" value="#ffffff" oninput="F.textCol=this.value;gI('fTxS').style.background=this.value"></div><span class="hl">#FFFFFF</span></div></div>
-  <div class="tr"><span class="trl">Grid lines</span><div class="tog on" id="togFGL" onclick="F.gl=!F.gl;this.classList.toggle('on',F.gl);if(!F.vid)fRen()"></div></div>
-  <button class="cb" onclick="F.oc={};if(!F.vid)fRen()">CLEAR OVERCOAT</button>
-</div>
-
 <!-- ── ASCII: FONT ── -->
 <div class="sec as">
   <div class="st">Custom Font</div>
@@ -355,8 +239,8 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;background:#000;borde
    CORE
 ══════════════════════════════════════════ */
 const cv=document.getElementById('c'),cx=cv.getContext('2d');
-let off,octx,fontReady=false,cW=10.8,cH=18,tab='ascii';
-let aSc=0,lSc=0,fSc=0;
+let off,octx,fontReady=false,cW=10.8,cH=18;
+let aSc=0;
 const gI=id=>document.getElementById(id);
 const v=(id,val,s)=>gI(id).textContent=val+s;
 const SH={fmt:'1350',cellSize:18,cw:1080,ch:1080};
@@ -365,26 +249,16 @@ const CH=()=>SH.fmt==='1350'?1350:SH.fmt==='1920'?1920:SH.ch;
 
 /* ASCII state */
 const A={isVid:false,img:null,vid:null,vR:false,raf:null,loop:true,muted:true,cache:null,d:true,ix:50,iy:50,sc:100,rot:0,bri:100,con:100,gam:1,inv:false,col:'#ff1f1f',bg:'#111111',bgTransp:false,mode:'view',tg:{},cur:null,mt:0,mb:0,ml:0,mr:0,chars:' -()[]/|\\'};
-/* Layout state */
-const L={isVid:false,img:null,vid:null,vR:false,raf:null,loop:true,muted:true,ix:50,iy:50,sc:100,fillCol:'#ff1f1f',fillOp:90,textCol:'#ffffff',bgCol:'#000000',gl:true,tool:'text',g:{},cur:null,painting:false};
-/* Film state */
-const F={vid:null,vR:false,raf:null,loop:true,muted:true,base:'#080000',cp:false,layers:[],selIdx:0,oc:{},fillCol:'#ff1f1f',fillOp:90,textCol:'#ffffff',gl:true,tool:'text',cur:null,painting:false};
-
-/* Film layer canvases (pre-allocated, reused) */
-let flc=[];
-function mkLC(){const c=document.createElement('canvas');c.width=CW();c.height=CH();return{c,x:c.getContext('2d',{willReadFrequently:true})};}
-function mkLayer(id,name,color,ch){return{id,name,color,channel:ch,active:true,img:null,imgName:'',chars:' -()[]/|\\',blend:'screen',opacity:100,dx:0,dy:0,bri:100,con:150,gam:1,inv:false};}
 
 function initCanvas(){
   cv.width=CW();cv.height=CH();
   off=document.createElement('canvas');off.width=CW();off.height=CH();
   octx=off.getContext('2d',{willReadFrequently:true});
-  flc.forEach(lc=>{lc.c.width=CW();lc.c.height=CH();});
   fitC();mCell();
 }
 function fitC(){
   const area=gI('ca');
-  const hasV=(tab==='ascii'&&A.isVid&&A.vR)||(tab==='layout'&&L.isVid&&L.vR)||(tab==='film'&&F.vR);
+  const hasV=A.isVid&&A.vR;
   const s=Math.min((area.clientWidth-40)/CW(),(area.clientHeight-(hasV?82:40))/CH());
   cv.style.width=CW()*s+'px';cv.style.height=CH()*s+'px';
 }
@@ -405,46 +279,14 @@ function syncA(){
 }
 function go(){
   syncSH();syncA();mCell();
-  if(tab==='ascii'){if(!A.isVid){A.d=1;clearTimeout(go._t);go._t=setTimeout(rAscii,10);}}
-  else if(tab==='layout'){if(!L.isVid){clearTimeout(go._t);go._t=setTimeout(lRen,10);}}
-  else{if(!F.vid){clearTimeout(go._t);go._t=setTimeout(fRen,10);}}
+  if(!A.isVid){A.d=1;clearTimeout(go._t);go._t=setTimeout(rAscii,10);}
 }
 
-/* ══════════════════════════════════════════
-   TAB
-══════════════════════════════════════════ */
-function switchTab(t){
-  tab=t;
-  gI('tabA').classList.toggle('on',t==='ascii');
-  gI('tabL').classList.toggle('on',t==='layout');
-  gI('tabF').classList.toggle('on',t==='film');
-  document.querySelectorAll('.as').forEach(e=>e.style.display=t==='ascii'?'':'none');
-  document.querySelectorAll('.ls').forEach(e=>e.style.display=t==='layout'?'':'none');
-  document.querySelectorAll('.fl').forEach(e=>e.style.display=t==='film'?'':'none');
-  stopAR();stopLR();stopFR();
-  gI('avc').classList.remove('show');gI('lvc').classList.remove('show');gI('fvc').classList.remove('show');
-  if(t==='ascii'){
-    const hasSrc=A.img||A.vid;
-    cv.style.cursor=A.mode==='edit'?'text':(hasSrc?'grab':'crosshair');
-    gI('dragHint').style.display=(A.mode==='view'&&hasSrc)?'block':'none';
-    if(A.isVid&&A.vR){gI('avc').classList.add('show');startAR();}else{fitC();rAscii();}
-    updEB(A.isVid);
-  }else if(t==='layout'){
-    cv.style.cursor=L.tool==='text'?'text':'crosshair';
-    if(L.isVid&&L.vR){gI('lvc').classList.add('show');startLR();}else{fitC();lRen();}
-    updEB(L.isVid);
-  }else{
-    cv.style.cursor=F.tool==='text'?'text':'crosshair';
-    if(F.vR){gI('fvc').classList.add('show');startFR();}else{fitC();fRen();}
-    updEB(F.vR);
-  }
-  fitC();
-}
 function updEB(isV){
   gI('btnPNG').style.display=isV?'none':'';
-  gI('btnSVG').style.display=(!isV&&tab==='ascii')?'':'none';
-  gI('btnSVGO').style.display=(!isV&&tab==='ascii')?'':'none';
-  gI('btnTXT').style.display=(!isV&&tab==='ascii')?'':'none';
+  gI('btnSVG').style.display=isV?'none':'';
+  gI('btnSVGO').style.display=isV?'none':'';
+  gI('btnTXT').style.display=isV?'none':'';
   gI('btnVid').style.display=isV?'':'none';
 }
 function setFmt(h){
@@ -510,106 +352,18 @@ function rAscii(exp=false){
   setSt();
 }
 
-/* ══════════════════════════════════════════
-   LAYOUT RENDER
-══════════════════════════════════════════ */
-function h2r(hex,op){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${op/100})`;}
-
-function lRen(exp=false){
-  if(!fontReady)return;
-  const W=CW(),H=CH(),cols=Math.floor(W/cW),rows=Math.floor(H/cH);
-  cx.fillStyle=L.bgCol;cx.fillRect(0,0,W,H);
-  const src=L.isVid?L.vid:L.img;
-  if(src){const nW=L.isVid?src.videoWidth:src.naturalWidth,nH=L.isVid?src.videoHeight:src.naturalHeight;
-    if(nW&&nH){const lz=+gI('slLZ').value/100,bs=Math.max(W/nW,H/nH)*lz,dw=nW*bs,dh=nH*bs;
-      const dx=-(dw-W)*(+gI('slLX').value/100),dy=-(dh-H)*(+gI('slLY').value/100);
-      cx.drawImage(src,dx,dy,dw,dh);}}
-  for(const[k,cell]of Object.entries(L.g)){if(!cell.bg)continue;const[r,c]=k.split(',').map(Number);if(r<0||r>=rows||c<0||c>=cols)continue;cx.fillStyle=cell.bg;cx.fillRect(c*cW,r*cH,cW,cH);}
-  cx.font=SH.cellSize+'px '+getActiveFontFamily();cx.textBaseline='top';
-  for(const[k,cell]of Object.entries(L.g)){if(!cell.text)continue;const[r,c]=k.split(',').map(Number);if(r<0||r>=rows||c<0||c>=cols)continue;cx.fillStyle=cell.fg||L.textCol;cx.fillText(cell.text,c*cW,r*cH);}
-  if(!exp&&L.gl){cx.strokeStyle='rgba(255,255,255,0.08)';cx.lineWidth=0.5;for(let c=0;c<=cols;c++){cx.beginPath();cx.moveTo(c*cW,0);cx.lineTo(c*cW,H);cx.stroke();}for(let r=0;r<=rows;r++){cx.beginPath();cx.moveTo(0,r*cH);cx.lineTo(W,r*cH);cx.stroke();}}
-  if(!exp&&L.cur){const{r,c}=L.cur;cx.fillStyle='rgba(255,255,255,0.13)';cx.fillRect(c*cW,r*cH,cW,cH);cx.strokeStyle='rgba(255,255,255,0.55)';cx.lineWidth=1;cx.strokeRect(c*cW+.5,r*cH+.5,cW-1,cH-1);cx.fillStyle='rgba(255,255,255,0.8)';cx.fillRect(c*cW,r*cH+cH-1.5,cW,1.5);}
-  setSt();
-}
-
-/* ══════════════════════════════════════════
-   FILM RENDER
-══════════════════════════════════════════ */
-function chanBri(r,g,b,ch,inv){
-  let bv;
-  switch(ch){case 'R':bv=r;break;case 'G':bv=g;break;case 'B':bv=b;break;case 'C':bv=255-r;break;case 'M':bv=255-g;break;case 'Y':bv=255-b;break;default:bv=lum(r,g,b);}
-  return inv?255-bv:bv;
-}
-
-function rFilmLayer(layer,lci){
-  const src=layer.img||(F.vid||null);if(!src)return null;
-  const lc=flc[lci];if(!lc)return null;
-  const W=CW(),H=CH(),ltx=lc.x;
-  // Draw source cover-fit with adjustments
-  const nW=(src.videoWidth||src.naturalWidth||W),nH=(src.videoHeight||src.naturalHeight||H);
-  const bs=Math.max(W/nW,H/nH),dw=nW*bs,dh=nH*bs,dx=(W-dw)/2,dy=(H-dh)/2;
-  ltx.clearRect(0,0,W,H);
-  ltx.filter=`brightness(${layer.bri}%) contrast(${layer.con}%)`;
-  ltx.drawImage(src,dx,dy,dw,dh);ltx.filter='none';
-  if(layer.gam!==1){const id=ltx.getImageData(0,0,W,H),d=id.data,g=1/layer.gam;for(let i=0;i<d.length;i+=4){d[i]=Math.pow(d[i]/255,g)*255|0;d[i+1]=Math.pow(d[i+1]/255,g)*255|0;d[i+2]=Math.pow(d[i+2]/255,g)*255|0;}ltx.putImageData(id,0,0);}
-  const pd=ltx.getImageData(0,0,W,H);
-  // ASCII to same canvas
-  ltx.clearRect(0,0,W,H);
-  ltx.font=SH.cellSize+'px '+getActiveFontFamily();ltx.textBaseline='top';ltx.fillStyle=layer.color;
-  const cols=Math.floor(W/cW),rows=Math.floor(H/cH);
-  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
-    const x=c*cW,y=r*cH,px=Math.floor(x+cW/2),py=Math.floor(y+cH/2);
-    if(px>=0&&px<W&&py>=0&&py<H){const i=(py*W+px)*4,bv=chanBri(pd.data[i],pd.data[i+1],pd.data[i+2],layer.channel,layer.inv);
-      const ch=cFor(bv,layer.chars,false);if(ch&&ch!==' ')ltx.fillText(ch,x,y);}
-  }
-  return lc.c;
-}
-
-function fRen(exp=false){
-  if(!fontReady)return;
-  const W=CW(),H=CH();
-  // 1. Base
-  cx.fillStyle=F.base;cx.fillRect(0,0,W,H);
-  // 2. Emulsion layers
-  F.layers.forEach((layer,i)=>{
-    if(!layer.active)return;
-    const lc=rFilmLayer(layer,i);if(!lc)return;
-    cx.save();
-    cx.globalCompositeOperation=layer.blend;
-    cx.globalAlpha=layer.opacity/100;
-    cx.drawImage(lc,layer.dx*cW,layer.dy*cH);
-    cx.restore();
-  });
-  // 3. Contact print (invert emulsions, leave overcoat)
-  if(F.cp){cx.save();cx.globalCompositeOperation='difference';cx.fillStyle='#ffffff';cx.fillRect(0,0,W,H);cx.restore();}
-  // 4. Overcoat (text + cell fills on top)
-  const cols=Math.floor(W/cW),rows=Math.floor(H/cH);
-  for(const[k,cell]of Object.entries(F.oc)){if(!cell.bg)continue;const[r,c]=k.split(',').map(Number);if(r<0||r>=rows||c<0||c>=cols)continue;cx.fillStyle=cell.bg;cx.fillRect(c*cW,r*cH,cW,cH);}
-  cx.font=SH.cellSize+'px '+getActiveFontFamily();cx.textBaseline='top';
-  for(const[k,cell]of Object.entries(F.oc)){if(!cell.text)continue;const[r,c]=k.split(',').map(Number);if(r<0||r>=rows||c<0||c>=cols)continue;cx.fillStyle=cell.fg||F.textCol;cx.fillText(cell.text,c*cW,r*cH);}
-  // Grid lines
-  if(!exp&&F.gl){cx.strokeStyle='rgba(255,255,255,0.07)';cx.lineWidth=0.5;for(let c=0;c<=cols;c++){cx.beginPath();cx.moveTo(c*cW,0);cx.lineTo(c*cW,H);cx.stroke();}for(let r=0;r<=rows;r++){cx.beginPath();cx.moveTo(0,r*cH);cx.lineTo(W,r*cH);cx.stroke();}}
-  // Cursor
-  if(!exp&&F.cur){const{r,c}=F.cur;cx.fillStyle='rgba(255,255,255,0.13)';cx.fillRect(c*cW,r*cH,cW,cH);cx.strokeStyle='rgba(255,255,255,0.55)';cx.lineWidth=1;cx.strokeRect(c*cW+.5,r*cH+.5,cW-1,cH-1);cx.fillStyle='rgba(255,255,255,0.8)';cx.fillRect(c*cW,r*cH+cH-1.5,cW,1.5);}
-  setSt();
-}
-
 function setSt(){
   const W=CW(),H=CH(),cols=Math.floor(W/cW),rows=Math.floor(H/cH);
-  const tc=tab==='ascii'?Object.keys(A.tg).length:tab==='layout'?Object.values(L.g).filter(c=>c.text||c.bg).length:Object.values(F.oc).filter(c=>c.text||c.bg).length;
-  const cur=tab==='ascii'?A.cur:tab==='layout'?L.cur:F.cur;
-  gI('stbar').textContent=`${tab.toUpperCase()}  —  ${W}×${H}  —  GRID ${cols}×${rows}  —  CELL ${cW.toFixed(1)}×${cH}px`+(tc?`  —  ${tc} CELLS`:'')+( cur?`  —  [${cur.c},${cur.r}]`:'');
+  const tc=Object.keys(A.tg).length;
+  const cur=A.cur;
+  gI('stbar').textContent=`ASCII  —  ${W}×${H}  —  GRID ${cols}×${rows}  —  CELL ${cW.toFixed(1)}×${cH}px`+(tc?`  —  ${tc} CELLS`:'')+(cur?`  —  [${cur.c},${cur.r}]`:'');
 }
 
 /* ══════════════════════════════════════════
    VIDEO LOOPS
 ══════════════════════════════════════════ */
-function startAR(){if(A.raf)return;function lp(){if(tab!=='ascii'||!A.vid){A.raf=null;return;}syncSH();syncA();mCell();A.d=1;rAscii();updAT();A.raf=requestAnimationFrame(lp);}A.raf=requestAnimationFrame(lp);}
+function startAR(){if(A.raf)return;function lp(){if(!A.vid){A.raf=null;return;}syncSH();syncA();mCell();A.d=1;rAscii();updAT();A.raf=requestAnimationFrame(lp);}A.raf=requestAnimationFrame(lp);}
 function stopAR(){if(A.raf){cancelAnimationFrame(A.raf);A.raf=null;}}
-function startLR(){if(L.raf)return;function lp(){if(tab!=='layout'||!L.vid){L.raf=null;return;}lRen();updLT();L.raf=requestAnimationFrame(lp);}L.raf=requestAnimationFrame(lp);}
-function stopLR(){if(L.raf){cancelAnimationFrame(L.raf);L.raf=null;}}
-function startFR(){if(F.raf)return;function lp(){if(tab!=='film'||!F.vid){F.raf=null;return;}syncSH();mCell();fRen();updFT();F.raf=requestAnimationFrame(lp);}F.raf=requestAnimationFrame(lp);}
-function stopFR(){if(F.raf){cancelAnimationFrame(F.raf);F.raf=null;}}
 
 /* timeline updaters */
 function mkTU(vid,Tf,Tth,Tin,VT,Bp){
@@ -622,8 +376,6 @@ function mkTU(vid,Tf,Tth,Tin,VT,Bp){
   if(vid.paused){gI(Bp).textContent='▶ PLAY';gI(Bp).classList.remove('on');}
 }
 function updAT(){if(!aSc)mkTU(A.vid,'aTf','aTth','aTin','aVT','aBp');}
-function updLT(){if(!lSc)mkTU(L.vid,'lTf','lTth','lTin','lVT','lBp');}
-function updFT(){if(!fSc)mkTU(F.vid,'fTf','fTth','fTin','fVT','fBp');}
 
 /* video controls */
 function mkPlay(v,Bp){if(!v)return;if(v.paused){v.play();gI(Bp).textContent='⏸ PAUSE';gI(Bp).classList.add('on');}else{v.pause();gI(Bp).textContent='▶ PLAY';gI(Bp).classList.remove('on');}}
@@ -631,19 +383,11 @@ function aPlay(){mkPlay(A.vid,'aBp');}function aRestart(){if(A.vid){A.vid.curren
 function aLoopT(){A.loop=!A.loop;if(A.vid)A.vid.loop=A.loop;gI('aBl').classList.toggle('on',A.loop);}
 function aMuteT(){A.muted=!A.muted;if(A.vid)A.vid.muted=A.muted;gI('aBm').classList.toggle('on',!A.muted);gI('aBm').textContent=A.muted?'♪ MUTE':'♪ LIVE';}
 function aSeek(val){if(A.vid&&A.vid.duration)A.vid.currentTime=(val/1000)*A.vid.duration;}
-function lPlay(){mkPlay(L.vid,'lBp');}function lRestart(){if(L.vid){L.vid.currentTime=0;L.vid.play();gI('lBp').textContent='⏸ PAUSE';gI('lBp').classList.add('on');}}
-function lLoopT(){L.loop=!L.loop;if(L.vid)L.vid.loop=L.loop;gI('lBl').classList.toggle('on',L.loop);}
-function lMuteT(){L.muted=!L.muted;if(L.vid)L.vid.muted=L.muted;gI('lBm').classList.toggle('on',!L.muted);gI('lBm').textContent=L.muted?'♪ MUTE':'♪ LIVE';}
-function lSeek(val){if(L.vid&&L.vid.duration)L.vid.currentTime=(val/1000)*L.vid.duration;}
-function fPlay(){mkPlay(F.vid,'fBp');}function fRestart(){if(F.vid){F.vid.currentTime=0;F.vid.play();gI('fBp').textContent='⏸ PAUSE';gI('fBp').classList.add('on');}}
-function fLoopT(){F.loop=!F.loop;if(F.vid)F.vid.loop=F.loop;gI('fBl').classList.toggle('on',F.loop);}
-function fMuteT(){F.muted=!F.muted;if(F.vid)F.vid.muted=F.muted;gI('fBm').classList.toggle('on',!F.muted);gI('fBm').textContent=F.muted?'♪ MUTE':'♪ LIVE';}
-function fSeek(val){if(F.vid&&F.vid.duration)F.vid.currentTime=(val/1000)*F.vid.duration;}
 
 /* ══════════════════════════════════════════
    ASCII SOURCE
 ══════════════════════════════════════════ */
-function aSetSrc(t){A.isVid=t==='vid';stopAR();gI('aSI').classList.toggle('on',!A.isVid);gI('aSV').classList.toggle('on',A.isVid);gI('aFile').accept=A.isVid?'video/*':'image/*';gI('aUL').textContent=A.isVid?'+ UPLOAD VIDEO':'+ UPLOAD IMAGE';if(tab==='ascii')updEB(A.isVid);aRem();}
+function aSetSrc(t){A.isVid=t==='vid';stopAR();gI('aSI').classList.toggle('on',!A.isVid);gI('aSV').classList.toggle('on',A.isVid);gI('aFile').accept=A.isVid?'video/*':'image/*';gI('aUL').textContent=A.isVid?'+ UPLOAD VIDEO':'+ UPLOAD IMAGE';updEB(A.isVid);aRem();}
 function aLoad(input){const file=input.files[0];if(!file)return;
   if(A.isVid){const url=URL.createObjectURL(file),v2=document.createElement('video');v2.muted=A.muted;v2.loop=A.loop;v2.playsInline=true;
     v2.onloadedmetadata=()=>{A.vid=v2;A.vR=true;gI('aMC').style.display='block';gI('aUL').textContent='+ '+file.name.toUpperCase().slice(0,20);const t=gI('aVT2');t.src=url;t.style.display='block';gI('avc').classList.add('show');fitC();startAR();};v2.src=url;}
@@ -696,126 +440,6 @@ function aMode(m){
 }
 
 /* ══════════════════════════════════════════
-   LAYOUT SOURCE & TOOLS
-══════════════════════════════════════════ */
-const LTH={text:'CLICK CELL → TYPE<br>ARROWS: NAVIGATE<br>ESC: DESELECT',paint:'CLICK / DRAG TO PAINT CELLS',erase:'CLICK / DRAG TO ERASE CELLS'};
-function lSetSrc(t){L.isVid=t==='vid';stopLR();gI('lSI').classList.toggle('on',!L.isVid);gI('lSV').classList.toggle('on',L.isVid);gI('lFile').accept=L.isVid?'video/*':'image/*';gI('lUL').textContent=L.isVid?'+ UPLOAD VIDEO':'+ UPLOAD IMAGE';if(tab==='layout')updEB(L.isVid);lRem();}
-function lLoad(input){const file=input.files[0];if(!file)return;
-  if(L.isVid){const url=URL.createObjectURL(file),v2=document.createElement('video');v2.muted=L.muted;v2.loop=L.loop;v2.playsInline=true;
-    v2.onloadedmetadata=()=>{L.vid=v2;L.vR=true;gI('lMC').style.display='block';gI('lUL').textContent='+ '+file.name.toUpperCase().slice(0,20);const t=gI('lVT2');t.src=url;t.style.display='block';gI('lvc').classList.add('show');if(tab==='layout')updEB(true);fitC();startLR();};v2.src=url;}
-  else{const img=new Image();img.onload=()=>{L.img=img;gI('lMC').style.display='block';gI('lUL').textContent='+ '+file.name.toUpperCase().slice(0,20);const t=gI('lIT');t.src=img.src;t.style.display='block';if(tab==='layout')lRen();};img.src=URL.createObjectURL(file);}
-}
-function lRem(){stopLR();if(L.vid){L.vid.pause();L.vid.src='';L.vid=null;}L.vR=false;L.img=null;gI('lMC').style.display='none';gI('lIT').style.display='none';gI('lVT2').style.display='none';gI('lVT2').src='';gI('lvc').classList.remove('show');gI('lUL').textContent=L.isVid?'+ UPLOAD VIDEO':'+ UPLOAD IMAGE';gI('lFile').value='';fitC();if(tab==='layout')lRen();}
-function lTool(t){L.tool=t;L.cur=null;['text','paint','erase'].forEach(x=>gI('l'+x.slice(0,3)).classList.toggle('on',x===t));gI('lTH').innerHTML=LTH[t];cv.style.cursor=t==='text'?'text':'crosshair';if(tab==='layout'&&!L.isVid)lRen();}
-function setLFill(hex){L.fillCol=hex;gI('lFiS').style.background=hex||'transparent';gI('lFiH').textContent=(hex||'NONE').toUpperCase();updPal('lpal',L.fillCol);}
-
-/* ══════════════════════════════════════════
-   FILM LAYER MANAGEMENT
-══════════════════════════════════════════ */
-function initLayers(){
-  F.layers=[mkLayer(0,'CYAN','#00eeff','C'),mkLayer(1,'MAGENTA','#ff1f77','M'),mkLayer(2,'YELLOW','#ffee00','Y')];
-  flc=[mkLC(),mkLC(),mkLC()];
-}
-function buildLayList(){
-  const el=gI('layList');el.innerHTML='';
-  F.layers.forEach((l,i)=>{
-    const d=document.createElement('div');d.className='li'+(i===F.selIdx?' sel':'');d.onclick=()=>selLayer(i);
-    d.innerHTML=`<div class="lsw" style="background:${l.color}"></div><span class="lnm">${l.name}</span><span class="lch">${l.channel}</span><div class="tog${l.active?' on':''}" onclick="event.stopPropagation();toggleLayer(${i})"></div>`;
-    el.appendChild(d);
-  });
-}
-function selLayer(idx){F.selIdx=idx;buildLayList();updLayUI();if(!F.vid)fRen();}
-function toggleLayer(idx){F.layers[idx].active=!F.layers[idx].active;buildLayList();if(!F.vid)fRen();}
-function updLayUI(){
-  const l=F.layers[F.selIdx];if(!l)return;
-  gI('fLayT').textContent=l.name;
-  gI('fLUL').textContent=l.img?'✓ '+l.imgName.slice(0,20).toUpperCase():'+ LAYER IMAGE';
-  ['full','C','M','Y','R','G','B'].forEach(ch=>{const id='ch'+(ch==='full'?'Full':ch);const el=gI(id);if(el)el.classList.toggle('on',l.channel===ch);});
-  gI('fLCh').value=l.chars;
-  gI('fLCS').style.background=l.color;gI('fLCP').value=l.color;gI('fLCH').textContent=l.color.toUpperCase();
-  [['blS','screen'],['blM','multiply'],['blO','overlay'],['blN','normal']].forEach(([id,b])=>gI(id).classList.toggle('on',l.blend===b));
-  gI('slFOp').value=l.opacity;v('vFOp',l.opacity,'%');
-  gI('slFDX').value=l.dx;v('vFDX',l.dx,'');
-  gI('slFDY').value=l.dy;v('vFDY',l.dy,'');
-  gI('slFBri').value=l.bri;v('vFBri',l.bri,'%');
-  gI('slFCon').value=l.con;v('vFCon',l.con,'%');
-  gI('slFGam').value=Math.round(l.gam*100);v('vFGam',l.gam.toFixed(1),'');
-  gI('togFI').classList.toggle('on',l.inv);
-}
-function addLayer(){
-  if(F.layers.length>=5)return;
-  const cols=['#00eeff','#ff1f77','#ffee00','#ffffff','#ff7700'],chs=['C','M','Y','full','R'];
-  const i=F.layers.length;
-  F.layers.push(mkLayer(i,'LAYER '+(i+1),cols[i],chs[i]));
-  flc.push(mkLC());flc[flc.length-1].c.width=CW();flc[flc.length-1].c.height=CH();
-  buildLayList();selLayer(i);
-}
-function removeLayer(){
-  if(F.layers.length<=1)return;
-  F.layers.splice(F.selIdx,1);F.layers.forEach((l,i)=>l.id=i);
-  flc.pop();F.selIdx=Math.min(F.selIdx,F.layers.length-1);
-  buildLayList();updLayUI();if(!F.vid)fRen();
-}
-function setLayP(prop,val){const l=F.layers[F.selIdx];if(!l)return;l[prop]=val;if(!F.vid)fRen();}
-function setLayCh(ch){const l=F.layers[F.selIdx];if(!l)return;l.channel=ch;['full','C','M','Y','R','G','B'].forEach(c=>{const id='ch'+(c==='full'?'Full':c);const el=gI(id);if(el)el.classList.toggle('on',c===ch);});buildLayList();if(!F.vid)fRen();}
-function setLayCol(hex){const l=F.layers[F.selIdx];if(!l)return;l.color=hex;gI('fLCS').style.background=hex;gI('fLCH').textContent=hex.toUpperCase();buildLayList();if(!F.vid)fRen();}
-function setLayBlend(b){const l=F.layers[F.selIdx];if(!l)return;l.blend=b;[['blS','screen'],['blM','multiply'],['blO','overlay'],['blN','normal']].forEach(([id,bl])=>gI(id).classList.toggle('on',bl===b));if(!F.vid)fRen();}
-function setLayChars(ch){const l=F.layers[F.selIdx];if(!l)return;l.chars=ch;if(!F.vid)fRen();}
-function toggleLayInv(){const l=F.layers[F.selIdx];if(!l)return;l.inv=!l.inv;gI('togFI').classList.toggle('on',l.inv);if(!F.vid)fRen();}
-function setLayImg(input){const file=input.files[0];if(!file)return;const img=new Image();img.onload=()=>{const l=F.layers[F.selIdx];if(!l)return;l.img=img;l.imgName=file.name;gI('fLUL').textContent='✓ '+file.name.toUpperCase().slice(0,20);if(!F.vid)fRen();};img.src=URL.createObjectURL(file);}
-function clearLayImg(){const l=F.layers[F.selIdx];if(!l)return;l.img=null;l.imgName='';gI('fLUL').textContent='+ LAYER IMAGE';gI('fLFile').value='';if(!F.vid)fRen();}
-
-function cmySplit(input){
-  const file=input.files[0];if(!file)return;
-  const img=new Image();
-  img.onload=()=>{
-    while(F.layers.length>3)F.layers.pop();while(F.layers.length<3)F.layers.push(mkLayer(F.layers.length,'LAYER '+(F.layers.length+1),'#ffffff','full'));
-    while(flc.length<3)flc.push(mkLC());
-    [['CYAN','#00eeff','C'],['MAGENTA','#ff1f77','M'],['YELLOW','#ffee00','Y']].forEach(([name,col,ch],i)=>{
-      const l=F.layers[i];l.name=name;l.color=col;l.channel=ch;l.img=img;l.imgName=file.name;l.blend='screen';l.opacity=100;l.dx=0;l.dy=0;l.active=true;
-    });
-    F.base='#080000';gI('fBaP').value='#080000';gI('fBaSw').style.background='#080000';
-    buildLayList();selLayer(0);fRen();input.value='';
-  };
-  img.src=URL.createObjectURL(file);
-}
-
-/* film shared video */
-function loadFVid(input){
-  const file=input.files[0];if(!file)return;
-  const url=URL.createObjectURL(file),v2=document.createElement('video');
-  v2.muted=F.muted;v2.loop=F.loop;v2.playsInline=true;
-  v2.onloadedmetadata=()=>{F.vid=v2;F.vR=true;gI('fVUL').textContent='✓ '+file.name.toUpperCase().slice(0,20);const t=gI('fVT2');t.src=url;t.style.display='block';gI('fvc').classList.add('show');if(tab==='film')updEB(true);fitC();startFR();};
-  v2.src=url;
-}
-function removeFVid(){stopFR();if(F.vid){F.vid.pause();F.vid.src='';F.vid=null;}F.vR=false;gI('fVT2').style.display='none';gI('fVT2').src='';gI('fvc').classList.remove('show');gI('fVUL').textContent='+ UPLOAD VIDEO';gI('fVFile').value='';if(tab==='film')updEB(false);fitC();if(tab==='film')fRen();}
-
-/* film overcoat tools */
-const FTH={text:'CLICK CELL → TYPE<br>ARROWS: NAVIGATE<br>ESC: DESELECT',paint:'CLICK / DRAG TO PAINT CELLS',erase:'CLICK / DRAG TO ERASE CELLS'};
-function fTool(t){F.tool=t;F.cur=null;['text','paint','erase'].forEach(x=>gI('ft'+x.slice(0,3)).classList.toggle('on',x===t));gI('fTH').innerHTML=FTH[t];cv.style.cursor=t==='text'?'text':'crosshair';if(tab==='film'&&!F.vid)fRen();}
-function setFFill(hex){F.fillCol=hex;gI('fFiS').style.background=hex||'transparent';gI('fFiH').textContent=(hex||'NONE').toUpperCase();updPal('fpal',F.fillCol);}
-function applyFTool(r,c){
-  if(!validCell(r,c))return;const k=r+','+c;
-  if(F.tool==='paint'){if(!F.oc[k])F.oc[k]={text:'',bg:null,fg:F.textCol};F.oc[k].bg=F.fillCol?h2r(F.fillCol,F.fillOp):null;}
-  else if(F.tool==='erase')delete F.oc[k];
-}
-function applyLTool(r,c){
-  if(!validCell(r,c))return;const k=r+','+c;
-  if(L.tool==='paint'){if(!L.g[k])L.g[k]={text:'',bg:null,fg:L.textCol};L.g[k].bg=L.fillCol?h2r(L.fillCol,L.fillOp):null;}
-  else if(L.tool==='erase')delete L.g[k];
-}
-
-/* ══════════════════════════════════════════
-   PALETTE
-══════════════════════════════════════════ */
-const PAL=['#ffffff','#cccccc','#888888','#444444','#000000','#ff1f1f','#ff7700','#ffcc00','#00dd44','#00bbff','#0044ee','#cc00ff','#ff0077',null];
-function buildPal(elId,setFn){
-  const el=gI(elId);
-  PAL.forEach(col=>{const s=document.createElement('div');s.className='ps';if(!col){s.classList.add('ps-none');s.title='No fill';s.onclick=()=>setFn(null);}else{s.style.background=col;s.onclick=()=>setFn(col);}el.appendChild(s);});
-}
-function updPal(elId,active){const ch=gI(elId).children;PAL.forEach((c,i)=>ch[i].classList.toggle('act',c===active));}
-
-/* ══════════════════════════════════════════
    CANVAS EVENTS
 ══════════════════════════════════════════ */
 function cellFromEvt(e){const rect=cv.getBoundingClientRect();return{r:Math.floor(((e.clientY-rect.top)*(cv.height/rect.height))/cH),c:Math.floor(((e.clientX-rect.left)*(cv.width/rect.width))/cW)};}
@@ -852,29 +476,18 @@ function setIxSlider(newIx,newIy){
 }
 
 cv.addEventListener('mousedown',e=>{
-  if(tab==='ascii'){
-    if(A.mode==='edit'){
-      const{r,c}=cellFromEvt(e);if(!validCell(r,c))return;
-      A.cur={r,c};rAscii();
-    } else if((A.img||A.vid)&&A.mode==='view'){
-      drag.active=true;drag.lastX=e.clientX;drag.lastY=e.clientY;
-      cv.style.cursor='grabbing';
-      e.preventDefault();
-    }
-    return;
-  }
-  const{r,c}=cellFromEvt(e);if(!validCell(r,c))return;
-  if(tab==='layout'){
-    if(L.tool==='text'){L.cur={r,c};if(!L.isVid)lRen();}
-    else{L.painting=true;applyLTool(r,c);if(!L.isVid)lRen();}
-  }else{
-    if(F.tool==='text'){F.cur={r,c};if(!F.vid)fRen();}
-    else{F.painting=true;applyFTool(r,c);if(!F.vid)fRen();}
+  if(A.mode==='edit'){
+    const{r,c}=cellFromEvt(e);if(!validCell(r,c))return;
+    A.cur={r,c};rAscii();
+  } else if((A.img||A.vid)&&A.mode==='view'){
+    drag.active=true;drag.lastX=e.clientX;drag.lastY=e.clientY;
+    cv.style.cursor='grabbing';
+    e.preventDefault();
   }
 });
 
 cv.addEventListener('mousemove',e=>{
-  if(tab==='ascii'&&drag.active){
+  if(drag.active){
     const rect=cv.getBoundingClientRect();
     const scaleX=cv.width/rect.width,scaleY=cv.height/rect.height;
     const dxCanvas=(e.clientX-drag.lastX)*scaleX;
@@ -883,27 +496,22 @@ cv.addEventListener('mousemove',e=>{
     const dix=canvasPxToIx(dxCanvas,'x');
     const diy=canvasPxToIx(dyCanvas,'y');
     setIxSlider(A.ix+dix,A.iy+diy);
-    return;
   }
-  if(tab==='layout'&&L.painting){const{r,c}=cellFromEvt(e);applyLTool(r,c);if(!L.isVid)lRen();}
-  if(tab==='film'&&F.painting){const{r,c}=cellFromEvt(e);applyFTool(r,c);if(!F.vid)fRen();}
 });
 
 cv.addEventListener('mouseup',()=>{
-  if(drag.active){drag.active=false;cv.style.cursor=(tab==='ascii'&&A.mode==='view'&&(A.img||A.vid))?'grab':'crosshair';}
-  L.painting=false;F.painting=false;
+  if(drag.active){drag.active=false;cv.style.cursor=(A.mode==='view'&&(A.img||A.vid))?'grab':'crosshair';}
 });
 cv.addEventListener('mouseleave',()=>{
   if(drag.active){drag.active=false;cv.style.cursor='crosshair';}
-  L.painting=false;F.painting=false;
 });
 cv.addEventListener('mouseenter',()=>{
-  if(tab==='ascii'&&A.mode==='view'&&(A.img||A.vid))cv.style.cursor='grab';
+  if(A.mode==='view'&&(A.img||A.vid))cv.style.cursor='grab';
 });
 
 /* Scroll to zoom — ASCII view mode only */
 cv.addEventListener('wheel',e=>{
-  if(tab!=='ascii'||!A.img&&!A.vid)return;
+  if(!A.img&&!A.vid)return;
   e.preventDefault();
   const delta=e.deltaY>0?-3:3; // scroll down = zoom out
   const newSc=Math.max(1,Math.min(2000,A.sc+delta));
@@ -916,25 +524,20 @@ cv.addEventListener('wheel',e=>{
 
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT')return;
-  if(tab==='ascii'&&A.mode==='edit'&&A.cur)kGrid(e,A.tg,A.cur,'ascii',rAscii,()=>A.ml||0);
-  else if(tab==='layout'&&L.tool==='text'&&L.cur)kGrid(e,L.g,L.cur,'layout',()=>{if(!L.isVid)lRen();},()=>0);
-  else if(tab==='film'&&F.tool==='text'&&F.cur)kGrid(e,F.oc,F.cur,'film',()=>{if(!F.vid)fRen();},()=>0);
+  if(A.mode==='edit'&&A.cur)kGrid(e,A.tg,A.cur,rAscii,()=>A.ml||0);
 });
 
-function kGrid(e,grid,cur,t,renderFn,startCol){
+function kGrid(e,grid,cur,renderFn,startCol){
   const cols=Math.floor(CW()/cW),rows=Math.floor(CH()/cH),k=cur.r+','+cur.c;
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab','Backspace','Enter'].includes(e.key))e.preventDefault();
-  if(e.key==='Escape'){
-    if(t==='ascii')A.cur=null;else if(t==='layout')L.cur=null;else F.cur=null;
-    renderFn();return;
-  }
+  if(e.key==='Escape'){A.cur=null;renderFn();return;}
   if(e.key==='Backspace'){
     const cell=grid[k];
-    if(t==='ascii'){if(cell!==undefined)delete grid[k];else if(cur.c>0){cur.c--;delete grid[cur.r+','+cur.c];}}
-    else{if(cell&&cell.text)cell.text='';else if(cur.c>0){cur.c--;const k2=cur.r+','+cur.c;if(grid[k2])grid[k2].text='';}}
+    if(cell!==undefined)delete grid[k];
+    else if(cur.c>0){cur.c--;delete grid[cur.r+','+cur.c];}
     renderFn();return;
   }
-  if(e.key==='Delete'){if(t==='ascii')delete grid[k];else{if(grid[k])grid[k].text='';}renderFn();return;}
+  if(e.key==='Delete'){delete grid[k];renderFn();return;}
   if(e.key==='ArrowRight'&&cur.c<cols-1){cur.c++;renderFn();return;}
   if(e.key==='ArrowLeft'&&cur.c>0){cur.c--;renderFn();return;}
   if(e.key==='ArrowDown'&&cur.r<rows-1){cur.r++;renderFn();return;}
@@ -942,8 +545,7 @@ function kGrid(e,grid,cur,t,renderFn,startCol){
   if(e.key==='Enter'&&cur.r<rows-1){cur.r++;cur.c=startCol();renderFn();return;}
   if(e.key==='Tab'){if(cur.c<cols-1)cur.c++;renderFn();return;}
   if(e.key.length===1&&!e.ctrlKey&&!e.metaKey){
-    if(t==='ascii'){grid[k]=e.key;}
-    else{if(!grid[k])grid[k]={text:'',bg:null,fg:t==='layout'?L.textCol:F.textCol};grid[k].text=e.key;grid[k].fg=t==='layout'?L.textCol:F.textCol;}
+    grid[k]=e.key;
     if(cur.c<cols-1)cur.c++;else if(cur.r<rows-1){cur.r++;cur.c=startCol();}
     renderFn();
   }
@@ -1087,11 +689,11 @@ function getActiveFontFamily(){
 ══════════════════════════════════════════ */
 let MR=null,RC=[],RD=0,RS=0,RT=null,RVS=null;
 function expPNG(){
-  const sA=A.cur,sL=L.cur,sF=F.cur;A.cur=null;L.cur=null;F.cur=null;
-  if(tab==='ascii')rAscii(true);else if(tab==='layout')lRen(true);else fRen(true);
-  const a=document.createElement('a');a.download='ascii-'+tab+'-'+SH.fmt+'-'+Date.now()+'.png';a.href=cv.toDataURL('image/png');a.click();
-  A.cur=sA;L.cur=sL;F.cur=sF;
-  if(tab==='ascii')rAscii();else if(tab==='layout')lRen();else fRen();
+  const sA=A.cur;A.cur=null;
+  rAscii(true);
+  const a=document.createElement('a');a.download='ascii-'+SH.fmt+'-'+Date.now()+'.png';a.href=cv.toDataURL('image/png');a.click();
+  A.cur=sA;
+  rAscii();
 }
 
 function buildASCIIGrid(){
@@ -1336,7 +938,7 @@ function expTXT(){
   showN('TXT SAVED — PASTE INTO FIGMA WITH A MONOSPACE FONT');
 }
 function expVid(){
-  RVS=tab==='ascii'?A.vid:tab==='layout'?L.vid:F.vid;
+  RVS=A.vid;
   if(!RVS){showN('LOAD A VIDEO FIRST.');return;}
   if(MR&&MR.state==='recording'){stopRec();return;}
   let opts={videoBitsPerSecond:8000000};
@@ -1344,7 +946,7 @@ function expVid(){
   const stream=cv.captureStream(30);RC=[];RD=RVS.duration||10;
   MR=new MediaRecorder(stream,opts);
   MR.ondataavailable=e=>{if(e.data.size>0)RC.push(e.data);};
-  MR.onstop=()=>{clearInterval(RT);const blob=new Blob(RC,{type:'video/webm'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ascii-'+tab+'-'+SH.fmt+'-'+Date.now()+'.webm';a.click();gI('prBar').style.display='none';showN('DONE — SAVED AS .WEBM');gI('btnVid').textContent='● RECORD WEBM';gI('btnVid').style.borderColor='';MR=null;};
+  MR.onstop=()=>{clearInterval(RT);const blob=new Blob(RC,{type:'video/webm'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ascii-'+SH.fmt+'-'+Date.now()+'.webm';a.click();gI('prBar').style.display='none';showN('DONE — SAVED AS .WEBM');gI('btnVid').textContent='● RECORD WEBM';gI('btnVid').style.borderColor='';MR=null;};
   MR.start(100);RVS.currentTime=0;RVS.play();RS=Date.now();
   gI('prBar').style.display='block';gI('prFill').style.width='0%';showN('RECORDING... CLICK TO STOP.');
   gI('btnVid').innerHTML='<span class="rd"></span>STOP REC';gI('btnVid').style.borderColor='var(--ac)';
@@ -1357,19 +959,14 @@ function showN(msg){const n=gI('expN');n.textContent=msg;n.style.display='block'
 /* ══════════════════════════════════════════
    INIT
 ══════════════════════════════════════════ */
-window.addEventListener('resize',()=>{fitC();if(tab==='ascii')rAscii();else if(tab==='layout')lRen();else fRen();});
+window.addEventListener('resize',()=>{fitC();rAscii();});
 document.fonts.ready.then(()=>{
   fontReady=true;
-  initLayers();
   initCanvas();
   A.chars=gI('charSet').value;
-  buildPal('lpal',setLFill);
-  buildPal('fpal',setFFill);
-  buildLayList();updLayUI();
   updEB(false);
   rAscii();
-  gI('aBl').classList.add('on');gI('lBl').classList.add('on');gI('fBl').classList.add('on');
-  gI('togLGL').classList.add('on');gI('togFGL').classList.add('on');
+  gI('aBl').classList.add('on');
 });
 </script>
 </body>
