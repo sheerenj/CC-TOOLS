@@ -873,8 +873,16 @@ async function doExportVideo(frameOverride) {
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
 
   const N = (frameOverride !== undefined) ? frameOverride : S.expFrames;
-  const frameDuration = Math.round(1000 / 30); // real-time pacing so MediaRecorder timestamps are correct
+  const MS_PER_FRAME = 1000 / 30;
+
+  // waitUntil: uses rAF instead of setTimeout for vsync-accurate frame pacing
+  const waitUntil = t => new Promise(resolve => {
+    const check = () => performance.now() >= t ? resolve() : requestAnimationFrame(check);
+    requestAnimationFrame(check);
+  });
+
   recorder.start();
+  const t0 = performance.now();
 
   for (let f = 0; f < N; f++) {
     advanceAnim(1/30);
@@ -882,7 +890,8 @@ async function doExportVideo(frameOverride) {
     track.requestFrame();
     bar.style.width = ((f+1)/N*100) + '%';
     txt.textContent = `${((f+1)/30).toFixed(1)}s / ${(N/30).toFixed(1)}s`;
-    await new Promise(r => setTimeout(r, frameDuration));
+    // Wait until the exact wall-clock time for the next frame — compensates for render cost
+    await waitUntil(t0 + (f + 1) * MS_PER_FRAME);
   }
 
   recorder.stop();
