@@ -1,0 +1,18 @@
+[
+  {"category":"generators","slug":"ascii-art-generator","name":"ASCII Art Generator","hasPreview":true},
+  {"category":"generators","slug":"dot-matrix-studio","name":"Dot Matrix Studio","hasPreview":true},
+  {"category":"generators","slug":"geometric-emblem-generator","name":"Geometric Emblem Generator","hasPreview":true},
+  {"category":"generators","slug":"moire-studio","name":"Moiré Studio","hasPreview":true},
+  {"category":"generators","slug":"moire-svg-studio","name":"Moiré SVG Studio","hasPreview":true},
+  {"category":"generators","slug":"orb-burst-studio","name":"Orb Burst Studio","hasPreview":true},
+  {"category":"generators","slug":"pill-dof-studio","name":"Pill DoF Studio","hasPreview":true},
+  {"category":"generators","slug":"platine-brand-identity-tool","name":"PLATINE Brand Identity Tool","hasPreview":false},
+  {"category":"generators","slug":"reaction-diffusion","name":"Reaction–Diffusion","hasPreview":true},
+  {"category":"image","slug":"halftone-dot-studio","name":"Halftone Dot Studio","hasPreview":true},
+  {"category":"image","slug":"chromatic-bloom","name":"Chromatic Bloom","hasPreview":true},
+  {"category":"image","slug":"BCA-halftone-lines-image","name":"BCA Halftone Lines (Image)","hasPreview":true},
+  {"category":"video","slug":"BCA-halftone-lines-video","name":"BCA Halftone Lines (Video)","hasPreview":true},
+  {"category":"typography","slug":"particle-typeface","name":"Particle Typeface","hasPreview":true},
+  {"category":"typography","slug":"experimental-type-tool","name":"Experimental Type Tool","hasPreview":true},
+  {"category":"templates","slug":"ascii-template-tool","name":"ASCII Template Tool","hasPreview":true}
+]
