@@ -208,7 +208,7 @@ select { width: 100%; background: #f5f5f5; border: 1px solid var(--line); color:
     <div class="ctrl">
       <label>Stroke width <span class="val" id="vsw">0 px</span></label>
       <div class="ctrl-pair">
-        <input type="range" id="rsw" min="0" max="40" value="0" step="1">
+        <input type="range" id="rsw" min="0" max="120" value="0" step="1">
         <div class="swatch"><input type="color" id="csc" value="#bfb9ab"></div>
       </div>
     </div>
@@ -380,6 +380,7 @@ select { width: 100%; background: #f5f5f5; border: 1px solid var(--line); color:
     <div class="btn-row" style="margin-bottom:6px">
       <button class="btn btn-primary" id="bexp">↓ ZIP</button>
       <button class="btn btn-ghost" id="bvid">↓ MP4</button>
+      <button class="btn btn-ghost" id="bvid-loop">↓ Loop MP4</button>
     </div>
     <p class="hint">MP4 on Safari · WebM on Chrome/Firefox</p>
   </div>
@@ -819,8 +820,29 @@ async function doExport() {
   requestAnimationFrame(ts => { prevT = ts; tick(ts); });
 }
 
+// ── Loop frame calculator ───────────────────────────────────────────────────
+function calcLoopFrames() {
+  const fps = 30;
+  function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+  function lcm(a, b) { return a / gcd(a, b) * b; }
+  if (S.mode === 'spin') {
+    const ratePerFrame = S.spd * 0.55 / fps;
+    return Math.max(15, Math.round((2 * Math.PI) / ratePerFrame));
+  } else if (S.mode === 'swing') {
+    const ratePerFrame = S.spd * 0.22 / fps;
+    return Math.max(15, Math.round(2 / ratePerFrame));
+  } else {
+    // tumble: LCM of each active axis period
+    const rates = [S.txs, S.tys, S.tzs].filter(r => Math.abs(r) > 0.001);
+    if (!rates.length) return fps * 4;
+    const periods = rates.map(r => Math.max(2, Math.round((2 * Math.PI) / (Math.abs(S.spd * r) / fps))));
+    const total = periods.reduce(lcm);
+    return Math.min(total, fps * 60); // cap at 60 s
+  }
+}
+
 // ── Export video (MP4 / WebM via MediaRecorder) ────────────────────────────
-async function doExportVideo() {
+async function doExportVideo(frameOverride) {
   if (!cv.captureStream) { alert('captureStream not supported in this browser.'); return; }
   const FMTS = [
     { mime: 'video/mp4;codecs=avc1', ext: 'mp4' },
@@ -850,7 +872,7 @@ async function doExportVideo() {
   const recorder = new MediaRecorder(stream, { mimeType: fmt.mime, videoBitsPerSecond: 16_000_000 });
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
 
-  const N = S.expFrames;
+  const N = (frameOverride !== undefined) ? frameOverride : S.expFrames;
   const frameDuration = Math.round(1000 / 30); // real-time pacing so MediaRecorder timestamps are correct
   recorder.start();
 
@@ -953,7 +975,8 @@ $('tealpha').onchange  = function() { S.expAlpha=this.checked; };
 $('tsvgmerge').onchange= function() { S.svgMerge=this.checked; };
 
 $('bexp').onclick  = () => doExport();
-$('bvid').onclick  = () => doExportVideo();
+$('bvid').onclick      = () => doExportVideo();
+$('bvid-loop').onclick = () => doExportVideo(calcLoopFrames());
 $('bsvg').onclick  = () => exportSVG();
 $('bshot').onclick = () => {
   drawScene(ctx, false);
