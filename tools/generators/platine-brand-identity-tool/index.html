@@ -841,14 +841,17 @@ async function doExportVideo() {
   S.exporting = true; S.play = false;
   const sRx=S.rx, sRy=S.ry, sRz=S.rz, sSw=swPh, sOsc=oscPh;
 
+  // Always start from the isometric rest position
+  S.rx = 0.6155; S.ry = 0.7854; S.rz = 0; swPh = 0; oscPh = 0;
+
   const chunks = [];
-  // captureStream(0) = manual frame control via requestFrame()
   const stream   = cv.captureStream(0);
   const track    = stream.getVideoTracks()[0];
   const recorder = new MediaRecorder(stream, { mimeType: fmt.mime, videoBitsPerSecond: 16_000_000 });
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
 
   const N = S.expFrames;
+  const frameDuration = Math.round(1000 / 30); // real-time pacing so MediaRecorder timestamps are correct
   recorder.start();
 
   for (let f = 0; f < N; f++) {
@@ -857,7 +860,7 @@ async function doExportVideo() {
     track.requestFrame();
     bar.style.width = ((f+1)/N*100) + '%';
     txt.textContent = `${((f+1)/30).toFixed(1)}s / ${(N/30).toFixed(1)}s`;
-    if (f % 4 === 0) await new Promise(r => setTimeout(r, 0));
+    await new Promise(r => setTimeout(r, frameDuration));
   }
 
   recorder.stop();
