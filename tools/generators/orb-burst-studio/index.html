@@ -55,8 +55,8 @@ body { display: flex; }
   font-size: 12px; font-weight: 500; margin-bottom: 6px; }
 .ctrl > label .val { color: var(--text-dim); font-size: 11px; font-family: ui-monospace, monospace; }
 .ctrl label.hub-check { justify-content: flex-start; gap: 8px; cursor: pointer; }
-fieldset#hub-field { border: none; padding: 0; margin: 0; min-width: 0; }
-fieldset#hub-field:disabled { opacity: 0.45; pointer-events: none; }
+fieldset.fset { border: none; padding: 0; margin: 0; min-width: 0; }
+fieldset.fset:disabled { opacity: 0.45; pointer-events: none; }
 
 input[type=range] { -webkit-appearance: none; width: 100%; height: 4px;
   background: var(--line-2); border-radius: 2px; outline: none; cursor: pointer; }
@@ -71,7 +71,6 @@ select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
   background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
 
-.swatch-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .swatch-wrap { position: relative; width: 40px; height: 32px; border: 1px solid var(--line-2);
   border-radius: 8px; overflow: hidden; flex-shrink: 0; }
 .swatch-wrap input[type=color] { position: absolute; inset: -4px; width: calc(100% + 8px);
@@ -91,6 +90,32 @@ input[type="number"].num-in {
   width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px;
   font-size: 12px; font-family: ui-monospace, monospace; background: #fafafa;
 }
+
+/* Mode pills */
+.pill-row { display: flex; gap: 6px; }
+.mode-pill { flex: 1; background: #f0f0f0; color: #555; border: 1px solid var(--line-2);
+  border-radius: var(--radius-pill); padding: 9px 10px; font-size: 12px;
+  font-weight: 600; cursor: pointer; transition: all 0.12s; font-family: inherit; }
+.mode-pill.active { background: #000; color: #fff; border-color: #000; }
+
+/* Custom color swatches */
+.col-swatches { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 10px; }
+.col-swatch { position: relative; }
+.col-swatch .swatch-wrap { width: 34px; height: 34px; border-radius: 9px; }
+.col-del { position: absolute; top: -5px; right: -5px; width: 15px; height: 15px;
+  background: #000; color: #fff; border: none; border-radius: 50%;
+  font-size: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  padding: 0; line-height: 1; }
+.col-del:hover { background: #444; }
+.col-add-btn { width: 34px; height: 34px; background: #f0f0f0; border: 1px dashed var(--line-2);
+  border-radius: 9px; color: #888; font-size: 18px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; font-family: inherit; flex-shrink: 0; }
+.col-add-btn:hover { background: #e8e8e8; }
+
+.warp-only { display: none; }
+.burst-only { display: block; }
+body.warp-mode .warp-only { display: block; }
+body.warp-mode .burst-only { display: none; }
 
 #canvas-wrap {
   flex: 1; display: flex; align-items: center; justify-content: center;
@@ -114,6 +139,16 @@ input[type="number"].num-in {
     </div>
   </div>
 
+  <!-- MODE -->
+  <div class="section">
+    <div class="section-title">Mode</div>
+    <div class="pill-row">
+      <button class="mode-pill active" id="pill-burst">3D Burst</button>
+      <button class="mode-pill" id="pill-warp">Warp Tunnel</button>
+    </div>
+  </div>
+
+  <!-- CANVAS -->
   <div class="section">
     <div class="section-title">Canvas</div>
     <div class="ctrl">
@@ -134,28 +169,29 @@ input[type="number"].num-in {
       <label style="margin-top:10px;display:block">Height (px)</label>
       <input type="number" class="num-in" id="in-canvas-h" min="32" max="8192" value="1080" step="1" />
     </div>
-    <p class="hint">Fixed sizes use exact pixel buffers (scaled in the panel). Large sizes are clamped to your GPU max texture size.</p>
+    <p class="hint">Fixed sizes use exact pixel buffers. Large sizes are clamped to GPU max texture size.</p>
   </div>
 
+  <!-- LOOK -->
   <div class="section">
     <div class="section-title">Look</div>
     <div class="ctrl">
       <label>Radial streaks <span class="val" id="v-n">400</span></label>
-      <input type="range" id="sl-n" min="400" max="8000" step="100" value="400" />
+      <input type="range" id="sl-n" min="100" max="8000" step="100" value="400" />
     </div>
-    <div class="ctrl">
+    <div class="ctrl burst-only">
       <label>Core blobs <span class="val" id="v-blobs">0</span></label>
       <input type="range" id="sl-blobs" min="0" max="120" value="0" />
     </div>
     <div class="ctrl">
       <label>Streak length <span class="val" id="v-len">0.48</span></label>
-      <input type="range" id="sl-len" min="2" max="48" value="48" />
+      <input type="range" id="sl-len" min="2" max="100" value="48" />
     </div>
     <div class="ctrl">
       <label>Streak thickness <span class="val" id="v-th">0.0003</span></label>
-      <input type="range" id="sl-th" min="0" max="200" value="3" />
+      <input type="range" id="sl-th" min="0" max="1000" value="3" />
     </div>
-    <div class="ctrl">
+    <div class="ctrl burst-only">
       <label>Core hotness <span class="val" id="v-core">1.00</span></label>
       <input type="range" id="sl-core" min="0" max="100" value="100" />
     </div>
@@ -165,6 +201,7 @@ input[type="number"].num-in {
     </div>
   </div>
 
+  <!-- MOTION -->
   <div class="section">
     <div class="section-title">Motion</div>
     <div class="ctrl">
@@ -172,19 +209,20 @@ input[type="number"].num-in {
       <input type="range" id="sl-sp" min="5" max="200" value="5" />
     </div>
     <div class="ctrl">
-      <label>Drift / swirl <span class="val" id="v-sw">0.00</span></label>
+      <label id="lbl-sw">Drift / swirl <span class="val" id="v-sw">0.00</span></label>
       <input type="range" id="sl-sw" min="0" max="80" value="0" />
     </div>
-    <div class="ctrl">
+    <div class="ctrl burst-only">
       <label>Camera orbit <span class="val" id="v-orb">0.35</span></label>
       <input type="range" id="sl-orb" min="0" max="100" value="35" />
     </div>
     <div class="ctrl">
       <label>Depth spread <span class="val" id="v-z">0.10</span></label>
-      <input type="range" id="sl-z" min="10" max="100" value="10" />
+      <input type="range" id="sl-z" min="0" max="100" value="10" />
     </div>
   </div>
 
+  <!-- BLOOM -->
   <div class="section">
     <div class="section-title">Bloom</div>
     <div class="ctrl">
@@ -193,21 +231,34 @@ input[type="number"].num-in {
     </div>
     <div class="ctrl">
       <label>Bloom blur px <span class="val" id="v-bpx">4</span></label>
-      <input type="range" id="sl-bpx" min="0" max="20" value="4" />
+      <input type="range" id="sl-bpx" min="0" max="32" value="4" />
     </div>
   </div>
 
+  <!-- CENTER CORE -->
   <div class="section">
-    <div class="section-title">Center gradient</div>
+    <div class="section-title">Center core</div>
     <div class="ctrl">
+      <label class="hub-check"><input type="checkbox" id="ck-hotcore" /> Hot star (overexposed center)</label>
+    </div>
+    <fieldset class="fset" id="hotcore-field" disabled>
+      <div class="ctrl">
+        <label>Intensity <span class="val" id="v-hotcore">0.80</span></label>
+        <input type="range" id="sl-hotcore" min="0" max="100" value="80" />
+      </div>
+      <div class="ctrl">
+        <label>Radius <span class="val" id="v-hotrad">0.12</span></label>
+        <input type="range" id="sl-hotrad" min="2" max="60" value="12" />
+      </div>
+    </fieldset>
+    <div class="ctrl" style="margin-top:10px">
       <label class="hub-check"><input type="checkbox" id="ck-hub" /> Radial wash behind streaks</label>
     </div>
-    <fieldset id="hub-field" disabled>
+    <fieldset class="fset" id="hub-field" disabled>
       <div class="ctrl">
         <label>Wash color</label>
-        <div class="swatch-row">
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
           <div class="swatch-wrap"><input type="color" id="cp-hub" value="#ff6a2e" /></div>
-          <span style="font-size:11px;color:var(--text-dim)">Works on light or dark plate (alpha blend)</span>
         </div>
       </div>
       <div class="ctrl">
@@ -225,8 +276,9 @@ input[type="number"].num-in {
     </fieldset>
   </div>
 
+  <!-- COLORS -->
   <div class="section">
-    <div class="section-title">Color</div>
+    <div class="section-title">Colors</div>
     <div class="ctrl">
       <label>Layer blend</label>
       <select id="sel-blend">
@@ -235,22 +287,28 @@ input[type="number"].num-in {
       </select>
     </div>
     <div class="ctrl">
-      <label>Palette</label>
-      <select id="sel-pal">
-        <option value="studio">Studio (ref tones)</option>
-        <option value="neon" selected>Neon burst</option>
+      <label>Background</label>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <div class="swatch-wrap"><input type="color" id="cp-bg" value="#000000" /></div>
+        <span style="font-size:11px;color:var(--text-dim)">Black + additive = neon glow. White + normal = light burst.</span>
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>Load preset</label>
+      <select id="sel-preset">
+        <option value="">— pick to load —</option>
+        <option value="rainbow">Rainbow (full spectrum)</option>
+        <option value="pastel">Pastel rainbow</option>
+        <option value="neon">Neon burst</option>
         <option value="sunset">Sunset core</option>
         <option value="aqua">Aqua lime</option>
         <option value="mono">Mono heat</option>
+        <option value="studio">Studio</option>
+        <option value="icefire">Ice &amp; fire</option>
       </select>
     </div>
-    <div class="ctrl">
-      <label>Background</label>
-      <div class="swatch-row">
-        <div class="swatch-wrap"><input type="color" id="cp-bg" value="#000000" /></div>
-        <span style="font-size:11px;color:var(--text-dim)">Black + additive matches neon burst previews</span>
-      </div>
-    </div>
+    <label style="font-size:12px;font-weight:500;display:block;margin-bottom:4px">Palette colors</label>
+    <div class="col-swatches" id="col-swatches"></div>
     <div class="ctrl">
       <label>Saturation <span class="val" id="v-csat">100%</span></label>
       <input type="range" id="sl-csat" min="30" max="220" value="100" />
@@ -265,6 +323,21 @@ input[type="number"].num-in {
     </div>
   </div>
 
+  <!-- FILM GRAIN -->
+  <div class="section">
+    <div class="section-title">Film grain</div>
+    <div class="ctrl">
+      <label class="hub-check"><input type="checkbox" id="ck-grain" /> Enable grain</label>
+    </div>
+    <fieldset class="fset" id="grain-field" disabled>
+      <div class="ctrl">
+        <label>Intensity <span class="val" id="v-grain">4%</span></label>
+        <input type="range" id="sl-grain" min="0" max="30" value="4" />
+      </div>
+    </fieldset>
+  </div>
+
+  <!-- EXPORT -->
   <div class="section">
     <div class="section-title">Export</div>
     <button type="button" class="btn ghost" id="btn-png">Save PNG (current frame)</button>
@@ -284,7 +357,6 @@ input[type="number"].num-in {
     <div class="ctrl">
       <label class="hub-check"><input type="checkbox" id="ck-seq-alpha" /> Transparent PNGs (straight alpha, no bloom)</label>
     </div>
-    <p class="hint" style="margin-top:0">Alpha export draws the scene buffer only (bloom disabled for that pass). Normal blend gives the cleanest edges; additive uses a luminance-based alpha estimate.</p>
     <button type="button" class="btn" id="btn-seq-png">Render PNG sequence</button>
     <div class="ctrl" style="margin-top:12px">
       <label>Record — duration (s)</label>
@@ -298,11 +370,8 @@ input[type="number"].num-in {
     <div class="btn-row">
       <button type="button" class="btn ghost" id="btn-rec-webm">Record video</button>
     </div>
-    <p class="hint"><strong>Video:</strong> <code>MediaRecorder</code> — MP4 when supported, otherwise WebM. Re-encode in Resolve or FFmpeg if needed.</p>
+    <p class="hint"><strong>Video:</strong> MP4 when supported, otherwise WebM.</p>
     <div id="export-status"></div>
-    <p class="hint" style="margin-top:10px">
-      <strong>Blend:</strong> additive on white has little headroom — use <strong>Normal</strong> for light plates or a dark background for additive glow.
-    </p>
   </div>
 </div>
 
@@ -319,1233 +388,961 @@ input[type="number"].num-in {
   const canvas = $('c');
   const fb = $('webgl-fallback');
 
-  /** @type {WebGL2RenderingContext | null} */
   let gl = canvas.getContext('webgl2', {
-    alpha: false,
-    antialias: false,
-    depth: false,
-    stencil: false,
-    premultipliedAlpha: false,
-    preserveDrawingBuffer: true
+    alpha: false, antialias: false, depth: false, stencil: false,
+    premultipliedAlpha: false, preserveDrawingBuffer: true
   });
-  if (!gl) {
-    fb.textContent = 'WebGL2 is required for this tool.';
-    fb.classList.add('show');
-    return;
-  }
+  if (!gl) { fb.textContent = 'WebGL2 is required.'; fb.classList.add('show'); return; }
 
-  function compile(type, src) {
-    const sh = gl.createShader(type);
-    gl.shaderSource(sh, src);
-    gl.compileShader(sh);
-    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
-      console.error(gl.getShaderInfoLog(sh));
-      gl.deleteShader(sh);
-      return null;
-    }
-    return sh;
-  }
+  /* ── state ─────────────────────────────────────────────── */
+  let warpMode = false;
+  let customColors = ['#ff2200','#ff8800','#ffee00','#44ff44','#00ddff','#3355ff','#aa00ff','#ff0099'];
 
-  function link(vs, fs) {
-    const p = gl.createProgram();
-    gl.attachShader(p, vs);
-    gl.attachShader(p, fs);
-    gl.linkProgram(p);
-    gl.deleteShader(vs);
-    gl.deleteShader(fs);
-    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
-      console.error(gl.getProgramInfoLog(p));
-      gl.deleteProgram(p);
-      return null;
-    }
-    return p;
+  /* ── presets ─────────────────────────────────────────────── */
+  function hslToHex(h, s, l) {
+    s /= 100; l /= 100;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => { const k = (n + h / 30) % 12; return l - a * Math.max(-1, Math.min(k - 3, Math.min(9 - k, 1))); };
+    const toH = v => Math.round(v * 255).toString(16).padStart(2, '0');
+    return `#${toH(f(0))}${toH(f(8))}${toH(f(4))}`;
   }
+  function genRainbow(n, sat, lig) {
+    return Array.from({ length: n }, (_, i) => hslToHex((i / n) * 360, sat, lig));
+  }
+  const PRESETS = {
+    rainbow: genRainbow(12, 90, 55),
+    pastel:  genRainbow(12, 70, 72),
+    neon:    ['#fa5920','#ffbf14','#8cfa33','#17ebd9','#f22590','#7233f5'],
+    sunset:  ['#ff8c33','#ffd956','#f23d5a','#bf59e6','#4db8ff'],
+    aqua:    ['#26f2bf','#59ff72','#3399ff','#d9ff59','#8059ff'],
+    mono:    ['#ff8c1f','#ffd230','#fff2bf','#ff6619','#bfbfc7'],
+    studio:  ['#e6053f','#007ae6','#47e105','#0b0ab8','#f23803','#7a00ad','#05b8a0','#e6a600'],
+    icefire: ['#ff4500','#ff8c00','#ffcc00','#00bfff','#4169e1','#ff69b4'],
+  };
 
+  /* ── shaders ─────────────────────────────────────────────── */
   const VS_ORBS = `#version 300 es
-layout(location = 0) in vec2 a_corner;
-layout(location = 1) in vec3 a_world;
-layout(location = 2) in vec3 a_color;
-layout(location = 3) in vec4 a_meta; /* size, lenScale, zFade, kind (0=streak, 1=blob) */
-
+layout(location=0) in vec2 a_corner;
+layout(location=1) in vec3 a_world;
+layout(location=2) in vec3 a_color;
+layout(location=3) in vec4 a_meta;
 uniform mat4 u_mvp;
-uniform vec3 u_eye;     /* world-space camera — orient streaks in 3D */
-uniform vec2 u_streak; /* length / thickness scale from UI → mapped to world units here */
-
-out vec2 v_uv;
-out vec3 v_col;
-out float v_axial;
-out float v_camDist;
+uniform vec3 u_eye;
+uniform vec2 u_streak;
+out vec2 v_uv; out vec3 v_col; out float v_axial; out float v_camDist;
 flat out float v_kind;
-
 void main() {
-  vec3 C = a_world;
-  float kind = a_meta.w;
-  v_kind = kind;
-  v_uv = a_corner;
-  v_col = a_color;
-  v_axial = a_corner.x;
+  vec3 C = a_world; float kind = a_meta.w; v_kind = kind;
+  v_uv = a_corner; v_col = a_color; v_axial = a_corner.x;
   v_camDist = length(u_eye - C);
-
-  /* zFade 0..1 = position in radial shell — drives thickness like reference rim weight */
   float thickRamp = smoothstep(0.04, 0.96, a_meta.z);
-
-  const float WL = 0.92;       /* world half-length scale from u_streak.x */
-  const float WT_BLOB = 24.0; /* blobs stay volumetric */
-  const float WT_STREAK = 6.8; /* streaks: lower than old 24 so UI “hair” values read thin again */
-
+  const float WL = 0.92; const float WT_BLOB = 24.0; const float WT_STREAK = 6.8;
   vec3 pos;
   if (kind > 0.5) {
-    /* Core blob: view-facing ellipse (soft mass toward camera) */
     vec3 vd = normalize(u_eye - C);
-    vec3 upRef = abs(vd.y) < 0.92 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+    vec3 upRef = abs(vd.y) < 0.92 ? vec3(0,1,0) : vec3(1,0,0);
     vec3 side = normalize(cross(upRef, vd));
     vec3 upm = normalize(cross(vd, side));
     float rx = u_streak.x * a_meta.y * 0.34 * WL;
     float ry = u_streak.y * a_meta.x * 4.05 * WT_BLOB * 0.042;
-    pos = C + side * (a_corner.x * rx) + upm * (a_corner.y * ry);
+    pos = C + side*(a_corner.x*rx) + upm*(a_corner.y*ry);
   } else {
-    /* Streak: long axis = world radial from burst center; thin axis ⊥ radial in view plane */
-    vec3 ax = length(C) > 1e-6 ? normalize(C) : vec3(0.0, 0.0, 1.0);
+    vec3 ax = length(C) > 1e-6 ? normalize(C) : vec3(0,0,1);
     vec3 vd = normalize(u_eye - C);
     vec3 side = cross(ax, vd);
     float sl = length(side);
     if (sl < 1e-5) {
-      vec3 upRef = abs(ax.y) < 0.92 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+      vec3 upRef = abs(ax.y) < 0.92 ? vec3(0,1,0) : vec3(1,0,0);
       side = normalize(cross(ax, upRef));
-    } else {
-      side /= sl;
-    }
-    float hl = u_streak.x * a_meta.y * (1.02 + 1.05 * thickRamp) * WL;
-    float ht = u_streak.y * a_meta.x * (0.88 + 1.55 * thickRamp) * WT_STREAK;
-    pos = C + ax * (a_corner.x * hl) + side * (a_corner.y * ht);
+    } else { side /= sl; }
+    float hl = u_streak.x * a_meta.y * (1.02 + 1.05*thickRamp) * WL;
+    float ht = u_streak.y * a_meta.x * (0.88 + 1.55*thickRamp) * WT_STREAK;
+    pos = C + ax*(a_corner.x*hl) + side*(a_corner.y*ht);
   }
-
   gl_Position = u_mvp * vec4(pos, 1.0);
-}
-`;
+}`;
 
   const FS_ORBS = `#version 300 es
 precision highp float;
-in vec2 v_uv;
-in vec3 v_col;
-in float v_axial;
-in float v_camDist;
+in vec2 v_uv; in vec3 v_col; in float v_axial; in float v_camDist;
 flat in float v_kind;
-
-uniform float u_core;     /* 0..1 core weight */
-uniform float u_soft;   /* edge softness 0..1 */
-uniform int u_blendMode;  /* 0 = alpha-over (visible on light bg), 1 = additive (dark bg) */
-uniform vec3 u_bg;      /* plate color (sRGB) */
-uniform float u_colHue; /* 0..1 full rotation */
-uniform float u_colSat; /* chroma multiplier (≈0.3–2.2 from UI) */
-uniform float u_colGain;/* brightness on graded rgb */
-uniform int u_transparentPlate; /* 1 = straight alpha for PNG (no plate tint in rgb) */
-
+uniform float u_core; uniform float u_soft; uniform int u_blendMode;
+uniform vec3 u_bg; uniform float u_colHue; uniform float u_colSat;
+uniform float u_colGain; uniform int u_transparentPlate;
 out vec4 fragColor;
-
 vec3 saturateRgb(vec3 c, float k) {
-  float L = dot(c, vec3(0.299, 0.587, 0.114));
+  float L = dot(c, vec3(0.299,0.587,0.114));
   return clamp(mix(vec3(L), c, k), 0.0, 1.0);
 }
-
 vec3 hueShiftYiq(vec3 rgb, float t) {
-  const mat3 kRGBToYIQ = mat3(
-    0.299, 0.587, 0.114,
-    0.596926, -0.274578, -0.321348,
-    0.211470, -0.522591, 0.311210);
-  const mat3 kYIQToRGB = mat3(
-    1.0, 0.95629572, 0.621024,
-    1.0, -0.27212266, -0.64738096,
-    1.0, -1.1068845, 1.7046149);
-  vec3 yiq = kRGBToYIQ * rgb;
-  float ang = t * 6.28318530718;
-  float co = cos(ang), si = sin(ang);
-  float i2 = yiq.y * co - yiq.z * si;
-  float q2 = yiq.y * si + yiq.z * co;
-  return clamp(kYIQToRGB * vec3(yiq.x, i2, q2), 0.0, 1.0);
+  const mat3 toYiq = mat3(0.299,0.587,0.114,0.596926,-0.274578,-0.321348,0.211470,-0.522591,0.311210);
+  const mat3 toRgb = mat3(1.0,0.95629572,0.621024,1.0,-0.27212266,-0.64738096,1.0,-1.1068845,1.7046149);
+  vec3 yiq = toYiq * rgb;
+  float ang = t*6.28318530718; float co=cos(ang),si=sin(ang);
+  return clamp(toRgb * vec3(yiq.x, yiq.y*co-yiq.z*si, yiq.y*si+yiq.z*co), 0.0, 1.0);
 }
-
 void main() {
-  float dof = 1.0 + clamp(v_camDist - 1.15, 0.0, 2.8) * 0.11;
-
+  float dof = 1.0 + clamp(v_camDist-1.15,0.0,2.8)*0.11;
   vec3 Cc = hueShiftYiq(v_col, u_colHue);
-  Cc = saturateRgb(Cc, clamp(u_colSat, 0.05, 4.0));
-
+  Cc = saturateRgb(Cc, clamp(u_colSat,0.05,4.0));
   if (v_kind > 0.5) {
     float dd = length(v_uv);
-    float capb = 1.0 - smoothstep(0.18, 1.05 + u_soft * 0.42 * dof, dd);
-    capb = pow(max(capb, 0.0), 0.82);
-    float coreb = exp(-dd * dd * (1.9 + u_core * 5.5));
-    vec3 rgb = Cc * (0.58 + coreb * (1.35 + u_core * 1.45));
-    rgb = saturateRgb(rgb, 1.42);
-    rgb = mix(rgb, vec3(1.0, 0.94, 0.82), coreb * 0.18);
+    float capb = pow(max(1.0-smoothstep(0.18,1.05+u_soft*0.42*dof,dd),0.0),0.82);
+    float coreb = exp(-dd*dd*(1.9+u_core*5.5));
+    vec3 rgb = Cc*(0.58+coreb*(1.35+u_core*1.45));
+    rgb = saturateRgb(rgb,1.42);
+    rgb = mix(rgb,vec3(1.0,0.94,0.82),coreb*0.18);
     rgb *= u_colGain;
-    float a = capb * (0.32 + coreb * 0.88);
-    a *= 0.58 + u_core * 0.42;
-    if (u_blendMode == 1) {
-      vec3 em = rgb * a * 1.55;
-      if (u_transparentPlate == 1) {
-        float al = clamp(max(max(em.r, em.g), em.b), 0.05, 1.0);
-        fragColor = vec4(em * al, al);
-      } else {
-        fragColor = vec4(em, 1.0);
-      }
+    float a = capb*(0.32+coreb*0.88)*(0.58+u_core*0.42);
+    if (u_blendMode==1) {
+      vec3 em=rgb*a*1.55;
+      if(u_transparentPlate==1){float al=clamp(max(max(em.r,em.g),em.b),0.05,1.0);fragColor=vec4(em*al,al);}
+      else fragColor=vec4(em,1.0);
     } else {
-      float aa = clamp(a * 1.06, 0.0, 1.0);
-      vec3 pc = min(rgb * 1.28, vec3(1.0));
-      if (u_transparentPlate == 1) {
-        fragColor = vec4(pc, aa);
-      } else {
-        float lift = pow(1.0 - aa, 1.35);
-        pc = mix(pc, u_bg, lift * 0.22);
-        fragColor = vec4(pc, aa);
-      }
+      float aa=clamp(a*1.06,0.0,1.0); vec3 pc=min(rgb*1.28,vec3(1.0));
+      if(u_transparentPlate==1) fragColor=vec4(pc,aa);
+      else { float lift=pow(1.0-aa,1.35); fragColor=vec4(mix(pc,u_bg,lift*0.22),aa); }
     }
     return;
   }
-
-  float ax = abs(v_axial);
-  float rad = length(v_uv);
-  float cap = 1.0 - smoothstep(0.62, 1.0 + u_soft * 0.32 * dof, max(ax * 0.9 + rad * 0.36, rad));
-  cap = pow(max(cap, 0.0), 1.08);
-
-  float core = exp(-ax * ax * (1.85 + u_core * 6.5)) * exp(-rad * rad * (1.35 + u_core * 4.2));
-  float rim = smoothstep(0.12, 1.0, rad + ax * 0.22);
-
-  vec3 rgb = Cc * (0.5 + core * (1.2 + u_core * 1.75));
-  rgb += Cc * (1.0 - rim) * 0.22;
-  rgb = saturateRgb(rgb, 1.48);
-  rgb = mix(rgb, min(rgb * vec3(1.2, 1.1, 1.04), vec3(1.0)), smoothstep(0.1, 0.95, ax) * 0.28);
-  rgb *= u_colGain;
-
-  float a = cap * (0.2 + core * 1.02);
-  a *= 0.52 + u_core * 0.48;
-
-  if (u_blendMode == 1) {
-    vec3 em = rgb * a * 1.48;
-    if (u_transparentPlate == 1) {
-      float al = clamp(max(max(em.r, em.g), em.b), 0.05, 1.0);
-      fragColor = vec4(em * al, al);
-    } else {
-      fragColor = vec4(em, 1.0);
-    }
+  float ax=abs(v_axial); float rad=length(v_uv);
+  float cap=pow(max(1.0-smoothstep(0.62,1.0+u_soft*0.32*dof,max(ax*0.9+rad*0.36,rad)),0.0),1.08);
+  float core=exp(-ax*ax*(1.85+u_core*6.5))*exp(-rad*rad*(1.35+u_core*4.2));
+  float rim=smoothstep(0.12,1.0,rad+ax*0.22);
+  vec3 rgb=Cc*(0.5+core*(1.2+u_core*1.75))+Cc*(1.0-rim)*0.22;
+  rgb=saturateRgb(rgb,1.48);
+  rgb=mix(rgb,min(rgb*vec3(1.2,1.1,1.04),vec3(1.0)),smoothstep(0.1,0.95,ax)*0.28);
+  rgb*=u_colGain;
+  float a=cap*(0.2+core*1.02)*(0.52+u_core*0.48);
+  if (u_blendMode==1) {
+    vec3 em=rgb*a*1.48;
+    if(u_transparentPlate==1){float al=clamp(max(max(em.r,em.g),em.b),0.05,1.0);fragColor=vec4(em*al,al);}
+    else fragColor=vec4(em,1.0);
   } else {
-    float aa = clamp(a * 1.08, 0.0, 1.0);
-    vec3 pc = min(rgb * 1.32, vec3(1.0));
-    if (u_transparentPlate == 1) {
-      fragColor = vec4(pc, aa);
-    } else {
-      float lift = pow(1.0 - aa, 1.4);
-      pc = mix(pc, u_bg, lift * 0.2);
-      fragColor = vec4(pc, aa);
-    }
+    float aa=clamp(a*1.08,0.0,1.0); vec3 pc=min(rgb*1.32,vec3(1.0));
+    if(u_transparentPlate==1) fragColor=vec4(pc,aa);
+    else { float lift=pow(1.0-aa,1.4); fragColor=vec4(mix(pc,u_bg,lift*0.2),aa); }
   }
-}
-`;
+}`;
 
   const VS_FULL = `#version 300 es
-layout(location = 0) in vec2 a_pos;
+layout(location=0) in vec2 a_pos;
 out vec2 v_uv;
-void main() {
-  v_uv = a_pos * 0.5 + 0.5;
-  gl_Position = vec4(a_pos, 0.0, 1.0);
-}
-`;
+void main() { v_uv=a_pos*0.5+0.5; gl_Position=vec4(a_pos,0.0,1.0); }`;
 
-  /* Optional fullscreen radial — drawn before particles, SRC_ALPHA blend (any plate). */
   const FS_HUB = `#version 300 es
 precision highp float;
 in vec2 v_uv;
-uniform vec2 u_aspect;
-uniform vec3 u_col;
-uniform float u_spread;  /* 0 tight … 1 wide */
-uniform float u_pow;     /* >1 = sharper edge, <1 = softer */
-uniform float u_opacity;
-uniform float u_t;
-
+uniform vec2 u_aspect; uniform vec3 u_col;
+uniform float u_spread; uniform float u_pow; uniform float u_opacity; uniform float u_t;
 out vec4 fragColor;
-
 void main() {
-  vec2 p = (v_uv - 0.5) * vec2(u_aspect.x, 1.0) * 2.12;
-  float r = length(p);
-  float ang = atan(p.y, p.x);
-  float wob = 0.07 * sin(ang * 3.0 + u_t * 0.75);
-  float k = mix(4.2, 0.38, clamp(u_spread, 0.0, 1.0));
-  float m = exp(-(r + wob) * (r + wob) * k);
-  float pf = max(u_pow, 0.12);
-  m = pow(clamp(m, 0.0, 1.0), pf);
-  float a = clamp(m * u_opacity, 0.0, 1.0);
-  fragColor = vec4(u_col, a);
-}
-`;
+  vec2 p=(v_uv-0.5)*vec2(u_aspect.x,1.0)*2.12;
+  float r=length(p);
+  float ang=atan(p.y,p.x);
+  float wob=0.07*sin(ang*3.0+u_t*0.75);
+  float k=mix(4.2,0.38,clamp(u_spread,0.0,1.0));
+  float m=exp(-(r+wob)*(r+wob)*k);
+  float pf=max(u_pow,0.12);
+  m=pow(clamp(m,0.0,1.0),pf);
+  fragColor=vec4(u_col, clamp(m*u_opacity,0.0,1.0));
+}`;
+
+  /* Hot star: overexposed center point drawn after composite */
+  const FS_HOTCORE = `#version 300 es
+precision highp float;
+in vec2 v_uv;
+uniform float u_intensity; uniform float u_radius; uniform vec2 u_aspect;
+out vec4 o;
+void main() {
+  vec2 p=(v_uv-0.5)*vec2(u_aspect.x,1.0)*2.0;
+  float r=length(p);
+  float k=1.0/max(u_radius*u_radius,0.0001);
+  float g=exp(-r*r*k);
+  float g2=exp(-r*r*k*9.0);
+  vec3 warm=mix(vec3(1.0,0.78,0.38),vec3(1.0,1.0,1.0),clamp(g2*4.0,0.0,1.0));
+  float a=clamp((g*0.7+g2*0.8)*u_intensity,0.0,1.0);
+  o=vec4(warm*a,a);
+}`;
 
   const FS_BLUR_H = `#version 300 es
 precision highp float;
-uniform sampler2D u_tex;
-uniform vec2 u_px; /* 1/width, 0 */
-uniform vec3 u_bg; /* plate sRGB — blur only “above the mist” so gray does not ring color */
-in vec2 v_uv;
-out vec4 o;
-
-vec3 toLin(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }
-vec3 toSrgb(vec3 c) { return pow(clamp(c, 0.0, 1.0), vec3(1.0 / 2.2)); }
-
-vec3 exc(vec2 uv, vec3 bgLin) {
-  return max(toLin(texture(u_tex, uv).rgb) - bgLin, vec3(0.0));
-}
-
-void main() {
-  vec2 d = u_px;
-  vec3 bgLin = toLin(u_bg);
-  vec3 acc =
-    exc(v_uv + d * -4.0, bgLin) * 0.05 +
-    exc(v_uv + d * -3.0, bgLin) * 0.09 +
-    exc(v_uv + d * -2.0, bgLin) * 0.12 +
-    exc(v_uv + d * -1.0, bgLin) * 0.15 +
-    exc(v_uv, bgLin) * 0.18 +
-    exc(v_uv + d * 1.0, bgLin) * 0.15 +
-    exc(v_uv + d * 2.0, bgLin) * 0.12 +
-    exc(v_uv + d * 3.0, bgLin) * 0.09 +
-    exc(v_uv + d * 4.0, bgLin) * 0.05;
-  o = vec4(toSrgb(acc), 1.0);
-}
-`;
+uniform sampler2D u_tex; uniform vec2 u_px; uniform vec3 u_bg;
+in vec2 v_uv; out vec4 o;
+vec3 toLin(vec3 c){return pow(max(c,vec3(0.0)),vec3(2.2));}
+vec3 toSrgb(vec3 c){return pow(clamp(c,0.0,1.0),vec3(1.0/2.2));}
+vec3 exc(vec2 uv,vec3 bgL){return max(toLin(texture(u_tex,uv).rgb)-bgL,vec3(0.0));}
+void main(){
+  vec2 d=u_px; vec3 bgL=toLin(u_bg);
+  vec3 acc=exc(v_uv+d*-4.0,bgL)*0.05+exc(v_uv+d*-3.0,bgL)*0.09+exc(v_uv+d*-2.0,bgL)*0.12+exc(v_uv+d*-1.0,bgL)*0.15
+          +exc(v_uv,bgL)*0.18+exc(v_uv+d*1.0,bgL)*0.15+exc(v_uv+d*2.0,bgL)*0.12+exc(v_uv+d*3.0,bgL)*0.09+exc(v_uv+d*4.0,bgL)*0.05;
+  o=vec4(toSrgb(acc),1.0);
+}`;
 
   const FS_BLUR_V = `#version 300 es
 precision highp float;
-uniform sampler2D u_tex;
-uniform vec2 u_px; /* 0, 1/height */
-uniform vec3 u_bg;
-in vec2 v_uv;
-out vec4 o;
-
-vec3 toLin(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }
-vec3 toSrgb(vec3 c) { return pow(clamp(c, 0.0, 1.0), vec3(1.0 / 2.2)); }
-
-vec3 exc(vec2 uv, vec3 bgLin) {
-  return max(toLin(texture(u_tex, uv).rgb) - bgLin, vec3(0.0));
-}
-
-void main() {
-  vec2 d = u_px;
-  vec3 bgLin = toLin(u_bg);
-  vec3 acc =
-    exc(v_uv + d * -4.0, bgLin) * 0.05 +
-    exc(v_uv + d * -3.0, bgLin) * 0.09 +
-    exc(v_uv + d * -2.0, bgLin) * 0.12 +
-    exc(v_uv + d * -1.0, bgLin) * 0.15 +
-    exc(v_uv, bgLin) * 0.18 +
-    exc(v_uv + d * 1.0, bgLin) * 0.15 +
-    exc(v_uv + d * 2.0, bgLin) * 0.12 +
-    exc(v_uv + d * 3.0, bgLin) * 0.09 +
-    exc(v_uv + d * 4.0, bgLin) * 0.05;
-  o = vec4(toSrgb(acc), 1.0);
-}
-`;
+uniform sampler2D u_tex; uniform vec2 u_px; uniform vec3 u_bg;
+in vec2 v_uv; out vec4 o;
+vec3 toLin(vec3 c){return pow(max(c,vec3(0.0)),vec3(2.2));}
+vec3 toSrgb(vec3 c){return pow(clamp(c,0.0,1.0),vec3(1.0/2.2));}
+vec3 exc(vec2 uv,vec3 bgL){return max(toLin(texture(u_tex,uv).rgb)-bgL,vec3(0.0));}
+void main(){
+  vec2 d=u_px; vec3 bgL=toLin(u_bg);
+  vec3 acc=exc(v_uv+d*-4.0,bgL)*0.05+exc(v_uv+d*-3.0,bgL)*0.09+exc(v_uv+d*-2.0,bgL)*0.12+exc(v_uv+d*-1.0,bgL)*0.15
+          +exc(v_uv,bgL)*0.18+exc(v_uv+d*1.0,bgL)*0.15+exc(v_uv+d*2.0,bgL)*0.12+exc(v_uv+d*3.0,bgL)*0.09+exc(v_uv+d*4.0,bgL)*0.05;
+  o=vec4(toSrgb(acc),1.0);
+}`;
 
   const FS_COMP = `#version 300 es
 precision highp float;
-uniform sampler2D u_scene;
-uniform sampler2D u_bloom;
-uniform float u_bloomMix;
-in vec2 v_uv;
-out vec4 o;
+uniform sampler2D u_scene; uniform sampler2D u_bloom;
+uniform float u_bloomMix; uniform float u_grain; uniform float u_grainT;
+in vec2 v_uv; out vec4 o;
+vec3 toLin(vec3 c){return pow(max(c,vec3(0.0)),vec3(2.2));}
+vec3 toSrgb(vec3 c){return pow(clamp(c,0.0,1.0),vec3(1.0/2.2));}
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+void main(){
+  vec3 scene=texture(u_scene,v_uv).rgb;
+  vec3 bloom=texture(u_bloom,v_uv).rgb;
+  vec3 lin=toLin(scene)+u_bloomMix*toLin(bloom);
+  vec3 rgb=toSrgb(min(lin,vec3(1.0)));
+  if(u_grain>0.001){
+    float g=hash(v_uv*873.0+vec2(fract(u_grainT*0.197),fract(u_grainT*0.337)))*2.0-1.0;
+    rgb=clamp(rgb+g*u_grain,0.0,1.0);
+  }
+  o=vec4(rgb,1.0);
+}`;
 
-vec3 toLin(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }
-vec3 toSrgb(vec3 c) { return pow(clamp(c, 0.0, 1.0), vec3(1.0 / 2.2)); }
+  /* ── compile / link ─────────────────────────────────────── */
+  function compile(type, src) {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src); gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(sh)); gl.deleteShader(sh); return null;
+    }
+    return sh;
+  }
+  function link(vs, fs) {
+    const p = gl.createProgram();
+    gl.attachShader(p, vs); gl.attachShader(p, fs); gl.linkProgram(p);
+    gl.deleteShader(vs); gl.deleteShader(fs);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+      console.error(gl.getProgramInfoLog(p)); gl.deleteProgram(p); return null;
+    }
+    return p;
+  }
 
-void main() {
-  vec3 scene = texture(u_scene, v_uv).rgb;
-  vec3 bloom = texture(u_bloom, v_uv).rgb;
-  vec3 lin = toLin(scene) + u_bloomMix * toLin(bloom);
-  /* Clamp in linear before encode (cheap); bloom rarely needs >1 here */
-  o = vec4(toSrgb(min(lin, vec3(1.0))), 1.0);
-}
-`;
-
-  const pOrb = link(compile(gl.VERTEX_SHADER, VS_ORBS), compile(gl.FRAGMENT_SHADER, FS_ORBS));
-  const pHub = link(compile(gl.VERTEX_SHADER, VS_FULL), compile(gl.FRAGMENT_SHADER, FS_HUB));
-  const pBH = link(compile(gl.VERTEX_SHADER, VS_FULL), compile(gl.FRAGMENT_SHADER, FS_BLUR_H));
-  const pBV = link(compile(gl.VERTEX_SHADER, VS_FULL), compile(gl.FRAGMENT_SHADER, FS_BLUR_V));
-  const pComp = link(compile(gl.VERTEX_SHADER, VS_FULL), compile(gl.FRAGMENT_SHADER, FS_COMP));
-  if (!pOrb || !pHub || !pBH || !pBV || !pComp) {
-    fb.textContent = 'Shader compile failed (see console).';
-    fb.classList.add('show');
-    return;
+  const pOrb  = link(compile(gl.VERTEX_SHADER, VS_ORBS),   compile(gl.FRAGMENT_SHADER, FS_ORBS));
+  const pHub  = link(compile(gl.VERTEX_SHADER, VS_FULL),   compile(gl.FRAGMENT_SHADER, FS_HUB));
+  const pHot  = link(compile(gl.VERTEX_SHADER, VS_FULL),   compile(gl.FRAGMENT_SHADER, FS_HOTCORE));
+  const pBH   = link(compile(gl.VERTEX_SHADER, VS_FULL),   compile(gl.FRAGMENT_SHADER, FS_BLUR_H));
+  const pBV   = link(compile(gl.VERTEX_SHADER, VS_FULL),   compile(gl.FRAGMENT_SHADER, FS_BLUR_V));
+  const pComp = link(compile(gl.VERTEX_SHADER, VS_FULL),   compile(gl.FRAGMENT_SHADER, FS_COMP));
+  if (!pOrb||!pHub||!pHot||!pBH||!pBV||!pComp) {
+    fb.textContent = 'Shader compile failed (see console).'; fb.classList.add('show'); return;
   }
 
   const loc = {
-    hub_aspect: gl.getUniformLocation(pHub, 'u_aspect'),
-    hub_col: gl.getUniformLocation(pHub, 'u_col'),
-    hub_spread: gl.getUniformLocation(pHub, 'u_spread'),
-    hub_pow: gl.getUniformLocation(pHub, 'u_pow'),
-    hub_opacity: gl.getUniformLocation(pHub, 'u_opacity'),
-    hub_t: gl.getUniformLocation(pHub, 'u_t'),
-    mvp: gl.getUniformLocation(pOrb, 'u_mvp'),
-    eye: gl.getUniformLocation(pOrb, 'u_eye'),
-    streak: gl.getUniformLocation(pOrb, 'u_streak'),
-    core: gl.getUniformLocation(pOrb, 'u_core'),
-    soft: gl.getUniformLocation(pOrb, 'u_soft'),
-    blendMode: gl.getUniformLocation(pOrb, 'u_blendMode'),
-    orb_bg: gl.getUniformLocation(pOrb, 'u_bg'),
-    col_hue: gl.getUniformLocation(pOrb, 'u_colHue'),
-    col_sat: gl.getUniformLocation(pOrb, 'u_colSat'),
-    col_gain: gl.getUniformLocation(pOrb, 'u_colGain'),
-    transparent_plate: gl.getUniformLocation(pOrb, 'u_transparentPlate'),
-    bh_tex: gl.getUniformLocation(pBH, 'u_tex'),
-    bh_px: gl.getUniformLocation(pBH, 'u_px'),
-    bh_bg: gl.getUniformLocation(pBH, 'u_bg'),
-    bv_tex: gl.getUniformLocation(pBV, 'u_tex'),
-    bv_px: gl.getUniformLocation(pBV, 'u_px'),
-    bv_bg: gl.getUniformLocation(pBV, 'u_bg'),
-    c_scene: gl.getUniformLocation(pComp, 'u_scene'),
-    c_bloom: gl.getUniformLocation(pComp, 'u_bloom'),
-    c_mix: gl.getUniformLocation(pComp, 'u_bloomMix')
+    hub_aspect: gl.getUniformLocation(pHub,'u_aspect'), hub_col: gl.getUniformLocation(pHub,'u_col'),
+    hub_spread: gl.getUniformLocation(pHub,'u_spread'), hub_pow: gl.getUniformLocation(pHub,'u_pow'),
+    hub_opacity: gl.getUniformLocation(pHub,'u_opacity'), hub_t: gl.getUniformLocation(pHub,'u_t'),
+    hot_intensity: gl.getUniformLocation(pHot,'u_intensity'), hot_radius: gl.getUniformLocation(pHot,'u_radius'),
+    hot_aspect: gl.getUniformLocation(pHot,'u_aspect'),
+    mvp: gl.getUniformLocation(pOrb,'u_mvp'), eye: gl.getUniformLocation(pOrb,'u_eye'),
+    streak: gl.getUniformLocation(pOrb,'u_streak'), core: gl.getUniformLocation(pOrb,'u_core'),
+    soft: gl.getUniformLocation(pOrb,'u_soft'), blendMode: gl.getUniformLocation(pOrb,'u_blendMode'),
+    orb_bg: gl.getUniformLocation(pOrb,'u_bg'), col_hue: gl.getUniformLocation(pOrb,'u_colHue'),
+    col_sat: gl.getUniformLocation(pOrb,'u_colSat'), col_gain: gl.getUniformLocation(pOrb,'u_colGain'),
+    transparent_plate: gl.getUniformLocation(pOrb,'u_transparentPlate'),
+    bh_tex: gl.getUniformLocation(pBH,'u_tex'), bh_px: gl.getUniformLocation(pBH,'u_px'),
+    bh_bg: gl.getUniformLocation(pBH,'u_bg'),
+    bv_tex: gl.getUniformLocation(pBV,'u_tex'), bv_px: gl.getUniformLocation(pBV,'u_px'),
+    bv_bg: gl.getUniformLocation(pBV,'u_bg'),
+    c_scene: gl.getUniformLocation(pComp,'u_scene'), c_bloom: gl.getUniformLocation(pComp,'u_bloom'),
+    c_mix: gl.getUniformLocation(pComp,'u_bloomMix'),
+    c_grain: gl.getUniformLocation(pComp,'u_grain'), c_grainT: gl.getUniformLocation(pComp,'u_grainT'),
   };
 
+  /* ── buffers / VAO ──────────────────────────────────────── */
   const quadVBO = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-    -1, -1, 1, -1, -1, 1,
-    -1, 1, 1, -1, 1, 1
-  ]), gl.STATIC_DRAW);
-
-  const corners = new Float32Array([
-    -1, -1, 1, -1, -1, 1,
-    -1, 1, 1, -1, 1, 1
-  ]);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
   const cornerVBO = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, cornerVBO);
-  gl.bufferData(gl.ARRAY_BUFFER, corners, gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
 
-  let instWorld = gl.createBuffer();
-  let instColor = gl.createBuffer();
-  let instMeta = gl.createBuffer();
+  let instWorld = gl.createBuffer(), instColor = gl.createBuffer(), instMeta = gl.createBuffer();
 
-  let W = 0, H = 0, dpr = 1;
-  /** Scene + bloom source: particles render directly into texScene (no default-FB blit). */
-  let texScene = null;
-  let fboScene = null;
-  let fboBlurA = null, texBlurA = null;
-  let fboBlurB = null, texBlurB = null;
-  let sceneTexReady = false;
+  let W=0, H=0, dpr=1;
+  let texScene=null, fboScene=null, fboBlurA=null, texBlurA=null, fboBlurB=null, texBlurB=null;
+  let sceneTexReady=false;
 
   function destroyFbos() {
-    if (texScene) gl.deleteTexture(texScene);
-    if (texBlurA) gl.deleteTexture(texBlurA);
-    if (texBlurB) gl.deleteTexture(texBlurB);
-    if (fboScene) gl.deleteFramebuffer(fboScene);
-    if (fboBlurA) gl.deleteFramebuffer(fboBlurA);
-    if (fboBlurB) gl.deleteFramebuffer(fboBlurB);
-    texScene = texBlurA = texBlurB = null;
-    fboScene = fboBlurA = fboBlurB = null;
-    sceneTexReady = false;
+    [texScene,texBlurA,texBlurB].forEach(t=>t&&gl.deleteTexture(t));
+    [fboScene,fboBlurA,fboBlurB].forEach(f=>f&&gl.deleteFramebuffer(f));
+    texScene=texBlurA=texBlurB=fboScene=fboBlurA=fboBlurB=null; sceneTexReady=false;
   }
-
-  function makeTex(w, h) {
-    const t = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, t);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  function makeTex(w,h) {
+    const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
     return t;
   }
-
   function allocFbos() {
     destroyFbos();
-    texScene = makeTex(W, H);
-    texBlurA = makeTex(W, H);
-    texBlurB = makeTex(W, H);
-    fboScene = gl.createFramebuffer();
-    fboBlurA = gl.createFramebuffer();
-    fboBlurB = gl.createFramebuffer();
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fboScene);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texScene, 0);
-    const stScene = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-    if (stScene !== gl.FRAMEBUFFER_COMPLETE) {
-      console.warn('Orb Burst: scene texture FBO incomplete', stScene);
-    }
-
-    for (const [fbo, tex] of [[fboBlurA, texBlurA], [fboBlurB, texBlurB]]) {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-      const st = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-      if (st !== gl.FRAMEBUFFER_COMPLETE) console.warn('Orb Burst: blur FBO incomplete', st);
-    }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    texScene=makeTex(W,H); texBlurA=makeTex(W,H); texBlurB=makeTex(W,H);
+    fboScene=gl.createFramebuffer(); fboBlurA=gl.createFramebuffer(); fboBlurB=gl.createFramebuffer();
+    [[fboScene,texScene],[fboBlurA,texBlurA],[fboBlurB,texBlurB]].forEach(([fbo,tex])=>{
+      gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);
+    });
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
   }
 
-  const PAL = {
-    /* Deep cinematic primaries — reads closer to motion-ref than pastel neons */
-    studio: [
-      [0.9, 0.02, 0.38], [0.0, 0.48, 0.88], [0.28, 0.88, 0.02],
-      [0.08, 0.04, 0.72], [0.95, 0.22, 0.02], [0.48, 0.0, 0.68],
-      [0.02, 0.72, 0.62], [0.88, 0.65, 0.0]
-    ],
-    neon: [
-      [0.98, 0.35, 0.12], [1.0, 0.75, 0.08], [0.55, 0.98, 0.2],
-      [0.1, 0.92, 0.85], [0.95, 0.15, 0.55], [0.45, 0.2, 0.95]
-    ],
-    sunset: [
-      [1.0, 0.55, 0.2], [1.0, 0.85, 0.35], [0.95, 0.25, 0.35],
-      [0.75, 0.35, 0.9], [0.3, 0.7, 1.0]
-    ],
-    aqua: [
-      [0.15, 0.95, 0.75], [0.35, 1.0, 0.45], [0.2, 0.55, 1.0],
-      [0.85, 1.0, 0.35], [0.5, 0.35, 1.0]
-    ],
-    mono: [
-      [1.0, 0.55, 0.12], [1.0, 0.82, 0.35], [1.0, 0.95, 0.75],
-      [0.95, 0.4, 0.1], [0.75, 0.75, 0.78]
-    ]
-  };
+  /* ── color helpers ──────────────────────────────────────── */
+  function hexRgb(hex) {
+    const h=(hex||'#ffffff').replace('#','');
+    const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
+    const c=x=>(Number.isFinite(x)?Math.max(0,Math.min(255,x))/255:1);
+    return [c(r),c(g),c(b)];
+  }
+  function getCustomColorsRgb() { return customColors.map(hexRgb); }
 
-  const WARM = [
-    [1.0, 0.35, 0.02], [1.0, 0.55, 0.08], [1.0, 0.72, 0.18],
-    [0.98, 0.28, 0.06], [1.0, 0.48, 0.22], [1.0, 0.25, 0.45]
-  ];
+  function getColorByAngle(angle) {
+    const cols = getCustomColorsRgb();
+    if (!cols.length) return [1,1,1];
+    const t = (((angle/(Math.PI*2))%1)+1)%1;
+    const fi = t * cols.length;
+    const i0 = Math.floor(fi) % cols.length;
+    const i1 = (i0+1) % cols.length;
+    const f = fi - Math.floor(fi);
+    return [cols[i0][0]*(1-f)+cols[i1][0]*f, cols[i0][1]*(1-f)+cols[i1][1]*f, cols[i0][2]*(1-f)+cols[i1][2]*f];
+  }
+  function getColorByIndex(i) {
+    const cols = getCustomColorsRgb();
+    if (!cols.length) return [1,1,1];
+    return cols[i % cols.length];
+  }
+
+  function recolorParticles() {
+    for (let i=0; i<totalInstances; i++) {
+      let c;
+      if (warpMode) {
+        const angle = Math.atan2(world[i*3+1], world[i*3]);
+        c = getColorByAngle(angle);
+      } else {
+        c = getColorByIndex(i);
+      }
+      color[i*3]=c[0]; color[i*3+1]=c[1]; color[i*3+2]=c[2];
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, instColor);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, color.subarray(0, totalInstances*3));
+  }
+
+  /* ── palettes / warm blobs ──────────────────────────────── */
+  const WARM = [[1.0,0.35,0.02],[1.0,0.55,0.08],[1.0,0.72,0.18],[0.98,0.28,0.06],[1.0,0.48,0.22],[1.0,0.25,0.45]];
 
   const MAX_INST = 9000;
-  const world = new Float32Array(MAX_INST * 3);
-  const vel = new Float32Array(MAX_INST * 3);
-  const color = new Float32Array(MAX_INST * 3);
-  const meta = new Float32Array(MAX_INST * 4);
-  const rnd = (a, b) => a + Math.random() * (b - a);
+  const world = new Float32Array(MAX_INST*3);
+  const vel   = new Float32Array(MAX_INST*3);
+  const color = new Float32Array(MAX_INST*3);
+  const meta  = new Float32Array(MAX_INST*4);
+  const rnd   = (a,b)=>a+Math.random()*(b-a);
 
-  function hexRgb(hex) {
-    const h = (hex || '#f2f0ed').replace('#', '');
-    const r = parseInt(h.slice(0, 2), 16);
-    const g = parseInt(h.slice(2, 4), 16);
-    const b = parseInt(h.slice(4, 6), 16);
-    const c = (x) => (Number.isFinite(x) ? Math.max(0, Math.min(255, x)) / 255 : 0.95);
-    return [c(r), c(g), c(b)];
-  }
+  /* ── particle placement ─────────────────────────────────── */
+  let streakCount=400, blobCount=0, totalInstances=400;
+  let innerR=0.08, outerR=1.05;
 
-  function fibSphere(i, n, radius) {
-    const t = (i + 0.5) / n;
-    const phi = Math.acos(1 - 2 * t);
-    const th = Math.PI * (1 + Math.sqrt(5)) * i;
-    const sp = Math.sin(phi);
-    return [
-      radius * sp * Math.cos(th),
-      radius * sp * Math.sin(th),
-      radius * Math.cos(phi)
-    ];
-  }
-
-  function pickPal(name) {
-    const arr = PAL[name] || PAL.neon;
-    return (i, n) => arr[i % arr.length];
+  function fibSphere(i,n,radius) {
+    const t=(i+0.5)/n, phi=Math.acos(1-2*t), th=Math.PI*(1+Math.sqrt(5))*i;
+    const sp=Math.sin(phi);
+    return [radius*sp*Math.cos(th), radius*sp*Math.sin(th), radius*Math.cos(phi)];
   }
 
   function respawnBlob(i) {
-    const R = rnd(0.014, 0.3);
-    const [x, y, z] = fibSphere(i, Math.max(24, blobCount), R);
-    world[i * 3] = x;
-    world[i * 3 + 1] = y;
-    world[i * 3 + 2] = z;
-    const len = Math.max(1e-4, Math.hypot(x, y, z));
-    const inv = 1 / len;
-    const ox = x * inv;
-    const oy = y * inv;
-    const oz = z * inv;
-    /* Mostly tangential swirl + slight outward drift */
-    let tx = -oz;
-    let ty = 0;
-    let tz = ox;
-    const tlen = Math.hypot(tx, ty, tz) || 1;
-    tx /= tlen;
-    ty /= tlen;
-    tz /= tlen;
-    const swirl = 0.78;
-    const outw = 0.22;
-    vel[i * 3] = tx * swirl + ox * outw;
-    vel[i * 3 + 1] = ty * swirl + oy * outw * 0.35;
-    vel[i * 3 + 2] = tz * swirl + oz * outw;
-    const c = WARM[i % WARM.length];
-    color[i * 3] = c[0];
-    color[i * 3 + 1] = c[1];
-    color[i * 3 + 2] = c[2];
-    meta[i * 4] = 1.05 + Math.random() * 1.15;
-    meta[i * 4 + 1] = 0.1 + Math.random() * 0.12;
-    meta[i * 4 + 2] = R / 0.3;
-    meta[i * 4 + 3] = 1.0;
+    const R=rnd(0.014,0.3);
+    const [x,y,z]=fibSphere(i,Math.max(24,blobCount),R);
+    world[i*3]=x; world[i*3+1]=y; world[i*3+2]=z;
+    const len=Math.max(1e-4,Math.hypot(x,y,z));
+    const ox=x/len, oy=y/len, oz=z/len;
+    let tx=-oz, ty=0, tz=ox;
+    const tlen=Math.hypot(tx,ty,tz)||1; tx/=tlen; ty/=tlen; tz/=tlen;
+    vel[i*3]=tx*0.78+ox*0.22; vel[i*3+1]=ty*0.78+oy*0.077; vel[i*3+2]=tz*0.78+oz*0.22;
+    const c=WARM[i%WARM.length]; color[i*3]=c[0]; color[i*3+1]=c[1]; color[i*3+2]=c[2];
+    meta[i*4]=1.05+Math.random()*1.15; meta[i*4+1]=0.1+Math.random()*0.12;
+    meta[i*4+2]=R/0.3; meta[i*4+3]=1.0;
   }
 
-  function respawnStreak(i, palFn, streakN, r0, r1) {
-    const j = Math.max(0, i - blobCount);
-    const R = rnd(r0, r1);
-    const [x, y, z] = fibSphere(j, Math.max(100, streakN), R);
-    world[i * 3] = x;
-    world[i * 3 + 1] = y;
-    world[i * 3 + 2] = z;
-    const len = Math.max(1e-4, Math.hypot(x, y, z));
-    const inv = 1 / len;
-    vel[i * 3] = x * inv;
-    vel[i * 3 + 1] = y * inv;
-    vel[i * 3 + 2] = z * inv;
-    const c = palFn(j, streakN);
-    color[i * 3] = c[0];
-    color[i * 3 + 1] = c[1];
-    color[i * 3 + 2] = c[2];
-    const zf = (R - r0) / Math.max(1e-3, r1 - r0);
-    meta[i * 4] = 0.55 + Math.random() * 0.9;
-    meta[i * 4 + 1] = 0.65 + Math.random() * 0.95;
-    meta[i * 4 + 2] = zf;
-    meta[i * 4 + 3] = 0.0;
+  function respawnBurstStreak(i) {
+    const j=Math.max(0,i-blobCount);
+    const R=rnd(innerR,outerR);
+    const [x,y,z]=fibSphere(j,Math.max(100,streakCount),R);
+    world[i*3]=x; world[i*3+1]=y; world[i*3+2]=z;
+    const len=Math.max(1e-4,Math.hypot(x,y,z));
+    vel[i*3]=x/len; vel[i*3+1]=y/len; vel[i*3+2]=z/len;
+    const c=getColorByIndex(j);
+    color[i*3]=c[0]; color[i*3+1]=c[1]; color[i*3+2]=c[2];
+    const zf=(R-innerR)/Math.max(1e-3,outerR-innerR);
+    meta[i*4]=0.55+Math.random()*0.9; meta[i*4+1]=0.65+Math.random()*0.95;
+    meta[i*4+2]=zf; meta[i*4+3]=0.0;
   }
 
-  function respawnAt(i, palFn) {
-    if (blobCount > 0 && i < blobCount) respawnBlob(i);
-    else respawnStreak(i, palFn, streakCount, innerR, outerR);
+  function respawnWarpStreak(i) {
+    const angle=(i/streakCount)*Math.PI*2+(Math.random()-0.5)*0.18;
+    const R=rnd(innerR, outerR);
+    world[i*3]=Math.cos(angle)*R; world[i*3+1]=Math.sin(angle)*R; world[i*3+2]=0;
+    vel[i*3]=Math.cos(angle); vel[i*3+1]=Math.sin(angle); vel[i*3+2]=0;
+    const c=getColorByAngle(angle);
+    color[i*3]=c[0]; color[i*3+1]=c[1]; color[i*3+2]=c[2];
+    const zf=(R-innerR)/Math.max(1e-3,outerR-innerR);
+    meta[i*4]=0.55+Math.random()*0.9; meta[i*4+1]=0.65+Math.random()*0.95;
+    meta[i*4+2]=zf; meta[i*4+3]=0.0;
+  }
+
+  function respawnAt(i) {
+    if (warpMode) { respawnWarpStreak(i); return; }
+    if (blobCount>0 && i<blobCount) respawnBlob(i);
+    else respawnBurstStreak(i);
   }
 
   function initAllParticles() {
-    const palFn = pickPal(palKey);
-    for (let i = 0; i < totalInstances; i++) respawnAt(i, palFn);
+    for (let i=0; i<totalInstances; i++) respawnAt(i);
     uploadInstance(totalInstances);
   }
-
   function uploadInstance(n) {
-    gl.bindBuffer(gl.ARRAY_BUFFER, instWorld);
-    gl.bufferData(gl.ARRAY_BUFFER, world.subarray(0, n * 3), gl.DYNAMIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, instColor);
-    gl.bufferData(gl.ARRAY_BUFFER, color.subarray(0, n * 3), gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, instMeta);
-    gl.bufferData(gl.ARRAY_BUFFER, meta.subarray(0, n * 4), gl.DYNAMIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER,instWorld); gl.bufferData(gl.ARRAY_BUFFER,world.subarray(0,n*3),gl.DYNAMIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER,instColor); gl.bufferData(gl.ARRAY_BUFFER,color.subarray(0,n*3),gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER,instMeta);  gl.bufferData(gl.ARRAY_BUFFER,meta.subarray(0,n*4),gl.DYNAMIC_DRAW);
   }
 
-  let streakCount = 400;
-  let blobCount = 0;
-  let totalInstances = streakCount + blobCount;
-  let innerR = 0.08;
-  let outerR = 1.05;
-  let palKey = 'neon';
-
-  /** Column-major: out = a * b */
-  function mulMat4(a, b, out) {
-    for (let c = 0; c < 4; c++) {
-      const b0 = b[c * 4 + 0], b1 = b[c * 4 + 1], b2 = b[c * 4 + 2], b3 = b[c * 4 + 3];
-      out[c * 4 + 0] = a[0] * b0 + a[4] * b1 + a[8] * b2 + a[12] * b3;
-      out[c * 4 + 1] = a[1] * b0 + a[5] * b1 + a[9] * b2 + a[13] * b3;
-      out[c * 4 + 2] = a[2] * b0 + a[6] * b1 + a[10] * b2 + a[14] * b3;
-      out[c * 4 + 3] = a[3] * b0 + a[7] * b1 + a[11] * b2 + a[15] * b3;
+  /* ── matrices ───────────────────────────────────────────── */
+  function mulMat4(a,b,out) {
+    for (let c=0;c<4;c++) {
+      const b0=b[c*4],b1=b[c*4+1],b2=b[c*4+2],b3=b[c*4+3];
+      out[c*4]  =a[0]*b0+a[4]*b1+a[8]*b2+a[12]*b3;
+      out[c*4+1]=a[1]*b0+a[5]*b1+a[9]*b2+a[13]*b3;
+      out[c*4+2]=a[2]*b0+a[6]*b1+a[10]*b2+a[14]*b3;
+      out[c*4+3]=a[3]*b0+a[7]*b1+a[11]*b2+a[15]*b3;
     }
     return out;
   }
-
-  function persp(fov, aspect, near, far, out) {
-    const f = 1 / Math.tan(fov / 2);
-    const nf = 1 / (near - far);
-    out[0] = f / aspect; out[1] = 0; out[2] = 0; out[3] = 0;
-    out[4] = 0; out[5] = f; out[6] = 0; out[7] = 0;
-    out[8] = 0; out[9] = 0; out[10] = (far + near) * nf; out[11] = -1;
-    out[12] = 0; out[13] = 0; out[14] = 2 * far * near * nf; out[15] = 0;
+  function persp(fov,aspect,near,far,out) {
+    const f=1/Math.tan(fov/2), nf=1/(near-far);
+    out[0]=f/aspect;out[1]=0;out[2]=0;out[3]=0;
+    out[4]=0;out[5]=f;out[6]=0;out[7]=0;
+    out[8]=0;out[9]=0;out[10]=(far+near)*nf;out[11]=-1;
+    out[12]=0;out[13]=0;out[14]=2*far*near*nf;out[15]=0;
+    return out;
+  }
+  function lookAt(eye,center,up,out) {
+    let zx=eye[0]-center[0],zy=eye[1]-center[1],zz=eye[2]-center[2];
+    let len=Math.hypot(zx,zy,zz); zx/=len;zy/=len;zz/=len;
+    let xx=up[1]*zz-up[2]*zy, xy=up[2]*zx-up[0]*zz, xz=up[0]*zy-up[1]*zx;
+    len=Math.hypot(xx,xy,xz); xx/=len;xy/=len;xz/=len;
+    const yx=zy*xz-zz*xy, yy=zz*xx-zx*xz, yz=zx*xy-zy*xx;
+    out[0]=xx;out[1]=yx;out[2]=zx;out[3]=0;
+    out[4]=xy;out[5]=yy;out[6]=zy;out[7]=0;
+    out[8]=xz;out[9]=yz;out[10]=zz;out[11]=0;
+    out[12]=-(xx*eye[0]+xy*eye[1]+xz*eye[2]);
+    out[13]=-(yx*eye[0]+yy*eye[1]+yz*eye[2]);
+    out[14]=-(zx*eye[0]+zy*eye[1]+zz*eye[2]);
+    out[15]=1;
     return out;
   }
 
-  function lookAt(eye, center, up, out) {
-    let zx = eye[0] - center[0], zy = eye[1] - center[1], zz = eye[2] - center[2];
-    let len = Math.hypot(zx, zy, zz);
-    zx /= len; zy /= len; zz /= len;
-    let xx = up[1] * zz - up[2] * zy;
-    let xy = up[2] * zx - up[0] * zz;
-    let xz = up[0] * zy - up[1] * zx;
-    len = Math.hypot(xx, xy, xz);
-    xx /= len; xy /= len; xz /= len;
-    const yx = zy * xz - zz * xy;
-    const yy = zz * xx - zx * xz;
-    const yz = zx * xy - zy * xx;
-    out[0] = xx; out[1] = yx; out[2] = zx; out[3] = 0;
-    out[4] = xy; out[5] = yy; out[6] = zy; out[7] = 0;
-    out[8] = xz; out[9] = yz; out[10] = zz; out[11] = 0;
-    out[12] = -(xx * eye[0] + xy * eye[1] + xz * eye[2]);
-    out[13] = -(yx * eye[0] + yy * eye[1] + yz * eye[2]);
-    out[14] = -(zx * eye[0] + zy * eye[1] + zz * eye[2]);
-    out[15] = 1;
-    return out;
-  }
-
-  const mProj = new Float32Array(16);
-  const mView = new Float32Array(16);
-  const mVP = new Float32Array(16);
-
-  let time = 0;
-  let vaoOrb = null;
+  const mProj=new Float32Array(16), mView=new Float32Array(16), mVP=new Float32Array(16);
+  let time=0, vaoOrb=null;
 
   function setupVao() {
     if (vaoOrb) gl.deleteVertexArray(vaoOrb);
-    vaoOrb = gl.createVertexArray();
-    gl.bindVertexArray(vaoOrb);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, cornerVBO);
-    gl.enableVertexAttribArray(0);
-    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 8, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, instWorld);
-    gl.enableVertexAttribArray(1);
-    gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 12, 0);
-    gl.vertexAttribDivisor(1, 1);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, instColor);
-    gl.enableVertexAttribArray(2);
-    gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 12, 0);
-    gl.vertexAttribDivisor(2, 1);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, instMeta);
-    gl.enableVertexAttribArray(3);
-    gl.vertexAttribPointer(3, 4, gl.FLOAT, false, 16, 0);
-    gl.vertexAttribDivisor(3, 1);
-
+    vaoOrb=gl.createVertexArray(); gl.bindVertexArray(vaoOrb);
+    gl.bindBuffer(gl.ARRAY_BUFFER,cornerVBO); gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0,2,gl.FLOAT,false,8,0);
+    gl.bindBuffer(gl.ARRAY_BUFFER,instWorld); gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1,3,gl.FLOAT,false,12,0); gl.vertexAttribDivisor(1,1);
+    gl.bindBuffer(gl.ARRAY_BUFFER,instColor); gl.enableVertexAttribArray(2);
+    gl.vertexAttribPointer(2,3,gl.FLOAT,false,12,0); gl.vertexAttribDivisor(2,1);
+    gl.bindBuffer(gl.ARRAY_BUFFER,instMeta); gl.enableVertexAttribArray(3);
+    gl.vertexAttribPointer(3,4,gl.FLOAT,false,16,0); gl.vertexAttribDivisor(3,1);
     gl.bindVertexArray(null);
   }
   setupVao();
 
   function vaoFullScreen() {
-    const vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
-    gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
-    gl.enableVertexAttribArray(0);
-    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 8, 0);
-    gl.bindVertexArray(null);
+    const vao=gl.createVertexArray(); gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER,quadVBO); gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0,2,gl.FLOAT,false,8,0); gl.bindVertexArray(null);
     return vao;
   }
-  const vaoQuad = vaoFullScreen();
+  const vaoQuad=vaoFullScreen();
 
-  function canvasIsFit() {
-    return $('sel-canvas').value === 'fit';
-  }
-
-  function canvasIsCustom() {
-    return $('sel-canvas').value === 'custom';
-  }
-
-  function syncCanvasCustomPanel() {
-    const on = canvasIsCustom();
-    $('wrap-canvas-custom').style.display = on ? 'block' : 'none';
-  }
-
-  function pixelScaleForBloom() {
-    return canvasIsFit() ? dpr : 1;
-  }
+  /* ── resize ─────────────────────────────────────────────── */
+  function canvasIsFit()    { return $('sel-canvas').value==='fit'; }
+  function canvasIsCustom() { return $('sel-canvas').value==='custom'; }
+  function syncCanvasCustomPanel() { $('wrap-canvas-custom').style.display=canvasIsCustom()?'block':'none'; }
+  function pixelScaleForBloom() { return canvasIsFit()?dpr:1; }
 
   function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const wrap = canvas.parentElement;
-    const cw = Math.max(320, wrap.clientWidth - 32);
-    const ch = Math.max(320, wrap.clientHeight - 32);
-    const preset = $('sel-canvas').value;
-    if (preset === 'fit') {
-      const side = Math.floor(Math.min(cw, ch) * dpr);
-      W = side;
-      H = side;
-      canvas.style.width = (W / dpr) + 'px';
-      canvas.style.height = (H / dpr) + 'px';
+    dpr=Math.min(window.devicePixelRatio||1,2);
+    const wrap=canvas.parentElement;
+    const cw=Math.max(320,wrap.clientWidth-32), ch=Math.max(320,wrap.clientHeight-32);
+    const preset=$('sel-canvas').value;
+    if (preset==='fit') {
+      const side=Math.floor(Math.min(cw,ch)*dpr);
+      W=side; H=side;
+      canvas.style.width=(W/dpr)+'px'; canvas.style.height=(H/dpr)+'px';
     } else {
-      let pw;
-      let ph;
-      if (preset === 'custom') {
-        pw = Math.max(32, +$('in-canvas-w').value | 0);
-        ph = Math.max(32, +$('in-canvas-h').value | 0);
-      } else {
-        const parts = preset.split('x');
-        pw = Math.max(32, +parts[0] | 0);
-        ph = Math.max(32, +parts[1] | 0);
-      }
-      const maxTex = Math.min(8192, gl.getParameter(gl.MAX_TEXTURE_SIZE) || 8192);
-      const ml = Math.max(pw, ph);
-      if (ml > maxTex) {
-        const sc = maxTex / ml;
-        pw = Math.floor(pw * sc);
-        ph = Math.floor(ph * sc);
-      }
-      W = pw;
-      H = ph;
-      const scale = Math.min(cw / W, ch / H, 1);
-      canvas.style.width = (W * scale) + 'px';
-      canvas.style.height = (H * scale) + 'px';
+      let pw,ph;
+      if (preset==='custom') { pw=Math.max(32,+$('in-canvas-w').value|0); ph=Math.max(32,+$('in-canvas-h').value|0); }
+      else { const p=preset.split('x'); pw=+p[0]|0; ph=+p[1]|0; }
+      const maxTex=Math.min(8192,gl.getParameter(gl.MAX_TEXTURE_SIZE)||8192);
+      const ml=Math.max(pw,ph);
+      if (ml>maxTex){const sc=maxTex/ml; pw=Math.floor(pw*sc); ph=Math.floor(ph*sc);}
+      W=pw; H=ph;
+      const scale=Math.min(cw/W,ch/H,1);
+      canvas.style.width=(W*scale)+'px'; canvas.style.height=(H*scale)+'px';
     }
-    canvas.width = W;
-    canvas.height = H;
-    gl.viewport(0, 0, W, H);
+    canvas.width=W; canvas.height=H;
+    gl.viewport(0,0,W,H);
     allocFbos();
-    persp((58 * Math.PI) / 180, W / Math.max(H, 1e-6), 0.05, 8, mProj);
+    persp((58*Math.PI)/180,W/Math.max(H,1e-6),0.05,8,mProj);
   }
 
+  /* ── readUI ─────────────────────────────────────────────── */
   function readUI() {
     return {
-      n: +$('sl-n').value,
-      blobs: +$('sl-blobs').value,
-      len: +$('sl-len').value / 100,
-      th: Math.max(0, +$('sl-th').value) / 10000,
-      core: +$('sl-core').value / 100,
-      soft: +$('sl-soft').value / 100,
-      sp: +$('sl-sp').value / 100,
-      sw: +$('sl-sw').value / 100,
-      orb: +$('sl-orb').value / 100,
-      zspread: +$('sl-z').value / 100,
-      bloom: +$('sl-bl').value / 100,
-      bpx: +$('sl-bpx').value,
-      bg: $('cp-bg').value,
-      pal: $('sel-pal').value,
-      blend: $('sel-blend').value,
-      colHue: +$('sl-chue').value / 360,
-      colSat: +$('sl-csat').value / 100,
-      colGain: +$('sl-cgain').value / 100,
-      hubOn: $('ck-hub').checked,
-      hubHex: $('cp-hub').value,
-      hubSpread: Math.max(0, Math.min(1, (+$('sl-hub-sp').value - 5) / 95)),
-      hubFall: +$('sl-hub-fall').value / 100,
-      hubOpacity: +$('sl-hub-op').value / 100
+      n:        +$('sl-n').value,
+      blobs:    +$('sl-blobs').value,
+      len:      +$('sl-len').value/100,
+      th:       Math.max(0,+$('sl-th').value)/10000,
+      core:     +$('sl-core').value/100,
+      soft:     +$('sl-soft').value/100,
+      sp:       +$('sl-sp').value/100,
+      sw:       +$('sl-sw').value/100,
+      orb:      +$('sl-orb').value/100,
+      zspread:  +$('sl-z').value/100,
+      bloom:    +$('sl-bl').value/100,
+      bpx:      +$('sl-bpx').value,
+      bg:       $('cp-bg').value,
+      blend:    $('sel-blend').value,
+      colHue:   +$('sl-chue').value/360,
+      colSat:   +$('sl-csat').value/100,
+      colGain:  +$('sl-cgain').value/100,
+      hubOn:    $('ck-hub').checked,
+      hubHex:   $('cp-hub').value,
+      hubSpread:Math.max(0,Math.min(1,(+$('sl-hub-sp').value-5)/95)),
+      hubFall:  +$('sl-hub-fall').value/100,
+      hubOpacity:+$('sl-hub-op').value/100,
+      hotCore:  $('ck-hotcore').checked,
+      hotIntensity: +$('sl-hotcore').value/100,
+      hotRadius:+$('sl-hotrad').value/100*0.35,
+      grainOn:  $('ck-grain').checked,
+      grain:    +$('sl-grain').value/100,
     };
   }
 
-  function bindSliders() {
-    const map = [
-      ['sl-n', 'v-n', (v) => String(v)],
-      ['sl-blobs', 'v-blobs', (v) => String(v)],
-      ['sl-len', 'v-len', (v) => (+v / 100).toFixed(2)],
-      ['sl-th', 'v-th', (v) => (+v / 10000).toFixed(4)],
-      ['sl-core', 'v-core', (v) => (+v / 100).toFixed(2)],
-      ['sl-soft', 'v-soft', (v) => (+v / 100).toFixed(2)],
-      ['sl-sp', 'v-sp', (v) => (+v / 100).toFixed(2)],
-      ['sl-sw', 'v-sw', (v) => (+v / 100).toFixed(2)],
-      ['sl-orb', 'v-orb', (v) => (+v / 100).toFixed(2)],
-      ['sl-z', 'v-z', (v) => (+v / 100).toFixed(2)],
-      ['sl-bl', 'v-bl', (v) => (+v / 100).toFixed(2)],
-      ['sl-bpx', 'v-bpx', (v) => String(v)],
-      ['sl-csat', 'v-csat', (v) => `${v}%`],
-      ['sl-chue', 'v-chue', (v) => `${v}°`],
-      ['sl-cgain', 'v-cgain', (v) => `${v}%`],
-      ['sl-hub-sp', 'v-hub-sp', (v) => `${Math.round((+v - 5) / 95 * 100)}%`],
-      ['sl-hub-fall', 'v-hub-fall', (v) => (+v / 100).toFixed(2)],
-      ['sl-hub-op', 'v-hub-op', (v) => `${v}%`]
-    ];
-    for (const [sl, lab, fn] of map) {
-      const el = $(sl);
-      const out = $(lab);
-      const upd = () => { out.textContent = fn(el.value); };
-      el.addEventListener('input', upd);
-      upd();
-    }
-  }
-  bindSliders();
-
-  (function hubFieldset() {
-    const ck = $('ck-hub');
-    const fd = $('hub-field');
-    const sync = () => { fd.disabled = !ck.checked; };
-    ck.addEventListener('change', sync);
-    sync();
-  })();
-
-  $('sel-pal').addEventListener('change', () => {
-    palKey = $('sel-pal').value;
-    initAllParticles();
-  });
-
+  /* ── particle update ────────────────────────────────────── */
   function updateParticles(dt, u) {
-    const palFn = pickPal(palKey);
-    const speed = u.sp * 0.85;
-    const swirl = u.sw * 0.65;
-    const zfac = 0.25 + u.zspread * 1.1;
-    for (let i = 0; i < totalInstances; i++) {
-      const isBlob = blobCount > 0 && i < blobCount;
-      let x = world[i * 3], y = world[i * 3 + 1], z = world[i * 3 + 2];
-      const vx = vel[i * 3], vy = vel[i * 3 + 1], vz = vel[i * 3 + 2];
-      const spMul = isBlob ? 0.34 : 1.0;
-      const swMul = isBlob ? 1.9 : 1.0;
-      x += vx * speed * dt * zfac * spMul;
-      y += vy * speed * dt * zfac * spMul;
-      z += vz * speed * dt * zfac * spMul;
-      const ca = Math.cos(swirl * dt * 0.35 * swMul);
-      const sa = Math.sin(swirl * dt * 0.35 * swMul);
-      const nx = ca * x - sa * z;
-      const nz = sa * x + ca * z;
-      x = nx;
-      z = nz;
+    const speed=u.sp*0.85, swirl=u.sw*0.65;
+    const zfac=0.25+u.zspread*1.1;
+    for (let i=0; i<totalInstances; i++) {
+      const isBlob=!warpMode && blobCount>0 && i<blobCount;
+      let x=world[i*3], y=world[i*3+1], z=world[i*3+2];
+      const vx=vel[i*3], vy=vel[i*3+1], vz=vel[i*3+2];
+      const spMul=isBlob?0.34:1.0, swMul=isBlob?1.9:1.0;
 
-      const dist = Math.hypot(x, y, z);
-      if (isBlob) {
-        if (dist > 0.36 || dist < 0.004) respawnAt(i, palFn);
-        else {
-          world[i * 3] = x;
-          world[i * 3 + 1] = y;
-          world[i * 3 + 2] = z;
-          meta[i * 4 + 2] = dist / 0.36;
-        }
-      } else if (dist > outerR + 0.15 || dist < innerR * 0.5) {
-        respawnAt(i, palFn);
+      x+=vx*speed*dt*zfac*spMul;
+      y+=vy*speed*dt*zfac*spMul;
+      z+=vz*speed*dt*zfac*spMul;
+
+      if (warpMode) {
+        /* 2D rotation in XY plane */
+        const ca=Math.cos(swirl*dt*0.35), sa=Math.sin(swirl*dt*0.35);
+        const nx=ca*x-sa*y, ny=sa*x+ca*y;
+        x=nx; y=ny;
+        vel[i*3]=ca*vx-sa*vy; vel[i*3+1]=sa*vx+ca*vy;
+        z=0; vel[i*3+2]=0;
       } else {
-        world[i * 3] = x;
-        world[i * 3 + 1] = y;
-        world[i * 3 + 2] = z;
-        meta[i * 4 + 2] = (dist - innerR) / Math.max(1e-3, outerR - innerR);
+        /* XZ swirl for 3D burst */
+        const ca=Math.cos(swirl*dt*0.35*swMul), sa=Math.sin(swirl*dt*0.35*swMul);
+        const nx=ca*x-sa*z, nz=sa*x+ca*z;
+        x=nx; z=nz;
+      }
+
+      const dist=Math.hypot(x,y,z);
+      if (isBlob) {
+        if (dist>0.36||dist<0.004) respawnAt(i);
+        else { world[i*3]=x; world[i*3+1]=y; world[i*3+2]=z; meta[i*4+2]=dist/0.36; }
+      } else if (dist>outerR+0.15||dist<innerR*0.5) {
+        respawnAt(i);
+      } else {
+        world[i*3]=x; world[i*3+1]=y; world[i*3+2]=z;
+        meta[i*4+2]=(dist-innerR)/Math.max(1e-3,outerR-innerR);
       }
     }
-    gl.bindBuffer(gl.ARRAY_BUFFER, instWorld);
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, world.subarray(0, totalInstances * 3));
-    gl.bindBuffer(gl.ARRAY_BUFFER, instMeta);
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, meta.subarray(0, totalInstances * 4));
+    gl.bindBuffer(gl.ARRAY_BUFFER,instWorld);
+    gl.bufferSubData(gl.ARRAY_BUFFER,0,world.subarray(0,totalInstances*3));
+    gl.bindBuffer(gl.ARRAY_BUFFER,instMeta);
+    gl.bufferSubData(gl.ARRAY_BUFFER,0,meta.subarray(0,totalInstances*4));
   }
 
+  /* ── render ─────────────────────────────────────────────── */
   function drawParticlesToCanvas(u, eye, transparentPass) {
-    const tp = !!transparentPass;
-    lookAt(eye, [0, 0, 0], [0, 1, 0], mView);
-    mulMat4(mProj, mView, mVP);
-
-    sceneTexReady = false;
-    if (!fboScene || !texScene || W < 2 || H < 2) {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      return;
+    const tp=!!transparentPass;
+    lookAt(eye,[0,0,0],[0,1,0],mView);
+    mulMat4(mProj,mView,mVP);
+    sceneTexReady=false;
+    if (!fboScene||!texScene||W<2||H<2) { gl.bindFramebuffer(gl.FRAMEBUFFER,null); return; }
+    gl.bindFramebuffer(gl.FRAMEBUFFER,fboScene);
+    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texScene,0);
+    if (gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER,null); return;
     }
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fboScene);
-    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texScene, 0);
-    if (gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      sceneTexReady = false;
-      return;
-    }
-
-    gl.viewport(0, 0, W, H);
-    if (tp) {
-      gl.clearColor(0, 0, 0, 0);
-    } else {
-      const bg = hexRgb(u.bg);
-      gl.clearColor(bg[0], bg[1], bg[2], 1);
-    }
+    gl.viewport(0,0,W,H);
+    if (tp) { gl.clearColor(0,0,0,0); }
+    else { const bg=hexRgb(u.bg); gl.clearColor(bg[0],bg[1],bg[2],1); }
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.disable(gl.DEPTH_TEST);
     gl.enable(gl.BLEND);
 
-    if (u.hubOn && u.hubOpacity > 0.001) {
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    if (u.hubOn && u.hubOpacity>0.001) {
+      gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
       gl.useProgram(pHub);
-      const hc = hexRgb(u.hubHex);
-      gl.uniform3f(loc.hub_col, hc[0], hc[1], hc[2]);
-      gl.uniform2f(loc.hub_aspect, W / Math.max(H, 1), 1);
-      gl.uniform1f(loc.hub_spread, u.hubSpread);
-      gl.uniform1f(loc.hub_pow, Math.max(0.15, u.hubFall));
-      gl.uniform1f(loc.hub_opacity, u.hubOpacity);
-      gl.uniform1f(loc.hub_t, u.time);
-      gl.bindVertexArray(vaoQuad);
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      const hc=hexRgb(u.hubHex);
+      gl.uniform3f(loc.hub_col,hc[0],hc[1],hc[2]);
+      gl.uniform2f(loc.hub_aspect,W/Math.max(H,1),1);
+      gl.uniform1f(loc.hub_spread,u.hubSpread);
+      gl.uniform1f(loc.hub_pow,Math.max(0.15,u.hubFall));
+      gl.uniform1f(loc.hub_opacity,u.hubOpacity);
+      gl.uniform1f(loc.hub_t,u.time||time);
+      gl.bindVertexArray(vaoQuad); gl.drawArrays(gl.TRIANGLES,0,6);
     }
 
-    const additive = u.blend === 'additive';
-    if (tp) {
-      gl.blendFunc(additive ? gl.ONE : gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    } else if (additive) {
-      gl.blendFunc(gl.ONE, gl.ONE);
-    } else {
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    }
+    const additive=u.blend==='additive';
+    if (tp) gl.blendFunc(additive?gl.ONE:gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    else if (additive) gl.blendFunc(gl.ONE,gl.ONE);
+    else gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
 
     gl.useProgram(pOrb);
-    gl.uniform1i(loc.transparent_plate, tp ? 1 : 0);
-    gl.uniformMatrix4fv(loc.mvp, false, mVP);
-    gl.uniform3f(loc.eye, eye[0], eye[1], eye[2]);
-    gl.uniform2f(loc.streak, u.len * 1.25, Math.max(u.th, 1e-8));
-    gl.uniform1f(loc.core, u.core);
-    gl.uniform1f(loc.soft, u.soft);
-    gl.uniform1i(loc.blendMode, additive ? 1 : 0);
-    {
-      const b = hexRgb(u.bg);
-      gl.uniform3f(loc.orb_bg, b[0], b[1], b[2]);
-    }
-    gl.uniform1f(loc.col_hue, u.colHue);
-    gl.uniform1f(loc.col_sat, u.colSat);
-    gl.uniform1f(loc.col_gain, u.colGain);
-
+    gl.uniform1i(loc.transparent_plate,tp?1:0);
+    gl.uniformMatrix4fv(loc.mvp,false,mVP);
+    gl.uniform3f(loc.eye,eye[0],eye[1],eye[2]);
+    gl.uniform2f(loc.streak,u.len*1.25,Math.max(u.th,1e-8));
+    gl.uniform1f(loc.core,u.core);
+    gl.uniform1f(loc.soft,u.soft);
+    gl.uniform1i(loc.blendMode,additive?1:0);
+    const b=hexRgb(u.bg); gl.uniform3f(loc.orb_bg,b[0],b[1],b[2]);
+    gl.uniform1f(loc.col_hue,u.colHue);
+    gl.uniform1f(loc.col_sat,u.colSat);
+    gl.uniform1f(loc.col_gain,u.colGain);
     gl.bindVertexArray(vaoOrb);
-    gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, totalInstances);
+    gl.drawArraysInstanced(gl.TRIANGLES,0,6,totalInstances);
     gl.bindVertexArray(null);
-
-    gl.uniform1i(loc.transparent_plate, 0);
+    gl.uniform1i(loc.transparent_plate,0);
     gl.disable(gl.BLEND);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-    sceneTexReady = true;
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+    sceneTexReady=true;
   }
 
-  function drawBlurChain(bpx, bgHex) {
-    if (bpx < 0.5 || !texScene || !sceneTexReady) return;
-    const s = bpx * pixelScaleForBloom();
-    const b = hexRgb(bgHex);
+  function drawBlurChain(bpx,bgHex) {
+    if (bpx<0.5||!texScene||!sceneTexReady) return;
+    const s=bpx*pixelScaleForBloom(), b=hexRgb(bgHex);
     gl.disable(gl.BLEND);
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fboBlurA);
-    gl.viewport(0, 0, W, H);
-    gl.useProgram(pBH);
-    gl.uniform1i(loc.bh_tex, 0);
-    gl.uniform3f(loc.bh_bg, b[0], b[1], b[2]);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, texScene);
-    gl.uniform2f(loc.bh_px, s / W, 0);
-    gl.bindVertexArray(vaoQuad);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fboBlurB);
-    gl.useProgram(pBV);
-    gl.uniform1i(loc.bv_tex, 0);
-    gl.uniform3f(loc.bv_bg, b[0], b[1], b[2]);
-    gl.bindTexture(gl.TEXTURE_2D, texBlurA);
-    gl.uniform2f(loc.bv_px, 0, s / H);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.bindVertexArray(null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,fboBlurA); gl.viewport(0,0,W,H);
+    gl.useProgram(pBH); gl.uniform1i(loc.bh_tex,0); gl.uniform3f(loc.bh_bg,b[0],b[1],b[2]);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,texScene);
+    gl.uniform2f(loc.bh_px,s/W,0); gl.bindVertexArray(vaoQuad); gl.drawArrays(gl.TRIANGLES,0,6);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,fboBlurB);
+    gl.useProgram(pBV); gl.uniform1i(loc.bv_tex,0); gl.uniform3f(loc.bv_bg,b[0],b[1],b[2]);
+    gl.bindTexture(gl.TEXTURE_2D,texBlurA); gl.uniform2f(loc.bv_px,0,s/H);
+    gl.drawArrays(gl.TRIANGLES,0,6);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null); gl.bindVertexArray(null);
   }
 
   function composite(u) {
     if (!sceneTexReady) return;
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, W, H);
-    gl.disable(gl.DEPTH_TEST);
-    gl.disable(gl.BLEND);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null); gl.viewport(0,0,W,H);
+    gl.disable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
     gl.useProgram(pComp);
-    gl.uniform1i(loc.c_scene, 0);
-    gl.uniform1i(loc.c_bloom, 1);
-    const bloomAmt = u.bpx < 0.5 ? 0 : u.bloom * 1.22;
-    gl.uniform1f(loc.c_mix, bloomAmt);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, texScene);
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, texBlurB);
-
-    gl.bindVertexArray(vaoQuad);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-    gl.bindVertexArray(null);
-    gl.activeTexture(gl.TEXTURE0);
+    gl.uniform1i(loc.c_scene,0); gl.uniform1i(loc.c_bloom,1);
+    const bloomAmt=u.bpx<0.5?0:u.bloom*1.22;
+    gl.uniform1f(loc.c_mix,bloomAmt);
+    gl.uniform1f(loc.c_grain, u.grainOn?u.grain:0);
+    gl.uniform1f(loc.c_grainT, time);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,texScene);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,texBlurB);
+    gl.bindVertexArray(vaoQuad); gl.drawArrays(gl.TRIANGLES,0,6);
+    gl.bindVertexArray(null); gl.activeTexture(gl.TEXTURE0);
   }
 
-  let exportBusy = false;
-  let mediaRecorder = null;
-  let recChunks = [];
-  let recStopAt = 0;
-  let raf = 0;
-  let last = performance.now();
+  function drawHotCore(u) {
+    if (!u.hotCore||u.hotIntensity<0.01) return;
+    gl.viewport(0,0,W,H);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+    gl.useProgram(pHot);
+    gl.uniform1f(loc.hot_intensity,u.hotIntensity);
+    gl.uniform1f(loc.hot_radius,u.hotRadius);
+    gl.uniform2f(loc.hot_aspect,W/Math.max(H,1),1);
+    gl.bindVertexArray(vaoQuad); gl.drawArrays(gl.TRIANGLES,0,6);
+    gl.disable(gl.BLEND); gl.bindVertexArray(null);
+  }
 
-  function flipRgbaVertical(src, width, height) {
-    const row = width * 4;
-    const out = new Uint8Array(src.length);
-    for (let y = 0; y < height; y++) {
-      out.set(src.subarray((height - 1 - y) * row, (height - y) * row), y * row);
-    }
+  /* ── export helpers ─────────────────────────────────────── */
+  let exportBusy=false, mediaRecorder=null, recChunks=[], recStopAt=0;
+  let raf=0, last=performance.now();
+
+  function flipRgbaVertical(src,width,height) {
+    const row=width*4, out=new Uint8Array(src.length);
+    for (let y=0;y<height;y++) out.set(src.subarray((height-1-y)*row,(height-y)*row),y*row);
     return out;
   }
-
   function readFboSceneRgbaFlipped() {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fboScene);
-    const row = W * 4;
-    const buf = new Uint8Array(row * H);
-    gl.pixelStorei(gl.PACK_ALIGNMENT, 1);
-    gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, buf);
-    gl.pixelStorei(gl.PACK_ALIGNMENT, 4);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    return flipRgbaVertical(buf, W, H);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,fboScene);
+    const buf=new Uint8Array(W*H*4);
+    gl.pixelStorei(gl.PACK_ALIGNMENT,1);
+    gl.readPixels(0,0,W,H,gl.RGBA,gl.UNSIGNED_BYTE,buf);
+    gl.pixelStorei(gl.PACK_ALIGNMENT,4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+    return flipRgbaVertical(buf,W,H);
   }
-
-  function rgbaToPngBlob(rgba, width, height) {
-    return new Promise((resolve) => {
-      const c = document.createElement('canvas');
-      c.width = width;
-      c.height = height;
-      const ctx = c.getContext('2d');
-      const im = ctx.createImageData(width, height);
-      im.data.set(rgba);
-      ctx.putImageData(im, 0, 0);
-      c.toBlob((b) => resolve(b), 'image/png');
+  function rgbaToPngBlob(rgba,width,height) {
+    return new Promise(resolve=>{
+      const c=document.createElement('canvas'); c.width=width; c.height=height;
+      const ctx=c.getContext('2d'); const im=ctx.createImageData(width,height);
+      im.data.set(rgba); ctx.putImageData(im,0,0); c.toBlob(b=>resolve(b),'image/png');
     });
   }
-
-  function downloadBlob(blob, name) {
+  function downloadBlob(blob,name) {
     if (!blob) return;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = name;
-    a.click();
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
     URL.revokeObjectURL(a.href);
   }
-
-  function padFrame(i, n) {
-    const s = String(i);
-    return s.length >= n ? s : '0'.repeat(n - s.length) + s;
-  }
+  function padFrame(i,n) { const s=String(i); return s.length>=n?s:'0'.repeat(n-s.length)+s; }
 
   async function runPngSequence() {
     if (exportBusy) return;
-    exportBusy = true;
-    const snapW = new Float32Array(world);
-    const snapV = new Float32Array(vel);
-    const snapC = new Float32Array(color);
-    const snapM = new Float32Array(meta);
-    const t0 = time;
-    const st = $('export-status');
+    exportBusy=true;
+    const snapW=new Float32Array(world), snapV=new Float32Array(vel);
+    const snapC=new Float32Array(color), snapM=new Float32Array(meta), t0=time;
+    const st=$('export-status');
     try {
-      const transparent = $('ck-seq-alpha').checked;
-      const n = Math.max(1, Math.min(600, (+$('in-seq-frames').value | 0) || 90));
-      const fps = Math.max(8, Math.min(120, +$('sel-seq-fps').value || 30));
-      const dt = 1 / fps;
-      for (let i = 0; i < n; i++) {
-        st.textContent = `Rendering ${i + 1} / ${n}…`;
-        const u = readUI();
-        const sub = 2;
-        for (let s = 0; s < sub; s++) updateParticles(dt / sub, u);
-        time += dt;
-        const ang = time * (0.08 + u.orb * 0.35);
-        const camR = 2.35;
-        const eye = [Math.sin(ang) * camR, 0.15 + Math.sin(time * 0.27) * 0.08, Math.cos(ang) * camR];
-        const uT = { ...u, time, bpx: transparent ? 0 : u.bpx };
-        drawParticlesToCanvas(uT, eye, transparent);
-        const idx = padFrame(i + 1, 5);
+      const transparent=$('ck-seq-alpha').checked;
+      const n=Math.max(1,Math.min(600,(+$('in-seq-frames').value|0)||90));
+      const fps=Math.max(8,Math.min(120,+$('sel-seq-fps').value||30));
+      const dt=1/fps;
+      for (let i=0;i<n;i++) {
+        st.textContent=`Rendering ${i+1} / ${n}…`;
+        const u=readUI(); const sub=2;
+        for (let s=0;s<sub;s++) updateParticles(dt/sub,u);
+        time+=dt;
+        const eye=getEye(u);
+        const uT={...u,time,bpx:transparent?0:u.bpx};
+        drawParticlesToCanvas(uT,eye,transparent);
+        const idx=padFrame(i+1,5);
         if (transparent) {
-          const rgba = readFboSceneRgbaFlipped();
-          const blob = await rgbaToPngBlob(rgba, W, H);
-          downloadBlob(blob, `orb-burst_${idx}.png`);
+          const rgba=readFboSceneRgbaFlipped();
+          downloadBlob(await rgbaToPngBlob(rgba,W,H),`orb-burst_${idx}.png`);
         } else {
-          if (uT.bpx > 0.5) drawBlurChain(uT.bpx, uT.bg);
-          composite(uT);
-          await new Promise((res) => {
-            canvas.toBlob((blob) => {
-              downloadBlob(blob, `orb-burst_${idx}.png`);
-              res();
-            }, 'image/png');
-          });
+          if (uT.bpx>0.5) drawBlurChain(uT.bpx,uT.bg);
+          composite(uT); drawHotCore(uT);
+          await new Promise(res=>canvas.toBlob(blob=>{downloadBlob(blob,`orb-burst_${idx}.png`);res()},'image/png'));
         }
-        await new Promise((r) => setTimeout(r, 0));
+        await new Promise(r=>setTimeout(r,0));
       }
-      st.textContent = `Saved ${n} PNGs (transparent: ${transparent ? 'yes' : 'no'}).`;
-    } catch (e) {
-      console.error(e);
-      st.textContent = String(e && e.message ? e.message : e);
-    } finally {
-      world.set(snapW);
-      vel.set(snapV);
-      color.set(snapC);
-      meta.set(snapM);
-      time = t0;
-      gl.bindBuffer(gl.ARRAY_BUFFER, instWorld);
-      gl.bufferSubData(gl.ARRAY_BUFFER, 0, world.subarray(0, totalInstances * 3));
-      gl.bindBuffer(gl.ARRAY_BUFFER, instColor);
-      gl.bufferSubData(gl.ARRAY_BUFFER, 0, color.subarray(0, totalInstances * 3));
-      gl.bindBuffer(gl.ARRAY_BUFFER, instMeta);
-      gl.bufferSubData(gl.ARRAY_BUFFER, 0, meta.subarray(0, totalInstances * 4));
-      exportBusy = false;
+      st.textContent=`Saved ${n} PNGs.`;
+    } catch(e) { console.error(e); st.textContent=String(e&&e.message?e.message:e); }
+    finally {
+      world.set(snapW); vel.set(snapV); color.set(snapC); meta.set(snapM); time=t0;
+      uploadInstance(totalInstances); exportBusy=false;
     }
   }
 
-  function frame(now) {
-    raf = requestAnimationFrame(frame);
-    if (exportBusy) return;
-    const dt = Math.min(0.05, (now - last) / 1000);
-    last = now;
-    time += dt;
-    const u = readUI();
+  function getEye(u) {
+    if (warpMode) return [0, 0, 2.35];
+    const ang=time*(0.08+u.orb*0.35), camR=2.35;
+    return [Math.sin(ang)*camR, 0.15+Math.sin(time*0.27)*0.08, Math.cos(ang)*camR];
+  }
 
-    const wantStreak = Math.min(8000, Math.max(400, u.n | 0));
-    const wantBlob = Math.min(120, Math.max(0, u.blobs | 0));
-    if (wantStreak !== streakCount || wantBlob !== blobCount) {
-      streakCount = wantStreak;
-      blobCount = wantBlob;
-      totalInstances = Math.min(MAX_INST, streakCount + blobCount);
+  /* ── main loop ──────────────────────────────────────────── */
+  function frame(now) {
+    raf=requestAnimationFrame(frame);
+    if (exportBusy) return;
+    const dt=Math.min(0.05,(now-last)/1000); last=now; time+=dt;
+    const u=readUI();
+
+    const wantStreak=Math.min(8000,Math.max(100,u.n|0));
+    const wantBlob=warpMode?0:Math.min(120,Math.max(0,u.blobs|0));
+    if (wantStreak!==streakCount||wantBlob!==blobCount) {
+      streakCount=wantStreak; blobCount=wantBlob;
+      totalInstances=Math.min(MAX_INST,streakCount+blobCount);
       initAllParticles();
     }
 
     updateParticles(dt, u);
-
-    const ang = time * (0.08 + u.orb * 0.35);
-    const camR = 2.35;
-    const eye = [Math.sin(ang) * camR, 0.15 + Math.sin(time * 0.27) * 0.08, Math.cos(ang) * camR];
-
-    drawParticlesToCanvas({ ...u, time }, eye, false);
-    drawBlurChain(u.bpx, u.bg);
+    const eye=getEye(u);
+    drawParticlesToCanvas({...u,time},eye,false);
+    drawBlurChain(u.bpx,u.bg);
     composite(u);
+    drawHotCore(u);
 
-    if (mediaRecorder && mediaRecorder.state === 'recording' && recStopAt > 0 && now >= recStopAt) {
-      mediaRecorder.stop();
-      recStopAt = 0;
+    if (mediaRecorder&&mediaRecorder.state==='recording'&&recStopAt>0&&now>=recStopAt) {
+      mediaRecorder.stop(); recStopAt=0;
     }
   }
 
-  window.addEventListener('resize', resize);
-  $('sel-canvas').addEventListener('change', () => {
-    syncCanvasCustomPanel();
-    resize();
-  });
-  function maybeResizeCustom() {
-    if (canvasIsCustom()) resize();
-  }
-  $('in-canvas-w').addEventListener('change', maybeResizeCustom);
-  $('in-canvas-h').addEventListener('change', maybeResizeCustom);
-  $('in-canvas-w').addEventListener('input', maybeResizeCustom);
-  $('in-canvas-h').addEventListener('input', maybeResizeCustom);
-  syncCanvasCustomPanel();
-  resize();
-  palKey = $('sel-pal').value;
-  streakCount = Math.min(8000, Math.max(400, +$('sl-n').value | 0));
-  blobCount = Math.min(120, Math.max(0, +$('sl-blobs').value | 0));
-  totalInstances = Math.min(MAX_INST, streakCount + blobCount);
-  initAllParticles();
-  raf = requestAnimationFrame(frame);
-
-  $('btn-png').addEventListener('click', () => {
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      downloadBlob(blob, 'orb-burst.png');
-    }, 'image/png');
-  });
-
-  $('btn-seq-png').addEventListener('click', () => { runPngSequence(); });
-
-  $('btn-rec-webm').addEventListener('click', () => {
-    const st = $('export-status');
-    if (!window.MediaRecorder) {
-      st.textContent = 'MediaRecorder not supported in this browser.';
-      return;
-    }
-    if (mediaRecorder && mediaRecorder.state === 'recording') return;
-    const candidates = [
-      'video/mp4; codecs=avc1.42E01E',
-      'video/mp4',
-      'video/webm; codecs=vp9',
-      'video/webm; codecs=vp8',
-      'video/webm'
+  /* ── UI bindings ────────────────────────────────────────── */
+  function bindSliders() {
+    const map=[
+      ['sl-n','v-n',v=>String(v)],
+      ['sl-blobs','v-blobs',v=>String(v)],
+      ['sl-len','v-len',v=>(+v/100).toFixed(2)],
+      ['sl-th','v-th',v=>(+v/10000).toFixed(4)],
+      ['sl-core','v-core',v=>(+v/100).toFixed(2)],
+      ['sl-soft','v-soft',v=>(+v/100).toFixed(2)],
+      ['sl-sp','v-sp',v=>(+v/100).toFixed(2)],
+      ['sl-sw','v-sw',v=>(+v/100).toFixed(2)],
+      ['sl-orb','v-orb',v=>(+v/100).toFixed(2)],
+      ['sl-z','v-z',v=>(+v/100).toFixed(2)],
+      ['sl-bl','v-bl',v=>(+v/100).toFixed(2)],
+      ['sl-bpx','v-bpx',v=>String(v)],
+      ['sl-csat','v-csat',v=>`${v}%`],
+      ['sl-chue','v-chue',v=>`${v}°`],
+      ['sl-cgain','v-cgain',v=>`${v}%`],
+      ['sl-hub-sp','v-hub-sp',v=>`${Math.round((+v-5)/95*100)}%`],
+      ['sl-hub-fall','v-hub-fall',v=>(+v/100).toFixed(2)],
+      ['sl-hub-op','v-hub-op',v=>`${v}%`],
+      ['sl-hotcore','v-hotcore',v=>(+v/100).toFixed(2)],
+      ['sl-hotrad','v-hotrad',v=>(+v/100).toFixed(2)],
+      ['sl-grain','v-grain',v=>`${v}%`],
     ];
-    let mime = '';
-    for (const m of candidates) {
-      if (MediaRecorder.isTypeSupported(m)) {
-        mime = m;
-        break;
-      }
+    for (const [sl,lab,fn] of map) {
+      const el=$(sl), out=$(lab);
+      if (!el||!out) continue;
+      el.addEventListener('input',()=>{ out.textContent=fn(el.value); });
+      out.textContent=fn(el.value);
     }
-    if (!mime) {
-      st.textContent = 'No supported video MIME for MediaRecorder.';
-      return;
-    }
-    const fps = Math.max(15, Math.min(60, +$('sel-seq-fps').value || 30));
-    const stream = canvas.captureStream(fps);
-    recChunks = [];
-    mediaRecorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12e6 });
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data && e.data.size) recChunks.push(e.data);
-    };
-    mediaRecorder.onstop = () => {
-      const ext = mime.indexOf('mp4') >= 0 ? 'mp4' : 'webm';
-      downloadBlob(new Blob(recChunks, { type: mime }), `orb-burst.${ext}`);
-      st.textContent = `Saved orb-burst.${ext}`;
-      mediaRecorder = null;
+  }
+  bindSliders();
+
+  /* fieldset toggles */
+  function bindFieldsetToggle(ckId, fsId) {
+    const ck=$(ckId), fs=$(fsId);
+    const sync=()=>{ fs.disabled=!ck.checked; };
+    ck.addEventListener('change',sync); sync();
+  }
+  bindFieldsetToggle('ck-hub','hub-field');
+  bindFieldsetToggle('ck-hotcore','hotcore-field');
+  bindFieldsetToggle('ck-grain','grain-field');
+
+  /* mode pills */
+  function setMode(toWarp) {
+    warpMode=toWarp;
+    $('pill-burst').classList.toggle('active',!toWarp);
+    $('pill-warp').classList.toggle('active',toWarp);
+    document.body.classList.toggle('warp-mode',toWarp);
+    $('lbl-sw').childNodes[0].textContent=toWarp?'Rotation speed ':'Drift / swirl ';
+    streakCount=0; blobCount=0; /* force reinit */
+    initAllParticles();
+  }
+  $('pill-burst').addEventListener('click',()=>setMode(false));
+  $('pill-warp').addEventListener('click',()=>setMode(true));
+
+  /* canvas size */
+  $('sel-canvas').addEventListener('change',()=>{ syncCanvasCustomPanel(); resize(); });
+  function maybeResizeCustom(){ if(canvasIsCustom()) resize(); }
+  $('in-canvas-w').addEventListener('change',maybeResizeCustom);
+  $('in-canvas-h').addEventListener('change',maybeResizeCustom);
+  $('in-canvas-w').addEventListener('input',maybeResizeCustom);
+  $('in-canvas-h').addEventListener('input',maybeResizeCustom);
+
+  /* ── custom color picker UI ─────────────────────────────── */
+  function buildColorSwatches() {
+    const container=$('col-swatches');
+    container.innerHTML='';
+    customColors.forEach((hex,idx)=>{
+      const wrap=document.createElement('div');
+      wrap.className='col-swatch';
+      const sw=document.createElement('div');
+      sw.className='swatch-wrap';
+      const inp=document.createElement('input');
+      inp.type='color'; inp.value=hex;
+      inp.addEventListener('input',e=>{
+        customColors[idx]=e.target.value;
+        recolorParticles();
+      });
+      sw.appendChild(inp);
+      const del=document.createElement('button');
+      del.className='col-del'; del.textContent='×';
+      del.addEventListener('click',()=>{
+        if (customColors.length<=1) return;
+        customColors.splice(idx,1);
+        buildColorSwatches();
+        recolorParticles();
+      });
+      wrap.appendChild(sw); wrap.appendChild(del);
+      container.appendChild(wrap);
+    });
+    /* add button */
+    const addBtn=document.createElement('button');
+    addBtn.className='col-add-btn'; addBtn.textContent='+';
+    addBtn.title='Add color';
+    addBtn.addEventListener('click',()=>{
+      if (customColors.length>=16) return;
+      customColors.push(hslToHex(Math.random()*360,80,55));
+      buildColorSwatches();
+      recolorParticles();
+    });
+    container.appendChild(addBtn);
+  }
+  buildColorSwatches();
+
+  $('sel-preset').addEventListener('change',function(){
+    const key=this.value; if (!key) return;
+    const cols=PRESETS[key];
+    if (cols) { customColors=[...cols]; buildColorSwatches(); initAllParticles(); }
+    this.value='';
+  });
+
+  /* export */
+  $('btn-png').addEventListener('click',()=>{
+    canvas.toBlob(blob=>{ if(blob) downloadBlob(blob,'orb-burst.png'); },'image/png');
+  });
+  $('btn-seq-png').addEventListener('click',()=>runPngSequence());
+  $('btn-rec-webm').addEventListener('click',()=>{
+    const st=$('export-status');
+    if (!window.MediaRecorder){st.textContent='MediaRecorder not supported.';return;}
+    if (mediaRecorder&&mediaRecorder.state==='recording') return;
+    const candidates=['video/mp4; codecs=avc1.42E01E','video/mp4','video/webm; codecs=vp9','video/webm; codecs=vp8','video/webm'];
+    let mime='';
+    for (const m of candidates) { if (MediaRecorder.isTypeSupported(m)){mime=m;break;} }
+    if (!mime){st.textContent='No supported video MIME.';return;}
+    const fps=Math.max(15,Math.min(60,+$('sel-seq-fps').value||30));
+    const stream=canvas.captureStream(fps);
+    recChunks=[];
+    mediaRecorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:12e6});
+    mediaRecorder.ondataavailable=e=>{ if(e.data&&e.data.size) recChunks.push(e.data); };
+    mediaRecorder.onstop=()=>{
+      const ext=mime.indexOf('mp4')>=0?'mp4':'webm';
+      downloadBlob(new Blob(recChunks,{type:mime}),`orb-burst.${ext}`);
+      st.textContent=`Saved orb-burst.${ext}`; mediaRecorder=null;
     };
     mediaRecorder.start(200);
-    const sec = Math.max(1, +$('sel-rec-sec').value || 5);
-    recStopAt = performance.now() + sec * 1000;
-    st.textContent = `Recording… ${sec}s (${mime})`;
+    const sec=Math.max(1,+$('sel-rec-sec').value||5);
+    recStopAt=performance.now()+sec*1000;
+    st.textContent=`Recording… ${sec}s (${mime})`;
   });
+
+  /* ── boot ───────────────────────────────────────────────── */
+  window.addEventListener('resize',resize);
+  syncCanvasCustomPanel(); resize();
+  streakCount=Math.min(8000,Math.max(100,+$('sl-n').value|0));
+  blobCount=0; totalInstances=Math.min(MAX_INST,streakCount+blobCount);
+  initAllParticles();
+  raf=requestAnimationFrame(frame);
+
 })();
 </script>
 </body>
