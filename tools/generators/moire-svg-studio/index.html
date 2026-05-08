@@ -404,6 +404,32 @@ button.btn.accent:hover { background: #c2ea3c; }
     </div>
   </div>
 
+  <!-- ══ CLIP SHAPE ══ -->
+  <div class="divider"></div>
+  <div class="section">
+    <div class="section-title">Clip Shape</div>
+    <div class="ctrl">
+      <select id="sel-clip">
+        <option value="none">Rectangle (full canvas)</option>
+        <option value="circle">Circle</option>
+      </select>
+    </div>
+    <div id="clip-circle-ctrls" style="display:none">
+      <div class="ctrl">
+        <label>Radius <span class="val" id="v-clip-r">90</span>%</label>
+        <input type="range" id="sl-clip-r" min="5" max="100" value="90" step="1"/>
+      </div>
+      <div class="ctrl">
+        <label>Center X <span class="val" id="v-clip-cx">50</span>%</label>
+        <input type="range" id="sl-clip-cx" min="0" max="100" value="50" step="1"/>
+      </div>
+      <div class="ctrl">
+        <label>Center Y <span class="val" id="v-clip-cy">50</span>%</label>
+        <input type="range" id="sl-clip-cy" min="0" max="100" value="50" step="1"/>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ EXPORT ══ -->
   <div class="divider"></div>
   <div class="section">
@@ -478,6 +504,9 @@ const SLIDERS = {
   'sl-l2-ga1':     ['v-l2-ga1',     v => Math.round(v)],
   'sl-l2-gf2':     ['v-l2-gf2',     v => Math.round(v)],
   'sl-l2-ga2':     ['v-l2-ga2',     v => Math.round(v)],
+  'sl-clip-r':     ['v-clip-r',     v => Math.round(v)],
+  'sl-clip-cx':    ['v-clip-cx',    v => Math.round(v)],
+  'sl-clip-cy':    ['v-clip-cy',    v => Math.round(v)],
 };
 Object.entries(SLIDERS).forEach(([sid, [vid, fmt]]) => {
   const el  = document.getElementById(sid);
@@ -551,6 +580,12 @@ document.querySelectorAll('.family-toggle').forEach(btn => {
 // ── Combine mode ──────────────────────────────────────────────────────────────
 document.getElementById('sel-combine').addEventListener('change', () => {
   document.getElementById('l2-color-section').classList.toggle('dim', gv('sel-combine') === 'xor');
+  schedRender();
+});
+
+// ── Clip shape ────────────────────────────────────────────────────────────────
+document.getElementById('sel-clip').addEventListener('change', function () {
+  document.getElementById('clip-circle-ctrls').style.display = this.value === 'circle' ? '' : 'none';
   schedRender();
 });
 
@@ -730,31 +765,43 @@ function getPathData(mode, W, H, pfx) {
 
 // ── SVG composer ──────────────────────────────────────────────────────────────
 function buildSVG(W, H) {
-  const combine = gv('sel-combine');
-  const l1Color = gv('inp-l1-ca');
-  const l1Bg    = gv('inp-l1-cb');
-  const l2Color = gv('inp-l2-ca');
+  const combine   = gv('sel-combine');
+  const l1Color   = gv('inp-l1-ca');
+  const l1Bg      = gv('inp-l1-cb');
+  const l2Color   = gv('inp-l2-ca');
+  const clipShape = gv('sel-clip');
 
   const l1Paths = getPathData(mode1, W, H, 'l1');
   const l2Paths = getPathData(mode2, W, H, 'l2');
 
+  let defs = `<clipPath id="vp"><rect width="${W}" height="${H}"/></clipPath>`;
+  let clipAttr = `clip-path="url(#vp)"`;
+
+  if (clipShape === 'circle') {
+    const ccx = f3(g('sl-clip-cx') / 100 * W);
+    const ccy = f3(g('sl-clip-cy') / 100 * H);
+    const cr  = f3(g('sl-clip-r')  / 100 * Math.min(W, H) / 2);
+    defs += `<clipPath id="circ"><circle cx="${ccx}" cy="${ccy}" r="${cr}"/></clipPath>`;
+    clipAttr = `clip-path="url(#circ)"`;
+  }
+
   const header =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
-    `<defs><clipPath id="vp"><rect width="${W}" height="${H}"/></clipPath></defs>` +
+    `<defs>${defs}</defs>` +
     `<rect width="${W}" height="${H}" fill="${l1Bg}"/>`;
 
   if (combine === 'xor') {
     const allD = [...l1Paths, ...l2Paths].join(' ');
     return header +
-      `<path clip-path="url(#vp)" fill-rule="evenodd" fill="${l1Color}" d="${allD}"/>` +
+      `<path ${clipAttr} fill-rule="evenodd" fill="${l1Color}" d="${allD}"/>` +
       '</svg>';
   }
 
   const l1Els = l1Paths.map(d => `<path d="${d}" fill="${l1Color}"/>`).join('');
   const l2Els = l2Paths.map(d => `<path d="${d}" fill="${l2Color}"/>`).join('');
   return header +
-    `<g clip-path="url(#vp)">${l1Els}</g>` +
-    `<g clip-path="url(#vp)" style="mix-blend-mode:${combine}">${l2Els}</g>` +
+    `<g ${clipAttr}>${l1Els}</g>` +
+    `<g ${clipAttr} style="mix-blend-mode:${combine}">${l2Els}</g>` +
     '</svg>';
 }
 
