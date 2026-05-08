@@ -181,11 +181,11 @@ select { width: 100%; background: #f5f5f5; border: 1px solid var(--line); color:
     <div class="sec-title">Lattice</div>
     <div class="ctrl">
       <label>Cells <span class="val" id="vn">2</span></label>
-      <input type="range" id="rn" min="1" max="4" value="2" step="1">
+      <input type="range" id="rn" min="1" max="8" value="2" step="1">
     </div>
     <div class="ctrl">
       <label>Atom size <span class="val" id="vsz">44%</span></label>
-      <input type="range" id="rsz" min="10" max="72" value="44" step="1">
+      <input type="range" id="rsz" min="1" max="72" value="44" step="1">
     </div>
     <div class="ctrl tog-row">
       <span>Show atoms</span>
@@ -202,13 +202,13 @@ select { width: 100%; background: #f5f5f5; border: 1px solid var(--line); color:
     <div class="sec-title">Appearance</div>
     <div class="ctrl">
       <label>Atom fill</label>
-      <div class="color-full"><input type="color" id="cac" value="#0a0a0a"></div>
+      <div class="color-full"><input type="color" id="cac" value="#9e9e9e"></div>
     </div>
     <div class="divider"></div>
     <div class="ctrl">
       <label>Stroke width <span class="val" id="vsw">0 px</span></label>
       <div class="ctrl-pair">
-        <input type="range" id="rsw" min="0" max="40" value="0" step="1">
+        <input type="range" id="rsw" min="0" max="120" value="0" step="1">
         <div class="swatch"><input type="color" id="csc" value="#bfb9ab"></div>
       </div>
     </div>
@@ -380,6 +380,7 @@ select { width: 100%; background: #f5f5f5; border: 1px solid var(--line); color:
     <div class="btn-row" style="margin-bottom:6px">
       <button class="btn btn-primary" id="bexp">↓ ZIP</button>
       <button class="btn btn-ghost" id="bvid">↓ MP4</button>
+      <button class="btn btn-ghost" id="bvid-loop">↓ Loop MP4</button>
     </div>
     <p class="hint">MP4 on Safari · WebM on Chrome/Firefox</p>
   </div>
@@ -422,7 +423,7 @@ const ca  = document.getElementById('canvas-area');
 
 // ── State ──────────────────────────────────────────────────────────────────
 const S = {
-  n: 2, szF: .44, ac: '#0a0a0a', showAtoms: true,
+  n: 2, szF: .44, ac: '#9e9e9e', showAtoms: true,
   merged: false,
   sw: 0, sc: '#bfb9ab',
   gi: 0, gc: '#e8a040', gs: .50, gp: 1,
@@ -819,8 +820,29 @@ async function doExport() {
   requestAnimationFrame(ts => { prevT = ts; tick(ts); });
 }
 
+// ── Loop frame calculator ───────────────────────────────────────────────────
+function calcLoopFrames() {
+  const fps = 30;
+  function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+  function lcm(a, b) { return a / gcd(a, b) * b; }
+  if (S.mode === 'spin') {
+    const ratePerFrame = S.spd * 0.55 / fps;
+    return Math.max(15, Math.round((2 * Math.PI) / ratePerFrame));
+  } else if (S.mode === 'swing') {
+    const ratePerFrame = S.spd * 0.22 / fps;
+    return Math.max(15, Math.round(2 / ratePerFrame));
+  } else {
+    // tumble: LCM of each active axis period
+    const rates = [S.txs, S.tys, S.tzs].filter(r => Math.abs(r) > 0.001);
+    if (!rates.length) return fps * 4;
+    const periods = rates.map(r => Math.max(2, Math.round((2 * Math.PI) / (Math.abs(S.spd * r) / fps))));
+    const total = periods.reduce(lcm);
+    return Math.min(total, fps * 60); // cap at 60 s
+  }
+}
+
 // ── Export video (MP4 / WebM via MediaRecorder) ────────────────────────────
-async function doExportVideo() {
+async function doExportVideo(frameOverride) {
   if (!cv.captureStream) { alert('captureStream not supported in this browser.'); return; }
   const FMTS = [
     { mime: 'video/mp4;codecs=avc1', ext: 'mp4' },
@@ -841,15 +863,26 @@ async function doExportVideo() {
   S.exporting = true; S.play = false;
   const sRx=S.rx, sRy=S.ry, sRz=S.rz, sSw=swPh, sOsc=oscPh;
 
+  // Always start from the isometric rest position
+  S.rx = 0.6155; S.ry = 0.7854; S.rz = 0; swPh = 0; oscPh = 0;
+
   const chunks = [];
-  // captureStream(0) = manual frame control via requestFrame()
   const stream   = cv.captureStream(0);
   const track    = stream.getVideoTracks()[0];
   const recorder = new MediaRecorder(stream, { mimeType: fmt.mime, videoBitsPerSecond: 16_000_000 });
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
 
-  const N = S.expFrames;
+  const N = (frameOverride !== undefined) ? frameOverride : S.expFrames;
+  const MS_PER_FRAME = 1000 / 30;
+
+  // waitUntil: uses rAF instead of setTimeout for vsync-accurate frame pacing
+  const waitUntil = t => new Promise(resolve => {
+    const check = () => performance.now() >= t ? resolve() : requestAnimationFrame(check);
+    requestAnimationFrame(check);
+  });
+
   recorder.start();
+  const t0 = performance.now();
 
   for (let f = 0; f < N; f++) {
     advanceAnim(1/30);
@@ -857,7 +890,8 @@ async function doExportVideo() {
     track.requestFrame();
     bar.style.width = ((f+1)/N*100) + '%';
     txt.textContent = `${((f+1)/30).toFixed(1)}s / ${(N/30).toFixed(1)}s`;
-    if (f % 4 === 0) await new Promise(r => setTimeout(r, 0));
+    // Wait until the exact wall-clock time for the next frame — compensates for render cost
+    await waitUntil(t0 + (f + 1) * MS_PER_FRAME);
   }
 
   recorder.stop();
@@ -950,7 +984,8 @@ $('tealpha').onchange  = function() { S.expAlpha=this.checked; };
 $('tsvgmerge').onchange= function() { S.svgMerge=this.checked; };
 
 $('bexp').onclick  = () => doExport();
-$('bvid').onclick  = () => doExportVideo();
+$('bvid').onclick      = () => doExportVideo();
+$('bvid-loop').onclick = () => doExportVideo(calcLoopFrames());
 $('bsvg').onclick  = () => exportSVG();
 $('bshot').onclick = () => {
   drawScene(ctx, false);
