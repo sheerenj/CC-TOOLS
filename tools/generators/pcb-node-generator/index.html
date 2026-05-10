@@ -352,6 +352,10 @@ input[type="color"] {
         <span class="val" id="vThresh">25</span>
       </div>
       <div class="row">
+        <label>Invert</label>
+        <button class="tbtn" id="btnInvert">Bright → Dense</button>
+      </div>
+      <div class="row">
         <label>Accent</label>
         <input type="color" id="sAccent" value="#39ff14">
       </div>
@@ -415,6 +419,7 @@ const P = {
   pad:       5,
   bevel:     1.6,
   threshold: 0.25,
+  invert:    false,
   accent:    '#39ff14',
   accentPct: 22,
 };
@@ -439,7 +444,8 @@ function getLum(x, y) {
   const xi = Math.max(0, Math.min(CW - 1, x | 0));
   const yi = Math.max(0, Math.min(CH - 1, y | 0));
   const i  = (yi * CW + xi) * 4;
-  return (lumData[i]*0.299 + lumData[i+1]*0.587 + lumData[i+2]*0.114) / 255;
+  const l  = (lumData[i]*0.299 + lumData[i+1]*0.587 + lumData[i+2]*0.114) / 255;
+  return P.invert ? 1 - l : l;
 }
 
 // ── Node generation ───────────────────────────────────────────────────────────
@@ -668,6 +674,20 @@ function render() {
 function regenAll()   { nodes = genNodes(); edges = genEdges(nodes); render(); }
 function regenEdges() { edges = genEdges(nodes); render(); }
 
+// ── Lum map builder ───────────────────────────────────────────────────────────
+// Draws the source image onto the hidden canvas using the same transform as
+// the SVG overlay so node density always matches the image's visible position.
+
+function buildLumMap() {
+  if (!sourceImg) return;
+  lumCtx.clearRect(0, 0, CW, CH);
+  const b  = coverFit();
+  const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+  const w  = b.w * imgTx.scale, h = b.h * imgTx.scale;
+  lumCtx.drawImage(sourceImg, cx - w/2 + imgTx.x, cy - h/2 + imgTx.y, w, h);
+  lumData = lumCtx.getImageData(0, 0, CW, CH).data;
+}
+
 // ── Image loading ─────────────────────────────────────────────────────────────
 
 function loadImageFile(file) {
@@ -678,11 +698,8 @@ function loadImageFile(file) {
     sourceImg = img;
     imgTx     = { x: 0, y: 0, scale: 1 };
 
-    // Build lum pixel map
-    lumCtx.clearRect(0, 0, CW, CH);
-    const b = coverFit();
-    lumCtx.drawImage(img, b.x, b.y, b.w, b.h);
-    lumData = lumCtx.getImageData(0, 0, CW, CH).data;
+    // Build lum pixel map using current (reset) imgTx
+    buildLumMap();
 
     // JPEG data URL for SVG <image> — stored at ≤800px wide to stay small
     const maxW = 800;
@@ -732,10 +749,18 @@ window.addEventListener('mousemove', e => {
   render();
 });
 
+let lumRebuildTimer = null;
+function scheduleLumRebuild() {
+  clearTimeout(lumRebuildTimer);
+  lumRebuildTimer = setTimeout(() => { buildLumMap(); regenAll(); }, 350);
+}
+
 window.addEventListener('mouseup', () => {
   if (!dragging) return;
   dragging = false;
   svg.style.cursor = showOverlay ? 'grab' : 'default';
+  // Rebuild lum map and regenerate now that the image is repositioned
+  if (sourceImg) { buildLumMap(); regenAll(); }
 });
 
 svg.addEventListener('wheel', e => {
@@ -751,6 +776,8 @@ svg.addEventListener('wheel', e => {
   imgTx.y  = (my - cy) * (1 - af) + imgTx.y * af;
   imgTx.scale = ns;
   render();
+  // Debounce lum rebuild — regenerating on every wheel tick would be too slow
+  scheduleLumRebuild();
 }, { passive: false });
 
 // ── Controls wiring ───────────────────────────────────────────────────────────
@@ -777,6 +804,13 @@ wire('sComp',      'vComp',      'comp',      render);
 wire('sTrace',     'vTrace',     'trace',     render);
 wire('sPad',       'vPad',       'pad',       render);
 wire('sBevel',     'vBevel',     'bevel',     render);
+
+document.getElementById('btnInvert').addEventListener('click', function () {
+  P.invert = !P.invert;
+  this.textContent = P.invert ? 'Dark → Dense' : 'Bright → Dense';
+  this.classList.toggle('on', P.invert);
+  regenAll();
+});
 
 document.getElementById('sAccent').addEventListener('input', function () {
   P.accent = this.value; render();
@@ -810,7 +844,8 @@ document.getElementById('btnToggle').addEventListener('click', () => {
 
 document.getElementById('btnReset').addEventListener('click', () => {
   imgTx = { x: 0, y: 0, scale: 1 };
-  render();
+  buildLumMap();
+  regenAll();
 });
 
 const zone = document.getElementById('upload-zone');
