@@ -73,6 +73,7 @@
   <div class="mode-tabs">
     <button id="tab-organic" class="active">Organic</button>
     <button id="tab-video">Video</button>
+    <button id="tab-image">Image</button>
   </div>
 
   <div class="section">
@@ -215,6 +216,52 @@
     <div class="hint">Scroll canvas to zoom · drag to pan.</div>
   </div>
 
+  <!-- Image controls -->
+  <div class="section" id="image-controls" style="display:none">
+    <div class="section-title">Image</div>
+    <button class="btn" id="upload-img-btn">Upload image</button>
+    <input type="file" id="img-file" accept="image/*" style="display:none">
+    <div class="status-pill" id="image-status">No image loaded</div>
+
+    <div class="control" style="margin-top:14px">
+      <label>Color mode</label>
+      <select id="img-color-mode">
+        <option value="palette">Brightness → palette</option>
+        <option value="quantize">Sample &amp; quantize colors</option>
+        <option value="channel">CMY channel halftone</option>
+      </select>
+    </div>
+    <div class="control">
+      <label>Contrast <span class="val" id="v-img-con">1.00</span></label>
+      <input type="range" id="img-contrast" min="0.2" max="3" value="1" step="0.01">
+    </div>
+    <div class="control">
+      <label>Brightness <span class="val" id="v-img-bri">0.00</span></label>
+      <input type="range" id="img-brightness" min="-0.5" max="0.5" value="0" step="0.01">
+    </div>
+    <div class="control">
+      <label>Channel offset <span class="val" id="v-img-off">0.30</span></label>
+      <input type="range" id="img-chan-off" min="0" max="1" value="0.3" step="0.01">
+    </div>
+    <div class="toggle">
+      <label>Invert</label>
+      <div class="toggle-switch" id="img-invert"></div>
+    </div>
+    <div class="toggle">
+      <label>Mirror</label>
+      <div class="toggle-switch" id="img-mirror"></div>
+    </div>
+    <div style="height:1px;background:var(--line);margin:12px 0"></div>
+    <div class="control">
+      <label>Zoom <span class="val" id="v-img-zoom">1.0×</span></label>
+      <input type="range" id="img-zoom" min="1" max="8" value="1" step="0.05">
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" id="reset-img-pan">Reset view</button>
+    </div>
+    <div class="hint">Scroll canvas to zoom · drag to pan.</div>
+  </div>
+
   <!-- Canvas size -->
   <div class="section">
     <div class="section-title">Canvas</div>
@@ -247,7 +294,7 @@
     <div class="section-title">Export</div>
     <div class="btn-row">
       <button class="btn ghost" id="save-png">Save PNG</button>
-      <button class="btn ghost" id="save-svg" title="Organic mode only — solid dots, no softness">Save SVG</button>
+      <button class="btn ghost" id="save-svg" title="Organic and Image modes — solid dots, no softness">Save SVG</button>
     </div>
     <div class="btn-row" style="margin-top:8px">
       <button class="btn" id="record-btn">⏺ Record</button>
@@ -278,7 +325,7 @@
 
 <main id="canvas-area">
   <canvas id="canvas"></canvas>
-  <div id="dropzone"><div class="msg">Drop video to load</div></div>
+  <div id="dropzone"><div class="msg">Drop image or video</div></div>
   <div id="video-preview-wrap">
     <video id="video-preview" muted loop playsinline></video>
     <div class="label">SOURCE</div>
@@ -308,10 +355,14 @@
     colorMode: 'palette',
     canvasW: 1920, canvasH: 1080,
     videoPanX: 0.5, videoPanY: 0.5, videoZoom: 1.0,
+    imgColorMode: 'palette', imgContrast: 1.0, imgBrightness: 0, imgChanOff: 0.3,
+    imgInvert: false, imgMirror: false,
+    imgPanX: 0.5, imgPanY: 0.5, imgZoom: 1.0,
   };
 
   const video = document.getElementById('video-preview');
   let videoReady = false;
+  let imageEl = null, imageReady = false, imgFileName = '';
 
   // ---------- Canvas size & resize ----------
   function applyCanvasSize() {
@@ -378,6 +429,14 @@
     if (vEl) vEl.textContent = state.videoZoom.toFixed(1) + '×';
   }
 
+  function syncImgZoomSlider() {
+    const sl = document.getElementById('img-zoom');
+    if (!sl) return;
+    sl.value = state.imgZoom;
+    const vEl = document.getElementById('v-img-zoom');
+    if (vEl) vEl.textContent = state.imgZoom.toFixed(1) + '×';
+  }
+
   document.getElementById('vzoom').addEventListener('input', e => {
     state.videoZoom = parseFloat(e.target.value);
     document.getElementById('v-vzoom').textContent = state.videoZoom.toFixed(1) + '×';
@@ -397,13 +456,13 @@
   let panStartX = 0, panStartY = 0;
 
   area.addEventListener('pointerdown', e => {
-    if (mode !== 'video') return;
+    if (mode !== 'video' && mode !== 'image') return;
     if (e.target !== canvas && e.target !== area) return;
     isDragging = true;
     dragStartX = e.clientX;
     dragStartY = e.clientY;
-    panStartX = state.videoPanX;
-    panStartY = state.videoPanY;
+    panStartX = mode === 'image' ? state.imgPanX : state.videoPanX;
+    panStartY = mode === 'image' ? state.imgPanY : state.videoPanY;
     area.classList.add('dragging');
     area.setPointerCapture(e.pointerId);
     e.preventDefault();
@@ -412,11 +471,16 @@
   area.addEventListener('pointermove', e => {
     if (!isDragging) return;
     const rect = canvas.getBoundingClientRect();
-    // How much did we move in video-source normalized coords?
-    const dx = (e.clientX - dragStartX) / rect.width / state.videoZoom;
-    const dy = (e.clientY - dragStartY) / rect.height / state.videoZoom;
-    state.videoPanX = Math.max(0, Math.min(1, panStartX - dx));
-    state.videoPanY = Math.max(0, Math.min(1, panStartY - dy));
+    const zoom = mode === 'image' ? state.imgZoom : state.videoZoom;
+    const dx = (e.clientX - dragStartX) / rect.width / zoom;
+    const dy = (e.clientY - dragStartY) / rect.height / zoom;
+    if (mode === 'image') {
+      state.imgPanX = Math.max(0, Math.min(1, panStartX - dx));
+      state.imgPanY = Math.max(0, Math.min(1, panStartY - dy));
+    } else {
+      state.videoPanX = Math.max(0, Math.min(1, panStartX - dx));
+      state.videoPanY = Math.max(0, Math.min(1, panStartY - dy));
+    }
   });
 
   area.addEventListener('pointerup', () => {
@@ -425,11 +489,16 @@
   });
 
   area.addEventListener('wheel', e => {
-    if (mode !== 'video') return;
+    if (mode !== 'video' && mode !== 'image') return;
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.1 : 0.9;
-    state.videoZoom = Math.max(1, Math.min(8, state.videoZoom * factor));
-    syncZoomSlider();
+    if (mode === 'image') {
+      state.imgZoom = Math.max(1, Math.min(8, state.imgZoom * factor));
+      syncImgZoomSlider();
+    } else {
+      state.videoZoom = Math.max(1, Math.min(8, state.videoZoom * factor));
+      syncZoomSlider();
+    }
   }, { passive: false });
 
   // ---------- Event patterns ----------
@@ -675,6 +744,86 @@
       return;
     }
 
+    // ---------- Image mode ----------
+    if (mode === 'image') {
+      if (!imageReady || !imageEl) {
+        if (inactiveR > 0.15) {
+          ctx.fillStyle = state.inactiveColor;
+          for (let j = 0; j < rows; j++) {
+            for (let i = 0; i < cols; i++) {
+              ctx.beginPath(); ctx.arc((i+.5)*cell, (j+.5)*cell, inactiveR, 0, Math.PI*2); ctx.fill();
+            }
+          }
+        }
+        ctx.fillStyle = 'rgba(255,255,255,0.45)';
+        ctx.font = `500 ${Math.max(12, W * 0.014)}px -apple-system, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('Upload an image to begin', W / 2, H / 2);
+        return;
+      }
+      const iw = imageEl.naturalWidth, ih = imageEl.naturalHeight;
+      const sampledRows = Math.max(1, Math.round(cols * H / W));
+      const Z = state.imgZoom;
+      const srcW = Math.round(iw / Z);
+      const srcH = Math.round(ih / Z);
+      const centerX = state.imgPanX * iw;
+      const centerY = state.imgPanY * ih;
+      const srcX = Math.max(0, Math.min(iw - srcW, Math.round(centerX - srcW / 2)));
+      const srcY = Math.max(0, Math.min(ih - srcH, Math.round(centerY - srcH / 2)));
+      hidden.width = cols; hidden.height = sampledRows;
+      hctx.save();
+      if (state.imgMirror) { hctx.translate(cols, 0); hctx.scale(-1, 1); }
+      try { hctx.drawImage(imageEl, srcX, srcY, srcW, srcH, 0, 0, cols, sampledRows); }
+      catch (e) { hctx.restore(); return; }
+      hctx.restore();
+      let imgPixelData;
+      try { imgPixelData = hctx.getImageData(0, 0, cols, sampledRows).data; } catch (e) { return; }
+      const cellI = W / cols;
+      const maxRI = cellI * 0.5 * state.maxSize;
+      const iRI = cellI * 0.5 * state.inactiveSize;
+      if (iRI > 0.15) {
+        ctx.fillStyle = state.inactiveColor;
+        for (let j = 0; j < sampledRows; j++)
+          for (let i = 0; i < cols; i++) {
+            ctx.beginPath(); ctx.arc((i+.5)*cellI, (j+.5)*cellI, iRI, 0, Math.PI*2); ctx.fill();
+          }
+      }
+      if (state.imgColorMode === 'channel') {
+        const chanColors = palette.length >= 3 ? [palette[0], palette[1], palette[2]] : ['#00ffff', '#ff00ff', '#ffff00'];
+        ctx.globalCompositeOperation = 'screen';
+        for (let ch = 0; ch < 3; ch++) {
+          const angle = (ch - 1) * Math.PI / 4;
+          const dx = Math.cos(angle) * cellI * state.imgChanOff;
+          const dy = Math.sin(angle) * cellI * state.imgChanOff;
+          for (let j = 0; j < sampledRows; j++) {
+            for (let i = 0; i < cols; i++) {
+              const idx = (j * cols + i) * 4;
+              let v = 1 - (imgPixelData[idx + ch] / 255);
+              v += state.imgBrightness;
+              v = Math.pow(Math.max(0, Math.min(1, v)), state.imgContrast);
+              if (state.imgInvert) v = 1 - v;
+              dot((i+.5)*cellI + dx, (j+.5)*cellI + dy, v * maxRI, chanColors[ch]);
+            }
+          }
+        }
+        ctx.globalCompositeOperation = 'source-over';
+      } else {
+        for (let j = 0; j < sampledRows; j++) {
+          for (let i = 0; i < cols; i++) {
+            const idx = (j * cols + i) * 4;
+            const r_ = imgPixelData[idx], g_ = imgPixelData[idx+1], b_ = imgPixelData[idx+2];
+            let bri = (0.299*r_ + 0.587*g_ + 0.114*b_) / 255;
+            bri += state.imgBrightness;
+            bri = Math.pow(Math.max(0, Math.min(1, bri)), state.imgContrast);
+            if (state.imgInvert) bri = 1 - bri;
+            const color = state.imgColorMode === 'palette' ? pickFromValue(bri) : quantize(r_, g_, b_);
+            dot((i+.5)*cellI, (j+.5)*cellI, bri * maxRI, color);
+          }
+        }
+      }
+      return;
+    }
+
     // ---------- Video mode ----------
     if (!videoReady || video.readyState < 2 || !video.videoWidth) {
       ctx.fillStyle = state.inactiveColor;
@@ -835,17 +984,46 @@
   bindToggle('invert', 'invert');
   bindToggle('mirror', 'mirror');
 
+  // Image mode controls
+  const uploadImgBtn = document.getElementById('upload-img-btn');
+  const imgFileInput = document.getElementById('img-file');
+  uploadImgBtn.addEventListener('click', () => imgFileInput.click());
+  imgFileInput.addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (f) loadImageFile(f);
+    e.target.value = '';
+  });
+  document.getElementById('img-color-mode').addEventListener('change', e => { state.imgColorMode = e.target.value; });
+  bindRange('img-contrast',   'imgContrast',   'v-img-con');
+  bindRange('img-brightness', 'imgBrightness', 'v-img-bri');
+  bindRange('img-chan-off',   'imgChanOff',     'v-img-off');
+  bindToggle('img-invert', 'imgInvert');
+  bindToggle('img-mirror', 'imgMirror');
+  document.getElementById('img-zoom').addEventListener('input', e => {
+    state.imgZoom = parseFloat(e.target.value);
+    document.getElementById('v-img-zoom').textContent = state.imgZoom.toFixed(1) + '×';
+  });
+  document.getElementById('reset-img-pan').addEventListener('click', () => {
+    state.imgPanX = 0.5; state.imgPanY = 0.5; state.imgZoom = 1.0;
+    syncImgZoomSlider();
+  });
+
   // Mode tabs
   const tabOrganic = document.getElementById('tab-organic');
   const tabVideo = document.getElementById('tab-video');
   const orgCtrls = document.getElementById('organic-controls');
   const vidCtrls = document.getElementById('video-controls');
+  const tabImage = document.getElementById('tab-image');
+  const imgCtrls = document.getElementById('image-controls');
+
   tabOrganic.addEventListener('click', () => {
     mode = 'organic';
     tabOrganic.classList.add('active');
     tabVideo.classList.remove('active');
+    tabImage.classList.remove('active');
     orgCtrls.style.display = '';
     vidCtrls.style.display = 'none';
+    imgCtrls.style.display = 'none';
     area.classList.remove('pan-mode');
     const wrap = document.getElementById('video-preview-wrap');
     if (wrap) wrap.style.display = 'none';
@@ -854,12 +1032,26 @@
     mode = 'video';
     tabVideo.classList.add('active');
     tabOrganic.classList.remove('active');
+    tabImage.classList.remove('active');
     vidCtrls.style.display = '';
     orgCtrls.style.display = 'none';
+    imgCtrls.style.display = 'none';
     area.classList.add('pan-mode');
     const wrap = document.getElementById('video-preview-wrap');
     if (wrap && video.src) { wrap.style.display = ''; wrap.classList.add('active'); }
     if (video.src && video.paused) video.play().catch(() => {});
+  });
+  tabImage.addEventListener('click', () => {
+    mode = 'image';
+    tabImage.classList.add('active');
+    tabOrganic.classList.remove('active');
+    tabVideo.classList.remove('active');
+    imgCtrls.style.display = '';
+    orgCtrls.style.display = 'none';
+    vidCtrls.style.display = 'none';
+    area.classList.add('pan-mode');
+    const wrap = document.getElementById('video-preview-wrap');
+    if (wrap) wrap.style.display = 'none';
   });
 
   // Palette
@@ -1065,8 +1257,42 @@
     }
   }
 
+  function loadImageFile(file) {
+    if (!file) return;
+    imgFileName = file.name;
+    imageReady = false;
+    const imgStatus = document.getElementById('image-status');
+    if (imgStatus) { imgStatus.textContent = `Loading ${file.name}…`; imgStatus.className = 'status-pill'; }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      imageEl = img;
+      imageReady = true;
+      state.imgPanX = 0.5; state.imgPanY = 0.5; state.imgZoom = 1.0;
+      syncImgZoomSlider();
+      if (imgStatus) {
+        imgStatus.textContent = `${file.name} · ${img.naturalWidth}×${img.naturalHeight}`;
+        imgStatus.className = 'status-pill ok';
+      }
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => {
+      if (imgStatus) { imgStatus.textContent = 'Failed to load image'; imgStatus.className = 'status-pill err'; }
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+    if (mode !== 'image') tabImage.click();
+  }
+
   function loadFile(file) {
     if (!file) return;
+
+    // Route images to image mode
+    if (file.type && file.type.startsWith('image/')) {
+      loadImageFile(file);
+      return;
+    }
+
     currentFileName = file.name;
     lastLoadedFile = file;
 
@@ -1360,9 +1586,55 @@
   function buildSVGSnapshot() {
     const W = state.canvasW, H = state.canvasH;
     const cols = state.grid, cell = W / cols;
-    const rows = Math.ceil(H / cell);
     const maxR = cell * 0.5 * state.maxSize;
     const inactiveR = cell * 0.5 * state.inactiveSize;
+
+    // ── Image mode SVG ──
+    if (mode === 'image') {
+      if (!imageReady || !imageEl) return null;
+      const sampledRows = Math.max(1, Math.round(cols * H / W));
+      const iw = imageEl.naturalWidth, ih = imageEl.naturalHeight;
+      const Z = state.imgZoom;
+      const srcW = Math.round(iw / Z), srcH = Math.round(ih / Z);
+      const srcX = Math.max(0, Math.min(iw - srcW, Math.round(state.imgPanX * iw - srcW / 2)));
+      const srcY = Math.max(0, Math.min(ih - srcH, Math.round(state.imgPanY * ih - srcH / 2)));
+      hidden.width = cols; hidden.height = sampledRows;
+      hctx.save();
+      if (state.imgMirror) { hctx.translate(cols, 0); hctx.scale(-1, 1); }
+      hctx.drawImage(imageEl, srcX, srcY, srcW, srcH, 0, 0, cols, sampledRows);
+      hctx.restore();
+      const imgData = hctx.getImageData(0, 0, cols, sampledRows).data;
+      const inactivePaths = [], colorPaths = {};
+      if (inactiveR >= 0.15) {
+        for (let j = 0; j < sampledRows; j++)
+          for (let i = 0; i < cols; i++)
+            inactivePaths.push(dotCirclePath((i+.5)*cell, (j+.5)*cell, inactiveR));
+      }
+      for (let j = 0; j < sampledRows; j++) {
+        for (let i = 0; i < cols; i++) {
+          const idx = (j * cols + i) * 4;
+          const r_ = imgData[idx], g_ = imgData[idx+1], b_ = imgData[idx+2];
+          let bri = (0.299*r_ + 0.587*g_ + 0.114*b_) / 255;
+          bri += state.imgBrightness;
+          bri = Math.pow(Math.max(0, Math.min(1, bri)), state.imgContrast);
+          if (state.imgInvert) bri = 1 - bri;
+          const r = bri * maxR;
+          if (r < 0.15) continue;
+          const color = state.imgColorMode === 'palette' ? pickFromValue(bri) : quantize(r_, g_, b_);
+          if (!colorPaths[color]) colorPaths[color] = [];
+          colorPaths[color].push(dotCirclePath((i+.5)*cell, (j+.5)*cell, r));
+        }
+      }
+      const parts = [`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`];
+      parts.push(`<rect width="${W}" height="${H}" fill="${state.bg}"/>`);
+      if (inactivePaths.length) parts.push(`<path fill="${state.inactiveColor}" d="${inactivePaths.join('')}"/>`);
+      for (const [color, paths] of Object.entries(colorPaths)) parts.push(`<path fill="${color}" d="${paths.join('')}"/>`);
+      parts.push('</svg>');
+      return parts.join('');
+    }
+
+    // ── Organic mode SVG ──
+    const rows = Math.ceil(H / cell);
     const aspect = W / H;
     const t = captureT !== null ? captureT : (performance.now() - startT) / 1000;
 
@@ -1404,8 +1676,9 @@
   }
 
   document.getElementById('save-svg').addEventListener('click', () => {
-    if (mode !== 'organic') return;
+    if (mode !== 'organic' && mode !== 'image') return;
     const svg = buildSVGSnapshot();
+    if (!svg) return;
     const a = document.createElement('a');
     a.download = `hty-dot-matrix-${Date.now()}.svg`;
     a.href = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
