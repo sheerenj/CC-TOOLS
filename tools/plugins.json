@@ -1,6 +1,14 @@
 [
   {
+    "slug": "platine-fcc-cavalry",
+    "name": "Platine FCC Lattice",
+    "type": "plugin",
+    "app": "Cavalry",
+    "hasPreview": true
+  },
+  {
     "slug": "squircles-for-illustrator",
+    "name": "Squircles",
     "type": "script",
     "app": "Illustrator",
     "hasPreview": true
