@@ -7,30 +7,27 @@
       "niceName": "Platine FCC Lattice",
       "attributes": [
 
-        { "id": "sectionLattice", "type": "separator", "niceName": "── Lattice ──" },
         {
           "id": "cells",
           "type": "int",
           "niceName": "Cells",
           "defaultValue": 2,
-          "numericInfo": { "hardMin": 1, "hasHardMin": true, "hardMax": 8, "hasHardMax": true }
+          "numericInfo": { "hardMin": 1, "hardMax": 8 }
         },
         {
           "id": "latticeSize",
           "type": "double",
-          "niceName": "Size (px)",
+          "niceName": "Size",
           "defaultValue": 400,
-          "numericInfo": { "hardMin": 10, "hasHardMin": true, "softMax": 1200, "hasSoftMax": true }
+          "numericInfo": { "hardMin": 10, "softMax": 1200 }
         },
         {
           "id": "atomSize",
           "type": "double",
           "niceName": "Atom Size",
           "defaultValue": 0.44,
-          "numericInfo": { "hardMin": 0.01, "hasHardMin": true, "softMax": 0.9, "hasSoftMax": true, "step": 0.01 }
+          "numericInfo": { "hardMin": 0.01, "softMax": 0.9 }
         },
-
-        { "id": "sectionOutput", "type": "separator", "niceName": "── Output ──" },
         {
           "id": "outputMode",
           "type": "enum",
@@ -41,43 +38,37 @@
         {
           "id": "mergeAtoms",
           "type": "bool",
-          "niceName": "Merge Atoms (Union)",
+          "niceName": "Merge Atoms",
           "defaultValue": false
         },
-
-        { "id": "sectionAnim", "type": "separator", "niceName": "── Animation ──" },
         {
           "id": "animMode",
           "type": "enum",
-          "niceName": "Mode",
+          "niceName": "Anim Mode",
           "defaultValue": 1,
           "enumValues": [0, 1, 2, 3]
         },
-
-        { "id": "sectionBaseRot", "type": "separator", "niceName": "── Base Rotation (°) ──" },
         {
           "id": "rotX",
           "type": "double",
           "niceName": "Rot X",
           "defaultValue": 35.26,
-          "numericInfo": { "softMin": -360, "hasSoftMin": true, "softMax": 360, "hasSoftMax": true }
+          "numericInfo": { "softMin": -360, "softMax": 360 }
         },
         {
           "id": "rotY",
           "type": "double",
           "niceName": "Rot Y",
           "defaultValue": 45.0,
-          "numericInfo": { "softMin": -360, "hasSoftMin": true, "softMax": 360, "hasSoftMax": true }
+          "numericInfo": { "softMin": -360, "softMax": 360 }
         },
         {
           "id": "rotZ",
           "type": "double",
           "niceName": "Rot Z",
           "defaultValue": 0,
-          "numericInfo": { "softMin": -360, "hasSoftMin": true, "softMax": 360, "hasSoftMax": true }
+          "numericInfo": { "softMin": -360, "softMax": 360 }
         },
-
-        { "id": "sectionSpin", "type": "separator", "niceName": "── Spin ──" },
         {
           "id": "spinAxis",
           "type": "enum",
@@ -88,12 +79,10 @@
         {
           "id": "spinSpeed",
           "type": "double",
-          "niceName": "Spin Speed (°/s)",
+          "niceName": "Spin Speed",
           "defaultValue": 30,
-          "numericInfo": { "hardMin": 0, "hasHardMin": true, "softMax": 360, "hasSoftMax": true }
+          "numericInfo": { "hardMin": 0, "softMax": 360 }
         },
-
-        { "id": "sectionSwing", "type": "separator", "niceName": "── Swing ──" },
         {
           "id": "swingAxis",
           "type": "enum",
@@ -104,16 +93,16 @@
         {
           "id": "swingSpeed",
           "type": "double",
-          "niceName": "Swing Speed (cyc/s)",
+          "niceName": "Swing Speed",
           "defaultValue": 0.2,
-          "numericInfo": { "hardMin": 0, "hasHardMin": true, "softMax": 5, "hasSoftMax": true, "step": 0.01 }
+          "numericInfo": { "hardMin": 0, "softMax": 5 }
         },
         {
           "id": "swingRange",
           "type": "double",
-          "niceName": "Swing Range (°)",
+          "niceName": "Swing Range",
           "defaultValue": 90,
-          "numericInfo": { "hardMin": 1, "hasHardMin": true, "hardMax": 360, "hasHardMax": true }
+          "numericInfo": { "hardMin": 1, "hardMax": 360 }
         },
         {
           "id": "swingEase",
@@ -122,35 +111,31 @@
           "defaultValue": 4,
           "enumValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         },
-
-        { "id": "sectionTumble", "type": "separator", "niceName": "── Tumble ──" },
         {
           "id": "tumbleX",
           "type": "double",
-          "niceName": "Tumble X (°/s)",
+          "niceName": "Tumble X",
           "defaultValue": 18,
-          "numericInfo": { "softMin": -360, "hasSoftMin": true, "softMax": 360, "hasSoftMax": true }
+          "numericInfo": { "softMin": -360, "softMax": 360 }
         },
         {
           "id": "tumbleY",
           "type": "double",
-          "niceName": "Tumble Y (°/s)",
+          "niceName": "Tumble Y",
           "defaultValue": 36,
-          "numericInfo": { "softMin": -360, "hasSoftMin": true, "softMax": 360, "hasSoftMax": true }
+          "numericInfo": { "softMin": -360, "softMax": 360 }
         },
         {
           "id": "tumbleZ",
           "type": "double",
-          "niceName": "Tumble Z (°/s)",
+          "niceName": "Tumble Z",
           "defaultValue": 11,
-          "numericInfo": { "softMin": -360, "hasSoftMin": true, "softMax": 360, "hasSoftMax": true }
+          "numericInfo": { "softMin": -360, "softMax": 360 }
         },
-
-        { "id": "sectionOsc", "type": "separator", "niceName": "── Oscillation ──" },
         {
           "id": "oscOn",
           "type": "bool",
-          "niceName": "Enable",
+          "niceName": "Oscillation",
           "defaultValue": false
         },
         {
@@ -163,16 +148,16 @@
         {
           "id": "oscAmp",
           "type": "double",
-          "niceName": "Amplitude (°)",
+          "niceName": "Osc Amplitude",
           "defaultValue": 20,
-          "numericInfo": { "hardMin": 0, "hasHardMin": true, "hardMax": 180, "hasHardMax": true }
+          "numericInfo": { "hardMin": 0, "hardMax": 180 }
         },
         {
           "id": "oscFreq",
           "type": "double",
-          "niceName": "Frequency (Hz)",
+          "niceName": "Osc Frequency",
           "defaultValue": 1.0,
-          "numericInfo": { "hardMin": 0, "hasHardMin": true, "softMax": 20, "hasSoftMax": true, "step": 0.1 }
+          "numericInfo": { "hardMin": 0, "softMax": 20 }
         }
 
       ]
