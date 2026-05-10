@@ -761,15 +761,8 @@
         ctx.fillText('Upload an image to begin', W / 2, H / 2);
         return;
       }
-      const iw = imageEl.naturalWidth, ih = imageEl.naturalHeight;
       const sampledRows = Math.max(1, Math.round(cols * H / W));
-      const Z = state.imgZoom;
-      const srcW = Math.round(iw / Z);
-      const srcH = Math.round(ih / Z);
-      const centerX = state.imgPanX * iw;
-      const centerY = state.imgPanY * ih;
-      const srcX = Math.max(0, Math.min(iw - srcW, Math.round(centerX - srcW / 2)));
-      const srcY = Math.max(0, Math.min(ih - srcH, Math.round(centerY - srcH / 2)));
+      const { srcX, srcY, srcW, srcH } = imgSampleRect(W, H);
       hidden.width = cols; hidden.height = sampledRows;
       hctx.save();
       if (state.imgMirror) { hctx.translate(cols, 0); hctx.scale(-1, 1); }
@@ -1257,6 +1250,21 @@
     }
   }
 
+  function imgSampleRect(W, H) {
+    const iw = imageEl.naturalWidth, ih = imageEl.naturalHeight;
+    const canvasAR = W / H, imageAR = iw / ih;
+    const baseSrcW = imageAR > canvasAR ? Math.round(ih * canvasAR) : iw;
+    const baseSrcH = imageAR > canvasAR ? ih : Math.round(iw / canvasAR);
+    const Z = state.imgZoom;
+    const srcW = Math.max(1, Math.round(baseSrcW / Z));
+    const srcH = Math.max(1, Math.round(baseSrcH / Z));
+    const cx = iw / 2 + (state.imgPanX - 0.5) * baseSrcW;
+    const cy = ih / 2 + (state.imgPanY - 0.5) * baseSrcH;
+    const srcX = Math.max(0, Math.min(iw - srcW, Math.round(cx - srcW / 2)));
+    const srcY = Math.max(0, Math.min(ih - srcH, Math.round(cy - srcH / 2)));
+    return { srcX, srcY, srcW, srcH };
+  }
+
   function loadImageFile(file) {
     if (!file) return;
     imgFileName = file.name;
@@ -1593,11 +1601,7 @@
     if (mode === 'image') {
       if (!imageReady || !imageEl) return null;
       const sampledRows = Math.max(1, Math.round(cols * H / W));
-      const iw = imageEl.naturalWidth, ih = imageEl.naturalHeight;
-      const Z = state.imgZoom;
-      const srcW = Math.round(iw / Z), srcH = Math.round(ih / Z);
-      const srcX = Math.max(0, Math.min(iw - srcW, Math.round(state.imgPanX * iw - srcW / 2)));
-      const srcY = Math.max(0, Math.min(ih - srcH, Math.round(state.imgPanY * ih - srcH / 2)));
+      const { srcX, srcY, srcW, srcH } = imgSampleRect(W, H);
       hidden.width = cols; hidden.height = sampledRows;
       hctx.save();
       if (state.imgMirror) { hctx.translate(cols, 0); hctx.scale(-1, 1); }
