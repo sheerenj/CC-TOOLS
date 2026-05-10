@@ -1,0 +1,48 @@
+{
+  "author": "platine",
+
+  "platineFCC": "Platine FCC Lattice",
+
+  "sectionLattice":  "── Lattice ──",
+  "sectionOutput":   "── Output ──",
+  "sectionAnim":     "── Animation ──",
+  "sectionBaseRot":  "── Base Rotation ──",
+  "sectionSpin":     "── Spin ──",
+  "sectionSwing":    "── Swing ──",
+  "sectionTumble":   "── Tumble ──",
+  "sectionOsc":      "── Oscillation ──",
+
+  "outputMode.0": "Atoms",
+  "outputMode.1": "Bonds",
+  "outputMode.2": "Atoms + Bonds",
+
+  "animMode.0": "Keyframe",
+  "animMode.1": "Spin",
+  "animMode.2": "Swing",
+  "animMode.3": "Tumble",
+
+  "spinAxis.0": "X",
+  "spinAxis.1": "Y",
+  "spinAxis.2": "Z",
+  "spinAxis.3": "XY",
+  "spinAxis.4": "XYZ",
+
+  "swingAxis.0": "X",
+  "swingAxis.1": "Y",
+  "swingAxis.2": "Z",
+
+  "swingEase.0": "Linear",
+  "swingEase.1": "Sine",
+  "swingEase.2": "Ease In",
+  "swingEase.3": "Ease Out",
+  "swingEase.4": "Ease In-Out",
+  "swingEase.5": "Ease In-Out Cubic",
+  "swingEase.6": "Exponential",
+  "swingEase.7": "Elastic",
+  "swingEase.8": "Bounce",
+  "swingEase.9": "Back",
+
+  "oscAxis.0": "X",
+  "oscAxis.1": "Y",
+  "oscAxis.2": "Z"
+}

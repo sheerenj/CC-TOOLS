@@ -1,0 +1,181 @@
+{
+  "author": "platine",
+  "layers": [
+    {
+      "id": "platineFCC",
+      "superType": "thirdPartyJavaScriptShape",
+      "niceName": "Platine FCC Lattice",
+      "attributes": [
+
+        { "id": "sectionLattice", "type": "separator", "niceName": "── Lattice ──" },
+        {
+          "id": "cells",
+          "type": "int",
+          "niceName": "Cells",
+          "defaultValue": 2,
+          "numericInfo": { "hardMin": 1, "hasHardMin": true, "hardMax": 8, "hasHardMax": true }
+        },
+        {
+          "id": "latticeSize",
+          "type": "double",
+          "niceName": "Size (px)",
+          "defaultValue": 400,
+          "numericInfo": { "hardMin": 10, "hasHardMin": true, "softMax": 1200, "hasSoftMax": true }
+        },
+        {
+          "id": "atomSize",
+          "type": "double",
+          "niceName": "Atom Size",
+          "defaultValue": 0.44,
+          "numericInfo": { "hardMin": 0.01, "hasHardMin": true, "softMax": 0.9, "hasSoftMax": true, "step": 0.01 }
+        },
+
+        { "id": "sectionOutput", "type": "separator", "niceName": "── Output ──" },
+        {
+          "id": "outputMode",
+          "type": "enum",
+          "niceName": "Output",
+          "defaultValue": 0,
+          "enumValues": [0, 1, 2]
+        },
+        {
+          "id": "mergeAtoms",
+          "type": "bool",
+          "niceName": "Merge Atoms (Union)",
+          "defaultValue": false
+        },
+
+        { "id": "sectionAnim", "type": "separator", "niceName": "── Animation ──" },
+        {
+          "id": "animMode",
+          "type": "enum",
+          "niceName": "Mode",
+          "defaultValue": 1,
+          "enumValues": [0, 1, 2, 3]
+        },
+
+        { "id": "sectionBaseRot", "type": "separator", "niceName": "── Base Rotation (°) ──" },
+        {
+          "id": "rotX",
+          "type": "double",
+          "niceName": "Rot X",
+          "defaultValue": 35.26,
+          "numericInfo": { "softMin": -360, "hasSoftMin": true, "softMax": 360, "hasSoftMax": true }
+        },
+        {
+          "id": "rotY",
+          "type": "double",
+          "niceName": "Rot Y",
+          "defaultValue": 45.0,
+          "numericInfo": { "softMin": -360, "hasSoftMin": true, "softMax": 360, "hasSoftMax": true }
+        },
+        {
+          "id": "rotZ",
+          "type": "double",
+          "niceName": "Rot Z",
+          "defaultValue": 0,
+          "numericInfo": { "softMin": -360, "hasSoftMin": true, "softMax": 360, "hasSoftMax": true }
+        },
+
+        { "id": "sectionSpin", "type": "separator", "niceName": "── Spin ──" },
+        {
+          "id": "spinAxis",
+          "type": "enum",
+          "niceName": "Spin Axis",
+          "defaultValue": 1,
+          "enumValues": [0, 1, 2, 3, 4]
+        },
+        {
+          "id": "spinSpeed",
+          "type": "double",
+          "niceName": "Spin Speed (°/s)",
+          "defaultValue": 30,
+          "numericInfo": { "hardMin": 0, "hasHardMin": true, "softMax": 360, "hasSoftMax": true }
+        },
+
+        { "id": "sectionSwing", "type": "separator", "niceName": "── Swing ──" },
+        {
+          "id": "swingAxis",
+          "type": "enum",
+          "niceName": "Swing Axis",
+          "defaultValue": 1,
+          "enumValues": [0, 1, 2]
+        },
+        {
+          "id": "swingSpeed",
+          "type": "double",
+          "niceName": "Swing Speed (cyc/s)",
+          "defaultValue": 0.2,
+          "numericInfo": { "hardMin": 0, "hasHardMin": true, "softMax": 5, "hasSoftMax": true, "step": 0.01 }
+        },
+        {
+          "id": "swingRange",
+          "type": "double",
+          "niceName": "Swing Range (°)",
+          "defaultValue": 90,
+          "numericInfo": { "hardMin": 1, "hasHardMin": true, "hardMax": 360, "hasHardMax": true }
+        },
+        {
+          "id": "swingEase",
+          "type": "enum",
+          "niceName": "Swing Easing",
+          "defaultValue": 4,
+          "enumValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        },
+
+        { "id": "sectionTumble", "type": "separator", "niceName": "── Tumble ──" },
+        {
+          "id": "tumbleX",
+          "type": "double",
+          "niceName": "Tumble X (°/s)",
+          "defaultValue": 18,
+          "numericInfo": { "softMin": -360, "hasSoftMin": true, "softMax": 360, "hasSoftMax": true }
+        },
+        {
+          "id": "tumbleY",
+          "type": "double",
+          "niceName": "Tumble Y (°/s)",
+          "defaultValue": 36,
+          "numericInfo": { "softMin": -360, "hasSoftMin": true, "softMax": 360, "hasSoftMax": true }
+        },
+        {
+          "id": "tumbleZ",
+          "type": "double",
+          "niceName": "Tumble Z (°/s)",
+          "defaultValue": 11,
+          "numericInfo": { "softMin": -360, "hasSoftMin": true, "softMax": 360, "hasSoftMax": true }
+        },
+
+        { "id": "sectionOsc", "type": "separator", "niceName": "── Oscillation ──" },
+        {
+          "id": "oscOn",
+          "type": "bool",
+          "niceName": "Enable",
+          "defaultValue": false
+        },
+        {
+          "id": "oscAxis",
+          "type": "enum",
+          "niceName": "Osc Axis",
+          "defaultValue": 0,
+          "enumValues": [0, 1, 2]
+        },
+        {
+          "id": "oscAmp",
+          "type": "double",
+          "niceName": "Amplitude (°)",
+          "defaultValue": 20,
+          "numericInfo": { "hardMin": 0, "hasHardMin": true, "hardMax": 180, "hasHardMax": true }
+        },
+        {
+          "id": "oscFreq",
+          "type": "double",
+          "niceName": "Frequency (Hz)",
+          "defaultValue": 1.0,
+          "numericInfo": { "hardMin": 0, "hasHardMin": true, "softMax": 20, "hasSoftMax": true, "step": 0.1 }
+        }
+
+      ]
+    }
+  ]
+}
