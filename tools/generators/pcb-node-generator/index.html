@@ -234,7 +234,7 @@ input[type="color"] {
         <circle cx="0" cy="0" r="0.65" fill="rgba(255,255,255,0.04)"/>
       </pattern>
     </defs>
-    <rect width="1000" height="1000" fill="#17171d"/>
+    <rect id="svg-bg" width="1000" height="1000" fill="#17171d"/>
     <rect width="1000" height="1000" fill="url(#dot-grid)"/>
     <image id="svg-overlay" style="display:none" preserveAspectRatio="none"/>
     <g id="traces"></g>
@@ -356,6 +356,14 @@ input[type="color"] {
         <button class="tbtn" id="btnInvert">Bright → Dense</button>
       </div>
       <div class="row">
+        <label>Background</label>
+        <input type="color" id="sBgColor" value="#17171d">
+      </div>
+      <div class="row">
+        <label>Comp</label>
+        <input type="color" id="sCompColor" value="#d7dce6">
+      </div>
+      <div class="row">
         <label>Accent</label>
         <input type="color" id="sAccent" value="#39ff14">
       </div>
@@ -422,6 +430,8 @@ const P = {
   invert:    false,
   accent:    '#39ff14',
   accentPct: 22,
+  compColor: '#d7dce6',
+  bgColor:   '#17171d',
 };
 
 let nodes = [];
@@ -612,7 +622,7 @@ function renderComp(n, frag) {
   }));
   frag.appendChild(svgEl('circle', {
     cx: n2(x), cy: n2(y), r: n2(rv),
-    fill: 'rgba(215,220,230,0.92)',
+    fill: P.compColor,
   }));
 }
 
@@ -643,7 +653,10 @@ function updateOverlay() {
 
 // ── Main render ───────────────────────────────────────────────────────────────
 
+const svgBg = document.getElementById('svg-bg');
+
 function render() {
+  svgBg.setAttribute('fill', P.bgColor);
   tracesG.innerHTML = '';
   padsG.innerHTML   = '';
   compsG.innerHTML  = '';
@@ -810,6 +823,14 @@ document.getElementById('btnInvert').addEventListener('click', function () {
   this.textContent = P.invert ? 'Dark → Dense' : 'Bright → Dense';
   this.classList.toggle('on', P.invert);
   regenAll();
+});
+
+document.getElementById('sBgColor').addEventListener('input', function () {
+  P.bgColor = this.value; render();
+});
+
+document.getElementById('sCompColor').addEventListener('input', function () {
+  P.compColor = this.value; render();
 });
 
 document.getElementById('sAccent').addEventListener('input', function () {
