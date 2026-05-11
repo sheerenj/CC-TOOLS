@@ -1,166 +1,166 @@
-{
-  "author": "platine",
-  "layers": [
-    {
-      "id": "platineFCC",
-      "superType": "thirdPartyJavaScriptShape",
-      "niceName": "Platine FCC Lattice",
-      "attributes": [
-
-        {
-          "id": "cells",
-          "type": "int",
-          "niceName": "Cells",
-          "defaultValue": 2,
-          "numericInfo": { "hardMin": 1, "hardMax": 8 }
+[{
+    "author": "platine",
+    "type": "platineFCC",
+    "superType": "thirdPartyJavaScriptShape",
+    "jsFile": "layer.js",
+    "version": "1.1",
+    "attributes": {
+        "time": {
+            "type": "double",
+            "default": 0.0,
+            "compConnect": "time"
         },
-        {
-          "id": "latticeSize",
-          "type": "double",
-          "niceName": "Size",
-          "defaultValue": 400,
-          "numericInfo": { "hardMin": 10, "softMax": 1200 }
+        "cells": {
+            "type": "int",
+            "default": 2,
+            "min": 1,
+            "max": 8
         },
-        {
-          "id": "atomSize",
-          "type": "double",
-          "niceName": "Atom Size",
-          "defaultValue": 0.44,
-          "numericInfo": { "hardMin": 0.01, "softMax": 0.9 }
+        "latticeSize": {
+            "type": "double",
+            "default": 400,
+            "min": 10,
+            "softMax": 8000
         },
-        {
-          "id": "outputMode",
-          "type": "enum",
-          "niceName": "Output",
-          "defaultValue": 0,
-          "enumValues": [0, 1, 2]
+        "atomSize": {
+            "type": "double",
+            "default": 8,
+            "min": 0,
+            "softMax": 20,
+            "step": 0.5
         },
-        {
-          "id": "mergeAtoms",
-          "type": "bool",
-          "niceName": "Merge Atoms",
-          "defaultValue": false
+        "outputMode": {
+            "type": "enum",
+            "default": 0,
+            "enumValues": [0, 1, 2]
         },
-        {
-          "id": "animMode",
-          "type": "enum",
-          "niceName": "Anim Mode",
-          "defaultValue": 1,
-          "enumValues": [0, 1, 2, 3]
+        "mergeAtoms": {
+            "type": "bool",
+            "default": false
         },
-        {
-          "id": "rotX",
-          "type": "double",
-          "niceName": "Rot X",
-          "defaultValue": 35.26,
-          "numericInfo": { "softMin": -360, "softMax": 360 }
+        "animMode": {
+            "type": "enum",
+            "default": 1,
+            "enumValues": [0, 1, 2, 3]
         },
-        {
-          "id": "rotY",
-          "type": "double",
-          "niceName": "Rot Y",
-          "defaultValue": 45.0,
-          "numericInfo": { "softMin": -360, "softMax": 360 }
+        "rotX": {
+            "type": "double",
+            "default": 35.26,
+            "softMax": 360
         },
-        {
-          "id": "rotZ",
-          "type": "double",
-          "niceName": "Rot Z",
-          "defaultValue": 0,
-          "numericInfo": { "softMin": -360, "softMax": 360 }
+        "rotY": {
+            "type": "double",
+            "default": 45.0,
+            "softMax": 360
         },
-        {
-          "id": "spinAxis",
-          "type": "enum",
-          "niceName": "Spin Axis",
-          "defaultValue": 1,
-          "enumValues": [0, 1, 2, 3, 4]
+        "rotZ": {
+            "type": "double",
+            "default": 0,
+            "softMax": 360
         },
-        {
-          "id": "spinSpeed",
-          "type": "double",
-          "niceName": "Spin Speed",
-          "defaultValue": 30,
-          "numericInfo": { "hardMin": 0, "softMax": 360 }
+        "spinAxis": {
+            "type": "enum",
+            "default": 1,
+            "enumValues": [0, 1, 2, 3, 4]
         },
-        {
-          "id": "swingAxis",
-          "type": "enum",
-          "niceName": "Swing Axis",
-          "defaultValue": 1,
-          "enumValues": [0, 1, 2]
+        "spinSpeed": {
+            "type": "double",
+            "default": 30,
+            "min": 0,
+            "softMax": 180
         },
-        {
-          "id": "swingSpeed",
-          "type": "double",
-          "niceName": "Swing Speed",
-          "defaultValue": 0.2,
-          "numericInfo": { "hardMin": 0, "softMax": 5 }
+        "swingAxis": {
+            "type": "enum",
+            "default": 1,
+            "enumValues": [0, 1, 2]
         },
-        {
-          "id": "swingRange",
-          "type": "double",
-          "niceName": "Swing Range",
-          "defaultValue": 90,
-          "numericInfo": { "hardMin": 1, "hardMax": 360 }
+        "swingSpeed": {
+            "type": "double",
+            "default": 0.5,
+            "min": 0,
+            "softMax": 5,
+            "step": 0.1
         },
-        {
-          "id": "swingEase",
-          "type": "enum",
-          "niceName": "Swing Easing",
-          "defaultValue": 4,
-          "enumValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        "swingRange": {
+            "type": "double",
+            "default": 90,
+            "min": 1,
+            "max": 360
         },
-        {
-          "id": "tumbleX",
-          "type": "double",
-          "niceName": "Tumble X",
-          "defaultValue": 18,
-          "numericInfo": { "softMin": -360, "softMax": 360 }
+        "swingEase": {
+            "type": "enum",
+            "default": 4,
+            "enumValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         },
-        {
-          "id": "tumbleY",
-          "type": "double",
-          "niceName": "Tumble Y",
-          "defaultValue": 36,
-          "numericInfo": { "softMin": -360, "softMax": 360 }
+        "tumbleX": {
+            "type": "double",
+            "default": 5,
+            "softMax": 90
         },
-        {
-          "id": "tumbleZ",
-          "type": "double",
-          "niceName": "Tumble Z",
-          "defaultValue": 11,
-          "numericInfo": { "softMin": -360, "softMax": 360 }
+        "tumbleY": {
+            "type": "double",
+            "default": 10,
+            "softMax": 90
         },
-        {
-          "id": "oscOn",
-          "type": "bool",
-          "niceName": "Oscillation",
-          "defaultValue": false
+        "tumbleZ": {
+            "type": "double",
+            "default": 3,
+            "softMax": 90
         },
-        {
-          "id": "oscAxis",
-          "type": "enum",
-          "niceName": "Osc Axis",
-          "defaultValue": 0,
-          "enumValues": [0, 1, 2]
+        "oscOn": {
+            "type": "bool",
+            "default": false
         },
-        {
-          "id": "oscAmp",
-          "type": "double",
-          "niceName": "Osc Amplitude",
-          "defaultValue": 20,
-          "numericInfo": { "hardMin": 0, "hardMax": 180 }
+        "oscAxis": {
+            "type": "enum",
+            "default": 0,
+            "enumValues": [0, 1, 2]
         },
-        {
-          "id": "oscFreq",
-          "type": "double",
-          "niceName": "Osc Frequency",
-          "defaultValue": 1.0,
-          "numericInfo": { "hardMin": 0, "softMax": 20 }
+        "oscAmp": {
+            "type": "double",
+            "default": 20,
+            "min": 0,
+            "max": 180
+        },
+        "oscFreq": {
+            "type": "double",
+            "default": 0.5,
+            "min": 0,
+            "softMax": 5,
+            "step": 0.1
+        },
+        "material": {
+            "defaultSubnodeType": "colorMaterial"
         }
-
-      ]
-    }
-  ]
-}
+    },
+    "triggers": {
+        "polyMesh": [
+            "time",
+            "cells", "latticeSize", "atomSize",
+            "outputMode", "mergeAtoms",
+            "animMode",
+            "rotX", "rotY", "rotZ",
+            "spinAxis", "spinSpeed",
+            "swingAxis", "swingSpeed", "swingRange", "swingEase",
+            "tumbleX", "tumbleY", "tumbleZ",
+            "oscOn", "oscAxis", "oscAmp", "oscFreq"
+        ]
+    },
+    "UI": {
+        "attributeOrder": [
+            "---A",
+            "cells", "latticeSize", "atomSize",
+            "outputMode", "mergeAtoms",
+            "---B",
+            "animMode",
+            "rotX", "rotY", "rotZ",
+            "---C",
+            "spinAxis", "spinSpeed",
+            "swingAxis", "swingSpeed", "swingRange", "swingEase",
+            "tumbleX", "tumbleY", "tumbleZ",
+            "---D",
+            "oscOn", "oscAxis", "oscAmp", "oscFreq"
+        ]
+    },
+    "icon": "layerIcon.png"
+}]

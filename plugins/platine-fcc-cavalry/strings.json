@@ -1,48 +1,82 @@
-{
-  "author": "platine",
-
-  "platineFCC": "Platine FCC Lattice",
-
-  "sectionLattice":  "── Lattice ──",
-  "sectionOutput":   "── Output ──",
-  "sectionAnim":     "── Animation ──",
-  "sectionBaseRot":  "── Base Rotation ──",
-  "sectionSpin":     "── Spin ──",
-  "sectionSwing":    "── Swing ──",
-  "sectionTumble":   "── Tumble ──",
-  "sectionOsc":      "── Oscillation ──",
-
-  "outputMode.0": "Atoms",
-  "outputMode.1": "Bonds",
-  "outputMode.2": "Atoms + Bonds",
-
-  "animMode.0": "Keyframe",
-  "animMode.1": "Spin",
-  "animMode.2": "Swing",
-  "animMode.3": "Tumble",
-
-  "spinAxis.0": "X",
-  "spinAxis.1": "Y",
-  "spinAxis.2": "Z",
-  "spinAxis.3": "XY",
-  "spinAxis.4": "XYZ",
-
-  "swingAxis.0": "X",
-  "swingAxis.1": "Y",
-  "swingAxis.2": "Z",
-
-  "swingEase.0": "Linear",
-  "swingEase.1": "Sine",
-  "swingEase.2": "Ease In",
-  "swingEase.3": "Ease Out",
-  "swingEase.4": "Ease In-Out",
-  "swingEase.5": "Ease In-Out Cubic",
-  "swingEase.6": "Exponential",
-  "swingEase.7": "Elastic",
-  "swingEase.8": "Bounce",
-  "swingEase.9": "Back",
-
-  "oscAxis.0": "X",
-  "oscAxis.1": "Y",
-  "oscAxis.2": "Z"
-}
+[
+    {
+        "type": "layerStrings",
+        "value": {
+            "author": "platine",
+            "layerType": "platineFCC",
+            "niceName": "Platine FCC Lattice",
+            "layerInfo": "FCC crystal lattice shape generator with spin, swing, tumble, and oscillation animation modes.",
+            "language": "en",
+            "attributes": {
+                "---A":        ["Lattice", ""],
+                "cells":       ["Cells",        "Number of unit cells per axis (1–8)."],
+                "latticeSize": ["Lattice Size",  "Overall scale of the lattice in pixels."],
+                "atomSize":    ["Atom Size",     "Atom radius as a fraction of the lattice unit."],
+                "outputMode":  ["Output",        "What to draw: atoms only, bonds only, or both."],
+                "mergeAtoms":  ["Single Path",   "Output all atoms merged into one seamless closed path. Fill and glow effects apply to the entire shape as a whole."],
+                "---B":        ["Animation", ""],
+                "animMode":    ["Anim Mode",     "Keyframe: drive rotX/Y/Z in the timeline. Spin/Swing/Tumble: computed from time."],
+                "rotX":        ["Rot X",         "Base X rotation in degrees. Offset in Spin/Swing/Tumble modes."],
+                "rotY":        ["Rot Y",         "Base Y rotation in degrees."],
+                "rotZ":        ["Rot Z",         "Base Z rotation in degrees."],
+                "---C":        ["Motion", ""],
+                "spinAxis":    ["Spin Axis",     "Which axis or axes to spin around."],
+                "spinSpeed":   ["Spin Speed",    "Rotation speed in degrees per second."],
+                "swingAxis":   ["Swing Axis",    "Which axis to swing around."],
+                "swingSpeed":  ["Swing Speed",   "Swing cycles per second."],
+                "swingRange":  ["Swing Range",   "Total arc of the swing in degrees (peak-to-peak)."],
+                "swingEase":   ["Swing Easing",  "Easing function applied to the swing motion."],
+                "tumbleX":     ["Tumble X",      "X-axis tumble speed in degrees per second."],
+                "tumbleY":     ["Tumble Y",      "Y-axis tumble speed in degrees per second."],
+                "tumbleZ":     ["Tumble Z",      "Z-axis tumble speed in degrees per second."],
+                "---D":        ["Oscillation", ""],
+                "oscOn":       ["Oscillation",   "Adds a sinusoidal oscillation on top of any animation mode."],
+                "oscAxis":     ["Axis",          "Axis to oscillate around."],
+                "oscAmp":      ["Amplitude",     "Peak oscillation angle in degrees."],
+                "oscFreq":     ["Frequency",     "Oscillation cycles per second."]
+            },
+            "enums": {
+                "outputMode": {
+                    "0": "Atoms",
+                    "1": "Bonds",
+                    "2": "Atoms + Bonds"
+                },
+                "animMode": {
+                    "0": "Keyframe",
+                    "1": "Spin",
+                    "2": "Swing",
+                    "3": "Tumble"
+                },
+                "spinAxis": {
+                    "0": "X",
+                    "1": "Y",
+                    "2": "Z",
+                    "3": "XY",
+                    "4": "XYZ"
+                },
+                "swingAxis": {
+                    "0": "X",
+                    "1": "Y",
+                    "2": "Z"
+                },
+                "swingEase": {
+                    "0": "Linear",
+                    "1": "Sine",
+                    "2": "Ease In",
+                    "3": "Ease Out",
+                    "4": "Ease In-Out",
+                    "5": "Ease In-Out Cubic",
+                    "6": "Exponential",
+                    "7": "Elastic",
+                    "8": "Bounce",
+                    "9": "Back"
+                },
+                "oscAxis": {
+                    "0": "X",
+                    "1": "Y",
+                    "2": "Z"
+                }
+            }
+        }
+    }
+]
