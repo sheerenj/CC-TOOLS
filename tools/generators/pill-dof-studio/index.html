@@ -816,10 +816,11 @@ void main() {
     const baseR = (+$('sl-rad').value / 100) * 0.38 * globalScale;
     for (let i = 0; i < nInst; i++) {
       const o = i * 20;
-      const x = world[i * 3], y = world[i * 3 + 1], z = world[i * 3 + 2];
-      let ax = x + (hash01(i * 61.2) - 0.5) * 0.14;
-      let ay = y + (hash01(i * 62.4) - 0.5) * 0.14;
-      let az = z + (hash01(i * 63.1) - 0.5) * 0.14;
+      const wx = world[i * 3], wy = world[i * 3 + 1], wz = world[i * 3 + 2];
+      const x = wx * globalScale, y = wy * globalScale, z = wz * globalScale;
+      let ax = wx + (hash01(i * 61.2) - 0.5) * 0.14;
+      let ay = wy + (hash01(i * 62.4) - 0.5) * 0.14;
+      let az = wz + (hash01(i * 63.1) - 0.5) * 0.14;
       const aL = Math.hypot(ax, ay, az) || 1;
       ax /= aL;
       ay /= aL;
@@ -1243,7 +1244,7 @@ void main() {
       initLoopPositions();
       const u = readUI();
       const orbLoops = parseInt($('sel-orbloops').value);
-      const camR = 2.55;
+      const camR = 2.55 * Math.min(1.0, H / Math.max(W, 1));
 
       for (let i = 0; i < totalFrames; i++) {
         const phase = i / totalFrames;
@@ -1288,7 +1289,7 @@ void main() {
     requestAnimationFrame(frame);
     if (document.visibilityState === 'hidden') { last = now; return; }
     const u = readUI();
-    const camR = 2.55;
+    const camR = 2.55 * Math.min(1.0, H / Math.max(W, 1));
 
     if (isRecording) { last = now; return; }
 
