@@ -3,12 +3,17 @@
     "type": "platineFCC",
     "superType": "thirdPartyJavaScriptShape",
     "jsFile": "layer.js",
-    "version": "1.2",
+    "version": "1.3",
     "attributes": {
         "time": {
             "type": "double",
             "default": 0.0,
             "compConnect": "time"
+        },
+        "fps": {
+            "type": "double",
+            "default": 24.0,
+            "compConnect": "fps"
         },
         "cells": {
             "type": "int",
@@ -141,7 +146,7 @@
     },
     "triggers": {
         "polyMesh": [
-            "time",
+            "time", "fps",
             "cells", "latticeSize", "atomSize",
             "outputMode", "mergeAtoms",
             "animMode",

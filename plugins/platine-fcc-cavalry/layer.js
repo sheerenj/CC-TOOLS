@@ -104,7 +104,7 @@
 
     // ─── Inputs ──────────────────────────────────────────────────────
     var n_cells = clampInt(cells, 1, 8);
-    var t       = loopFrames > 0 ? time / loopFrames : time / 24;
+    var t       = loopFrames > 0 ? time / loopFrames : time / Math.max(1, fps);
     var bsc     = latticeSize / (n_cells * 2.55);
     var ar      = bsc * clampF(atomSize / 100, 0.0001, 0.20);
 
