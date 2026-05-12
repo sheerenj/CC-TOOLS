@@ -21,19 +21,21 @@
                 "rotZ":        ["Rot Z",         "Base Z rotation in degrees."],
                 "---C":        ["Motion", ""],
                 "spinAxis":    ["Spin Axis",     "Which axis or axes to spin around."],
-                "spinSpeed":   ["Spin Speed",    "Rotation speed in degrees per second."],
+                "spinSpeed":   ["Spin Speed",    "Degrees per second (free). Degrees per loop when Loop Frames is set — use 360 for one full rotation per loop."],
                 "swingAxis":   ["Swing Axis",    "Which axis to swing around."],
-                "swingSpeed":  ["Swing Speed",   "Swing cycles per second."],
+                "swingSpeed":  ["Swing Speed",   "Cycles per second (free). Cycles per loop when Loop Frames is set — use 1 for one full back-and-forth per loop."],
                 "swingRange":  ["Swing Range",   "Total arc of the swing in degrees (peak-to-peak)."],
                 "swingEase":   ["Swing Easing",  "Easing function applied to the swing motion."],
-                "tumbleX":     ["Tumble X",      "X-axis tumble speed in degrees per second."],
-                "tumbleY":     ["Tumble Y",      "Y-axis tumble speed in degrees per second."],
-                "tumbleZ":     ["Tumble Z",      "Z-axis tumble speed in degrees per second."],
+                "tumbleX":     ["Tumble X",      "X-axis rotation: degrees/second (free), or degrees/loop when Loop Frames is set."],
+                "tumbleY":     ["Tumble Y",      "Y-axis rotation: degrees/second (free), or degrees/loop when Loop Frames is set."],
+                "tumbleZ":     ["Tumble Z",      "Z-axis rotation: degrees/second (free), or degrees/loop when Loop Frames is set."],
                 "---D":        ["Oscillation", ""],
                 "oscOn":       ["Oscillation",   "Adds a sinusoidal oscillation on top of any animation mode."],
                 "oscAxis":     ["Axis",          "Axis to oscillate around."],
                 "oscAmp":      ["Amplitude",     "Peak oscillation angle in degrees."],
-                "oscFreq":     ["Frequency",     "Oscillation cycles per second."]
+                "oscFreq":     ["Frequency",     "Cycles per second (free). Cycles per loop when Loop Frames is set — use an integer for clean looping."],
+                "---E":        ["Loop", ""],
+                "loopFrames":  ["Loop Frames",   "Set to your comp length (e.g. 240) to lock the animation to a perfect loop. All speed values switch to per-loop units: Spin Speed 360 = one full rotation, Swing Speed 1 = one back-and-forth, Tumble X/Y/Z = total degrees rotated, Osc Frequency = number of oscillation cycles. 0 = free-running (default)."]
             },
             "enums": {
                 "outputMode": {

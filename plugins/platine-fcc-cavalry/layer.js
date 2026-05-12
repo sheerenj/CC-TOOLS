@@ -104,7 +104,7 @@
 
     // ─── Inputs ──────────────────────────────────────────────────────
     var n_cells = clampInt(cells, 1, 8);
-    var t       = time / 24;   // frames → seconds (normalises all speed params to /sec units)
+    var t       = loopFrames > 0 ? time / loopFrames : time / 24;
     var bsc     = latticeSize / (n_cells * 2.55);
     var ar      = bsc * clampF(atomSize / 100, 0.0001, 0.20);
 
@@ -176,6 +176,7 @@
                 path.addEllipse(sorted[ai].sx, sorted[ai].sy, ar, ar);
             }
             path.mergeOverlaps();
+            path.smooth(2, 0.5);
         } else {
             for (var ai = 0; ai < sorted.length; ai++) {
                 path.addEllipse(sorted[ai].sx, sorted[ai].sy, ar, ar);

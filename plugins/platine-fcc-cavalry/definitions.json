@@ -3,7 +3,7 @@
     "type": "platineFCC",
     "superType": "thirdPartyJavaScriptShape",
     "jsFile": "layer.js",
-    "version": "1.1",
+    "version": "1.2",
     "attributes": {
         "time": {
             "type": "double",
@@ -67,7 +67,7 @@
             "type": "double",
             "default": 30,
             "min": 0,
-            "softMax": 180
+            "softMax": 360
         },
         "swingAxis": {
             "type": "enum",
@@ -95,17 +95,17 @@
         "tumbleX": {
             "type": "double",
             "default": 5,
-            "softMax": 90
+            "softMax": 360
         },
         "tumbleY": {
             "type": "double",
             "default": 10,
-            "softMax": 90
+            "softMax": 360
         },
         "tumbleZ": {
             "type": "double",
             "default": 3,
-            "softMax": 90
+            "softMax": 360
         },
         "oscOn": {
             "type": "bool",
@@ -126,8 +126,14 @@
             "type": "double",
             "default": 0.5,
             "min": 0,
-            "softMax": 5,
+            "softMax": 10,
             "step": 0.1
+        },
+        "loopFrames": {
+            "type": "int",
+            "default": 0,
+            "min": 0,
+            "softMax": 480
         },
         "material": {
             "defaultSubnodeType": "colorMaterial"
@@ -143,7 +149,8 @@
             "spinAxis", "spinSpeed",
             "swingAxis", "swingSpeed", "swingRange", "swingEase",
             "tumbleX", "tumbleY", "tumbleZ",
-            "oscOn", "oscAxis", "oscAmp", "oscFreq"
+            "oscOn", "oscAxis", "oscAmp", "oscFreq",
+            "loopFrames"
         ]
     },
     "UI": {
@@ -159,7 +166,9 @@
             "swingAxis", "swingSpeed", "swingRange", "swingEase",
             "tumbleX", "tumbleY", "tumbleZ",
             "---D",
-            "oscOn", "oscAxis", "oscAmp", "oscFreq"
+            "oscOn", "oscAxis", "oscAmp", "oscFreq",
+            "---E",
+            "loopFrames"
         ]
     },
     "icon": "layerIcon.png"
