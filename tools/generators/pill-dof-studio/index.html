@@ -24,6 +24,7 @@ select { width:100%; background:#f4f4f4; border:1px solid var(--line); padding:9
 .btn.ghost { background:#fff; color:#000; border:1px solid #d4d4d4; }
 .hint { font-size:11px; color:var(--dim); line-height:1.55; margin-top:8px; }
 textarea.ta-pal { width:100%; min-height:100px; padding:10px; border:1px solid var(--line); border-radius:12px; font:11px ui-monospace,monospace; resize:vertical; background:#fafafa; }
+.num-in { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:12px; background:#f4f4f4; }
 #wrap-custom-pal { display:none; }
 #wrap-custom-pal.show { display:block; }
 #canvas-wrap { flex:1; display:flex; align-items:center; justify-content:center; background:#ddd; min-width:200px; min-height:200px; position:relative; }
@@ -40,30 +41,32 @@ textarea.ta-pal { width:100%; min-height:100px; padding:10px; border:1px solid v
     <div class="section-title">Scene</div>
     <div class="ctrl"><label>Pills <span class="val" id="v-n">120</span></label>
       <input type="range" id="sl-n" min="32" max="420" step="8" value="120" /></div>
-    <div class="ctrl"><label>Capsule length <span class="val" id="v-len">0.36</span></label>
-      <input type="range" id="sl-len" min="8" max="100" value="36" /></div>
-    <div class="ctrl"><label>Thickness <span class="val" id="v-rad">0.14</span></label>
-      <input type="range" id="sl-rad" min="4" max="40" value="14" /></div>
-    <div class="ctrl"><label>Radial speed <span class="val" id="v-sp">0.12</span></label>
-      <input type="range" id="sl-sp" min="0" max="80" value="12" /></div>
-    <div class="ctrl"><label>Camera orbit <span class="val" id="v-orb">0.28</span></label>
-      <input type="range" id="sl-orb" min="0" max="100" value="28" /></div>
+    <div class="ctrl"><label>Capsule length <span class="val" id="v-len">0.46</span></label>
+      <input type="range" id="sl-len" min="8" max="100" value="46" /></div>
+    <div class="ctrl"><label>Thickness <span class="val" id="v-rad">0.19</span></label>
+      <input type="range" id="sl-rad" min="4" max="40" value="19" /></div>
+    <div class="ctrl"><label>Radial speed <span class="val" id="v-sp">0.00</span></label>
+      <input type="range" id="sl-sp" min="0" max="80" value="0" /></div>
+    <div class="ctrl"><label>Camera orbit <span class="val" id="v-orb">0.49</span></label>
+      <input type="range" id="sl-orb" min="0" max="100" value="49" /></div>
+    <div class="ctrl"><label>Global scale <span class="val" id="v-gsz">1.00</span></label>
+      <input type="range" id="sl-gsz" min="20" max="300" value="100" /></div>
     <button type="button" class="btn ghost" id="btn-reshuffle" style="margin-top:4px">Reshuffle pills</button>
   </div>
   <div class="section">
     <div class="section-title">Depth of field</div>
-    <div class="ctrl"><label>DOF strength <span class="val" id="v-dof">1.35</span></label>
-      <input type="range" id="sl-dof" min="0" max="250" value="135" /></div>
-    <div class="ctrl"><label>Focus distance <span class="val" id="v-foc">2.1</span></label>
-      <input type="range" id="sl-foc" min="40" max="320" value="210" /></div>
-    <div class="ctrl"><label>Max blur px <span class="val" id="v-bpx">48</span></label>
-      <input type="range" id="sl-bpx" min="8" max="120" value="48" /></div>
-    <div class="ctrl"><label>Bokeh shape <span class="val" id="v-bok">0.55</span></label>
-      <input type="range" id="sl-bok" min="10" max="100" value="55" /></div>
-    <div class="ctrl"><label>Abstract <span class="val" id="v-abs">0.82</span></label>
-      <input type="range" id="sl-abs" min="0" max="100" value="82" /></div>
-    <div class="ctrl"><label>Dust streaks <span class="val" id="v-str">0.52</span></label>
-      <input type="range" id="sl-str" min="0" max="100" value="52" /></div>
+    <div class="ctrl"><label>DOF strength <span class="val" id="v-dof">0.00</span></label>
+      <input type="range" id="sl-dof" min="0" max="250" value="0" /></div>
+    <div class="ctrl"><label>Focus distance <span class="val" id="v-foc">1.21</span></label>
+      <input type="range" id="sl-foc" min="40" max="320" value="121" /></div>
+    <div class="ctrl"><label>Max blur px <span class="val" id="v-bpx">8</span></label>
+      <input type="range" id="sl-bpx" min="8" max="120" value="8" /></div>
+    <div class="ctrl"><label>Bokeh shape <span class="val" id="v-bok">0.10</span></label>
+      <input type="range" id="sl-bok" min="10" max="100" value="10" /></div>
+    <div class="ctrl"><label>Abstract <span class="val" id="v-abs">1.00</span></label>
+      <input type="range" id="sl-abs" min="0" max="100" value="100" /></div>
+    <div class="ctrl"><label>Dust streaks <span class="val" id="v-str">0.00</span></label>
+      <input type="range" id="sl-str" min="0" max="100" value="0" /></div>
   </div>
   <div class="section">
     <div class="section-title">Color</div>
@@ -82,9 +85,51 @@ textarea.ta-pal { width:100%; min-height:100px; padding:10px; border:1px solid v
     <div class="ctrl"><label>Background</label><div class="swatch-wrap"><input type="color" id="cp-bg" value="#f4f3f8" /></div></div>
   </div>
   <div class="section">
+    <div class="section-title">Canvas Size</div>
+    <div class="ctrl"><label>Preset</label>
+      <select id="sel-size">
+        <option value="auto">Auto (square, fits window)</option>
+        <option value="1080x1080">1080 × 1080</option>
+        <option value="1920x1080">1920 × 1080 — landscape</option>
+        <option value="1080x1920">1080 × 1920 — portrait</option>
+        <option value="1200x628">1200 × 628 — social banner</option>
+        <option value="custom">Custom…</option>
+      </select>
+    </div>
+    <div id="wrap-custom-size" style="display:none">
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div style="flex:1"><div style="font-size:11px;font-weight:500;margin-bottom:4px">Width px</div>
+          <input type="number" id="in-cw" value="1080" min="100" max="4096" class="num-in" /></div>
+        <div style="flex:1"><div style="font-size:11px;font-weight:500;margin-bottom:4px">Height px</div>
+          <input type="number" id="in-ch" value="1080" min="100" max="4096" class="num-in" /></div>
+      </div>
+      <button type="button" class="btn ghost" id="btn-apply-size">Apply</button>
+    </div>
+  </div>
+  <div class="section">
     <div class="section-title">Export</div>
     <button type="button" class="btn ghost" id="btn-png">Save PNG</button>
     <p class="hint">GPU-heavy (10+7 blur pairs). Tab in background pauses sim. Reshuffle = new layout, same settings.</p>
+  </div>
+  <div class="section">
+    <div class="section-title">Loop Export</div>
+    <div class="ctrl"><label>Duration <span class="val" id="v-loopdur">4</span>s</label>
+      <input type="range" id="sl-loopdur" min="2" max="12" step="1" value="4" /></div>
+    <div class="ctrl"><label>Camera rotations</label>
+      <select id="sel-orbloops">
+        <option value="1" selected>1 full rotation</option>
+        <option value="2">2 rotations</option>
+        <option value="3">3 rotations</option>
+      </select>
+    </div>
+    <button type="button" class="btn" id="btn-record" style="margin-top:4px">&#9679; Record loop</button>
+    <div id="rec-progress" style="display:none;margin-top:10px">
+      <div style="height:4px;background:#e4e4e4;border-radius:2px;overflow:hidden;margin-bottom:6px">
+        <div id="rec-bar" style="height:100%;width:0%;background:#000;border-radius:2px"></div>
+      </div>
+      <span class="hint" id="rec-label">Recording…</span>
+    </div>
+    <p class="hint" style="margin-top:8px">Pills follow seamlessly looping harmonic paths. Camera completes exact orbit rotations. Exports WebM — convert to MP4/GIF with any tool.</p>
   </div>
 </div>
 <div id="canvas-wrap"><canvas id="c"></canvas><div id="fb"></div></div>
@@ -766,8 +811,9 @@ void main() {
   }
 
   function uploadInst() {
-    const baseHL = (+$('sl-len').value / 100) * 0.55;
-    const baseR = (+$('sl-rad').value / 100) * 0.38;
+    const globalScale = +$('sl-gsz').value / 100;
+    const baseHL = (+$('sl-len').value / 100) * 0.55 * globalScale;
+    const baseR = (+$('sl-rad').value / 100) * 0.38 * globalScale;
     for (let i = 0; i < nInst; i++) {
       const o = i * 20;
       const x = world[i * 3], y = world[i * 3 + 1], z = world[i * 3 + 2];
@@ -838,18 +884,39 @@ void main() {
   }
 
   let time = 0;
+  let isRecording = false;
+  let loopBasePos = null;
+  let loopAmpArr = null;
+  let loopFreqArr = null;
+  let loopAx1 = null;
+  let loopAx2 = null;
+  let loopPhaseOff = null;
+
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const wrap = canvas.parentElement;
-    const cw = Math.max(280, wrap.clientWidth - 24);
-    const ch = Math.max(280, wrap.clientHeight - 24);
-    const side = Math.floor(Math.min(cw, ch) * dpr);
-    W = side;
-    H = side;
-    canvas.width = W;
-    canvas.height = H;
-    canvas.style.width = (W / dpr) + 'px';
-    canvas.style.height = (H / dpr) + 'px';
+    const sizeMode = $('sel-size').value;
+    if (sizeMode === 'auto') {
+      const wrap = canvas.parentElement;
+      const cw = Math.max(280, wrap.clientWidth - 24);
+      const ch = Math.max(280, wrap.clientHeight - 24);
+      const side = Math.floor(Math.min(cw, ch) * dpr);
+      W = side; H = side;
+      canvas.width = W; canvas.height = H;
+      canvas.style.width = (W / dpr) + 'px';
+      canvas.style.height = (H / dpr) + 'px';
+    } else {
+      let pw, ph;
+      if (sizeMode === 'custom') {
+        pw = Math.min(4096, Math.max(100, parseInt($('in-cw').value) || 1080));
+        ph = Math.min(4096, Math.max(100, parseInt($('in-ch').value) || 1080));
+      } else {
+        [pw, ph] = sizeMode.split('x').map(Number);
+      }
+      W = pw; H = ph;
+      canvas.width = W; canvas.height = H;
+      canvas.style.width = '';
+      canvas.style.height = '';
+    }
     gl.viewport(0, 0, W, H);
     allocFbo();
     persp((52 * Math.PI) / 180, W / H, NEAR, FAR, mProj);
@@ -877,12 +944,14 @@ void main() {
       ['sl-rad', 'v-rad', (v) => (+v / 100).toFixed(2)],
       ['sl-sp', 'v-sp', (v) => (+v / 100).toFixed(2)],
       ['sl-orb', 'v-orb', (v) => (+v / 100).toFixed(2)],
+      ['sl-gsz', 'v-gsz', (v) => (+v / 100).toFixed(2)],
       ['sl-dof', 'v-dof', (v) => (+v / 100).toFixed(2)],
       ['sl-foc', 'v-foc', (v) => (+v / 100).toFixed(2)],
       ['sl-bpx', 'v-bpx', (v) => String(v)],
       ['sl-bok', 'v-bok', (v) => (+v / 100).toFixed(2)],
       ['sl-abs', 'v-abs', (v) => (+v / 100).toFixed(2)],
-      ['sl-str', 'v-str', (v) => (+v / 100).toFixed(2)]
+      ['sl-str', 'v-str', (v) => (+v / 100).toFixed(2)],
+      ['sl-loopdur', 'v-loopdur', (v) => String(v)]
     ];
     for (const [sl, lab, fn] of map) {
       const el = $(sl);
@@ -903,6 +972,13 @@ void main() {
     if (palKey === 'custom') initParticles();
   });
   $('btn-reshuffle').addEventListener('click', () => { initParticles(); });
+  $('sel-size').addEventListener('change', () => {
+    const v = $('sel-size').value;
+    $('wrap-custom-size').style.display = v === 'custom' ? 'block' : 'none';
+    if (v !== 'custom') resize();
+  });
+  $('btn-apply-size').addEventListener('click', () => { resize(); });
+  $('btn-record').addEventListener('click', () => { if (!isRecording) startRecord(); });
   syncCustomPalUI();
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) last = performance.now();
@@ -925,21 +1001,20 @@ void main() {
         const nx = x * inv;
         const ny = y * inv;
         const nz = z * inv;
-        const shellR = outer * (0.852 + hash01(i * 199 + i * 0.02) * 0.12);
-        x = nx * shellR;
-        y = ny * shellR;
-        z = nz * shellR;
+        x = nx * outer;
+        y = ny * outer;
+        z = nz * outer;
 
         let vx = vel[i * 3];
         let vy = vel[i * 3 + 1];
         let vz = vel[i * 3 + 2];
         const outN = nx * vx + ny * vy + nz * vz;
-        if (outN < 0.14) {
-          vx += nx * 0.48;
-          vy += ny * 0.48;
-          vz += nz * 0.48;
+        if (outN > 0) {
+          vx -= 2 * outN * nx;
+          vy -= 2 * outN * ny;
+          vz -= 2 * outN * nz;
         }
-        const j = 0.1;
+        const j = 0.04;
         vx += (hash01(i * 211) - 0.5) * j;
         vy += (hash01(i * 213) - 0.5) * j;
         vz += (hash01(i * 217) - 0.5) * j;
@@ -948,13 +1023,6 @@ void main() {
         vel[i * 3 + 1] = vy / vL;
         vel[i * 3 + 2] = vz / vL;
 
-        if (hash01(i * 223) < 0.14) rollPillGeometry(i);
-        if (hash01(i * 229) < 0.055) {
-          const c = pal[i % pal.length];
-          colArr[i * 3] = c[0];
-          colArr[i * 3 + 1] = c[1];
-          colArr[i * 3 + 2] = c[2];
-        }
         world[i * 3] = x;
         world[i * 3 + 1] = y;
         world[i * 3 + 2] = z;
@@ -1088,25 +1156,149 @@ void main() {
     }
   }
 
+  function initLoopPositions() {
+    loopBasePos  = new Float32Array(MAX * 3);
+    loopAmpArr   = new Float32Array(MAX);
+    loopFreqArr  = new Uint8Array(MAX);
+    loopAx1      = new Float32Array(MAX * 3);
+    loopAx2      = new Float32Array(MAX * 3);
+    loopPhaseOff = new Float32Array(MAX);
+    const pal = getActivePalette();
+    for (let i = 0; i < nInst; i++) {
+      rollPillGeometry(i);
+      const [bx, by, bz] = hash01(i * 2.41) < 0.62
+        ? organicShellSpawn(i, nInst)
+        : chaoticShell(i, nInst);
+      loopBasePos[i * 3] = bx; loopBasePos[i * 3 + 1] = by; loopBasePos[i * 3 + 2] = bz;
+      const c = pal[i % pal.length];
+      colArr[i * 3] = c[0]; colArr[i * 3 + 1] = c[1]; colArr[i * 3 + 2] = c[2];
+      const fh = hash01(i * 37.1);
+      loopFreqArr[i] = fh < 0.45 ? 1 : fh < 0.78 ? 2 : 3;
+      const r = Math.hypot(bx, by, bz) || 1;
+      loopAmpArr[i] = (0.06 + hash01(i * 53.7) * 0.16) * r;
+      loopPhaseOff[i] = hash01(i * 61.3) * Math.PI * 2;
+      const nx = bx / r, ny = by / r, nz = bz / r;
+      let t1x, t1y, t1z;
+      if (Math.abs(nx) < 0.9) { t1x = 0; t1y = nz; t1z = -ny; }
+      else { t1x = -nz; t1y = 0; t1z = nx; }
+      const t1l = Math.hypot(t1x, t1y, t1z);
+      t1x /= t1l; t1y /= t1l; t1z /= t1l;
+      loopAx1[i * 3] = t1x; loopAx1[i * 3 + 1] = t1y; loopAx1[i * 3 + 2] = t1z;
+      loopAx2[i * 3] = ny * t1z - nz * t1y;
+      loopAx2[i * 3 + 1] = nz * t1x - nx * t1z;
+      loopAx2[i * 3 + 2] = nx * t1y - ny * t1x;
+    }
+  }
+
+  function setLoopPositions(phase) {
+    for (let i = 0; i < nInst; i++) {
+      const bx = loopBasePos[i * 3], by = loopBasePos[i * 3 + 1], bz = loopBasePos[i * 3 + 2];
+      const angle = Math.PI * 2 * loopFreqArr[i] * phase + loopPhaseOff[i];
+      const s = Math.sin(angle), cv = Math.cos(angle);
+      const amp = loopAmpArr[i];
+      world[i * 3]     = bx + loopAx1[i * 3]     * s * amp + loopAx2[i * 3]     * cv * amp;
+      world[i * 3 + 1] = by + loopAx1[i * 3 + 1] * s * amp + loopAx2[i * 3 + 1] * cv * amp;
+      world[i * 3 + 2] = bz + loopAx1[i * 3 + 2] * s * amp + loopAx2[i * 3 + 2] * cv * amp;
+    }
+  }
+
+  async function startRecord() {
+    if (typeof VideoEncoder === 'undefined') {
+      alert('Loop Export needs WebCodecs support.\nUse Chrome 94+, Edge 94+, or Safari 16.4+.');
+      return;
+    }
+
+    const FPS = 60;
+    const duration = parseInt($('sl-loopdur').value);
+    const totalFrames = FPS * duration;
+    const frameDurationUs = Math.round(1e6 / FPS);
+
+    isRecording = true;
+    $('rec-progress').style.display = 'block';
+    $('rec-bar').style.width = '0%';
+    $('rec-label').textContent = 'Rendering… 0%';
+    $('btn-record').textContent = 'Rendering…';
+    $('btn-record').disabled = true;
+
+    try {
+      const { Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/webm-muxer@4/+esm');
+
+      const target = new ArrayBufferTarget();
+      const muxer = new Muxer({
+        target,
+        video: { codec: 'V_VP9', width: W, height: H, frameRate: FPS },
+        firstTimestampBehavior: 'permissive'
+      });
+
+      const encoder = new VideoEncoder({
+        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+        error: (e) => console.error('VideoEncoder:', e)
+      });
+
+      const vpConfig = { codec: 'vp09.00.10.08', width: W, height: H, bitrate: 16_000_000, framerate: FPS };
+      const { supported } = await VideoEncoder.isConfigSupported(vpConfig);
+      if (!supported) throw new Error('VP9 not supported on this device. Try Chrome or Edge.');
+      encoder.configure(vpConfig);
+
+      initLoopPositions();
+      const u = readUI();
+      const orbLoops = parseInt($('sel-orbloops').value);
+      const camR = 2.55;
+
+      for (let i = 0; i < totalFrames; i++) {
+        const phase = i / totalFrames;
+        setLoopPositions(phase);
+        const ang = Math.PI * 2 * orbLoops * phase;
+        drawScene([Math.sin(ang) * camR, 0.12, Math.cos(ang) * camR], u);
+        drawPost(u);
+
+        const vf = new VideoFrame(canvas, { timestamp: i * frameDurationUs, duration: frameDurationUs });
+        encoder.encode(vf, { keyFrame: i % FPS === 0 });
+        vf.close();
+
+        $('rec-bar').style.width = Math.round((i + 1) / totalFrames * 100) + '%';
+        $('rec-label').textContent = 'Rendering… ' + Math.round((i + 1) / totalFrames * 100) + '%';
+        await new Promise(r => setTimeout(r, 0));
+      }
+
+      $('rec-label').textContent = 'Finalizing…';
+      await encoder.flush();
+      encoder.close();
+      muxer.finalize();
+
+      const blob = new Blob([target.buffer], { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'pill-orb-loop.webm'; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+    } catch (err) {
+      console.error('Loop export failed:', err);
+      alert('Export failed: ' + err.message);
+    } finally {
+      isRecording = false;
+      $('rec-progress').style.display = 'none';
+      $('btn-record').textContent = '● Record loop';
+      $('btn-record').disabled = false;
+    }
+  }
+
   let last = performance.now();
   function frame(now) {
     requestAnimationFrame(frame);
-    if (document.visibilityState === 'hidden') {
-      last = now;
-      return;
-    }
+    if (document.visibilityState === 'hidden') { last = now; return; }
+    const u = readUI();
+    const camR = 2.55;
+
+    if (isRecording) { last = now; return; }
+
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     time += dt;
-    const u = readUI();
     const wantN = Math.min(MAX, Math.max(32, u.n));
-    if (wantN !== nInst) {
-      nInst = wantN;
-      initParticles();
-    }
+    if (wantN !== nInst) { nInst = wantN; initParticles(); }
     updateParticles(dt, u);
     const ang = time * (0.06 + u.orb * 0.4);
-    const camR = 2.55;
     const eye = [Math.sin(ang) * camR, 0.12 + Math.sin(time * 0.22) * 0.06, Math.cos(ang) * camR];
     drawScene(eye, u);
     drawPost(u);
