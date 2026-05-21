@@ -27,6 +27,8 @@ textarea.ta-pal { width:100%; min-height:100px; padding:10px; border:1px solid v
 .num-in { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:12px; background:#f4f4f4; }
 #wrap-custom-pal { display:none; }
 #wrap-custom-pal.show { display:block; }
+#pal-swatches { display:flex; flex-wrap:wrap; gap:4px; margin:8px 0; min-height:0; }
+#pal-swatches span { width:22px; height:22px; border-radius:5px; border:1px solid rgba(0,0,0,0.1); flex-shrink:0; }
 #canvas-wrap { flex:1; display:flex; align-items:center; justify-content:center; background:#ddd; min-width:200px; min-height:200px; position:relative; }
 #c { display:block; max-width:100%; max-height:100%; }
 #fb { position:absolute; inset:0; display:none; align-items:center; justify-content:center; padding:24px; font-size:13px; color:var(--dim); }
@@ -80,6 +82,7 @@ textarea.ta-pal { width:100%; min-height:100px; padding:10px; border:1px solid v
     <div class="ctrl" id="wrap-custom-pal">
       <label>Swatch colors (one per line: <code>#aabbcc</code> or <code>0.2,0.3,0.4</code>)</label>
       <textarea id="ta-pal" class="ta-pal" spellcheck="false"></textarea>
+      <div id="pal-swatches"></div>
       <button type="button" class="btn ghost" id="btn-pal-apply" style="margin-top:8px">Apply custom colors</button>
     </div>
     <div class="ctrl"><label>Background</label><div class="swatch-wrap"><input type="color" id="cp-bg" value="#f4f3f8" /></div></div>
@@ -637,8 +640,11 @@ void main() {
 
   let palKey = 'reference';
   const DEFAULT_CUSTOM_PAL_TEXT = [
-    '#e91e8c', '#00d4ff', '#b8ff2a', '#ff6b2d', '#7c4dff',
-    '#c45c26', '#2d6a4f', '#5c4033', '#4a4e69'
+    '#EB248C', '#FA4785', '#1FC7E6', '#3873FA',
+    '#85F233', '#D1E62E', '#FA801F', '#FA6657',
+    '#E01F38', '#7A2ED1', '#249E85', '#B838F2',
+    '#6B472E', '#8C6138', '#525C33', '#61576B',
+    '#473861', '#2E4757', '#946B33', '#593352'
   ].join('\n');
   const inst = new Float32Array(MAX * 20);
   const world = new Float32Array(MAX * 3);
@@ -744,9 +750,19 @@ void main() {
     return parseCustomPalFromTextarea();
   }
 
+  function updatePalSwatches() {
+    const container = $('pal-swatches');
+    const lines = $('ta-pal').value.split(/\r?\n/);
+    const colors = lines.map(parsePalLine).filter(Boolean);
+    container.innerHTML = colors.map(([r, g, b]) => {
+      const hex = '#' + [r, g, b].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
+      return `<span style="background:${hex}" title="${hex}"></span>`;
+    }).join('');
+  }
+
   function syncCustomPalUI() {
     const wrap = $('wrap-custom-pal');
-    if (palKey === 'custom') wrap.classList.add('show');
+    if (palKey === 'custom') { wrap.classList.add('show'); updatePalSwatches(); }
     else wrap.classList.remove('show');
   }
 
@@ -975,6 +991,7 @@ void main() {
     syncCustomPalUI();
     initParticles();
   });
+  $('ta-pal').addEventListener('input', () => { updatePalSwatches(); });
   $('btn-pal-apply').addEventListener('click', () => {
     if (palKey === 'custom') initParticles();
   });
