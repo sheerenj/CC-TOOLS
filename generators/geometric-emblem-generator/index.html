@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geometric Emblem</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#ececec;font-family:-apple-system,"Inter","Helvetica Neue",sans-serif;color:#000}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:#ececec}::-webkit-scrollbar-thumb{background:#cfcfcf}
+.app{display:flex;height:100vh}
+.side{width:252px;min-width:252px;background:#ffffff;border-right:1px solid #e4e4e4;overflow-y:auto;display:flex;flex-direction:column}
+.side-inner{padding:14px;flex:1}
+.wordmark{font-size:13px;letter-spacing:4px;color:#000;font-weight:900;margin-bottom:1px}
+.tagline{font-size:6.5px;letter-spacing:3.5px;color:#6b6b6b;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #e4e4e4}
+.sec{margin-bottom:15px}
+.sec-label{display:inline-block;background:#d4fc4e;color:#000;padding:3px 7px;font-family:ui-monospace,monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;border-radius:3px;margin-bottom:8px;}
+.btn-row{display:flex;gap:3px}
+.btn{background:#fff;border:1px solid #d4d4d4;color:#000;font-family:ui-monospace,monospace;font-size:7.5px;letter-spacing:1.5px;cursor:pointer;border-radius:999px;padding:5px 8px;transition:border-color .1s,color .1s,background .1s;flex:1;white-space:nowrap}
+.btn:hover{background:#f5f5f5;}
+.btn.on{background:#000;color:#fff;border-color:#000}
+.preset-list{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
+.preset-item{display:flex;align-items:center;gap:3px;height:26px}
+.preset-name-btn{flex:1;background:#f4f4f4;border:1px solid #e4e4e4;color:#000;font-family:ui-monospace,monospace;font-size:7.5px;letter-spacing:1px;cursor:pointer;border-radius:999px;padding:0 10px;height:100%;text-align:left;transition:all .1s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.preset-name-btn:hover{border-color:#d4d4d4;background:#ececec}
+.preset-name-btn.active{background:#000;color:#fff;border-color:#000}
+.preset-del{background:#fff;border:1px solid #e4e4e4;color:#6b6b6b;font-family:ui-monospace,monospace;font-size:9px;cursor:pointer;border-radius:999px;width:26px;height:100%;flex-shrink:0;transition:all .1s}
+.preset-del:hover{border-color:#000;color:#000}
+.name-row{display:flex;gap:3px;margin-top:5px}
+.name-input{flex:1;background:#f4f4f4;border:1px solid #e4e4e4;color:#000;font-family:ui-monospace,monospace;font-size:8px;letter-spacing:1px;padding:5px 9px;outline:none;border-radius:999px}
+.name-input:focus{border-color:#d4d4d4}
+.name-input::placeholder{color:#6b6b6b}
+.save-btn{background:#fff;border:1px solid #d4d4d4;color:#000;font-family:ui-monospace,monospace;font-size:7.5px;letter-spacing:1.5px;cursor:pointer;border-radius:999px;padding:5px 10px;transition:all .1s}
+.save-btn:hover{background:#f5f5f5;}
+.factory-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:4px}
+.factory-btn{background:#fff;border:1px solid #d4d4d4;color:#000;font-family:ui-monospace,monospace;font-size:7px;letter-spacing:.8px;cursor:pointer;border-radius:999px;padding:5px 3px;transition:all .1s;text-align:center}
+.factory-btn:hover{background:#f5f5f5;}
+.factory-btn.on{background:#d4fc4e;border-color:#d4fc4e;color:#000}
+.field-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-bottom:6px}
+.field-btn{background:#fff;border:1px solid #d4d4d4;color:#000;font-family:ui-monospace,monospace;font-size:6.5px;letter-spacing:.5px;cursor:pointer;border-radius:999px;padding:4px 2px;transition:all .1s;text-align:center}
+.field-btn:hover{background:#f5f5f5;}
+.field-btn.on{background:#000;color:#fff;border-color:#000}
+.sld-row{margin-bottom:10px}
+.sld-top{display:flex;justify-content:space-between;margin-bottom:3px;align-items:baseline}
+.sld-label{font-size:7px;letter-spacing:2px;color:#6b6b6b}
+.sld-val{font-size:9px;color:#000;font-weight:700}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:4px;background:#d4d4d4;border-radius:2px;cursor:pointer;outline:none;border:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:#000;border:none;cursor:pointer}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#000;border:none;cursor:pointer}
+.color-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.color-label{font-size:7px;letter-spacing:2px;color:#6b6b6b;flex:1}
+.color-hex{font-size:8px;color:#000;min-width:56px}
+input[type=color]{width:28px;height:18px;border:1px solid #e4e4e4;background:none;cursor:pointer;border-radius:3px;padding:1px;flex-shrink:0}
+.export-btn{width:100%;background:#000;color:#fff;border:none;padding:10px;font-size:8.5px;letter-spacing:0.08em;font-family:ui-monospace,monospace;cursor:pointer;border-radius:999px;font-weight:700;transition:background .12s;margin-top:2px}
+.export-btn:hover{background:#222}
+.main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:8px;background:#ececec}
+.canvas-wrap{line-height:0;outline:1px solid #e4e4e4}
+.canvas-wrap svg{display:block}
+.hud{display:flex;justify-content:space-between;font-size:6.5px;letter-spacing:2px;color:#6b6b6b;width:100%}
+.live-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:#000;margin-right:5px;animation:pulse 1s infinite;vertical-align:middle}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.empty-msg{font-size:7px;letter-spacing:1px;color:#6b6b6b;padding:5px 0 3px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="side"><div class="side-inner">
+  <div class="wordmark">MORPH</div>
+  <div class="tagline">EMBLEM SYSTEM v2.0</div>
+
+  <div class="sec">
+    <div class="sec-label">SAVED PRESETS</div>
+    <div class="preset-list" id="preset-list"></div>
+    <div class="name-row">
+      <input class="name-input" id="preset-name" placeholder="NAME YOUR SHAPE…" maxlength="22"
+        onkeydown="if(event.key==='Enter')savePreset()">
+      <button class="save-btn" onclick="savePreset()">+ SAVE</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-label">FACTORY</div>
+    <div class="factory-grid" id="factory-grid"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-label">PRIMITIVE</div>
+    <div class="btn-row">
+      <button class="btn on" id="btn-circle" onclick="setShape('circle')">○ CIRC</button>
+      <button class="btn" id="btn-square" onclick="setShape('square')">□ RECT</button>
+      <button class="btn" id="btn-diamond" onclick="setShape('diamond')">◇ DIAM</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-label">GRID</div>
+    <!-- linked cols/rows -->
+    <div style="display:flex;gap:6px;align-items:stretch;margin-bottom:10px">
+      <!-- left: cols+rows sliders -->
+      <div style="flex:1;min-width:0">
+        <div class="sld-row" style="margin-bottom:8px">
+          <div class="sld-top"><span class="sld-label">COLUMNS</span><span class="sld-val" id="v-cols">9</span></div>
+          <input type="range" min="3" max="18" value="9" step="1" id="sl-cols" oninput="onColsInput(+this.value)">
+        </div>
+        <div class="sld-row" style="margin-bottom:0">
+          <div class="sld-top"><span class="sld-label">ROWS</span><span class="sld-val" id="v-rows">9</span></div>
+          <input type="range" min="3" max="18" value="9" step="1" id="sl-rows" oninput="onRowsInput(+this.value)">
+        </div>
+      </div>
+      <!-- lock button -->
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0 2px">
+        <div style="width:1px;flex:1;background:#e4e4e4"></div>
+        <button id="btn-lock" onclick="toggleLock()" title="Lock aspect ratio"
+          style="background:#fff;border:1px solid #d4d4d4;color:#000;font-family:ui-monospace,monospace;font-size:9px;cursor:pointer;border-radius:999px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .1s;padding:0">⛓</button>
+        <div style="width:1px;flex:1;background:#e4e4e4"></div>
+      </div>
+    </div>
+    <!-- gap -->
+    <div class="sld-row">
+      <div class="sld-top"><span class="sld-label">GAP</span><span class="sld-val" id="v-gap">0.00</span></div>
+      <input type="range" min="0" max="0.85" value="0" step="0.01" id="sl-gap" oninput="P.gap=+this.value;$('v-gap').textContent=(+this.value).toFixed(2);render()">
+    </div>
+    <!-- drift / flow align -->
+    <div class="sld-row">
+      <div class="sld-top"><span class="sld-label">DRIFT</span><span class="sld-val" id="v-align">0.00</span></div>
+      <input type="range" min="0" max="1" value="0" step="0.01" id="sl-align" oninput="P.align=+this.value;$('v-align').textContent=(+this.value).toFixed(2);render()">
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-label">FIELD PATTERN</div>
+    <div class="field-grid" id="field-grid"></div>
+    <div class="btn-row" style="margin-top:3px">
+      <button class="btn" id="btn-inv" onclick="toggleInv()">◇ INVERT</button>
+      <button class="btn" id="btn-anim" onclick="toggleAnim()">▶ FLOW</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-label">METABALL FUSION</div>
+    <div class="sld-row">
+      <div class="sld-top"><span class="sld-label">SPREAD</span><span class="sld-val" id="v-blur">9</span></div>
+      <input type="range" min="0" max="36" value="9" step="0.5" id="sl-blur" oninput="P.blur=+this.value;$('v-blur').textContent=(+this.value).toFixed(1);render()">
+    </div>
+    <div class="sld-row">
+      <div class="sld-top"><span class="sld-label">THRESHOLD</span><span class="sld-val" id="v-thresh">0.44</span></div>
+      <input type="range" min="0.10" max="0.90" value="0.44" step="0.01" id="sl-thresh" oninput="P.thresh=+this.value;$('v-thresh').textContent=(+this.value).toFixed(2);render()">
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-label">SIZE RANGE</div>
+    <div class="sld-row">
+      <div class="sld-top"><span class="sld-label">MIN</span><span class="sld-val" id="v-min">0.00</span></div>
+      <input type="range" min="0" max="0.98" value="0" step="0.01" id="sl-min" oninput="P.minSz=+this.value;$('v-min').textContent=(+this.value).toFixed(2);render()">
+    </div>
+    <div class="sld-row">
+      <div class="sld-top"><span class="sld-label">MAX</span><span class="sld-val" id="v-max">0.90</span></div>
+      <input type="range" min="0.1" max="1.5" value="0.90" step="0.01" id="sl-max" oninput="P.maxSz=+this.value;$('v-max').textContent=(+this.value).toFixed(2);render()">
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-label">COLOUR</div>
+    <div class="color-row">
+      <span class="color-label">SHAPE</span>
+      <span class="color-hex" id="hex-fg">#0f0f0f</span>
+      <input type="color" value="#0f0f0f" id="inp-fg" oninput="P.fg=this.value;$('hex-fg').textContent=this.value;render()">
+    </div>
+    <div class="color-row">
+      <span class="color-label">GROUND</span>
+      <span class="color-hex" id="hex-bg">#d2d2d2</span>
+      <input type="color" value="#d2d2d2" id="inp-bg" oninput="P.bg=this.value;$('hex-bg').textContent=this.value;render()">
+    </div>
+  </div>
+
+  <div style="display:flex;gap:3px;margin-top:2px">
+    <button class="export-btn" onclick="exportSVG()" style="flex:1">↓ EXPORT</button>
+    <button id="btn-rand" onclick="randomize()"
+      style="background:#fff;border:1px solid #d4d4d4;color:#000;font-family:ui-monospace,monospace;font-size:8px;letter-spacing:2px;cursor:pointer;border-radius:999px;padding:10px 8px;transition:all .1s;white-space:nowrap">? RAND</button>
+    <button id="btn-reset" onclick="resetDefaults()"
+      style="background:#fff;border:1px solid #d4d4d4;color:#000;font-family:ui-monospace,monospace;font-size:8px;letter-spacing:2px;cursor:pointer;border-radius:999px;padding:10px 8px;transition:all .1s;white-space:nowrap">↺ RST</button>
+  </div>
+</div></div>
+
+<div class="main" id="main">
+  <div class="hud" id="hud-top" style="max-width:560px"><span id="hud-l">9×9 · ARCH</span><span id="hud-r">○ STATIC</span></div>
+  <div class="canvas-wrap" id="canvas-wrap"></div>
+  <div class="hud" style="max-width:560px"><span>MORPH EMBLEM SYSTEM</span><span>FUTURENATURAL</span></div>
+</div>
+
+</div>
+
+<script>
+const $=s=>document.getElementById(s);
+
+function toggleLock(){
+  gridLocked=!gridLocked;
+  const b=$('btn-lock');
+  b.style.color=gridLocked?'#fff':'#000';
+  b.style.background=gridLocked?'#000':'#fff';
+  b.style.borderColor=gridLocked?'#000':'#d4d4d4';
+  b.title=gridLocked?'Unlock aspect ratio':'Lock aspect ratio';
+}
+function onColsInput(v){
+  if(gridLocked){
+    P.cols=v;P.rows=v;
+    $('sl-rows').value=v;$('v-rows').textContent=v;
+  } else { P.cols=v; }
+  $('v-cols').textContent=v;
+  render();
+}
+function onRowsInput(v){
+  if(gridLocked){
+    P.rows=v;P.cols=v;
+    $('sl-cols').value=v;$('v-cols').textContent=v;
+  } else { P.rows=v; }
+  $('v-rows').textContent=v;
+  render();
+}
+
+const noise=(x,y)=>{const n=Math.sin(x*127.1+y*311.7)*43758.5453;return n-Math.floor(n)};
+
+// Helper: smooth radial field centred at (cx,cy), radius r
+const radial=(x,y,cx,cy,r)=>Math.max(0,1-Math.hypot(x-cx,y-cy)/r);
+// Global breathe: slow sine applied to all fields so ▶ FLOW always animates
+const breathe=(v,t,depth=0.18)=>Math.max(0,Math.min(1, v*(1+depth*Math.sin(t)) ));
+
+const FN={
+  arch:    (x,y,t)=>breathe(Math.max(0,1-(x*2-1)**2)*(0.15+0.85*y), t),
+  dome:    (x,y,t)=>breathe(Math.max(0,1-(x*2-1)**2)*(1-y*.55), t),
+  core:    (x,y,t)=>breathe(1-Math.min(1,Math.hypot(x-.5,y-.5)*2.5), t),
+  ring:    (x,y,t)=>{const d=Math.hypot(x-.5,y-.5)*2;return breathe(Math.max(0,1-Math.abs(d-.65)*5),t)},
+  quad:    (x,y,t)=>breathe(Math.max(
+             radial(x,y,.25,.25,.32), radial(x,y,.75,.25,.32),
+             radial(x,y,.25,.75,.32), radial(x,y,.75,.75,.32)), t),
+  cross:   (x,y,t)=>breathe(Math.max(
+             Math.max(0,1-Math.abs(x-.5)*3.5),
+             Math.max(0,1-Math.abs(y-.5)*3.5)), t),
+  sym4:    (x,y,t)=>{const ax=Math.abs(x-.5),ay=Math.abs(y-.5);return breathe(Math.max(0,1-(ax+ay)*2.2),t)},
+  lattice: (x,y,t)=>breathe(Math.max(
+             radial(x,y,.17,.17,.18),radial(x,y,.5,.17,.18),radial(x,y,.83,.17,.18),
+             radial(x,y,.17,.5,.18), radial(x,y,.5,.5,.25), radial(x,y,.83,.5,.18),
+             radial(x,y,.17,.83,.18),radial(x,y,.5,.83,.18),radial(x,y,.83,.83,.18)), t),
+  wave_h:  (x,y,t)=>.5+.5*Math.sin(y*Math.PI*4-t),
+  wave_v:  (x,y,t)=>.5+.5*Math.sin(x*Math.PI*4-t),
+  wave_d:  (x,y,t)=>.5+.5*Math.sin((x+y)*Math.PI*3-t),
+  ripple:  (x,y,t)=>.5+.5*Math.sin(Math.hypot(x-.5,y-.5)*Math.PI*10-t),
+  slope:   (x,y,t)=>breathe((x+y)/2, t, 0.25),
+  scatter: (x,y,t)=>breathe(noise(Math.round(x*14),Math.round(y*14)), t, 0.2),
+  flat:    (x,y,t)=>breathe(.74, t, 0.22),
+  pinch:   (x,y,t)=>breathe(Math.max(0,1-(Math.abs(x-.5)+Math.abs(y-.5))*2.2), t),
+  stripes: (x,y,t)=>Math.max(0,Math.sin(y*Math.PI*7-t)),
+  diag_s:  (x,y,t)=>Math.max(0,Math.sin((x-y)*Math.PI*7-t)),
+  corners: (x,y,t)=>breathe(Math.max(0,(Math.abs(x-.5)+Math.abs(y-.5)-.25)*3), t, 0.25),
+};
+const FL={arch:'ARCH',dome:'DOME',core:'CORE',ring:'RING',quad:'QUAD',cross:'CRSS',
+  sym4:'SYM4',lattice:'LATT',wave_h:'WV·H',wave_v:'WV·V',
+  wave_d:'WV·D',ripple:'RIPL',slope:'SLPE',scatter:'RND',
+  flat:'FLAT',pinch:'PNCH',stripes:'STRP',diag_s:'DSTR',corners:'CORN'};
+
+// align & gap are style keys — NOT overwritten by preset switching
+const FACTORY=[
+  // ── TECH / REFERENCE-STYLE ──
+  {n:'CIRCUIT',   shape:'square', cols:7,  rows:7,  field:'flat',   blur:9,  sharp:55, thresh:.44, minSz:.55, maxSz:.78, fg:'#0d0d0d',bg:'#d0d0d0'},
+  {n:'MANDALA',   shape:'square', cols:7,  rows:7,  field:'sym4',   blur:10, sharp:52, thresh:.40, minSz:.05, maxSz:.95, fg:'#0d0d0d',bg:'#d0d0d0'},
+  {n:'QUAD LOCK', shape:'square', cols:9,  rows:9,  field:'quad',   blur:8,  sharp:60, thresh:.42, minSz:.1,  maxSz:.90, fg:'#0d0d0d',bg:'#d0d0d0'},
+  {n:'LATTICE',   shape:'square', cols:10, rows:10, field:'lattice',blur:7,  sharp:58, thresh:.42, minSz:.08, maxSz:.88, fg:'#0d0d0d',bg:'#d0d0d0'},
+  {n:'CROSS GRID',shape:'square', cols:8,  rows:8,  field:'cross',  blur:10, sharp:50, thresh:.40, minSz:.05, maxSz:.95, fg:'#0d0d0d',bg:'#d0d0d0'},
+  // ── ORGANIC ──
+  {n:'ARCH',      shape:'circle', cols:9,  rows:9,  field:'arch',   blur:10, sharp:38, thresh:.42, minSz:0,   maxSz:.90, fg:'#0f0f0f',bg:'#d2d2d2'},
+  {n:'BLOB WAVE', shape:'circle', cols:8,  rows:6,  field:'wave_h', blur:14, sharp:32, thresh:.38, minSz:.04, maxSz:1.10,fg:'#0f0f0f',bg:'#d2d2d2'},
+  {n:'RIPPLE',    shape:'circle', cols:11, rows:11, field:'ripple', blur:9,  sharp:42, thresh:.44, minSz:0,   maxSz:.88, fg:'#0f0f0f',bg:'#d2d2d2'},
+];
+
+let P={shape:'square',cols:7,rows:7,field:'flat',blur:9,thresh:.44,minSz:.55,maxSz:.78,gap:0,align:.65,fg:'#0d0d0d',bg:'#d0d0d0',inv:false};
+const DEFAULTS=Object.assign({},P);
+let gridLocked=true;
+let animating=false,animT=0,raf=null;
+
+function calcSize(){
+  const m=$('main');
+  const avail=Math.min(m.clientWidth-60,m.clientHeight-80);
+  return Math.max(280,Math.min(580,avail));
+}
+
+/* ─── THE CORE: SVG feGaussianBlur + feColorMatrix metaball pipeline ─────────
+   The key insight: blur spreads each shape's alpha as a smooth field.
+   feColorMatrix then applies: newAlpha = oldAlpha * K + (−K × threshold)
+   This snaps the blended alpha field to a hard boolean edge — every pixel
+   where the accumulated alpha exceeds `threshold` becomes fully opaque.
+   The result is crisp, topology-correct path merging, identical to the
+   Adidas reference. No glow, no soft edges, no canvas artifacts.          */
+function buildSVG(S,t){
+  const pad=S*0.068;
+  const uw=S-pad*2,uh=S-pad*2;
+  const cw=P.cols>1?uw/(P.cols-1):uw;
+  const ch=P.rows>1?uh/(P.rows-1):uh;
+  const maxR=Math.min(cw,ch)*.5*(1-P.gap);
+  const fn=FN[P.field];
+  const K=120; // fusion edge always maxed — crisp boolean-union merging
+  const off=-(K*P.thresh);
+  const eps=0.5/Math.max(P.cols,P.rows); // gradient sample step in normalised space
+  let shapes='';
+  for(let r=0;r<P.rows;r++){
+    for(let c=0;c<P.cols;c++){
+      const nx=P.cols>1?c/(P.cols-1):.5;
+      const ny=P.rows>1?r/(P.rows-1):.5;
+      let v=fn(nx,ny,t);
+      v=Math.max(0,Math.min(1,v));
+      if(P.inv)v=1-v;
+      const rad=Math.max(.4,maxR*(P.minSz+v*(P.maxSz-P.minSz)));
+
+      // ── DRIFT: pull each shape TOWARD the field peak ─────────────────────
+      // Large shapes (high v) stay centred. Small shapes drift UP the gradient
+      // — toward the nearest hotspot — hugging as close as possible to it.
+      // This is the mechanism behind the Adidas reference: corner shapes
+      // press inward toward the emblem centre, fusing into that interlocked look.
+      let ox=0,oy=0;
+      if(P.align>0){
+        const vr=fn(Math.min(1,nx+eps),ny,t);
+        const vl=fn(Math.max(0,nx-eps),ny,t);
+        const vd=fn(nx,Math.min(1,ny+eps),t);
+        const vu=fn(nx,Math.max(0,ny-eps),t);
+        let gx=(vr-vl)/(2*eps), gy=(vd-vu)/(2*eps);
+        if(P.inv){gx=-gx;gy=-gy;}
+        const len=Math.hypot(gx,gy)||1;
+        gx/=len;gy/=len;
+        // small shapes (low v) drift furthest toward the peak
+        const drift=P.align*(1-v)*Math.min(cw,ch)*0.5;
+        ox=gx*drift;oy=gy*drift; // positive = uphill = toward peak
+      }
+
+      const cx=(pad+c*cw+ox).toFixed(2),cy=(pad+r*ch+oy).toFixed(2);
+      const r2=rad.toFixed(2);
+      if(P.shape==='circle'){
+        shapes+=`<circle cx="${cx}" cy="${cy}" r="${r2}"/>`;
+      } else if(P.shape==='square'){
+        const rxr=(rad*.26).toFixed(2);
+        const x0=(pad+c*cw+ox-rad).toFixed(2),y0=(pad+r*ch+oy-rad).toFixed(2),w=(rad*2).toFixed(2);
+        shapes+=`<rect x="${x0}" y="${y0}" width="${w}" height="${w}" rx="${rxr}"/>`;
+      } else {
+        shapes+=`<polygon points="${cx},${(pad+r*ch+oy-rad).toFixed(2)} ${(pad+c*cw+ox+rad).toFixed(2)},${cy} ${cx},${(pad+r*ch+oy+rad).toFixed(2)} ${(pad+c*cw+ox-rad).toFixed(2)},${cy}"/>`;
+      }
+    }
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" width="${S}" height="${S}">
+<defs><filter id="mb" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
+<feGaussianBlur stdDeviation="${P.blur}" result="b"/>
+<feColorMatrix in="b" mode="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 ${K} ${off.toFixed(3)}"/>
+</filter></defs>
+<rect width="${S}" height="${S}" fill="${P.bg}"/>
+<g filter="url(#mb)" fill="${P.fg}">${shapes}</g>
+</svg>`;
+}
+
+function render(){
+  const S=calcSize();
+  const wrap=$('canvas-wrap');
+  wrap.innerHTML=buildSVG(S,animT);
+  wrap.style.maxWidth=S+'px';
+  $('hud-l').textContent=`${P.cols}×${P.rows} · ${P.field.toUpperCase()} · SP${(+P.blur).toFixed(1)} TH${P.thresh.toFixed(2)}`;
+}
+
+function setShape(s){
+  P.shape=s;
+  ['circle','square','diamond'].forEach(n=>$('btn-'+n).classList.toggle('on',n===s));
+  render();
+}
+function toggleInv(){
+  P.inv=!P.inv;
+  const b=$('btn-inv');b.classList.toggle('on',P.inv);
+  b.textContent=P.inv?'◈ INVERTED':'◇ INVERT';
+  render();
+}
+function toggleAnim(){
+  animating=!animating;
+  const b=$('btn-anim');b.classList.toggle('on',animating);
+  b.textContent=animating?'■ STOP':'▶ FLOW';
+  $('hud-r').innerHTML=animating?'<span class="live-dot"></span>LIVE':'○ STATIC';
+  if(animating)loop(); else cancelAnimationFrame(raf);
+}
+function loop(){animT+=.025;render();raf=requestAnimationFrame(loop);}
+
+function syncDOM(){
+  $('sl-cols').value=P.cols; $('v-cols').textContent=P.cols;
+  $('sl-rows').value=P.rows; $('v-rows').textContent=P.rows;
+  $('sl-gap').value=P.gap||0; $('v-gap').textContent=(P.gap||0).toFixed(2);
+  $('sl-align').value=P.align||0; $('v-align').textContent=(P.align||0).toFixed(2);
+  $('sl-blur').value=P.blur; $('v-blur').textContent=(+P.blur).toFixed(1);
+  $('sl-thresh').value=P.thresh; $('v-thresh').textContent=(+P.thresh).toFixed(2);
+  $('sl-min').value=P.minSz; $('v-min').textContent=P.minSz.toFixed(2);
+  $('sl-max').value=P.maxSz; $('v-max').textContent=P.maxSz.toFixed(2);
+  $('inp-fg').value=P.fg; $('hex-fg').textContent=P.fg;
+  $('inp-bg').value=P.bg; $('hex-bg').textContent=P.bg;
+  ['circle','square','diamond'].forEach(n=>$('btn-'+n).classList.toggle('on',n===P.shape));
+  document.querySelectorAll('.field-btn').forEach(b=>b.classList.toggle('on',b.dataset.f===P.field));
+  $('btn-inv').classList.toggle('on',P.inv);
+  $('btn-inv').textContent=P.inv?'◈ INVERTED':'◇ INVERT';
+}
+// Structure keys: loaded from preset. Style keys: preserved from current session.
+const STRUCTURE_KEYS=['shape','cols','rows','field','inv'];
+const STYLE_KEYS=['blur','sharp','thresh','minSz','maxSz','gap','fg','bg'];
+
+function applyPreset(preset){
+  // Only overwrite structure — keep the user's current fusion/size/color settings
+  STRUCTURE_KEYS.forEach(k=>{ if(preset[k]!==undefined) P[k]=preset[k]; });
+  syncDOM();
+  render();
+}
+
+function resetDefaults(){
+  Object.assign(P,DEFAULTS);
+  syncDOM();
+  render();
+  const rb=$('btn-reset');
+  rb.textContent='✓';rb.style.color='#000';rb.style.borderColor='#000';rb.style.background='#d4fc4e';
+  setTimeout(()=>{rb.textContent='↺ RST';rb.style.color='';rb.style.borderColor='';rb.style.background='';},700);
+}
+
+function randomize(){
+  const fieldKeys=Object.keys(FN);
+  const shapes=['circle','square','diamond'];
+  const rnd=(a,b)=>+(a+(b-a)*Math.random()).toFixed(2);
+  const rndInt=(a,b)=>Math.floor(a+(b-a+1)*Math.random());
+  P.field=fieldKeys[rndInt(0,fieldKeys.length-1)];
+  P.shape=shapes[rndInt(0,2)];
+  const g=rndInt(5,13);
+  if(gridLocked){P.cols=g;P.rows=g;}
+  else{P.cols=rndInt(5,14);P.rows=rndInt(5,14);}
+  P.blur=rnd(3,22);
+  P.thresh=rnd(0.25,0.65);
+  P.minSz=rnd(0,0.5);
+  P.maxSz=rnd(0.6,1.2);
+  P.gap=rnd(0,0.4);
+  P.align=rnd(0,0.85);
+  P.inv=Math.random()>.7;
+  syncDOM();
+  render();
+  const rb=$('btn-rand');
+  rb.textContent='✓';rb.style.color='#000';rb.style.borderColor='#000';rb.style.background='#d4fc4e';
+  setTimeout(()=>{rb.textContent='? RAND';rb.style.color='';rb.style.borderColor='';rb.style.background='';},600);
+}
+
+/* ── PRESET SAVE / LOAD ──────────────────────────────────────────────────── */
+function loadPresets(){try{return JSON.parse(localStorage.getItem('morph_presets')||'[]')}catch{return[]}}
+function storePresets(a){try{localStorage.setItem('morph_presets',JSON.stringify(a))}catch{}}
+
+function renderPresetList(){
+  const list=$('preset-list');
+  list.innerHTML='';
+  const presets=loadPresets();
+  if(!presets.length){
+    const e=document.createElement('div');
+    e.className='empty-msg';e.textContent='NO SAVED PRESETS YET';
+    list.appendChild(e);return;
+  }
+  presets.forEach((p,i)=>{
+    const row=document.createElement('div');row.className='preset-item';
+    const nb=document.createElement('button');nb.className='preset-name-btn';
+    nb.textContent=p._name||'PRESET '+(i+1);
+    nb.onclick=()=>{
+      document.querySelectorAll('.preset-name-btn').forEach(b=>b.classList.remove('active'));
+      nb.classList.add('active');applyPreset(p);
+    };
+    const db=document.createElement('button');db.className='preset-del';db.textContent='×';
+    db.onclick=()=>{const a=loadPresets();a.splice(i,1);storePresets(a);renderPresetList()};
+    row.appendChild(nb);row.appendChild(db);list.appendChild(row);
+  });
+}
+
+function savePreset(){
+  const ni=$('preset-name');
+  const name=ni.value.trim().toUpperCase()||('SHAPE '+(loadPresets().length+1));
+  const snap=Object.assign({},P,{_name:name});
+  const arr=loadPresets();arr.push(snap);storePresets(arr);
+  ni.value='';renderPresetList();
+  const sb=document.querySelector('.save-btn');
+  sb.textContent='✓';sb.style.color='#000';sb.style.borderColor='#000';sb.style.background='#d4fc4e';
+  setTimeout(()=>{sb.textContent='+ SAVE';sb.style.color='';sb.style.borderColor='';sb.style.background='';},800);
+}
+
+/* ── BUILD FACTORY BUTTONS ───────────────────────────────────────────────── */
+const fg=$('factory-grid');
+FACTORY.forEach(p=>{
+  const b=document.createElement('button');b.className='factory-btn';b.textContent=p.n;
+  b.onclick=()=>{document.querySelectorAll('.factory-btn').forEach(x=>x.classList.remove('on'));b.classList.add('on');applyPreset(p)};
+  fg.appendChild(b);
+});
+
+/* ── BUILD FIELD BUTTONS ─────────────────────────────────────────────────── */
+const fgrid=$('field-grid');
+Object.keys(FN).forEach(key=>{
+  const b=document.createElement('button');
+  b.className='field-btn';
+  b.dataset.f=key;b.textContent=FL[key];
+  b.onclick=()=>{P.field=key;document.querySelectorAll('.field-btn').forEach(x=>x.classList.remove('on'));b.classList.add('on');render()};
+  fgrid.appendChild(b);
+});
+
+/* ── EXPORT ──────────────────────────────────────────────────────────────── */
+function exportSVG(){
+  const svg=buildSVG(1040,animT);
+  const blob=new Blob([svg],{type:'image/svg+xml'});
+  const url=URL.createObjectURL(blob);
+  Object.assign(document.createElement('a'),{href:url,download:`morph-${P.field}-${P.cols}x${P.rows}.svg`}).click();
+  URL.revokeObjectURL(url);
+}
+
+/* ── INIT ────────────────────────────────────────────────────────────────── */
+renderPresetList();
+syncDOM(); // set all sliders/buttons from P default state
+$('btn-lock').style.color='#fff'; $('btn-lock').style.background='#000'; $('btn-lock').style.borderColor='#000';
+window.addEventListener('resize',()=>render());
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Particle Typeface</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ececec; --card: #ffffff; --text: #000000; --text-dim: #6b6b6b;
+    --line: #e4e4e4; --line-2: #d4d4d4; --accent: #d4fc4e;
+    --radius-lg: 20px; --radius-md: 14px; --radius-pill: 999px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden;
+    background: var(--bg); color: var(--text);
+    font-family: "Inter", -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { display: flex; height: 100vh; }
+
+  #sidebar { width: 300px; flex-shrink: 0; background: var(--bg); padding: 18px;
+    overflow-y: auto; height: 100vh; border-right: 1px solid var(--line); }
+  #sidebar::-webkit-scrollbar { width: 8px; }
+  #sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 4px; }
+
+  .brand-row { display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 18px; padding: 0 4px; }
+  .brand { font-size: 19px; font-weight: 900; letter-spacing: -0.02em; }
+  .brand .dot { display: inline-block; width: 6px; height: 6px; background: #000;
+    border-radius: 50%; vertical-align: baseline; margin-left: 1px; margin-bottom: 1px; }
+  .brand .reg { font-size: 10px; font-weight: 700; vertical-align: super; margin-left: 2px; }
+  .brand-sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 0.12em; font-weight: 600; }
+
+  .section { background: var(--card); border-radius: var(--radius-lg);
+    padding: 16px 16px 18px; margin-bottom: 10px; }
+  .section-title { display: inline-block; background: var(--accent); color: #000;
+    padding: 3px 7px; font-family: ui-monospace, monospace; font-size: 10px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 12px; border-radius: 3px; }
+
+  .control { margin-bottom: 12px; }
+  .control:last-child { margin-bottom: 0; }
+  .control label { display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
+  .control label .val { color: var(--text-dim); font-variant-numeric: tabular-nums;
+    font-size: 11px; font-family: ui-monospace, monospace; }
+
+  input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+    background: #d4d4d4; border-radius: 2px; outline: none; cursor: pointer; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px;
+    border-radius: 50%; background: #000; cursor: pointer; border: none; transition: transform 0.1s; }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%;
+    background: #000; cursor: pointer; border: none; }
+
+  input[type="text"] { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+    color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
+    font-size: 18px; font-weight: 700; letter-spacing: 0.05em; outline: none;
+    font-family: ui-monospace, monospace; }
+  input[type="text"]:focus { border-color: var(--line-2); background: #fff; }
+
+  input[type="number"] { background: #f4f4f4; border: 1px solid var(--line);
+    color: var(--text); padding: 8px 10px; border-radius: var(--radius-md);
+    font-size: 13px; outline: none; font-family: ui-monospace, monospace; width: 100%;
+    -moz-appearance: textfield; }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input[type="number"]:focus { border-color: var(--line-2); background: #fff; }
+
+  select { width: 100%; background: #f4f4f4; border: 1px solid var(--line); color: var(--text);
+    padding: 9px 12px; border-radius: var(--radius-pill); font-size: 13px; outline: none;
+    cursor: pointer; font-family: inherit; font-weight: 500;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
+    background-repeat: no-repeat; background-position: right 14px center; padding-right: 32px; }
+
+  input[type="color"] { -webkit-appearance: none; border: 1px solid var(--line-2);
+    background: transparent; width: 100%; height: 34px; border-radius: var(--radius-md);
+    cursor: pointer; padding: 0; }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 3px; }
+  input[type="color"]::-webkit-color-swatch { border: none; border-radius: 10px; }
+
+  .color-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .color-row:last-child { margin-bottom: 0; }
+  .color-label { font-size: 12px; font-weight: 500; flex: 1; }
+  .color-row input[type="color"] { width: 44px; flex-shrink: 0; }
+
+  .toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .toggle:last-child { margin-bottom: 0; }
+  .toggle label { font-size: 12px; font-weight: 500; }
+  .toggle-switch { position: relative; width: 38px; height: 22px; background: #d4d4d4;
+    border-radius: 11px; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
+  .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px;
+    width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+  .toggle-switch.on { background: #000; }
+  .toggle-switch.on::after { left: 18px; }
+
+  button.btn { width: 100%; background: #000; color: #fff; border: none; padding: 10px 14px;
+    border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; font-family: inherit; margin-bottom: 8px; }
+  button.btn:last-of-type { margin-bottom: 0; }
+  button.btn:hover:not(:disabled) { background: #222; }
+  button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line-2); }
+  button.btn.ghost:hover:not(:disabled) { background: #f5f5f5; }
+  button.btn.accent { background: var(--accent); color: #000; }
+  button.btn.accent:hover:not(:disabled) { background: #c2ea3c; }
+  button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 6px; }
+  .btn-row button.btn { margin-bottom: 0; }
+
+  .upload-btn { display: block; width: 100%; padding: 9px 12px; background: #f4f4f4;
+    border: 1px dashed var(--line-2); color: var(--text-dim); border-radius: var(--radius-pill);
+    font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit;
+    transition: all 0.15s; text-align: center; }
+  .upload-btn:hover { border-color: #000; color: #000; background: #fff; }
+  #font-name { font-size: 11px; color: var(--text-dim); margin-top: 6px;
+    text-align: center; min-height: 14px; font-family: ui-monospace, monospace; }
+
+  .status-pill { display: block; padding: 6px 10px; background: #f4f4f4;
+    border-radius: var(--radius-pill); font-size: 11px; color: var(--text-dim);
+    margin-top: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-family: ui-monospace, monospace; text-align: center; }
+  .status-pill.ok { background: var(--accent); color: #000; }
+
+  #canvas-wrap { flex: 1; position: relative; overflow: hidden; background: #1a1a1a; }
+  #c { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: block; }
+
+  #preview-c { display: block; width: 100%; height: 80px; border-radius: var(--radius-md);
+    margin-top: 10px; background: #0a0a0a; }
+
+  #timeline-section { display: none; }
+  .frame-count { font-size: 11px; color: var(--text-dim); font-family: ui-monospace, monospace; }
+
+  .dim-row { display: flex; align-items: center; gap: 8px; }
+  .dim-row input[type="number"] { flex: 1; }
+  .dim-sep { font-size: 14px; font-weight: 500; color: var(--text-dim); flex-shrink: 0; }
+
+  .color-entry { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .color-entry:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .color-entry-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .color-entry-swatch { width: 32px; height: 32px; flex-shrink: 0; border-radius: 8px;
+    border: 1px solid var(--line-2); cursor: pointer; padding: 0; -webkit-appearance: none; }
+  .color-entry-swatch::-webkit-color-swatch-wrapper { padding: 2px; }
+  .color-entry-swatch::-webkit-color-swatch { border: none; border-radius: 6px; }
+  .color-entry-label { font-size: 12px; font-weight: 500; flex: 1; }
+  .color-entry-pct { font-size: 11px; color: var(--text-dim); font-family: ui-monospace, monospace;
+    min-width: 30px; text-align: right; }
+  .color-entry-remove { background: none; border: none; font-size: 18px; color: var(--text-dim);
+    cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0; }
+  .color-entry-remove:hover { color: #000; }
+  #color-list-label { font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 10px; display: block; }
+</style>
+</head>
+<body>
+<div id="sidebar">
+
+  <div class="brand-row">
+    <div class="brand">HTY<span class="dot"></span><span class="reg">®</span></div>
+    <div class="brand-sub">Particle Typeface</div>
+  </div>
+
+  <!-- Text -->
+  <div class="section">
+    <div class="section-title">Text</div>
+    <div class="control">
+      <label>Content <span class="val">↵ to animate</span></label>
+      <input type="text" id="txt-input" value="A24" maxlength="20" autocomplete="off" />
+    </div>
+    <div class="control">
+      <label>Font size <span class="val" id="font-size-val">200</span></label>
+      <input type="range" id="font-size" min="30" max="400" value="200" />
+    </div>
+    <div class="control">
+      <button class="upload-btn" onclick="document.getElementById('font-upload').click()">↑ Upload custom font (.ttf / .otf)</button>
+      <input type="file" id="font-upload" accept=".ttf,.otf,.woff" style="display:none" />
+      <div id="font-name"></div>
+    </div>
+    <canvas id="preview-c"></canvas>
+  </div>
+
+  <!-- Layout -->
+  <div class="section">
+    <div class="section-title">Layout</div>
+    <div class="control">
+      <label>Alignment</label>
+      <select id="text-align">
+        <option value="center" selected>Center</option>
+        <option value="left">Left</option>
+        <option value="right">Right</option>
+      </select>
+    </div>
+    <div class="control">
+      <label>Kerning <span class="val" id="letter-spacing-val">0</span> px</label>
+      <input type="range" id="letter-spacing" min="-100" max="100" value="0" step="1" />
+    </div>
+    <div class="control">
+      <label>
+        Text position
+        <button id="btn-reset-pos" style="background:none;border:none;font-size:11px;color:var(--text-dim);cursor:pointer;font-family:inherit;padding:0;font-weight:500">Reset</button>
+      </label>
+      <div id="pos-display" style="font-size:11px;color:var(--text-dim);font-family:ui-monospace,monospace;text-align:center;padding:4px 0">Drag the text on the canvas</div>
+    </div>
+  </div>
+
+  <!-- Canvas -->
+  <div class="section">
+    <div class="section-title">Canvas</div>
+    <div class="control">
+      <label>Dimensions</label>
+      <select id="canvas-preset">
+        <option value="auto">Auto (fullscreen)</option>
+        <option value="1920x1080">1920 × 1080 — 16:9</option>
+        <option value="1280x720">1280 × 720 — 16:9</option>
+        <option value="1080x1080">1080 × 1080 — square</option>
+        <option value="1080x1920">1080 × 1920 — portrait</option>
+        <option value="custom">Custom…</option>
+      </select>
+    </div>
+    <div class="control" id="custom-dims-ctrl" style="display:none">
+      <label>Size (px)</label>
+      <div class="dim-row">
+        <input type="number" id="canvas-w" value="1920" min="100" max="7680" placeholder="W" />
+        <span class="dim-sep">×</span>
+        <input type="number" id="canvas-h" value="1080" min="100" max="7680" placeholder="H" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Motion -->
+  <div class="section">
+    <div class="section-title">Motion</div>
+    <div class="control">
+      <label>Style</label>
+      <select id="move-style">
+        <option value="glide">Glide — smooth easing</option>
+        <option value="spring" selected>Spring — physics bounce</option>
+        <option value="drift">Drift — slow organic float</option>
+      </select>
+    </div>
+    <div class="control">
+      <label>Speed <span class="val" id="speed-val">4</span></label>
+      <input type="range" id="speed" min="1" max="10" value="4" step="0.5" />
+    </div>
+    <div class="control">
+      <label>Bounce <span class="val" id="bounce-val">15</span>%</label>
+      <input type="range" id="bounce" min="0" max="100" value="15" step="5" />
+    </div>
+    <div class="control">
+      <label>Stagger <span class="val" id="stagger-val">400</span> ms</label>
+      <input type="range" id="stagger" min="0" max="2000" value="400" step="50" />
+    </div>
+    <div class="control">
+      <label>Launch from</label>
+      <select id="launch-mode">
+        <option value="current">Current positions</option>
+        <option value="scatter">Random scatter</option>
+        <option value="bottom">Bottom edge</option>
+        <option value="top">Top edge</option>
+        <option value="center">Center burst</option>
+        <option value="sides">Left / right sides</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Particles -->
+  <div class="section">
+    <div class="section-title">Particles</div>
+    <div class="control">
+      <label>Count <span class="val" id="dot-count-val">800</span></label>
+      <input type="range" id="dot-count" min="100" max="3000" value="800" step="50" />
+    </div>
+    <div class="control">
+      <label>Size <span class="val" id="dot-size-val">4</span></label>
+      <input type="range" id="dot-size" min="1" max="60" value="4" step="0.5" />
+    </div>
+    <div class="control">
+      <label>Size variance <span class="val" id="dot-var-val">2</span></label>
+      <input type="range" id="dot-var" min="0" max="20" value="2" step="0.5" />
+    </div>
+    <div class="control">
+      <label>Target noise <span class="val" id="noise-val">3</span></label>
+      <input type="range" id="noise" min="0" max="20" value="3" step="0.5" />
+    </div>
+    <div class="control">
+      <label>Floaters <span class="val" id="floater-pct-val">15</span>%</label>
+      <input type="range" id="floater-pct" min="0" max="50" value="15" step="1" />
+    </div>
+    <div class="toggle">
+      <label>Outline only</label>
+      <div class="toggle-switch" id="outline-toggle"></div>
+    </div>
+    <div class="toggle">
+      <label>Show ghost on canvas</label>
+      <div class="toggle-switch" id="ghost-toggle"></div>
+    </div>
+  </div>
+
+  <!-- Colors -->
+  <div class="section">
+    <div class="section-title">Colors</div>
+    <div class="color-row" style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--line)">
+      <span class="color-label">Background</span>
+      <input type="color" id="bg-color" value="#0a0a0a" />
+    </div>
+    <span id="color-list-label">Particle colors</span>
+    <div id="color-list"></div>
+    <button class="btn ghost" id="btn-add-color" style="margin-top:12px;font-size:12px">+ Add color</button>
+  </div>
+
+  <!-- Timeline -->
+  <div class="section" id="timeline-section">
+    <div class="section-title">Timeline</div>
+    <div class="control">
+      <label>
+        Frame
+        <span class="frame-count"><span id="frame-val">—</span> / <span id="frame-total">—</span></span>
+      </label>
+      <input type="range" id="timeline-slider" min="0" max="0" value="0" />
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" id="btn-resume" style="font-size:12px">▶ Resume</button>
+      <button class="btn ghost" id="btn-frame-png" style="font-size:12px">↓ PNG</button>
+      <button class="btn ghost" id="btn-frame-svg" style="font-size:12px">↓ SVG</button>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="section">
+    <div class="section-title">Actions</div>
+    <button class="btn accent" id="btn-animate">▶ Animate to text</button>
+    <button class="btn ghost" id="btn-scatter">⊹ Scatter</button>
+    <button class="btn ghost" id="btn-png">↓ Export PNG</button>
+    <button class="btn ghost" id="btn-svg">↓ Export SVG</button>
+    <button class="btn ghost" id="btn-video" disabled>↓ Export Video</button>
+    <div id="status" class="status-pill">Type text and click Animate</div>
+  </div>
+
+</div>
+
+<div id="canvas-wrap"><canvas id="c"></canvas></div>
+
+<script>
+(function () {
+
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const wrap   = document.getElementById('canvas-wrap');
+const dpr    = window.devicePixelRatio || 1;
+
+let W, H;
+let customCanvasW = 0, customCanvasH = 0;
+
+function resize() {
+  const wrapW = wrap.clientWidth, wrapH = wrap.clientHeight;
+  if (customCanvasW > 0 && customCanvasH > 0) {
+    W = customCanvasW; H = customCanvasH;
+    const scale = Math.min(wrapW / W, wrapH / H);
+    const cssW = Math.round(W * scale), cssH = Math.round(H * scale);
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width  = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+  } else {
+    W = wrapW; H = wrapH;
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (textX === null || textY === null) { textX = W / 2; textY = H / 2; }
+  else { textX = Math.max(0, Math.min(W, textX)); textY = Math.max(0, Math.min(H, textY)); }
+}
+
+// ── state ──
+let bgColor    = '#0a0a0a';
+let colors     = [{ hex: '#e0ddd5', pct: 100 }];
+let dots       = [];
+let simMode    = 'scatter';
+let rafId      = null;
+let customFont = null;
+let outlineOnly = false;
+let showGhost   = false;
+let textX = null, textY = null;
+let textDragging = false;
+
+// ── frame recording ──
+let frames = [], recording = false, animStartTime = 0, lastCapture = 0;
+let scrubbing = false, scrubSnap = null;
+const CAPTURE_MS = 50;
+
+// ── video ──
+let mediaRecorder = null, videoChunks = [], videoBlob = null;
+let videoMime = 'video/webm';
+
+// ── helpers ──
+const g  = id => parseFloat(document.getElementById(id).value);
+const gi = id => parseInt(document.getElementById(id).value);
+const gv = id => document.getElementById(id).value;
+
+function cssToLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (W / rect.width),
+    y: (e.clientY - rect.top)  * (H / rect.height)
+  };
+}
+
+function getAnchor() { return { x: textX ?? W / 2, y: textY ?? H / 2 }; }
+
+// ── slider sync ──
+['font-size','dot-count','dot-size','dot-var','noise','floater-pct',
+ 'speed','bounce','stagger','letter-spacing'].forEach(id => {
+  const el = document.getElementById(id), vEl = document.getElementById(id + '-val');
+  if (!el || !vEl) return;
+  vEl.textContent = el.value;
+  el.addEventListener('input', () => { vEl.textContent = el.value; });
+});
+
+// ── toggles ──
+document.getElementById('outline-toggle').addEventListener('click', function() {
+  outlineOnly = !outlineOnly;
+  this.classList.toggle('on', outlineOnly);
+  updatePreview();
+});
+document.getElementById('ghost-toggle').addEventListener('click', function() {
+  showGhost = !showGhost;
+  this.classList.toggle('on', showGhost);
+});
+
+// ── canvas drag — grab the ghost text directly ──
+let dragOffsetX = 0, dragOffsetY = 0;
+
+function getTextHitArea() {
+  const text     = document.getElementById('txt-input').value.trim() || 'HTY';
+  const { x: ax, y: ay } = getAnchor();
+  const { w, h } = measureText(text, gi('font-size'), g('letter-spacing'));
+  const align    = gv('text-align');
+  const startX   = align === 'left' ? ax : align === 'right' ? ax - w : ax - w / 2;
+  const pad = Math.max(20, Math.min(w, h) * 0.15);
+  return { left: startX - pad, top: ay - h / 2 - pad, right: startX + w + pad, bottom: ay + h / 2 + pad };
+}
+
+function isOverText(lx, ly) {
+  const r = getTextHitArea();
+  return lx >= r.left && lx <= r.right && ly >= r.top && ly <= r.bottom;
+}
+
+canvas.addEventListener('mousedown', e => {
+  const pos = cssToLogical(e);
+  if (isOverText(pos.x, pos.y)) {
+    textDragging = true;
+    dragOffsetX  = pos.x - (textX ?? W / 2);
+    dragOffsetY  = pos.y - (textY ?? H / 2);
+    canvas.style.cursor = 'grabbing';
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const pos = cssToLogical(e);
+  if (textDragging) {
+    textX = pos.x - dragOffsetX;
+    textY = pos.y - dragOffsetY;
+    updatePosDisplay();
+    if (scrubbing && scrubSnap) renderSnapshot(scrubSnap);
+  } else {
+    canvas.style.cursor = isOverText(pos.x, pos.y) ? 'grab' : 'default';
+  }
+});
+
+canvas.addEventListener('mouseup',    () => { textDragging = false; canvas.style.cursor = 'default'; });
+canvas.addEventListener('mouseleave', () => { textDragging = false; canvas.style.cursor = 'default'; });
+
+document.getElementById('btn-reset-pos').addEventListener('click', () => {
+  textX = W / 2; textY = H / 2;
+  updatePosDisplay();
+  if (scrubbing && scrubSnap) renderSnapshot(scrubSnap);
+});
+
+function updatePosDisplay() {
+  const el = document.getElementById('pos-display');
+  el.textContent = `X: ${Math.round(textX ?? W/2)}, Y: ${Math.round(textY ?? H/2)}`;
+}
+
+// ── canvas dimensions ──
+document.getElementById('canvas-preset').addEventListener('change', function() {
+  const val = this.value;
+  const cc  = document.getElementById('custom-dims-ctrl');
+  if (val === 'auto') {
+    customCanvasW = 0; customCanvasH = 0;
+    cc.style.display = 'none';
+  } else if (val === 'custom') {
+    cc.style.display = 'block';
+    customCanvasW = parseInt(document.getElementById('canvas-w').value) || 1920;
+    customCanvasH = parseInt(document.getElementById('canvas-h').value) || 1080;
+  } else {
+    const [w, h] = val.split('x').map(Number);
+    customCanvasW = w; customCanvasH = h;
+    cc.style.display = 'none';
+  }
+  textX = null; textY = null;
+  resize();
+  updatePosDisplay();
+});
+
+['canvas-w','canvas-h'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => {
+    if (gv('canvas-preset') !== 'custom') return;
+    customCanvasW = parseInt(document.getElementById('canvas-w').value) || 1920;
+    customCanvasH = parseInt(document.getElementById('canvas-h').value) || 1080;
+    textX = null; textY = null;
+    resize();
+  });
+});
+
+// ── color palette ──
+function pickColorIdx() {
+  if (colors.length === 1) return 0;
+  const total = colors.reduce((s, c) => s + c.pct, 0);
+  if (total <= 0) return 0;
+  let r = Math.random() * total;
+  for (let i = 0; i < colors.length; i++) {
+    r -= colors[i].pct;
+    if (r <= 0) return i;
+  }
+  return colors.length - 1;
+}
+
+function safeColor(ci) {
+  return colors[Math.min(ci ?? 0, colors.length - 1)]?.hex || '#ffffff';
+}
+
+function renderColorList() {
+  const list = document.getElementById('color-list');
+  list.innerHTML = '';
+  colors.forEach((c, i) => {
+    const entry = document.createElement('div');
+    entry.className = 'color-entry';
+    entry.innerHTML = `
+      <div class="color-entry-top">
+        <input type="color" class="color-entry-swatch" value="${c.hex}" data-ci="${i}" />
+        <span class="color-entry-label">Color ${i + 1}</span>
+        <span class="color-entry-pct" id="cpct-${i}">${Math.round(c.pct)}%</span>
+        ${colors.length > 1 ? `<button class="color-entry-remove" data-ci="${i}" title="Remove">×</button>` : ''}
+      </div>
+      <input type="range" class="cpct-slider" min="0" max="100" value="${c.pct}" step="1" data-ci="${i}" />
+    `;
+    list.appendChild(entry);
+  });
+  list.querySelectorAll('.color-entry-swatch').forEach(el => {
+    el.addEventListener('input', e => {
+      colors[+e.target.dataset.ci].hex = e.target.value;
+      updatePreview();
+    });
+  });
+  list.querySelectorAll('.cpct-slider').forEach(el => {
+    el.addEventListener('input', e => {
+      const i = +e.target.dataset.ci;
+      colors[i].pct = parseFloat(e.target.value);
+      document.getElementById(`cpct-${i}`).textContent = Math.round(colors[i].pct) + '%';
+    });
+  });
+  list.querySelectorAll('.color-entry-remove').forEach(el => {
+    el.addEventListener('click', e => {
+      colors.splice(+e.target.dataset.ci, 1);
+      renderColorList();
+      updateAddColorBtn();
+      updatePreview();
+    });
+  });
+}
+
+function updateAddColorBtn() {
+  document.getElementById('btn-add-color').disabled = colors.length >= 4;
+}
+
+const COLOR_PRESETS = ['#ff3366','#3399ff','#33ff99','#ffcc00'];
+document.getElementById('btn-add-color').addEventListener('click', () => {
+  if (colors.length >= 4) return;
+  colors.push({ hex: COLOR_PRESETS[colors.length % COLOR_PRESETS.length], pct: 50 });
+  renderColorList();
+  updateAddColorBtn();
+});
+
+document.getElementById('bg-color').addEventListener('input', e => {
+  bgColor = e.target.value;
+  updatePreview();
+});
+
+// ── dot factory ──
+function newDot() {
+  return {
+    x: Math.random() * W, y: Math.random() * H,
+    vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2,
+    tx: 0, ty: 0, nx: 0, ny: 0,
+    r: g('dot-size') * 0.5 + Math.random() * g('dot-var') * 0.5,
+    delay: 0, startTime: null, isFloater: false,
+    colorIdx: pickColorIdx()
+  };
+}
+function initDots() { dots = Array.from({ length: gi('dot-count') }, newDot); }
+
+// ── per-dot physics ──
+function updateDot(d, now) {
+  function wander() {
+    d.vx += (Math.random() - 0.5) * 0.08; d.vy += (Math.random() - 0.5) * 0.08;
+    d.vx *= 0.97; d.vy *= 0.97;
+    d.x += d.vx; d.y += d.vy;
+    if (d.x < -20) d.x = W + 20; else if (d.x > W + 20) d.x = -20;
+    if (d.y < -20) d.y = H + 20; else if (d.y > H + 20) d.y = -20;
+  }
+  if (simMode === 'scatter' || !d.startTime || d.isFloater) { wander(); return; }
+  if (now - d.startTime < d.delay) { wander(); return; }
+
+  const style = gv('move-style'), speed = g('speed');
+  const tx = d.tx + d.nx, ty = d.ty + d.ny;
+  if (style === 'glide') {
+    const f = speed * 0.007;
+    d.x += (tx - d.x) * f; d.y += (ty - d.y) * f;
+    d.vx = 0; d.vy = 0;
+  } else if (style === 'spring') {
+    const tension = speed * 0.004, damping = 0.98 - (g('bounce') / 100) * 0.32;
+    d.vx += (tx - d.x) * tension; d.vy += (ty - d.y) * tension;
+    d.vx *= damping; d.vy *= damping;
+    d.x += d.vx; d.y += d.vy;
+  } else {
+    d.vx += (Math.random() - 0.5) * 0.14; d.vy += (Math.random() - 0.5) * 0.14;
+    const f = speed * 0.0025;
+    d.vx += (tx - d.x) * f; d.vy += (ty - d.y) * f;
+    d.vx *= 0.97; d.vy *= 0.97;
+    d.x += d.vx; d.y += d.vy;
+  }
+}
+
+// ── text renderer (opentype + canvas fallback) ──
+// anchorX/Y = position of text center (Y) and alignment anchor (X: left edge, center, or right edge)
+function drawTextOnCtx(cx, text, fontSize, ls, align, anchorX, anchorY, mode, color) {
+  if (!text) return;
+  cx.save();
+  if (customFont) {
+    try {
+      const chars     = Array.from(text);
+      const fullBb    = customFont.getPath(text, 0, 0, fontSize).getBoundingBox();
+      const th        = fullBb.y2 - fullBb.y1;
+      const baselineY = anchorY - th / 2 - fullBb.y1;
+      const advances  = chars.map(ch => {
+        try { return customFont.charToGlyph(ch).advanceWidth * fontSize / customFont.unitsPerEm; }
+        catch(e) { return fontSize * 0.5; }
+      });
+      const totalW = advances.reduce((s, a, i) => s + a + (i < chars.length - 1 ? ls : 0), 0);
+      const startX = align === 'left' ? anchorX : align === 'right' ? anchorX - totalW : anchorX - totalW / 2;
+      if (mode === 'stroke') { cx.strokeStyle = color; cx.lineWidth = Math.max(1.5, fontSize * 0.035); }
+      else cx.fillStyle = color;
+      let curX = startX;
+      for (let i = 0; i < chars.length; i++) {
+        const path = new Path2D(customFont.getPath(chars[i], curX, baselineY, fontSize).toPathData());
+        mode === 'stroke' ? cx.stroke(path) : cx.fill(path);
+        curX += advances[i] + ls;
+      }
+      cx.restore(); return;
+    } catch(e) {}
+  }
+  cx.font = `bold ${fontSize}px Georgia, serif`;
+  cx.textBaseline = 'middle';
+  cx.textAlign    = 'left';
+  const chars      = Array.from(text);
+  const charWidths = chars.map(ch => cx.measureText(ch).width);
+  const totalW     = charWidths.reduce((s, w) => s + w, 0) + ls * (chars.length - 1);
+  const startX     = align === 'left' ? anchorX : align === 'right' ? anchorX - totalW : anchorX - totalW / 2;
+  if (mode === 'stroke') { cx.strokeStyle = color; cx.lineWidth = Math.max(1.5, fontSize * 0.04); }
+  else cx.fillStyle = color;
+  let curX = startX;
+  for (let i = 0; i < chars.length; i++) {
+    mode === 'stroke' ? cx.strokeText(chars[i], curX, anchorY) : cx.fillText(chars[i], curX, anchorY);
+    curX += charWidths[i] + ls;
+  }
+  cx.restore();
+}
+
+function measureText(text, fontSize, ls) {
+  if (customFont) {
+    try {
+      const chars    = Array.from(text);
+      const fullBb   = customFont.getPath(text, 0, 0, fontSize).getBoundingBox();
+      const advances = chars.map(ch => {
+        try { return customFont.charToGlyph(ch).advanceWidth * fontSize / customFont.unitsPerEm; }
+        catch(e) { return fontSize * 0.5; }
+      });
+      return {
+        w: advances.reduce((s, a, i) => s + a + (i < chars.length - 1 ? ls : 0), 0),
+        h: fullBb.y2 - fullBb.y1
+      };
+    } catch(e) {}
+  }
+  const tc = document.createElement('canvas').getContext('2d');
+  tc.font = `bold ${fontSize}px Georgia, serif`;
+  const ws = Array.from(text).map(ch => tc.measureText(ch).width);
+  return { w: ws.reduce((s, w) => s + w, 0) + ls * (text.length - 1), h: fontSize * 0.72 };
+}
+
+function drawGhost(alpha) {
+  const text = document.getElementById('txt-input').value.trim();
+  if (!text) return;
+  const { x, y } = getAnchor();
+  ctx.save();
+  ctx.globalAlpha = alpha ?? 0.13;
+  drawTextOnCtx(ctx, text, gi('font-size'), g('letter-spacing'),
+    gv('text-align'), x, y, outlineOnly ? 'stroke' : 'fill', colors[0].hex);
+  ctx.restore();
+}
+
+function updatePreview() {
+  const pc   = document.getElementById('preview-c');
+  const px   = pc.getContext('2d');
+  const pdpr = window.devicePixelRatio || 1;
+  const pW   = pc.clientWidth || 260, pH = pc.clientHeight || 80;
+  pc.width   = Math.round(pW * pdpr); pc.height = Math.round(pH * pdpr);
+  px.setTransform(pdpr, 0, 0, pdpr, 0, 0);
+  px.fillStyle = bgColor; px.fillRect(0, 0, pW, pH);
+  const text = document.getElementById('txt-input').value.trim() || 'HTY';
+  const fontSize = gi('font-size'), ls = g('letter-spacing');
+  const { w: tw, h: th } = measureText(text, fontSize, ls);
+  const scale = Math.min((pW - 16) / tw, (pH - 16) / th, 1);
+  drawTextOnCtx(px, text, fontSize * scale, ls * scale,
+    'center', pW / 2, pH / 2, outlineOnly ? 'stroke' : 'fill', colors[0].hex);
+}
+
+// ── glyph sampling ──
+function sampleGlyph(text, fontSize) {
+  const oc = document.createElement('canvas');
+  oc.width = W; oc.height = H;
+  const ox = oc.getContext('2d');
+  const { x, y } = getAnchor();
+  drawTextOnCtx(ox, text, fontSize, g('letter-spacing'),
+    gv('text-align'), x, y, outlineOnly ? 'stroke' : 'fill', '#fff');
+  const data         = ox.getImageData(0, 0, W, H).data;
+  const floaterCount = Math.round(gi('dot-count') * g('floater-pct') / 100);
+  const targetCount  = gi('dot-count') - floaterCount;
+  const step         = Math.max(1, Math.floor(Math.sqrt((W * H) / (targetCount * 8))));
+  const pts = [];
+  for (let py = 0; py < H; py += step)
+    for (let px2 = 0; px2 < W; px2 += step)
+      if (data[(py * W + px2) * 4 + 3] > 100) pts.push([px2, py]);
+  return pts;
+}
+
+// ── batch render dots by color for performance ──
+function renderDots(dotArr) {
+  const paths = colors.map(() => new Path2D());
+  dotArr.forEach(d => {
+    const ci = Math.min(d.colorIdx ?? d.ci ?? 0, colors.length - 1);
+    paths[ci].moveTo(d.x + d.r, d.y);
+    paths[ci].arc(d.x, d.y, d.r, 0, Math.PI * 2);
+  });
+  colors.forEach((c, ci) => { ctx.fillStyle = c.hex; ctx.fill(paths[ci]); });
+}
+
+// ── render snapshot ──
+function renderSnapshot(snap) {
+  ctx.fillStyle = bgColor; ctx.fillRect(0, 0, W, H);
+  if (simMode === 'scatter') drawGhost(0.18);
+  else if (showGhost) drawGhost();
+  renderDots(snap);
+}
+
+// ── render loop ──
+function startLoop() {
+  if (rafId) cancelAnimationFrame(rafId);
+  function frame(now) {
+    ctx.fillStyle = bgColor; ctx.fillRect(0, 0, W, H);
+    // In scatter mode always show ghost so user can see/drag the text
+    if (simMode === 'scatter') drawGhost(0.18);
+    else if (showGhost) drawGhost();
+
+    dots.forEach(d => updateDot(d, now));
+    renderDots(dots);
+
+    if (recording && simMode === 'animate') {
+      if (now - lastCapture >= CAPTURE_MS) {
+        frames.push(dots.map(d => ({ x: d.x, y: d.y, r: d.r, ci: d.colorIdx })));
+        lastCapture = now;
+        const slider = document.getElementById('timeline-slider');
+        slider.max = frames.length - 1;
+        document.getElementById('frame-total').textContent = frames.length;
+        if (!scrubbing) {
+          slider.value = frames.length - 1;
+          document.getElementById('frame-val').textContent = frames.length;
+        }
+      }
+      const recordUntil = Math.min(g('stagger') + 4000, 8000);
+      if (now - animStartTime > recordUntil) {
+        recording = false;
+        stopVideoRecording();
+        setStatus(`${frames.length} frames recorded — scrub or download video`);
+      }
+    }
+    rafId = requestAnimationFrame(frame);
+  }
+  rafId = requestAnimationFrame(frame);
+}
+
+// ── scatter ──
+function scatter() {
+  simMode = 'scatter'; recording = false;
+  dots.forEach(d => { d.startTime = null; d.isFloater = false; });
+  stopVideoRecording();
+  setStatus('Scattered');
+}
+
+// ── animate ──
+function animate() {
+  const text       = document.getElementById('txt-input').value.trim() || 'HTY';
+  const fontSize   = gi('font-size');
+  const count      = gi('dot-count');
+  const floaterPct = g('floater-pct');
+  setStatus('Sampling…');
+
+  requestAnimationFrame(() => {
+    const pts = sampleGlyph(text, fontSize);
+    if (!pts.length) { setStatus('No glyph pixels — try a larger font size'); return; }
+
+    while (dots.length < count) dots.push(newDot());
+    dots.length = count;
+
+    const floaterCount = Math.round(count * floaterPct / 100);
+    const idx = Array.from({ length: count }, (_, i) => i);
+    for (let i = 0; i < floaterCount; i++) {
+      const j = i + Math.floor(Math.random() * (count - i));
+      [idx[i], idx[j]] = [idx[j], idx[i]];
+    }
+    const floaterSet  = new Set(idx.slice(0, floaterCount));
+    const now         = performance.now();
+    const staggerMs   = g('stagger');
+    const noiseAmt    = g('noise');
+    const launchMode  = gv('launch-mode');
+
+    dots.forEach((d, i) => {
+      d.colorIdx  = pickColorIdx();
+      d.r         = g('dot-size') * 0.5 + Math.random() * g('dot-var') * 0.5;
+      d.isFloater = floaterSet.has(i);
+      if (d.isFloater) { d.startTime = null; return; }
+
+      const [tx, ty] = pts[Math.floor(Math.random() * pts.length)];
+      d.tx = tx; d.ty = ty;
+      d.nx = (Math.random() - 0.5) * 2 * noiseAmt;
+      d.ny = (Math.random() - 0.5) * 2 * noiseAmt;
+      d.delay     = Math.random() * staggerMs;
+      d.startTime = now;
+
+      if (launchMode !== 'current') {
+        switch (launchMode) {
+          case 'bottom': d.x = W*0.1+Math.random()*W*0.8; d.y = H+50+Math.random()*100; break;
+          case 'top':    d.x = W*0.1+Math.random()*W*0.8; d.y = -50-Math.random()*100; break;
+          case 'center': { const a=Math.random()*Math.PI*2,r=20+Math.random()*80;
+            d.x=W/2+Math.cos(a)*r; d.y=H/2+Math.sin(a)*r; break; }
+          case 'sides':
+            d.x = Math.random()>0.5 ? -60-Math.random()*80 : W+60+Math.random()*80;
+            d.y = Math.random()*H; break;
+          default: d.x = Math.random()*W; d.y = Math.random()*H;
+        }
+        d.vx = 0; d.vy = 0;
+      }
+    });
+
+    frames = []; scrubbing = false; scrubSnap = null;
+    recording = true; animStartTime = now; lastCapture = 0;
+
+    const ts = document.getElementById('timeline-section');
+    ts.style.display = 'block';
+    const slider = document.getElementById('timeline-slider');
+    slider.max = 0; slider.value = 0;
+    document.getElementById('frame-val').textContent = '—';
+    document.getElementById('frame-total').textContent = '—';
+
+    videoBlob = null;
+    document.getElementById('btn-video').disabled = true;
+    startVideoRecording();
+
+    simMode = 'animate';
+    setStatus(`Animating "${text}"…`);
+  });
+}
+
+// ── video recording ──
+function startVideoRecording() {
+  if (!canvas.captureStream) return;
+  const mimes = ['video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+  videoMime = mimes.find(m => { try { return MediaRecorder.isTypeSupported(m); } catch(e) { return false; } }) || 'video/webm';
+  videoChunks = [];
+  try {
+    const stream = canvas.captureStream(30);
+    mediaRecorder = new MediaRecorder(stream, { mimeType: videoMime, videoBitsPerSecond: 12000000 });
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) videoChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      videoBlob = new Blob(videoChunks, { type: videoMime });
+      document.getElementById('btn-video').disabled = false;
+    };
+    mediaRecorder.start(200);
+  } catch(e) { console.warn('Video recording unavailable:', e); }
+}
+
+function stopVideoRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+}
+
+document.getElementById('btn-video').addEventListener('click', () => {
+  if (!videoBlob) return;
+  const ext = videoMime.startsWith('video/mp4') ? 'mp4' : 'webm';
+  const url = URL.createObjectURL(videoBlob);
+  const a   = document.createElement('a');
+  a.href = url; a.download = `particle-typeface.${ext}`; a.click();
+  URL.revokeObjectURL(url);
+  setStatus('Video downloaded (' + ext + ')');
+});
+
+// ── timeline scrubbing ──
+document.getElementById('timeline-slider').addEventListener('input', function() {
+  const idx = Math.min(parseInt(this.value), frames.length - 1);
+  if (idx < 0 || !frames[idx]) return;
+  document.getElementById('frame-val').textContent = idx + 1;
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  recording = false;
+  scrubbing = true;
+  scrubSnap = frames[idx];
+  renderSnapshot(scrubSnap);
+});
+
+document.getElementById('btn-resume').addEventListener('click', () => {
+  if (scrubSnap) {
+    dots.forEach((d, i) => {
+      if (!scrubSnap[i]) return;
+      d.x = scrubSnap[i].x; d.y = scrubSnap[i].y;
+      d.r = scrubSnap[i].r; d.vx = 0; d.vy = 0;
+    });
+  }
+  scrubbing = false; scrubSnap = null;
+  startLoop();
+  setStatus('Resumed from frame ' + (parseInt(document.getElementById('timeline-slider').value) + 1));
+});
+
+document.getElementById('btn-frame-png').addEventListener('click', () => {
+  if (!scrubSnap) return;
+  renderSnapshot(scrubSnap);
+  const a = document.createElement('a');
+  a.download = `particle-frame-${document.getElementById('timeline-slider').value}.png`;
+  a.href = canvas.toDataURL('image/png'); a.click();
+  setStatus('Frame PNG exported');
+});
+
+document.getElementById('btn-frame-svg').addEventListener('click', () => {
+  const snap = scrubSnap || dots.map(d => ({ x: d.x, y: d.y, r: d.r, ci: d.colorIdx }));
+  saveSVG(snap, `particle-frame-${document.getElementById('timeline-slider').value}.svg`);
+  setStatus('Frame SVG exported');
+});
+
+// ── exports ──
+function exportPNG() {
+  const a = document.createElement('a');
+  a.download = 'particle-typeface.png';
+  a.href = canvas.toDataURL('image/png'); a.click();
+  setStatus('PNG exported');
+}
+
+function saveSVG(dotArr, filename) {
+  const groups = {};
+  dotArr.forEach(d => {
+    const col = safeColor(d.ci ?? d.colorIdx);
+    if (!groups[col]) groups[col] = [];
+    groups[col].push(d);
+  });
+  const gEls = Object.entries(groups).map(([col, ds]) => {
+    const circles = ds.map(d => `<circle cx="${d.x.toFixed(2)}" cy="${d.y.toFixed(2)}" r="${d.r.toFixed(2)}"/>`).join('\n    ');
+    return `  <g fill="${col}">\n    ${circles}\n  </g>`;
+  }).join('\n');
+  const svg = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`,
+    `  <rect width="${W}" height="${H}" fill="${bgColor}"/>`,
+    gEls, '</svg>'
+  ].join('\n');
+  const blob = new Blob([svg], { type: 'image/svg+xml' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportSVG() {
+  saveSVG(dots.map(d => ({ x: d.x, y: d.y, r: d.r, ci: d.colorIdx })), 'particle-typeface.svg');
+  setStatus('SVG exported');
+}
+
+// ── font upload ──
+document.getElementById('font-upload').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  if (typeof opentype === 'undefined') { setStatus('opentype.js not loaded'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      customFont = opentype.parse(ev.target.result);
+      document.getElementById('font-name').textContent = '✓ ' + file.name;
+      setStatus('Font loaded: ' + file.name); updatePreview();
+    } catch(err) { setStatus('Font error: ' + err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+// ── wiring ──
+document.getElementById('btn-animate').addEventListener('click', animate);
+document.getElementById('btn-scatter').addEventListener('click', scatter);
+document.getElementById('btn-png').addEventListener('click', exportPNG);
+document.getElementById('btn-svg').addEventListener('click', exportSVG);
+document.getElementById('txt-input').addEventListener('input', updatePreview);
+document.getElementById('txt-input').addEventListener('keydown', e => { if (e.key === 'Enter') animate(); });
+['font-size','letter-spacing','text-align'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updatePreview);
+  document.getElementById(id).addEventListener('change', updatePreview);
+});
+
+function setStatus(msg) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.classList.toggle('ok',
+    msg.includes('exported') || msg.includes('loaded') ||
+    msg.includes('recorded') || msg.includes('Resumed') || msg.includes('downloaded'));
+}
+
+// ── boot ──
+resize();
+window.addEventListener('resize', () => {
+  if (customCanvasW === 0) resize();
+});
+renderColorList();
+initDots();
+updatePreview();
+updatePosDisplay();
+startLoop();
+
+})();
+</script>
+
+<script>
+(function () {
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js';
+  s.onload = () => console.log('opentype.js ready');
+  s.onerror = () => console.warn('opentype.js unavailable — custom fonts disabled');
+  document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
