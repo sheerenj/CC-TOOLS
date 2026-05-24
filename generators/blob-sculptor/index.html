@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Blob Sculptor</title>
+<style>
+:root {
+  --bg: #ececec; --card: #ffffff; --text: #000000; --text-dim: #6b6b6b;
+  --line: #e4e4e4; --line-2: #d4d4d4; --accent: #d4fc4e;
+  --radius-lg: 20px; --radius-pill: 999px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg);
+  font-family: -apple-system, "Inter", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased; }
+body { display: flex; }
+
+#sidebar {
+  width: 296px; flex-shrink: 0; background: var(--bg);
+  padding: 16px; overflow-y: auto; height: 100vh;
+  border-right: 1px solid var(--line-2);
+}
+#sidebar::-webkit-scrollbar { width: 6px; }
+#sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 3px; }
+
+.brand-row { display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 14px; padding: 0 2px; }
+.brand { font-size: 16px; font-weight: 900; letter-spacing: -0.02em; }
+.brand .dot { display: inline-block; width: 5px; height: 5px; background: #000;
+  border-radius: 50%; vertical-align: baseline; margin-left: 1px; margin-bottom: 1px; }
+.brand-sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.1em; font-weight: 700; }
+
+.section { background: var(--card); border-radius: var(--radius-lg);
+  padding: 14px 14px 16px; margin-bottom: 10px; }
+.section-title { display: inline-block; background: var(--accent); color: #000;
+  padding: 3px 7px; font-family: ui-monospace, monospace; font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px; border-radius: 3px; }
+
+.ctrl { margin-bottom: 12px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl > label { display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+.ctrl > label .val { color: var(--text-dim); font-size: 11px; font-family: ui-monospace, monospace; }
+
+input[type=range] { -webkit-appearance: none; width: 100%; height: 4px;
+  background: var(--line-2); border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
+  width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+  color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
+  font-size: 12px; outline: none; cursor: pointer; font-family: inherit; font-weight: 500;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
+
+input[type="number"].num-in {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px;
+  font-size: 13px; font-family: ui-monospace, monospace; background: #fafafa;
+  outline: none; color: var(--text); }
+
+button.btn { width: 100%; background: #000; color: #fff; border: none;
+  padding: 10px 14px; border-radius: var(--radius-pill); font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: background 0.15s; font-family: inherit; }
+button.btn:hover { background: #222; }
+button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line-2); }
+button.btn.ghost:hover { background: #f5f5f5; }
+.btn-row { display: flex; gap: 8px; }
+.btn-row .btn { flex: 1; }
+
+.hint { font-size: 11px; color: var(--text-dim); line-height: 1.55; margin-top: 8px; }
+
+#canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center;
+  background: #ddd; overflow: hidden; }
+#preview { line-height: 0; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="brand-row">
+    <div>
+      <div class="brand">HEAR THE YOUTH<span class="dot"></span></div>
+      <div class="brand-sub">Blob Sculptor</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Seed</div>
+    <div class="ctrl">
+      <input type="number" class="num-in" id="in-seed" value="42" min="0" max="999999" step="1"/>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" id="btn-rand">Randomize</button>
+    </div>
+    <p class="hint">Same seed → same composition every time.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Shape</div>
+    <div class="ctrl">
+      <label>Lobes <span class="val" id="v-lobes">Auto</span></label>
+      <input type="range" id="sl-lobes" min="0" max="6" value="0" step="1"/>
+    </div>
+    <div class="ctrl">
+      <label>Blobs <span class="val" id="v-blobs">Auto</span></label>
+      <input type="range" id="sl-blobs" min="0" max="4" value="0" step="1"/>
+    </div>
+    <div class="ctrl">
+      <label>Concavity <span class="val" id="v-depth">Auto</span></label>
+      <input type="range" id="sl-depth" min="0" max="100" value="0" step="1"/>
+    </div>
+    <p class="hint">0 = randomised from seed.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Export</div>
+    <button class="btn" id="btn-export">↓ Download SVG</button>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <div id="preview"></div>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+// ── PRNG ──────────────────────────────────────────────────────────────────────
+function createRNG(seed) {
+  let s = (seed ^ 0xDEADBEEF) >>> 0;
+  function next() {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  return {
+    next,
+    float(min = 0, max = 1) { return min + next() * (max - min); },
+    int(min, max) { return Math.floor(min + next() * (max - min + 1)); },
+    pick(arr) { return arr[Math.floor(next() * arr.length)]; },
+    bool(p = 0.5) { return next() < p; },
+  };
+}
+
+// ── Color ─────────────────────────────────────────────────────────────────────
+function hslToHex(h, s, l) {
+  h = ((h % 360) + 360) % 360;
+  s = Math.max(0, Math.min(100, s)) / 100;
+  l = Math.max(0, Math.min(100, l)) / 100;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => {
+    const k = (n + h / 30) % 12;
+    const c = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(255 * c).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+function adj([h, s, l], dh = 0, ds = 0, dl = 0) {
+  return [h + dh, Math.max(10, Math.min(100, s + ds)), Math.max(5, Math.min(96, l + dl))];
+}
+
+const BACK_RAMPS = [
+  [[0, 55, 48],   [355, 88, 28],  [20,  72, 10]],
+  [[340, 60, 42], [350, 90, 24],  [200, 55, 12]],
+  [[15, 65, 45],  [8,   90, 30],  [220, 60, 12]],
+  [[160, 50, 35], [150, 80, 22],  [260, 55, 10]],
+  [[30, 60, 42],  [20,  85, 26],  [240, 65, 10]],
+];
+
+const FRONT_RAMPS = [
+  [[330, 55, 90], [340, 82, 62],  [355, 75, 30]],
+  [[20,  65, 88], [10,  85, 62],  [340, 70, 28]],
+  [[270, 55, 90], [280, 80, 62],  [250, 65, 28]],
+  [[200, 60, 88], [210, 85, 58],  [230, 70, 26]],
+  [[280, 50, 88], [290, 75, 62],  [20,  60, 28]],
+  [[170, 55, 85], [180, 80, 55],  [260, 65, 25]],
+];
+
+// ── Blob geometry ─────────────────────────────────────────────────────────────
+function handleLen(r, N) {
+  return r * (4 / 3) * Math.tan(Math.PI / (4 * N));
+}
+
+function blobPath(cx, cy, Ro, Ri, N, rotation = -Math.PI / 2) {
+  const n = 2 * N;
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const angle = rotation + (i / n) * 2 * Math.PI;
+    const r = i % 2 === 0 ? Ro : Ri;
+    pts.push({ x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle), angle, r, outer: i % 2 === 0 });
+  }
+  const fmt = v => v.toFixed(2);
+  let d = `M ${fmt(pts[0].x)},${fmt(pts[0].y)}`;
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[i], p1 = pts[(i + 1) % n];
+    const h0 = p0.outer ? handleLen(Ro, N) * 1.05 : handleLen(Ri, N) * 1.30;
+    const h1 = p1.outer ? handleLen(Ro, N) * 1.05 : handleLen(Ri, N) * 1.30;
+    const tx0 = -Math.sin(p0.angle), ty0 = Math.cos(p0.angle);
+    const tx1 = -Math.sin(p1.angle), ty1 = Math.cos(p1.angle);
+    const cp1x = p0.x + h0 * tx0, cp1y = p0.y + h0 * ty0;
+    const cp2x = p1.x - h1 * tx1, cp2y = p1.y - h1 * ty1;
+    d += ` C ${fmt(cp1x)},${fmt(cp1y)} ${fmt(cp2x)},${fmt(cp2y)} ${fmt(p1.x)},${fmt(p1.y)}`;
+  }
+  return d + ' Z';
+}
+
+function valleyPoints(cx, cy, Ri, N, rotation = -Math.PI / 2) {
+  return Array.from({ length: N }, (_, i) => {
+    const angle = rotation + (2 * i + 1) / (2 * N) * 2 * Math.PI;
+    return { x: cx + Ri * Math.cos(angle), y: cy + Ri * Math.sin(angle) };
+  });
+}
+
+// ── Per-blob rendering ────────────────────────────────────────────────────────
+let _gid = 0;
+
+function blobNode(cx, cy, Ro, Ri, N, ramp, style) {
+  const id = ++_gid;
+  const [topHSL, midHSL, botHSL] = ramp;
+  const topC = hslToHex(...topHSL);
+  const midC = hslToHex(...midHSL);
+  const botC = hslToHex(...botHSL);
+  const rimC = hslToHex(...adj(topHSL, 0, -20, 18));
+  const aoC  = hslToHex(...adj(botHSL, 0, 20, -5));
+
+  const bboxTop  = cy - Ro;
+  const bboxBot  = cy + Ro;
+  const specCY   = cy - Ro * (style === 'front' ? 0.42 : 0.22);
+  const specR    = Ro * (style === 'front' ? 0.72 : 0.50);
+  const specOp   = style === 'front' ? 0.62 : 0.28;
+  const edgeDark = style === 'back'  ? 0.78 : 0.30;
+  const rimOp    = style === 'front' ? 0.50 : 0.18;
+  const aoDark   = style === 'back'  ? 0.88 : 0.55;
+
+  const valleys   = valleyPoints(cx, cy, Ri, N);
+  const pathMain  = blobPath(cx, cy, Ro, Ri, N);
+  const pathRim   = blobPath(cx, cy, Ro * 1.055, Ri * 1.055, N);
+  const f         = v => v.toFixed(2);
+
+  const defs = `
+    <linearGradient id="base${id}" gradientUnits="userSpaceOnUse" x1="${f(cx)}" y1="${f(bboxTop)}" x2="${f(cx)}" y2="${f(bboxBot)}">
+      <stop offset="0%"   stop-color="${topC}"/>
+      <stop offset="38%"  stop-color="${midC}"/>
+      <stop offset="100%" stop-color="${botC}"/>
+    </linearGradient>
+    <radialGradient id="spec${id}" gradientUnits="userSpaceOnUse" cx="${f(cx)}" cy="${f(specCY)}" r="${f(specR)}">
+      <stop offset="0%"   stop-color="white" stop-opacity="${specOp}"/>
+      <stop offset="55%"  stop-color="white" stop-opacity="${(specOp * 0.25).toFixed(2)}"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="edge${id}" gradientUnits="userSpaceOnUse" cx="${f(cx)}" cy="${f(cy)}" r="${f(Ro)}">
+      <stop offset="48%"  stop-color="black" stop-opacity="0"/>
+      <stop offset="100%" stop-color="black" stop-opacity="${edgeDark}"/>
+    </radialGradient>
+    <radialGradient id="rim${id}" gradientUnits="userSpaceOnUse" cx="${f(cx)}" cy="${f(cy)}" r="${f(Ro * 1.055)}">
+      <stop offset="72%"  stop-color="${rimC}" stop-opacity="0"/>
+      <stop offset="100%" stop-color="${rimC}" stop-opacity="${rimOp}"/>
+    </radialGradient>
+    ${valleys.map((v, j) => `
+    <radialGradient id="ao${id}_${j}" gradientUnits="userSpaceOnUse" cx="${f(v.x)}" cy="${f(v.y)}" r="${f(Ro * 0.30)}">
+      <stop offset="0%"   stop-color="${aoC}" stop-opacity="${aoDark}"/>
+      <stop offset="100%" stop-color="${aoC}" stop-opacity="0"/>
+    </radialGradient>`).join('')}
+    <clipPath id="clip${id}"><path d="${pathMain}"/></clipPath>`;
+
+  const shapes = `
+    <path d="${pathRim}" fill="${rimC}" opacity="${style === 'front' ? 0.38 : 0.14}"/>
+    <path d="${pathMain}" fill="url(#base${id})"/>
+    <path d="${pathMain}" fill="url(#edge${id})"/>
+    <path d="${pathMain}" fill="url(#spec${id})"/>
+    ${valleys.map((v, j) =>
+      `<ellipse cx="${f(v.x)}" cy="${f(v.y)}" rx="${f(Ro * 0.30)}" ry="${f(Ro * 0.22)}" fill="url(#ao${id}_${j})" clip-path="url(#clip${id})"/>`
+    ).join('\n    ')}`;
+
+  return { defs, shapes };
+}
+
+function accentNode(cx, cy, r, hsl) {
+  const id     = ++_gid;
+  const bright = hslToHex(...adj(hsl, 0, -30, 30));
+  const base   = hslToHex(...hsl);
+  const dark   = hslToHex(...adj(hsl, 10, 20, -28));
+  const specCY = cy - r * 0.38;
+  const f      = v => v.toFixed(2);
+  return {
+    defs: `
+    <radialGradient id="acc${id}" gradientUnits="userSpaceOnUse" cx="${f(cx)}" cy="${f(specCY)}" r="${f(r * 0.9)}">
+      <stop offset="0%"   stop-color="${bright}"/>
+      <stop offset="48%"  stop-color="${base}"/>
+      <stop offset="100%" stop-color="${dark}"/>
+    </radialGradient>
+    <radialGradient id="accSpec${id}" gradientUnits="userSpaceOnUse" cx="${f(cx)}" cy="${f(specCY)}" r="${f(r * 0.52)}">
+      <stop offset="0%"   stop-color="white" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </radialGradient>`,
+    shapes: `
+    <circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r)}" fill="url(#acc${id})"/>
+    <circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r)}" fill="url(#accSpec${id})"/>`,
+  };
+}
+
+// ── Composition ───────────────────────────────────────────────────────────────
+function buildSVG(seed, forcedLobes, forcedBlobs, forcedDepth) {
+  _gid = 0;
+  const rng  = createRNG(seed);
+  const cx   = 500;
+
+  const blobCount  = forcedBlobs > 0 ? forcedBlobs : rng.int(2, 4);
+  const backCount  = blobCount >= 3 ? 2 : 1;
+  const frontCount = blobCount - backCount;
+
+  const allDefs = [], allShapes = [];
+
+  for (let b = 0; b < backCount; b++) {
+    const Ro   = rng.float(235, 285);
+    const dep  = forcedDepth > 0 ? forcedDepth : rng.float(0.36, 0.48);
+    const Ri   = Ro * dep;
+    const N    = forcedLobes > 0 ? forcedLobes : rng.int(3, 5);
+    const cy   = rng.float(520, 620);
+    const ramp = rng.pick(BACK_RAMPS);
+    const { defs, shapes } = blobNode(cx, cy, Ro, Ri, N, ramp, 'back');
+    allDefs.push(defs); allShapes.push(shapes);
+  }
+
+  for (let f2 = 0; f2 < frontCount; f2++) {
+    const Ro   = rng.float(160, 215);
+    const dep  = forcedDepth > 0 ? forcedDepth : rng.float(0.38, 0.50);
+    const Ri   = Ro * dep;
+    const N    = forcedLobes > 0 ? forcedLobes : rng.int(3, 5);
+    const cy   = rng.float(360, 500);
+    const ramp = rng.pick(FRONT_RAMPS);
+    const { defs, shapes } = blobNode(cx, cy, Ro, Ri, N, ramp, 'front');
+    allDefs.push(defs); allShapes.push(shapes);
+  }
+
+  if (rng.bool(0.6)) {
+    const aR   = rng.float(38, 65);
+    const aCY  = rng.float(780, 880);
+    const aHSL = rng.pick(FRONT_RAMPS)[0];
+    const { defs, shapes } = accentNode(cx, aCY, aR, aHSL);
+    allDefs.push(defs); allShapes.push(shapes);
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1000" height="1000"><rect width="1000" height="1000" fill="#ffffff"/><defs>${allDefs.join('')}</defs>${allShapes.join('')}</svg>`;
+}
+
+// ── UI ────────────────────────────────────────────────────────────────────────
+let lastSVG = '';
+
+function readLobes() {
+  const v = +document.getElementById('sl-lobes').value;
+  return v === 0 ? null : v;
+}
+function readBlobs() {
+  const v = +document.getElementById('sl-blobs').value;
+  return v === 0 ? null : v;
+}
+function readDepth() {
+  const v = +document.getElementById('sl-depth').value;
+  return v === 0 ? null : v / 100;
+}
+
+function render() {
+  const seed   = Math.max(0, parseInt(document.getElementById('in-seed').value, 10) || 42);
+  const lobes  = readLobes();
+  const blobs  = readBlobs();
+  const depth  = readDepth();
+  const svg    = buildSVG(seed, lobes, blobs, depth);
+  lastSVG = svg;
+
+  const wrap = document.getElementById('canvas-wrap');
+  const side = Math.min(wrap.clientWidth - 32, wrap.clientHeight - 32);
+  document.getElementById('preview').innerHTML = svg.replace(
+    'width="1000" height="1000"',
+    `width="${side}" height="${side}"`
+  );
+}
+
+let raf = false;
+function schedRender() {
+  if (raf) return;
+  raf = true;
+  requestAnimationFrame(() => { raf = false; render(); });
+}
+
+// Slider label updates
+function bindSlider(id, valId, fmt) {
+  const el = document.getElementById(id);
+  const out = document.getElementById(valId);
+  out.textContent = fmt(el.value);
+  el.addEventListener('input', () => { out.textContent = fmt(el.value); schedRender(); });
+}
+bindSlider('sl-lobes', 'v-lobes', v => +v === 0 ? 'Auto' : v);
+bindSlider('sl-blobs', 'v-blobs', v => +v === 0 ? 'Auto' : v);
+bindSlider('sl-depth', 'v-depth', v => +v === 0 ? 'Auto' : `${v}%`);
+
+document.getElementById('in-seed').addEventListener('input', schedRender);
+document.getElementById('in-seed').addEventListener('change', schedRender);
+
+document.getElementById('btn-rand').addEventListener('click', () => {
+  document.getElementById('in-seed').value = Math.floor(Math.random() * 100000);
+  schedRender();
+});
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  if (!lastSVG) return;
+  const seed = document.getElementById('in-seed').value;
+  const blob = new Blob([lastSVG], { type: 'image/svg+xml' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.download = `blob-sculptor-${seed}.svg`;
+  a.href = url; a.click();
+  URL.revokeObjectURL(url);
+});
+
+window.addEventListener('resize', schedRender);
+render();
+
+})();
+</script>
+</body>
+</html>
