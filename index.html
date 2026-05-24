@@ -3,1009 +3,299 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Creative Coding Tools — Jan S'heeren</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-
+  <title>Hear The Youth · Tools</title>
+  <link rel="stylesheet" href="shared/hty-tools.css" />
   <style>
-    :root {
-      --bg: #ebebeb;
-      --bg-accent: #e4e4e4;
-      --panel: #ffffff;
-      --panel-hover: #fafafa;
-      --stroke: #d0d0d0;
-      --stroke-strong: #a8a8a8;
-      --text: #111111;
-      --text-soft: #5c5c5c;
-      --accent: #111111;
-      --radius-xl: 28px;
-      --radius-lg: 22px;
-      --radius-md: 18px;
-      --shadow: 0 10px 36px rgba(0, 0, 0, 0.06);
-      --shadow-hover: 0 18px 48px rgba(0, 0, 0, 0.1);
-      --max-width: 1440px;
-      --cursor-size: 9px;
-      --cursor-size-hover: 28px;
-      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    * { box-sizing: border-box; }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
+    /* Hub is sidebar-only; override tool layout so the page scrolls on all viewports */
+    html,
     body {
-      margin: 0;
+      height: auto;
       min-height: 100vh;
-      background: var(--bg);
-      color: var(--text);
-      font-family: "Roboto Mono", monospace;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
+      overflow-y: auto;
     }
-
-    /* Subtle page backdrop */
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background:
-        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(0, 0, 0, 0.04), transparent 50%),
-        radial-gradient(ellipse 60% 40% at 100% 0%, rgba(0, 0, 0, 0.03), transparent 45%);
-      z-index: 0;
+    body {
+      flex-direction: column;
     }
-
-    /* Custom cursor (fine pointers only) */
-    .cursor-dot {
-      display: none;
-      position: fixed;
-      left: 0;
-      top: 0;
-      width: var(--cursor-size);
-      height: var(--cursor-size);
-      margin-left: calc(var(--cursor-size) / -2);
-      margin-top: calc(var(--cursor-size) / -2);
-      border-radius: 50%;
-      background: var(--text);
-      pointer-events: none;
-      z-index: 100000;
-      will-change: left, top, width, height, margin;
-      transition:
-        width 0.35s var(--ease-out),
-        height 0.35s var(--ease-out),
-        margin 0.35s var(--ease-out),
-        background 0.25s ease,
-        opacity 0.2s ease;
-    }
-
-    .cursor-dot.is-hover {
-      width: var(--cursor-size-hover);
-      height: var(--cursor-size-hover);
-      margin-left: calc(var(--cursor-size-hover) / -2);
-      margin-top: calc(var(--cursor-size-hover) / -2);
-      background: rgba(17, 17, 17, 0.85);
-    }
-
-    @media (pointer: fine) {
-      body.use-custom-cursor {
-        cursor: none;
-      }
-      body.use-custom-cursor .cursor-dot {
-        display: block;
-      }
-      body.use-custom-cursor a,
-      body.use-custom-cursor button,
-      body.use-custom-cursor .tab {
-        cursor: none;
-      }
-    }
-
-    .shell {
-      position: relative;
-      z-index: 1;
-      width: min(var(--max-width), calc(100% - 40px));
+    #sidebar {
+      width: 100%;
+      max-width: 720px;
       margin: 0 auto;
-      padding: 28px 0 56px;
+      border-right: none;
+      height: auto;
+      min-height: 100vh;
+      overflow-y: visible;
     }
-
-    .hero {
-      position: relative;
-      margin-bottom: 28px;
-      padding: 28px 32px;
-      border: 1px solid var(--stroke);
-      border-radius: var(--radius-xl);
-      background: var(--panel);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      animation: heroIn 0.85s var(--ease-out) both;
-    }
-
-    .hero::after {
-      content: "";
-      position: absolute;
-      inset: -40% -20%;
-      background: linear-gradient(
-        105deg,
-        transparent 30%,
-        rgba(255, 255, 255, 0.55) 45%,
-        transparent 55%
-      );
-      transform: translateX(-30%) rotate(6deg);
-      animation: heroSheen 12s ease-in-out infinite;
-      pointer-events: none;
-    }
-
-    @keyframes heroIn {
-      from {
-        opacity: 0;
-        transform: translateY(16px) scale(0.985);
-        filter: blur(6px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-        filter: blur(0);
-      }
-    }
-
-    @keyframes heroSheen {
-      0%, 100% { transform: translateX(-35%) rotate(6deg); opacity: 0.35; }
-      50% { transform: translateX(25%) rotate(6deg); opacity: 0.55; }
-    }
-
-    .hero-inner {
-      position: relative;
-      z-index: 1;
-    }
-
-    .eyebrow {
-      display: inline-block;
-      padding: 8px 12px;
-      border: 1px solid var(--stroke);
-      border-radius: 999px;
-      color: var(--text-soft);
-      font-size: 12px;
-      line-height: 1;
-      animation: fadeUp 0.7s var(--ease-out) 0.12s both;
-    }
-
-    h1 {
-      margin: 16px 0 10px;
-      font-size: clamp(2rem, 5vw, 4rem);
-      line-height: 0.95;
-      font-weight: 700;
-      animation: fadeUp 0.75s var(--ease-out) 0.18s both;
-    }
-
-    .lead {
-      max-width: 760px;
-      margin: 0;
-      color: var(--text-soft);
-      font-size: 14px;
-      line-height: 1.7;
-      animation: fadeUp 0.75s var(--ease-out) 0.26s both;
-    }
-
-    @keyframes fadeUp {
-      from {
-        opacity: 0;
-        transform: translateY(12px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .hero-bottom {
-      margin-top: 22px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      animation: fadeUp 0.75s var(--ease-out) 0.34s both;
-    }
-
-    /* Tabs */
-    .tabs {
-      display: flex;
-      gap: 8px;
-    }
-
-    .tab {
-      padding: 9px 16px;
-      border: 1px solid var(--stroke);
-      border-radius: 999px;
-      background: transparent;
-      color: var(--text-soft);
-      font-family: inherit;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      cursor: pointer;
-      transition:
-        background 0.3s var(--ease-out),
-        border-color 0.3s var(--ease-out),
-        color 0.3s var(--ease-out),
-        transform 0.25s var(--ease-out),
-        box-shadow 0.3s ease;
-    }
-
-    .tab:hover {
-      border-color: var(--stroke-strong);
-      color: var(--text);
-      transform: translateY(-1px);
-    }
-
-    .tab:active {
-      transform: translateY(0);
-    }
-
-    .tab.active {
-      background: var(--text);
-      border-color: var(--text);
-      color: #fff;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-    }
-
-    .status {
-      color: var(--text-soft);
-      font-size: 12px;
-      margin: 0;
-      transition: opacity 0.4s ease;
-    }
-
-    .status.is-error {
-      color: #8a3d3d;
-    }
-
-    .visually-hidden {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    .search-row {
-      margin-top: 22px;
-      max-width: 520px;
-    }
-
-    .search-field-wrap {
-      position: relative;
-    }
-
-    .search-field-wrap svg {
-      position: absolute;
-      left: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 18px;
-      height: 18px;
-      color: var(--text-soft);
-      pointer-events: none;
-    }
-
-    .search-input {
-      width: 100%;
-      padding: 12px 16px 12px 46px;
-      border: 1px solid var(--stroke);
-      border-radius: 999px;
-      font-family: inherit;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      background: var(--panel);
-      color: var(--text);
-      transition:
-        border-color 0.25s ease,
-        box-shadow 0.25s ease;
-    }
-
-    .search-input::placeholder {
-      color: var(--text-soft);
-    }
-
-    .search-input:hover {
-      border-color: var(--stroke-strong);
-    }
-
-    .search-input:focus {
-      outline: none;
-      border-color: var(--text);
-      box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
-    }
-
-    .search-hint {
-      margin: 10px 0 0 4px;
-      font-size: 11px;
-      color: var(--text-soft);
-      line-height: 1.4;
-      min-height: 1.4em;
-    }
-
-    /* Galleries */
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 20px;
-    }
-
-    .gallery.hidden {
+    #canvas-area {
       display: none;
     }
-
-    .gallery:not(.hidden) {
-      animation: galleryReveal 0.55s var(--ease-out) both;
-    }
-
-    @keyframes galleryReveal {
-      from {
-        opacity: 0;
-        transform: translateY(14px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
+    @media (max-width: 720px) {
+      #sidebar {
+        height: auto;
+        border-bottom: none;
       }
     }
-
-    .tool-card {
-      display: flex;
-      flex-direction: column;
-      grid-column: span 4;
-      overflow: hidden;
-      border: 1px solid var(--stroke);
-      border-radius: var(--radius-lg);
-      background: var(--panel);
-      box-shadow: var(--shadow);
-      color: inherit;
-      transition:
-        transform 0.45s var(--ease-out),
-        border-color 0.35s ease,
-        box-shadow 0.45s var(--ease-out);
-      animation: cardRise 0.65s var(--ease-out) backwards;
-      animation-delay: calc(var(--stagger, 0) * 55ms);
-    }
-
-    @keyframes cardRise {
-      from {
-        opacity: 0;
-        transform: translateY(22px) scale(0.97);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-
-    .tool-card:hover {
-      transform: translateY(-6px);
-      border-color: var(--stroke-strong);
-      box-shadow: var(--shadow-hover);
-    }
-
-    .tool-card.is-filtered-out {
-      display: none !important;
-    }
-
-    .gallery-empty {
-      grid-column: 1 / -1;
-      margin: 0;
-      padding: 28px 20px;
-      border: 1px dashed var(--stroke-strong);
-      border-radius: var(--radius-lg);
-      background: rgba(255, 255, 255, 0.6);
-      color: var(--text-soft);
+    .hub-intro {
       font-size: 13px;
-      text-align: center;
-      line-height: 1.5;
+      color: var(--text-dim);
+      line-height: 1.55;
+      margin-bottom: 16px;
+      padding: 0 4px;
     }
-
-    .gallery-empty.hidden {
-      display: none;
-    }
-
-    .tool-card__main {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      text-decoration: none;
-      color: inherit;
-      outline: none;
-    }
-
-    .tool-card__main:focus-visible {
-      box-shadow: inset 0 0 0 2px var(--text);
-      border-radius: var(--radius-lg);
-    }
-
-    .thumb-wrap {
-      aspect-ratio: 16 / 10;
-      margin: 14px 14px 0;
-      overflow: hidden;
-      border: 1px solid var(--stroke);
-      border-radius: var(--radius-md);
-      background: linear-gradient(145deg, #ececec 0%, #dedede 100%);
-    }
-
-    .thumb-wrap img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      transition: transform 0.65s var(--ease-out);
-    }
-
-    .tool-card:hover .thumb-wrap img {
-      transform: scale(1.05);
-    }
-
-    .thumb-fallback {
-      width: 100%;
-      height: 100%;
-      display: grid;
-      place-items: center;
-      color: var(--text-soft);
-      font-size: 12px;
-      padding: 16px;
-      text-align: center;
-    }
-
-    .card-body {
-      padding: 16px 18px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      flex: 1;
-    }
-
-    /* Tools: no download row — match bottom padding to plugin cards */
-    .tool-card > a.tool-card__main:last-child .card-body {
-      padding-bottom: 18px;
-    }
-
-    .tool-name {
-      margin: 0;
-      font-size: 14px;
-      line-height: 1.5;
-      font-weight: 500;
-      color: var(--text);
-      transition: color 0.25s ease;
-    }
-
-    .tool-card:hover .tool-name {
-      color: var(--accent);
-    }
-
-    .tool-meta {
-      color: var(--text-soft);
-      font-size: 11px;
-      line-height: 1.4;
-    }
-
-    .plugin-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border: 1px solid var(--stroke);
-      border-radius: 999px;
-      font-size: 10px;
-      color: var(--text-soft);
-      margin-top: 2px;
-      align-self: flex-start;
-    }
-
-    .card-actions {
-      display: flex;
+    .mode-tabs {
       flex-wrap: wrap;
-      gap: 8px;
-      padding: 0 18px 18px;
-      margin-top: auto;
-    }
-
-    .btn-download {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 10px 14px;
-      border: 1px solid var(--stroke);
-      border-radius: 999px;
-      background: var(--bg-accent);
-      color: var(--text);
-      font-family: inherit;
-      font-size: 11px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      text-decoration: none;
-      transition:
-        background 0.3s var(--ease-out),
-        border-color 0.3s ease,
-        transform 0.25s var(--ease-out),
-        box-shadow 0.35s ease;
-    }
-
-    .btn-download:hover {
-      background: var(--text);
-      border-color: var(--text);
-      color: #fff;
-      transform: translateY(-2px);
-      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.15);
-    }
-
-    .btn-download:active {
-      transform: translateY(0);
-    }
-
-    .btn-download svg {
-      width: 14px;
-      height: 14px;
-      flex-shrink: 0;
-    }
-
-    .archive-badge {
-      display: inline-flex;
-      align-items: center;
       gap: 4px;
-      padding: 3px 9px;
-      border: 1px solid var(--stroke);
-      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+    .mode-tabs button {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-size: 11px;
+      padding: 8px 10px;
+    }
+    .hub-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .hub-card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .hub-card:hover {
+      border-color: var(--line-2);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    }
+    .hub-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .hub-card-meta {
       font-size: 10px;
-      color: var(--text-soft);
-      letter-spacing: 0.06em;
-      align-self: flex-start;
-      margin-top: 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin-bottom: 6px;
     }
-
-    .tool-card.is-archived .thumb-wrap {
-      filter: saturate(0.75);
+    .hub-card-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.45;
     }
-
-    .hidden { display: none !important; }
-
-    @media (max-width: 1100px) {
-      .tool-card { grid-column: span 6; }
+    .hub-empty {
+      display: none;
+      padding: 28px 16px;
+      text-align: center;
+      border: 1px dashed var(--line-2);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.5);
     }
-
-    @media (max-width: 700px) {
-      .shell {
-        width: min(var(--max-width), calc(100% - 24px));
-        padding-top: 18px;
-      }
-
-      .hero { padding: 22px 20px; }
-      .gallery { gap: 16px; }
-      .tool-card { grid-column: span 12; }
-      .thumb-wrap { margin: 12px 12px 0; }
-      .card-body { padding: 14px 16px 10px; }
-      .card-actions { padding: 0 16px 16px; }
-      .search-row { max-width: none; }
+    .hub-empty.visible {
+      display: block;
     }
-
-    @media (prefers-reduced-motion: reduce) {
-      *,
-      *::before,
-      *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-
-      body.use-custom-cursor {
-        cursor: auto;
-      }
-      body.use-custom-cursor .cursor-dot {
-        display: none !important;
-      }
+    .hub-empty h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .hub-empty p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.5;
     }
   </style>
 </head>
 <body>
-  <div class="cursor-dot" id="cursor-dot" aria-hidden="true"></div>
-
-  <main class="shell">
-    <section class="hero">
-      <div class="hero-inner">
-        <div class="eyebrow">Jan S'heeren</div>
-        <h1>Creative Coding Tools</h1>
-        <p class="lead">
-          A live gallery of generators, scripts, image tools, typography tools, and visual experiments.
-        </p>
-        <div class="search-row">
-          <label class="visually-hidden" for="gallery-search">Search tools and plugins</label>
-          <div class="search-field-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="7"/>
-              <path d="m21 21-4.35-4.35"/>
-            </svg>
-            <input
-              type="search"
-              id="gallery-search"
-              class="search-input"
-              placeholder="Search name, category, app…"
-              autocomplete="off"
-              spellcheck="false"
-            />
-          </div>
-          <p class="search-hint" id="search-hint" aria-live="polite"></p>
-        </div>
-        <div class="hero-bottom">
-          <div class="tabs" role="tablist" aria-label="Gallery sections">
-            <button type="button" class="tab active" role="tab" aria-selected="true" data-tab="tools" id="tab-tools">Tools</button>
-            <button type="button" class="tab" role="tab" aria-selected="false" data-tab="plugins" id="tab-plugins">Plugins + Scripts</button>
-            <button type="button" class="tab" role="tab" aria-selected="false" data-tab="archive" id="tab-archive">Archive</button>
-          </div>
-          <p class="status" id="status">Loading…</p>
-        </div>
+  <aside id="sidebar">
+    <div class="brand-row">
+      <div>
+        <div class="brand">HEAR THE YOUTH<span class="dot"></span><span class="reg">®</span></div>
+        <div class="brand-sub">Creative coding tools</div>
       </div>
-    </section>
+    </div>
 
-    <section class="gallery" id="gallery-tools" role="tabpanel" aria-labelledby="tab-tools">
-      <p class="gallery-empty hidden" id="gallery-tools-empty">No tools match your search.</p>
-    </section>
-    <section class="gallery hidden" id="gallery-plugins" role="tabpanel" aria-labelledby="tab-plugins" hidden>
-      <p class="gallery-empty hidden" id="gallery-plugins-empty">No plugins or scripts match your search.</p>
-    </section>
-    <section class="gallery hidden" id="gallery-archive" role="tabpanel" aria-labelledby="tab-archive" hidden>
-      <p class="gallery-empty hidden" id="gallery-archive-empty">No archived tools match your search.</p>
-    </section>
-  </main>
+    <p class="hub-intro">
+      Standalone in-browser experiments. Open any tool from the list below. Use
+      <strong>Archive</strong> for older sketches, one-offs, and things that did not ship.
+    </p>
+
+    <div class="mode-tabs" id="hub-tabs" role="tablist" aria-label="Tool categories">
+      <button type="button" class="active" data-cat="all" role="tab" aria-selected="true">All</button>
+      <button type="button" data-cat="generators" role="tab" aria-selected="false">Generators</button>
+      <button type="button" data-cat="image" role="tab" aria-selected="false">Image</button>
+      <button type="button" data-cat="video" role="tab" aria-selected="false">Video</button>
+      <button type="button" data-cat="typography" role="tab" aria-selected="false">Typography</button>
+      <button type="button" data-cat="templates" role="tab" aria-selected="false">Templates</button>
+      <button type="button" data-cat="plugins" role="tab" aria-selected="false">Plugins</button>
+      <button type="button" data-cat="archive" role="tab" aria-selected="false">Archive</button>
+    </div>
+
+    <div class="hub-grid" id="hub-grid">
+      <!-- —— Generators —— -->
+      <a class="hub-card" data-cat="generators" href="generators/ascii-art-generator/index.html">
+        <div class="hub-card-meta">Generators</div>
+        <div class="hub-card-title">ASCII Art Generator</div>
+        <div class="hub-card-desc">Image → ASCII halftone; export and booth-style controls.</div>
+      </a>
+      <a class="hub-card" data-cat="generators" href="generators/dot-matrix-studio/index.html">
+        <div class="hub-card-meta">Generators</div>
+        <div class="hub-card-title">Dot Matrix Studio</div>
+        <div class="hub-card-desc">Organic or video-driven dot patterns.</div>
+      </a>
+      <a class="hub-card" data-cat="generators" href="generators/geometric-emblem-generator/index.html">
+        <div class="hub-card-meta">Generators</div>
+        <div class="hub-card-title">Geometric Emblem Generator</div>
+        <div class="hub-card-desc">SVG metaball-style emblems and marks.</div>
+      </a>
+      <a class="hub-card" data-cat="generators" href="generators/moire-studio/index.html">
+        <div class="hub-card-meta">Generators</div>
+        <div class="hub-card-title">Moiré Studio (Canvas)</div>
+        <div class="hub-card-desc">Raster moiré, animation, MP4 / PNG export.</div>
+      </a>
+      <a class="hub-card" data-cat="generators" href="generators/moire-svg-studio/index.html">
+        <div class="hub-card-meta">Generators</div>
+        <div class="hub-card-title">Moiré SVG Studio</div>
+        <div class="hub-card-desc">Vector moiré, scalable SVG export.</div>
+      </a>
+      <a class="hub-card" data-cat="generators" href="generators/reaction-diffusion/index.html">
+        <div class="hub-card-meta">Generators</div>
+        <div class="hub-card-title">Reaction–Diffusion</div>
+        <div class="hub-card-desc">Gray–Scott style organic patterns.</div>
+      </a>
+      <a class="hub-card" data-cat="generators" href="generators/platine-brand-identity-tool/index.html">
+        <div class="hub-card-meta">Generators</div>
+        <div class="hub-card-title">PLATINE Brand Identity Tool</div>
+        <div class="hub-card-desc">FCC crystal lattice · 3D atom renderer · SVG &amp; PNG export with glow, stroke, and merge.</div>
+      </a>
+
+      <!-- —— Image —— -->
+      <a class="hub-card" data-cat="image" href="image/halftone-dot-studio/index.html">
+        <div class="hub-card-meta">Image</div>
+        <div class="hub-card-title">Halftone Dot Studio</div>
+        <div class="hub-card-desc">Dot halftone from images.</div>
+      </a>
+      <a class="hub-card" data-cat="image" href="image/chromatic-bloom/index.html">
+        <div class="hub-card-meta">Image</div>
+        <div class="hub-card-title">Chromatic Bloom</div>
+        <div class="hub-card-desc">Colour separation / bloom experiments.</div>
+      </a>
+      <a class="hub-card" data-cat="image" href="image/BCA-halftone-lines-image/index.html">
+        <div class="hub-card-meta">Image</div>
+        <div class="hub-card-title">BCA Halftone Lines (Image)</div>
+        <div class="hub-card-desc">Line-based halftone stills.</div>
+      </a>
+
+      <!-- —— Video —— -->
+      <a class="hub-card" data-cat="video" href="video/BCA-halftone-lines-video/index.html">
+        <div class="hub-card-meta">Video</div>
+        <div class="hub-card-title">BCA Halftone Lines (Video)</div>
+        <div class="hub-card-desc">Line halftone for moving image.</div>
+      </a>
+
+      <!-- —— Typography —— -->
+      <a class="hub-card" data-cat="typography" href="typography/particle-typeface/index.html">
+        <div class="hub-card-meta">Typography</div>
+        <div class="hub-card-title">Particle Typeface</div>
+        <div class="hub-card-desc">Letterforms from particles / motion.</div>
+      </a>
+      <a class="hub-card" data-cat="typography" href="typography/experimental-type-tool/index.html">
+        <div class="hub-card-meta">Typography</div>
+        <div class="hub-card-title">Experimental Type Tool</div>
+        <div class="hub-card-desc">Type playground.</div>
+      </a>
+
+      <!-- —— Templates —— -->
+      <a class="hub-card" data-cat="templates" href="templates/ascii-template-tool/index.html">
+        <div class="hub-card-meta">Templates</div>
+        <div class="hub-card-title">ASCII Template Tool</div>
+        <div class="hub-card-desc">ASCII halftone + layout + film lab (multi-tab).</div>
+      </a>
+
+      <!-- —— Plugins —— -->
+      <a class="hub-card" data-cat="plugins" href="plugins/particle-typeface-ae/README.md">
+        <div class="hub-card-meta">Plugins · After Effects</div>
+        <div class="hub-card-title">Particle Typeface — AE Panel</div>
+        <div class="hub-card-desc">CEP panel — generates animated particle text comps with keyframed motion paths directly in After Effects. Opens README with installation instructions.</div>
+      </a>
+      <a class="hub-card" data-cat="plugins" href="plugins/platine-fcc-cavalry/preview.png">
+        <div class="hub-card-meta">Plugins · Cavalry</div>
+        <div class="hub-card-title">PLATINE FCC — Cavalry Layer</div>
+        <div class="hub-card-desc">Custom Cavalry layer for FCC crystal lattice rendering. Drop the folder contents into your Cavalry user layers directory.</div>
+      </a>
+
+      <!-- —— Archive (add more links here; keep data-cat="archive") —— -->
+      <a
+        class="hub-card"
+        data-cat="archive"
+        href="scripts/squircles-for-illustrator/Squircle_Corners.jsx"
+        download
+      >
+        <div class="hub-card-meta">Archive</div>
+        <div class="hub-card-title">Squircle corners (Illustrator)</div>
+        <div class="hub-card-desc">ExtendScript helper — not a web tool. Download the .jsx file.</div>
+      </a>
+    </div>
+
+    <div class="hub-empty" id="hub-empty" aria-live="polite">
+      <h3>Archive</h3>
+      <p>
+        Nothing here yet, or everything in this tab is hidden. Add cards above with
+        <code>data-cat="archive"</code>, or drop HTML experiments under an
+        <code>archive/</code> folder and link them from this page.
+      </p>
+    </div>
+
+    <p class="hint" style="margin-top: 20px">
+      Tip: run a static server from this repo root so module paths resolve —
+      <code>npx serve .</code>
+    </p>
+  </aside>
+  <main id="canvas-area" aria-hidden="true"></main>
 
   <script>
-    const OWNER          = "sheerenj";
-    const REPO           = "CC-TOOLS";
-    const BRANCH         = "main";
-    const SITE_BASE      = `https://${OWNER}.github.io/${REPO}/tools`;
-    const PLUGIN_BASE    = `https://${OWNER}.github.io/${REPO}/plugins`;
-    const MANIFEST       = `https://${OWNER}.github.io/${REPO}/tools/tools.json`;
-    const PLUG_MANIFEST  = `https://${OWNER}.github.io/${REPO}/tools/plugins.json`;
-    const ARCH_MANIFEST  = `https://${OWNER}.github.io/${REPO}/tools/archive.json`;
-    const REPO_TREE      = `https://github.com/${OWNER}/${REPO}/tree/${BRANCH}`;
+    (function () {
+      var tabs = document.querySelectorAll('#hub-tabs button')
+      var cards = document.querySelectorAll('.hub-card')
+      var empty = document.getElementById('hub-empty')
 
-    const galleryTools   = document.getElementById("gallery-tools");
-    const galleryPlugins = document.getElementById("gallery-plugins");
-    const galleryArchive = document.getElementById("gallery-archive");
-    const statusEl       = document.getElementById("status");
-    const cursorDot      = document.getElementById("cursor-dot");
-    const searchInput    = document.getElementById("gallery-search");
+      function setTab(cat) {
+        tabs.forEach(function (btn) {
+          var on = btn.getAttribute('data-cat') === cat
+          btn.classList.toggle('active', on)
+          btn.setAttribute('aria-selected', on ? 'true' : 'false')
+        })
 
-    const downloadIconSvg = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M12 3v12"/><path d="m8 14 4 4 4-4"/><path d="M4 21h16"/>
-      </svg>`;
+        var archiveVisible = 0
+        cards.forEach(function (card) {
+          var c = card.getAttribute('data-cat')
+          var show = cat === 'all' || c === cat
+          card.style.display = show ? '' : 'none'
+          if (show && c === 'archive') archiveVisible++
+        })
 
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
-
-    function prettifyName(slug) {
-      return slug.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
-    }
-
-    function titleCase(str) {
-      return str.replace(/\b\w/g, c => c.toUpperCase());
-    }
-
-    /** Zip a folder from GitHub via download-directory helper */
-    function folderZipDownloadUrl(treePath) {
-      const treeUrl = `${REPO_TREE}/${treePath}`;
-      return `https://download-directory.github.io/?url=${encodeURIComponent(treeUrl)}`;
-    }
-
-    function thumbHtml(hasPreview, previewUrl, altText) {
-      const alt = escapeHtml(altText);
-      return `
-        <div class="thumb-wrap">
-          ${hasPreview
-            ? `<img src="${escapeHtml(previewUrl)}" alt="${alt} preview"
-                onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">`
-            : ""}
-          <div class="thumb-fallback ${hasPreview ? "hidden" : ""}">No Preview Yet</div>
-        </div>`;
-    }
-
-    function actionsHtml(downloadHref, label) {
-      if (!downloadHref) return "";
-      const safeLabel = escapeHtml(label || "Download");
-      return `
-        <div class="card-actions">
-          <a class="btn-download" href="${escapeHtml(downloadHref)}" target="_blank" rel="noopener noreferrer">
-            ${downloadIconSvg}
-            ${safeLabel}
-          </a>
-        </div>`;
-    }
-
-    function pluginDownloadPath(entry) {
-      if (entry.downloadUrl) return entry.downloadUrl;
-      if (entry.treePath) return folderZipDownloadUrl(entry.treePath);
-      const { slug, type } = entry;
-      if (!slug) return "";
-      if (type === "script") return folderZipDownloadUrl(`tools/scripts/${slug}`);
-      return folderZipDownloadUrl(`plugins/${slug}`);
-    }
-
-    function makeToolCard(entry, staggerIndex) {
-      const { category, slug, hasPreview, name: nameOverride } = entry;
-      const link    = `${SITE_BASE}/${category}/${slug}/`;
-      const preview = `${SITE_BASE}/${category}/${slug}/preview.png`;
-      const name    = nameOverride || titleCase(prettifyName(slug));
-
-      const article = document.createElement("article");
-      article.className = "tool-card";
-      article.style.setProperty("--stagger", String(staggerIndex));
-
-      article.innerHTML = `
-        <a class="tool-card__main" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">
-          ${thumbHtml(hasPreview, preview, name)}
-          <div class="card-body">
-            <h2 class="tool-name">${escapeHtml(name)}</h2>
-            <div class="tool-meta">${escapeHtml(titleCase(prettifyName(category)))}</div>
-          </div>
-        </a>`;
-
-      article.setAttribute(
-        "data-search",
-        [name, category, slug, prettifyName(slug), titleCase(prettifyName(category))]
-          .join(" ")
-          .toLowerCase()
-      );
-
-      return article;
-    }
-
-    function makeArchiveCard(entry, staggerIndex) {
-      const { slug, hasPreview, name: nameOverride, category } = entry;
-      const link    = `${SITE_BASE}/ARCHIVE/${slug}/`;
-      const preview = `${SITE_BASE}/ARCHIVE/${slug}/preview.png`;
-      const name    = nameOverride || titleCase(prettifyName(slug));
-      const cat     = category ? titleCase(prettifyName(category)) : "";
-
-      const article = document.createElement("article");
-      article.className = "tool-card is-archived";
-      article.style.setProperty("--stagger", String(staggerIndex));
-
-      article.innerHTML = `
-        <a class="tool-card__main" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">
-          ${thumbHtml(hasPreview, preview, name)}
-          <div class="card-body">
-            <h2 class="tool-name">${escapeHtml(name)}</h2>
-            ${cat ? `<div class="tool-meta">${escapeHtml(cat)}</div>` : ""}
-            <span class="archive-badge">Archive</span>
-          </div>
-        </a>`;
-
-      article.setAttribute(
-        "data-search",
-        [name, cat, slug, prettifyName(slug), "archive"].join(" ").toLowerCase()
-      );
-
-      return article;
-    }
-
-    function makePluginCard(entry, staggerIndex) {
-      const { slug, type, app, hasPreview, repoUrl, previewBase } = entry;
-      const base    = previewBase || PLUGIN_BASE;
-      const preview = `${base}/${slug}/preview.png`;
-      const name    = titleCase(prettifyName(slug));
-      const typeLabel = type === "script" ? "Script" : "Plugin";
-      const dl        = pluginDownloadPath(entry);
-
-      const article = document.createElement("article");
-      article.className = "tool-card";
-      article.style.setProperty("--stagger", String(staggerIndex));
-
-      const mainHref = repoUrl
-        ? escapeHtml(repoUrl)
-        : "";
-      const mainTag = repoUrl ? "a" : "div";
-      const mainAttrs = repoUrl
-        ? ` class="tool-card__main" href="${mainHref}" target="_blank" rel="noopener noreferrer"`
-        : ` class="tool-card__main" tabindex="-1"`;
-
-      article.innerHTML = `
-        <${mainTag}${mainAttrs}>
-          ${thumbHtml(hasPreview, preview, name)}
-          <div class="card-body">
-            <h2 class="tool-name">${escapeHtml(name)}</h2>
-            <div class="tool-meta">${escapeHtml(typeLabel)}</div>
-            ${app ? `<span class="plugin-badge">${escapeHtml(app)}</span>` : ""}
-          </div>
-        </${mainTag}>
-        ${actionsHtml(dl, "Download zip")}`;
-
-      article.setAttribute(
-        "data-search",
-        [name, typeLabel, slug, prettifyName(slug), app || ""].join(" ").toLowerCase()
-      );
-
-      return article;
-    }
-
-    function cardMatchesQuery(card, rawQuery) {
-      const q = rawQuery.trim().toLowerCase();
-      if (!q) return true;
-      const blob = card.getAttribute("data-search") || "";
-      const words = q.split(/\s+/).filter(Boolean);
-      return words.every(w => blob.includes(w));
-    }
-
-    function applySearchFilter() {
-      const q = searchInput ? searchInput.value : "";
-      const toolCards    = galleryTools.querySelectorAll(".tool-card");
-      const pluginCards  = galleryPlugins.querySelectorAll(".tool-card");
-      const archiveCards = galleryArchive.querySelectorAll(".tool-card");
-
-      [toolCards, pluginCards, archiveCards].forEach(list => {
-        list.forEach(c => c.classList.toggle("is-filtered-out", !cardMatchesQuery(c, q)));
-      });
-
-      const visibleTools   = galleryTools.querySelectorAll(".tool-card:not(.is-filtered-out)").length;
-      const visiblePlugins = galleryPlugins.querySelectorAll(".tool-card:not(.is-filtered-out)").length;
-      const visibleArchive = galleryArchive.querySelectorAll(".tool-card:not(.is-filtered-out)").length;
-      const totalT = toolCards.length;
-      const totalP = pluginCards.length;
-      const totalA = archiveCards.length;
-
-      const hasQuery = q.trim().length > 0;
-
-      [
-        ["gallery-tools-empty",   hasQuery && visibleTools   === 0 && totalT > 0],
-        ["gallery-plugins-empty", hasQuery && visiblePlugins === 0 && totalP > 0],
-        ["gallery-archive-empty", hasQuery && visibleArchive === 0 && totalA > 0],
-      ].forEach(([id, show]) => {
-        document.getElementById(id)?.classList.toggle("hidden", !show);
-      });
-
-      const hint = document.getElementById("search-hint");
-      if (!hint) return;
-      if (!hasQuery) { hint.textContent = ""; return; }
-
-      const activeTab = document.querySelector(".tab.active")?.dataset.tab;
-      if (activeTab === "tools") {
-        hint.textContent = visibleTools === 0 ? "No tools match." : `${visibleTools} of ${totalT} tool${totalT === 1 ? "" : "s"}`;
-      } else if (activeTab === "archive") {
-        hint.textContent = visibleArchive === 0 ? "No archived tools match." : `${visibleArchive} of ${totalA}`;
-      } else {
-        hint.textContent = visiblePlugins === 0 ? "No plugins or scripts match." : `${visiblePlugins} of ${totalP} match`;
-      }
-    }
-
-    async function loadAll() {
-      const [toolsRes, pluginsRes, archiveRes] = await Promise.allSettled([
-        fetch(MANIFEST),
-        fetch(PLUG_MANIFEST),
-        fetch(ARCH_MANIFEST),
-      ]);
-
-      let toolCount = 0;
-      let pluginCount = 0;
-      let archiveCount = 0;
-      const errs = [];
-
-      if (toolsRes.status === "fulfilled" && toolsRes.value.ok) {
-        const tools = await toolsRes.value.json();
-        tools.forEach((t, i) => galleryTools.appendChild(makeToolCard(t, i)));
-        toolCount = tools.length;
-      } else {
-        errs.push("tools manifest");
+        var onlyArchive = cat === 'archive'
+        empty.classList.toggle('visible', onlyArchive && archiveVisible === 0)
       }
 
-      if (pluginsRes.status === "fulfilled" && pluginsRes.value.ok) {
-        const plugins = await pluginsRes.value.json();
-        plugins.forEach((p, i) => galleryPlugins.appendChild(makePluginCard(p, i)));
-        pluginCount = plugins.length;
-      } else {
-        errs.push("plugins manifest");
-      }
+      tabs.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          setTab(btn.getAttribute('data-cat'))
+        })
+      })
 
-      if (archiveRes.status === "fulfilled" && archiveRes.value.ok) {
-        const archived = await archiveRes.value.json();
-        archived.forEach((a, i) => galleryArchive.appendChild(makeArchiveCard(a, i)));
-        archiveCount = archived.length;
-      }
-
-      if (errs.length) {
-        statusEl.classList.add("is-error");
-        statusEl.textContent =
-          toolCount || pluginCount
-            ? `${toolCount} tools · ${pluginCount} plugins · could not load ${errs.join(" & ")}`
-            : `Could not load ${errs.join(" & ")}. Open this page over HTTPS or check the network.`;
-      } else {
-        statusEl.textContent = `${toolCount} tools · ${pluginCount} plugin${pluginCount !== 1 ? "s" : ""} · ${archiveCount} archived`;
-      }
-
-      applySearchFilter();
-    }
-
-    if (searchInput) {
-      searchInput.addEventListener("input", applySearchFilter);
-      searchInput.addEventListener("search", applySearchFilter);
-    }
-
-    /* Tabs */
-    const tabs = document.querySelectorAll(".tab");
-    const galleries = {
-      tools:   galleryTools,
-      plugins: galleryPlugins,
-      archive: galleryArchive,
-    };
-
-    tabs.forEach(tab => {
-      tab.addEventListener("click", () => {
-        tabs.forEach(t => {
-          t.classList.remove("active");
-          t.setAttribute("aria-selected", "false");
-        });
-        tab.classList.add("active");
-        tab.setAttribute("aria-selected", "true");
-        const target = tab.dataset.tab;
-        Object.entries(galleries).forEach(([key, el]) => {
-          const show = key === target;
-          el.classList.toggle("hidden", !show);
-          el.hidden = !show;
-        });
-        applySearchFilter();
-      });
-    });
-
-    /* Custom cursor: smooth follow + hover scale */
-    function initCursor() {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const fine = window.matchMedia("(pointer: fine)").matches;
-      if (reduce || !fine) return;
-
-      document.body.classList.add("use-custom-cursor");
-
-      let mx = window.innerWidth / 2;
-      let my = window.innerHeight / 2;
-      let cx = mx;
-      let cy = my;
-      let raf = 0;
-
-      const lerp = (a, b, t) => a + (b - a) * t;
-
-      function tick() {
-        /* Higher k = snappier cursor (was 0.22, felt laggy for navigation) */
-        const k = 0.58;
-        cx = lerp(cx, mx, k);
-        cy = lerp(cy, my, k);
-        cursorDot.style.left = `${cx}px`;
-        cursorDot.style.top = `${cy}px`;
-        raf = requestAnimationFrame(tick);
-      }
-
-      window.addEventListener("mousemove", e => {
-        mx = e.clientX;
-        my = e.clientY;
-      }, { passive: true });
-
-      window.addEventListener("mouseover", e => {
-        const el = e.target;
-        if (!(el instanceof Element)) return;
-        const hit = el.closest("a, button, input, textarea, select, [data-cursor-hover]");
-        cursorDot.classList.toggle("is-hover", !!hit);
-      });
-
-      raf = requestAnimationFrame(tick);
-    }
-
-    initCursor();
-    loadAll();
+      setTab('all')
+    })()
   </script>
 </body>
 </html>
