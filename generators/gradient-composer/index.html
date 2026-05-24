@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gradient Composer</title>
+<style>
+:root {
+  --bg: #ececec; --card: #ffffff; --text: #000000; --text-dim: #6b6b6b;
+  --line: #e4e4e4; --line-2: #d4d4d4; --accent: #d4fc4e;
+  --radius-lg: 20px; --radius-pill: 999px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg);
+  font-family: -apple-system, "Inter", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased; }
+body { display: flex; }
+
+#sidebar {
+  width: 296px; flex-shrink: 0; background: var(--bg);
+  padding: 16px; overflow-y: auto; height: 100vh;
+  border-right: 1px solid var(--line-2);
+}
+#sidebar::-webkit-scrollbar { width: 6px; }
+#sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 3px; }
+
+.brand-row { display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 14px; padding: 0 2px; }
+.brand { font-size: 16px; font-weight: 900; letter-spacing: -0.02em; }
+.brand .dot { display: inline-block; width: 5px; height: 5px; background: #000;
+  border-radius: 50%; vertical-align: baseline; margin-left: 1px; margin-bottom: 1px; }
+.brand-sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.1em; font-weight: 700; }
+
+.section { background: var(--card); border-radius: var(--radius-lg);
+  padding: 14px 14px 16px; margin-bottom: 10px; }
+.section-title { display: inline-block; background: var(--accent); color: #000;
+  padding: 3px 7px; font-family: ui-monospace, monospace; font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px; border-radius: 3px; }
+
+.ctrl { margin-bottom: 12px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl > label { display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+.ctrl > label .val { color: var(--text-dim); font-size: 11px; font-family: ui-monospace, monospace; }
+
+input[type=range] { -webkit-appearance: none; width: 100%; height: 4px;
+  background: var(--line-2); border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
+  width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+  color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
+  font-size: 12px; outline: none; cursor: pointer; font-family: inherit; font-weight: 500;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
+
+input[type="number"].num-in {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px;
+  font-size: 13px; font-family: ui-monospace, monospace; background: #fafafa;
+  outline: none; color: var(--text); }
+
+button.btn { width: 100%; background: #000; color: #fff; border: none;
+  padding: 10px 14px; border-radius: var(--radius-pill); font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: background 0.15s; font-family: inherit; }
+button.btn:hover { background: #222; }
+button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line-2); }
+button.btn.ghost:hover { background: #f5f5f5; }
+.btn-row { display: flex; gap: 8px; }
+.btn-row .btn { flex: 1; }
+
+.pill-row { display: flex; gap: 6px; }
+.mode-pill { flex: 1; background: #f0f0f0; color: #555; border: 1px solid var(--line-2);
+  border-radius: var(--radius-pill); padding: 9px 10px; font-size: 12px;
+  font-weight: 600; cursor: pointer; transition: all 0.12s; font-family: inherit; }
+.mode-pill.active { background: #000; color: #fff; border-color: #000; }
+
+.hint { font-size: 11px; color: var(--text-dim); line-height: 1.55; margin-top: 8px; }
+
+#canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center;
+  background: #ddd; overflow: hidden; }
+#preview { line-height: 0; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="brand-row">
+    <div>
+      <div class="brand">HEAR THE YOUTH<span class="dot"></span></div>
+      <div class="brand-sub">Gradient Composer</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Mode</div>
+    <div class="pill-row">
+      <button class="mode-pill active" id="pill-spheres">Spheres</button>
+      <button class="mode-pill"        id="pill-petals">Petals</button>
+      <button class="mode-pill"        id="pill-starburst">Burst</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Seed</div>
+    <div class="ctrl">
+      <input type="number" class="num-in" id="in-seed" value="42" min="0" max="999999" step="1"/>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" id="btn-rand">Randomize</button>
+    </div>
+    <p class="hint">Same seed → same output every time.</p>
+  </div>
+
+  <div class="section" id="sec-count" style="display:none">
+    <div class="section-title">Grid</div>
+    <div class="ctrl">
+      <label>Variants <span class="val" id="v-count">4</span></label>
+      <input type="range" id="sl-count" min="2" max="6" value="4" step="1"/>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Palette</div>
+    <div class="ctrl">
+      <select id="sel-palette">
+        <option value="-1">Auto (from seed)</option>
+        <option value="0">Cosmic Candy</option>
+        <option value="1">Fire &amp; Ice</option>
+        <option value="2">Tropical Jewel</option>
+        <option value="3">Neon Dreams</option>
+        <option value="4">Jewel Tones</option>
+        <option value="5">Aurora</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Export</div>
+    <button class="btn" id="btn-export">↓ Download SVG</button>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <div id="preview"></div>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+// ── PRNG ──────────────────────────────────────────────────────────────────────
+function createRNG(seed) {
+  let s = (seed ^ 0xDEADBEEF) >>> 0;
+  function next() {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  return {
+    next,
+    float(min = 0, max = 1) { return min + next() * (max - min); },
+    int(min, max) { return Math.floor(min + next() * (max - min + 1)); },
+    pick(arr) { return arr[Math.floor(next() * arr.length)]; },
+    bool(prob = 0.5) { return next() < prob; },
+  };
+}
+
+// ── Color ─────────────────────────────────────────────────────────────────────
+function hslToHex(h, s, l) {
+  h = ((h % 360) + 360) % 360;
+  s = Math.max(0, Math.min(100, s)) / 100;
+  l = Math.max(0, Math.min(100, l)) / 100;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => {
+    const k = (n + h / 30) % 12;
+    const c = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(255 * c).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+function adj([h, s, l], dh = 0, ds = 0, dl = 0) {
+  return [h + dh, Math.max(15, Math.min(100, s + ds)), Math.max(8, Math.min(95, l + dl))];
+}
+
+const PALETTES = [
+  [[300,82,64],[260,78,60],[200,86,64],[160,76,58],[340,82,64],[220,80,70],[280,72,54],[180,80,60],[240,84,62],[140,76,56]],
+  [[4,90,60],[32,90,64],[300,82,60],[200,86,64],[60,86,64],[336,82,60],[180,86,60],[244,76,64],[120,80,60],[28,88,65]],
+  [[172,82,54],[124,76,54],[52,92,60],[20,86,60],[320,82,64],[272,76,60],[100,82,60],[40,86,64],[196,84,58],[60,84,58]],
+  [[280,100,64],[200,100,64],[320,100,64],[160,100,60],[60,100,64],[0,100,64],[240,92,64],[100,92,64],[280,90,55],[40,95,62]],
+  [[212,72,50],[152,66,46],[332,72,50],[32,76,54],[272,66,50],[92,66,50],[2,72,50],[182,66,50],[312,70,52],[62,74,52]],
+  [[180,85,60],[220,80,65],[260,85,65],[300,80,60],[160,80,58],[240,90,68],[200,85,62],[280,82,58],[140,78,55],[320,85,62]],
+];
+
+function pickColors(palette, rng, n) {
+  const start = rng.int(0, palette.length - 1);
+  return Array.from({ length: n }, (_, i) => palette[(start + i) % palette.length]);
+}
+
+// ── Shared ID counter (reset per render) ─────────────────────────────────────
+let _gid = 0;
+
+// ── Spheres ───────────────────────────────────────────────────────────────────
+function makeSphere(cx, cy, R, palette, rng, isTorus) {
+  const id = ++_gid;
+  const [c1, c2, c3] = pickColors(palette, rng, 3);
+  const base1    = hslToHex(...c1);
+  const base2    = hslToHex(...c2);
+  const base3    = hslToHex(...c3);
+  const rimColor = hslToHex(...adj(c1, 0, -12, 28));
+  const specCX   = rng.float(25, 40);
+  const specCY   = rng.float(20, 36);
+  const specR    = rng.float(22, 34);
+  const innerR   = isTorus ? R * rng.float(0.30, 0.46) : 0;
+  const dark1    = hslToHex(...adj(c3, 10, 8, -32));
+  const dark2    = hslToHex(...adj(c3, 5, 4, -20));
+  const dark3    = hslToHex(...adj(c2, 0, 3, -14));
+  const blurStd  = rng.float(0.8, 2.2);
+
+  const defs = `
+    <radialGradient id="b${id}" cx="${rng.float(30,42).toFixed(1)}%" cy="${rng.float(27,40).toFixed(1)}%" r="65%">
+      <stop offset="0%"   stop-color="${base1}"/>
+      <stop offset="47%"  stop-color="${base2}"/>
+      <stop offset="100%" stop-color="${base3}"/>
+    </radialGradient>
+    <radialGradient id="r${id}" cx="50%" cy="50%" r="50%">
+      <stop offset="58%"  stop-color="white"      stop-opacity="0"/>
+      <stop offset="100%" stop-color="${rimColor}" stop-opacity="0.48"/>
+    </radialGradient>
+    <radialGradient id="s${id}" cx="${specCX.toFixed(1)}%" cy="${specCY.toFixed(1)}%" r="${specR.toFixed(1)}%">
+      <stop offset="0%"   stop-color="white" stop-opacity="0.95"/>
+      <stop offset="52%"  stop-color="white" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="f${id}" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="${blurStd.toFixed(2)}"/>
+    </filter>
+    ${isTorus ? `
+    <radialGradient id="h${id}" cx="48%" cy="42%" r="56%">
+      <stop offset="0%"   stop-color="${dark1}"/>
+      <stop offset="54%"  stop-color="${dark2}"/>
+      <stop offset="100%" stop-color="${dark3}"/>
+    </radialGradient>
+    <radialGradient id="hrim${id}" cx="50%" cy="52%" r="50%">
+      <stop offset="58%"  stop-color="white"      stop-opacity="0"/>
+      <stop offset="100%" stop-color="${rimColor}" stop-opacity="0.18"/>
+    </radialGradient>
+    <mask id="m${id}">
+      <circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${R.toFixed(2)}"      fill="white"/>
+      <circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${innerR.toFixed(2)}" fill="black"/>
+    </mask>` : ''}`;
+
+  const mask = isTorus ? ` mask="url(#m${id})"` : '';
+  const shapes = `
+    <ellipse cx="${cx.toFixed(2)}" cy="${(cy + R * 0.84).toFixed(2)}" rx="${(R * 0.68).toFixed(2)}" ry="${(R * 0.13).toFixed(2)}" fill="rgba(0,0,0,0.10)" filter="url(#f${id})"/>
+    <circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${R.toFixed(2)}" fill="url(#b${id})"${mask}/>
+    <circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${R.toFixed(2)}" fill="url(#r${id})"${mask} opacity="0.75"/>
+    <circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${R.toFixed(2)}" fill="url(#s${id})"${mask}/>
+    ${isTorus ? `
+    <circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${innerR.toFixed(2)}" fill="url(#h${id})"/>
+    <circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${innerR.toFixed(2)}" fill="url(#hrim${id})"/>
+    <circle cx="${(cx + innerR * 0.14).toFixed(2)}" cy="${(cy - innerR * 0.22).toFixed(2)}" r="${(innerR * 0.72).toFixed(2)}"
+            fill="none" stroke="white" stroke-width="${(innerR * 0.09).toFixed(2)}" stroke-opacity="0.14" filter="url(#f${id})"/>` : ''}`;
+
+  return { defs, shapes };
+}
+
+function generateSpheres(rng, palette) {
+  const count = rng.int(15, 25);
+  const clusters = Array.from({ length: rng.int(3, 6) }, () => ({
+    x: rng.float(140, 860), y: rng.float(140, 860),
+  }));
+  const positions = [];
+  for (let i = 0; i < count; i++) {
+    const c = clusters[rng.int(0, clusters.length - 1)];
+    positions.push({
+      x: Math.max(20, Math.min(980, c.x + rng.float(-190, 190))),
+      y: Math.max(20, Math.min(980, c.y + rng.float(-190, 190))),
+      r: rng.float(38, 108),
+    });
+  }
+  positions.sort((a, b) => a.y - b.y);
+  const allDefs = [], allShapes = [];
+  for (const { x, y, r } of positions) {
+    const { defs, shapes } = makeSphere(x, y, r, palette, rng, rng.bool(0.65));
+    allDefs.push(defs); allShapes.push(shapes);
+  }
+  return svg1000(`<defs>${allDefs.join('')}</defs>${allShapes.join('')}`);
+}
+
+// ── Petals ────────────────────────────────────────────────────────────────────
+function petalPath(cx, cy, length, hw, angle) {
+  const cos = Math.cos(angle), sin = Math.sin(angle);
+  const px = -sin, py = cos;
+  const tx = cx + cos * length, ty = cy + sin * length;
+  const f = n => n.toFixed(2);
+  const cp = (t, w) => [cx + cos * length * t + px * hw * w, cy + sin * length * t + py * hw * w];
+  const [c1x, c1y] = cp(0.28,  1);   const [c2x, c2y] = cp(0.72,  0.55);
+  const [c3x, c3y] = cp(0.72, -0.55); const [c4x, c4y] = cp(0.28, -1);
+  return `M ${f(cx)},${f(cy)} C ${f(c1x)},${f(c1y)} ${f(c2x)},${f(c2y)} ${f(tx)},${f(ty)} C ${f(c3x)},${f(c3y)} ${f(c4x)},${f(c4y)} ${f(cx)},${f(cy)} Z`;
+}
+
+function makeFlower(cx, cy, cellW, cellH, palette, rng) {
+  const id   = ++_gid;
+  const pLen = Math.min(cellW, cellH) * 0.40 * rng.float(0.85, 1.0);
+  const hw   = pLen * rng.float(0.20, 0.30);
+  const n    = rng.int(10, 16);
+  const cols = pickColors(palette, rng, 4);
+  const [c0, c1, c2, c3] = cols.map(c => hslToHex(...c));
+  const lightC = hslToHex(...adj(cols[1], 0, -18, 28));
+  const darkC  = hslToHex(...adj(cols[2], 5, 10, -18));
+
+  const defs = [], shapes = [];
+  for (let i = 0; i < n; i++) {
+    const pid = `${id}_${i}`;
+    const ang = (i / n) * Math.PI * 2 + rng.float(-0.04, 0.04);
+    const cos = Math.cos(ang), sin = Math.sin(ang);
+    const midX = (cx + cos * pLen * 0.5).toFixed(2);
+    const midY = (cy + sin * pLen * 0.5).toFixed(2);
+    defs.push(`
+    <linearGradient id="pl${pid}" gradientUnits="userSpaceOnUse"
+      x1="${cx.toFixed(2)}" y1="${cy.toFixed(2)}"
+      x2="${(cx + cos * pLen).toFixed(2)}" y2="${(cy + sin * pLen).toFixed(2)}">
+      <stop offset="0%"   stop-color="${c0}"/>
+      <stop offset="28%"  stop-color="${c1}"/>
+      <stop offset="64%"  stop-color="${c2}"/>
+      <stop offset="100%" stop-color="${c3}"/>
+    </linearGradient>
+    <radialGradient id="pr${pid}" gradientUnits="userSpaceOnUse" cx="${midX}" cy="${midY}" r="${(pLen * 0.42).toFixed(2)}">
+      <stop offset="0%"   stop-color="${lightC}" stop-opacity="0.52"/>
+      <stop offset="52%"  stop-color="${lightC}" stop-opacity="0"/>
+      <stop offset="100%" stop-color="${darkC}"  stop-opacity="0.32"/>
+    </radialGradient>`);
+    const path = petalPath(cx, cy, pLen, hw, ang);
+    const op = rng.float(0.80, 0.93).toFixed(2);
+    shapes.push(`<path d="${path}" fill="url(#pl${pid})" opacity="${op}"/>`);
+    shapes.push(`<path d="${path}" fill="url(#pr${pid})" opacity="0.62"/>`);
+  }
+  const cR = pLen * 0.095;
+  defs.push(`<radialGradient id="pc${id}" cx="38%" cy="34%" r="62%">
+    <stop offset="0%"   stop-color="${hslToHex(...adj(cols[0], 0, -5, 22))}"/>
+    <stop offset="100%" stop-color="${hslToHex(...adj(cols[0], 18, 12, -18))}"/>
+  </radialGradient>`);
+  shapes.push(`<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${cR.toFixed(2)}" fill="url(#pc${id})"/>`);
+  return { defs: defs.join(''), shapes: shapes.join('\n') };
+}
+
+function generatePetals(rng, palette, count) {
+  const cols = count <= 4 ? 2 : 3;
+  const rows = Math.ceil(count / cols);
+  const cW = 1000 / cols, cH = 1000 / rows;
+  const allDefs = [], allShapes = [];
+  for (let i = 0; i < count; i++) {
+    const { defs, shapes } = makeFlower(cW * (i % cols + 0.5), cH * (Math.floor(i / cols) + 0.5), cW, cH, palette, rng);
+    allDefs.push(defs); allShapes.push(shapes);
+  }
+  return svg1000(`<defs>${allDefs.join('')}</defs>${gridLines(cols, rows)}${allShapes.join('\n')}`);
+}
+
+// ── Starburst ─────────────────────────────────────────────────────────────────
+function makeStarburst(cx, cy, cellW, cellH, palette, rng) {
+  const id  = ++_gid;
+  const bL  = Math.min(cellW, cellH) * 0.86;
+  const bW  = bL * rng.float(0.062, 0.098);
+  const rx  = (bW * 0.5).toFixed(2);
+  const n   = rng.int(8, 14);
+  const cols = pickColors(palette, rng, 3);
+  const [c0, c1, c2] = cols.map(c => hslToHex(...c));
+  const lC  = hslToHex(...adj(cols[1], 0, -18, 26));
+  const dE  = hslToHex(...adj(cols[1], 5, 10, -22));
+  const useShadow = rng.bool(0.6);
+
+  const defs = [], shapes = [];
+  if (useShadow) {
+    defs.push(`<filter id="sh${id}" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="2" dy="3" stdDeviation="4" flood-color="rgba(0,0,0,0.18)"/>
+    </filter>`);
+  }
+  for (let i = 0; i < n; i++) {
+    const bid = `${id}_${i}`;
+    const deg = (i / n) * 180;
+    const gt  = `gradientTransform="rotate(${deg.toFixed(2)},${cx.toFixed(2)},${cy.toFixed(2)})"`;
+    defs.push(`
+    <linearGradient id="bl${bid}" gradientUnits="userSpaceOnUse"
+      x1="${(cx - bL/2).toFixed(2)}" y1="${cy.toFixed(2)}"
+      x2="${(cx + bL/2).toFixed(2)}" y2="${cy.toFixed(2)}" ${gt}>
+      <stop offset="0%"   stop-color="${c0}"/>
+      <stop offset="50%"  stop-color="${c1}"/>
+      <stop offset="100%" stop-color="${c2}"/>
+    </linearGradient>
+    <linearGradient id="bw${bid}" gradientUnits="userSpaceOnUse"
+      x1="${cx.toFixed(2)}" y1="${(cy - bW/2).toFixed(2)}"
+      x2="${cx.toFixed(2)}" y2="${(cy + bW/2).toFixed(2)}" ${gt}>
+      <stop offset="0%"   stop-color="${dE}"/>
+      <stop offset="35%"  stop-color="${lC}" stop-opacity="0.82"/>
+      <stop offset="50%"  stop-color="white" stop-opacity="0.55"/>
+      <stop offset="65%"  stop-color="${lC}" stop-opacity="0.82"/>
+      <stop offset="100%" stop-color="${dE}"/>
+    </linearGradient>`);
+    const bx = (cx - bL/2).toFixed(2), by = (cy - bW/2).toFixed(2);
+    const tr = `transform="rotate(${deg.toFixed(2)},${cx.toFixed(2)},${cy.toFixed(2)})"`;
+    const sf = useShadow ? ` filter="url(#sh${id})"` : '';
+    shapes.push(`<rect x="${bx}" y="${by}" width="${bL.toFixed(2)}" height="${bW.toFixed(2)}" rx="${rx}" ry="${rx}" fill="url(#bl${bid})" ${tr}${sf}/>`);
+    shapes.push(`<rect x="${bx}" y="${by}" width="${bL.toFixed(2)}" height="${bW.toFixed(2)}" rx="${rx}" ry="${rx}" fill="url(#bw${bid})" ${tr} opacity="0.68"/>`);
+  }
+  const ccs = pickColors(palette, rng, 2);
+  const dR  = (bW * 1.1).toFixed(2);
+  defs.push(`<radialGradient id="dc${id}" cx="38%" cy="34%" r="64%">
+    <stop offset="0%"   stop-color="${hslToHex(...adj(ccs[0], 0, -10, 24))}"/>
+    <stop offset="100%" stop-color="${hslToHex(...adj(ccs[1], 5, 8, -16))}"/>
+  </radialGradient>`);
+  shapes.push(`<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${dR}" fill="url(#dc${id})"/>`);
+  return { defs: defs.join(''), shapes: shapes.join('\n') };
+}
+
+function generateStarburst(rng, palette, count) {
+  const cols = count <= 4 ? 2 : 3;
+  const rows = Math.ceil(count / cols);
+  const cW = 1000 / cols, cH = 1000 / rows;
+  const allDefs = [], allShapes = [];
+  for (let i = 0; i < count; i++) {
+    const { defs, shapes } = makeStarburst(cW * (i % cols + 0.5), cH * (Math.floor(i / cols) + 0.5), cW, cH, palette, rng);
+    allDefs.push(defs); allShapes.push(shapes);
+  }
+  return svg1000(`<defs>${allDefs.join('')}</defs>${gridLines(cols, rows)}${allShapes.join('\n')}`);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function gridLines(cols, rows) {
+  const cW = 1000 / cols, cH = 1000 / rows;
+  const lines = [];
+  for (let c = 1; c < cols; c++) lines.push(`<line x1="${c*cW}" y1="0" x2="${c*cW}" y2="1000" stroke="#bfbbb3" stroke-width="1"/>`);
+  for (let r = 1; r < rows; r++) lines.push(`<line x1="0" y1="${r*cH}" x2="1000" y2="${r*cH}" stroke="#bfbbb3" stroke-width="1"/>`);
+  return lines.join('');
+}
+
+function svg1000(inner) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1000" height="1000"><rect width="1000" height="1000" fill="#d4d0c8"/>${inner}</svg>`;
+}
+
+// ── State & rendering ─────────────────────────────────────────────────────────
+let mode = 'spheres';
+let lastSvg = '';
+
+function buildSvg() {
+  _gid = 0;
+  const seed    = Math.max(0, parseInt(document.getElementById('in-seed').value, 10) || 42);
+  const count   = parseInt(document.getElementById('sl-count').value, 10) || 4;
+  const palSel  = parseInt(document.getElementById('sel-palette').value, 10);
+  const rng     = createRNG(seed);
+  const palette = palSel >= 0 ? PALETTES[palSel] : PALETTES[rng.int(0, PALETTES.length - 1)];
+
+  if (mode === 'spheres')   return generateSpheres(rng, palette);
+  if (mode === 'petals')    return generatePetals(rng, palette, count);
+  if (mode === 'starburst') return generateStarburst(rng, palette, count);
+}
+
+function render() {
+  const svg  = buildSvg();
+  lastSvg    = svg;
+  const wrap = document.getElementById('canvas-wrap');
+  const side = Math.min(wrap.clientWidth - 32, wrap.clientHeight - 32);
+  document.getElementById('preview').innerHTML = svg.replace(
+    'width="1000" height="1000"',
+    `width="${side}" height="${side}"`
+  );
+}
+
+let rafPending = false;
+function schedRender() {
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => { rafPending = false; render(); });
+}
+
+// ── UI wiring ─────────────────────────────────────────────────────────────────
+['spheres', 'petals', 'starburst'].forEach(m => {
+  document.getElementById(`pill-${m}`).addEventListener('click', () => {
+    document.querySelectorAll('.mode-pill').forEach(p => p.classList.remove('active'));
+    document.getElementById(`pill-${m}`).classList.add('active');
+    mode = m;
+    document.getElementById('sec-count').style.display = m === 'spheres' ? 'none' : '';
+    schedRender();
+  });
+});
+
+document.getElementById('in-seed').addEventListener('input', schedRender);
+document.getElementById('in-seed').addEventListener('change', schedRender);
+document.getElementById('sel-palette').addEventListener('change', schedRender);
+
+document.getElementById('btn-rand').addEventListener('click', () => {
+  document.getElementById('in-seed').value = Math.floor(Math.random() * 100000);
+  schedRender();
+});
+
+const countSlider = document.getElementById('sl-count');
+const countVal    = document.getElementById('v-count');
+countSlider.addEventListener('input', () => { countVal.textContent = countSlider.value; schedRender(); });
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  if (!lastSvg) return;
+  const seed = document.getElementById('in-seed').value;
+  const blob = new Blob([lastSvg], { type: 'image/svg+xml' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.download = `gradient-composer-${mode}-${seed}.svg`;
+  a.href = url; a.click();
+  URL.revokeObjectURL(url);
+});
+
+window.addEventListener('resize', schedRender);
+render();
+
+})();
+</script>
+</body>
+</html>
