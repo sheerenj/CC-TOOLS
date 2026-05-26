@@ -280,18 +280,18 @@ input[type="color"] {
       <div class="sec-lbl">Components</div>
       <div class="row">
         <label>Count</label>
-        <input type="range" id="sCount" min="30" max="1500" step="10" value="350">
-        <span class="val" id="vCount">350</span>
+        <input type="range" id="sCount" min="30" max="1500" step="10" value="130">
+        <span class="val" id="vCount">130</span>
       </div>
       <div class="row">
         <label>Spread</label>
-        <input type="range" id="sSpread" min="0" max="100" value="35">
-        <span class="val" id="vSpread">35</span>
+        <input type="range" id="sSpread" min="0" max="100" value="1">
+        <span class="val" id="vSpread">1</span>
       </div>
       <div class="row">
         <label>Density</label>
-        <input type="range" id="sDensity" min="0.2" max="5" step="0.1" value="2.2">
-        <span class="val" id="vDensity">2.2</span>
+        <input type="range" id="sDensity" min="0.2" max="5" step="0.1" value="2.3">
+        <span class="val" id="vDensity">2.3</span>
       </div>
     </div>
 
@@ -323,23 +323,23 @@ input[type="color"] {
       <div class="sec-lbl">Sizes</div>
       <div class="row">
         <label>Comp</label>
-        <input type="range" id="sComp" min="1" max="14" step="0.5" value="3">
-        <span class="val" id="vComp">3</span>
+        <input type="range" id="sComp" min="1" max="14" step="0.5" value="5.5">
+        <span class="val" id="vComp">5.5</span>
       </div>
       <div class="row">
         <label>Trace</label>
-        <input type="range" id="sTrace" min="0.3" max="7" step="0.1" value="1.5">
-        <span class="val" id="vTrace">1.5</span>
+        <input type="range" id="sTrace" min="0.3" max="7" step="0.1" value="1.2">
+        <span class="val" id="vTrace">1.2</span>
       </div>
       <div class="row">
         <label>Pad</label>
-        <input type="range" id="sPad" min="1.5" max="16" step="0.5" value="5">
-        <span class="val" id="vPad">5</span>
+        <input type="range" id="sPad" min="1.5" max="16" step="0.5" value="1.5">
+        <span class="val" id="vPad">1.5</span>
       </div>
       <div class="row">
         <label>Bevel</label>
-        <input type="range" id="sBevel" min="0" max="6" step="0.2" value="1.6">
-        <span class="val" id="vBevel">1.6</span>
+        <input type="range" id="sBevel" min="0" max="6" step="0.2" value="0">
+        <span class="val" id="vBevel">0</span>
       </div>
     </div>
 
@@ -348,20 +348,20 @@ input[type="color"] {
       <div class="sec-lbl">Color</div>
       <div class="row">
         <label>Threshold</label>
-        <input type="range" id="sThresh" min="0" max="100" value="25">
-        <span class="val" id="vThresh">25</span>
+        <input type="range" id="sThresh" min="0" max="100" value="15">
+        <span class="val" id="vThresh">15</span>
       </div>
       <div class="row">
         <label>Invert</label>
-        <button class="tbtn" id="btnInvert">Bright → Dense</button>
+        <button class="tbtn on" id="btnInvert">Dark → Dense</button>
       </div>
       <div class="row">
         <label>Background</label>
-        <input type="color" id="sBgColor" value="#17171d">
+        <input type="color" id="sBgColor" value="#000000">
       </div>
       <div class="row">
         <label>Comp</label>
-        <input type="color" id="sCompColor" value="#d7dce6">
+        <input type="color" id="sCompColor" value="#39ff14">
       </div>
       <div class="row">
         <label>Accent</label>
@@ -369,8 +369,8 @@ input[type="color"] {
       </div>
       <div class="row">
         <label>Accent %</label>
-        <input type="range" id="sAccentPct" min="0" max="100" value="22">
-        <span class="val" id="vAccentPct">22</span>
+        <input type="range" id="sAccentPct" min="0" max="100" value="30">
+        <span class="val" id="vAccentPct">30</span>
       </div>
     </div>
 
@@ -416,22 +416,22 @@ let imgTx = { x: 0, y: 0, scale: 1 };
 // ── Params ────────────────────────────────────────────────────────────────────
 
 const P = {
-  count:     350,
-  spread:    35,
-  density:   2.2,
+  count:     130,
+  spread:    1,
+  density:   2.3,
   maxDist:   120,
   mode:      'strict',
   diagAmt:   30,
-  comp:      3,
-  trace:     1.5,
-  pad:       5,
-  bevel:     1.6,
-  threshold: 0.25,
-  invert:    false,
+  comp:      5.5,
+  trace:     1.2,
+  pad:       1.5,
+  bevel:     0,
+  threshold: 0.15,
+  invert:    true,
   accent:    '#39ff14',
-  accentPct: 22,
-  compColor: '#d7dce6',
-  bgColor:   '#17171d',
+  accentPct: 30,
+  compColor: '#39ff14',
+  bgColor:   '#000000',
 };
 
 let nodes = [];

@@ -232,6 +232,26 @@ select {
   </div>
 
   <div class="sep"></div>
+  <div class="sec">Crosshairs</div>
+  <div class="row-tog">
+    <span>Show crosshairs</span>
+    <div style="display:flex;align-items:center;gap:6px">
+      <div class="sw"><input type="color" id="cchC" value="#000000"></div>
+      <label class="tog"><input type="checkbox" id="tch"><span class="tog-tr"></span></label>
+    </div>
+  </div>
+  <div class="row">
+    <span class="lbl">Size</span>
+    <input type="range" id="rchSz" min="5" max="100" value="40">
+    <span class="val" id="vchSz">40%</span>
+  </div>
+  <div class="row">
+    <span class="lbl">Width</span>
+    <input type="range" id="rchW" min="1" max="40" value="10">
+    <span class="val" id="vchW">1.0px</span>
+  </div>
+
+  <div class="sep"></div>
   <div class="sec">Bonds</div>
   <div class="row-tog">
     <span>Show bonds</span>
@@ -331,7 +351,8 @@ const S = {
   sb: false, bc: '#bfb9ab', bo: 1.0, bw: 1.0,
   bg: '#000000',
   rx: .6155, ry: .7854, rz: 0, zoom: 1.0,
-  expAlpha: true, svgMerge: false
+  expAlpha: true, svgMerge: false,
+  ch: false, chSz: 0.4, chW: 1.0, chC: '#000000'
 };
 
 // ── Figma context ──────────────────────────────────────────────────────────
@@ -454,6 +475,20 @@ function drawScene(tCtx, transparent, dpr) {
     }
   }
 
+  // Crosshairs
+  if (S.ch && S.showAtoms) {
+    const chLen = ar * S.chSz;
+    tCtx.save();
+    tCtx.strokeStyle = S.chC;
+    tCtx.lineWidth = S.chW * previewScale;
+    tCtx.lineCap = 'round';
+    for (const { sx, sy } of atoms) {
+      tCtx.beginPath(); tCtx.moveTo(sx-chLen, sy); tCtx.lineTo(sx+chLen, sy); tCtx.stroke();
+      tCtx.beginPath(); tCtx.moveTo(sx, sy-chLen); tCtx.lineTo(sx, sy+chLen); tCtx.stroke();
+    }
+    tCtx.restore();
+  }
+
   tCtx.restore();
 }
 
@@ -506,6 +541,17 @@ function buildSVGString() {
     }
   }
 
+  // Crosshairs
+  if (S.ch && S.showAtoms) {
+    const chLen = ar * S.chSz;
+    body += `<g stroke="${S.chC}" stroke-width="${f2(S.chW)}" stroke-linecap="round" fill="none">`;
+    for (const { sx, sy } of sorted) {
+      body += `<line x1="${f2(sx-chLen)}" y1="${f2(sy)}" x2="${f2(sx+chLen)}" y2="${f2(sy)}"/>`;
+      body += `<line x1="${f2(sx)}" y1="${f2(sy-chLen)}" x2="${f2(sx)}" y2="${f2(sy+chLen)}"/>`;
+    }
+    body += '</g>';
+  }
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">\n  ${body}\n</svg>`;
 }
 
@@ -531,7 +577,8 @@ function serializeState() {
     merged: S.merged, cW: S.cW, cH: S.cH,
     sw: S.sw, sc: S.sc, sb: S.sb, bc: S.bc, bo: S.bo, bw: S.bw,
     bg: S.bg, rx: S.rx, ry: S.ry, rz: S.rz, zoom: S.zoom,
-    expAlpha: S.expAlpha, svgMerge: S.svgMerge
+    expAlpha: S.expAlpha, svgMerge: S.svgMerge,
+    ch: S.ch, chSz: S.chSz, chW: S.chW, chC: S.chC
   });
 }
 
@@ -557,6 +604,10 @@ function syncAllControls() {
   $('cbg').value = S.bg;
   $('tealpha').checked = S.expAlpha;
   $('tsvgmerge').checked = S.svgMerge;
+  $('tch').checked = S.ch;
+  $('rchSz').value = Math.round(S.chSz*100);   $('vchSz').textContent = Math.round(S.chSz*100)+'%';
+  $('rchW').value  = Math.round(S.chW*10);      $('vchW').textContent  = S.chW.toFixed(1)+'px';
+  $('cchC').value  = S.chC;
   const key = `${S.cW}x${S.cH}`;
   const opt = $('cvsize').querySelector(`option[value="${key}"]`);
   if (opt) $('cvsize').value = key;
@@ -641,6 +692,10 @@ $('tmerged').onchange    = function() {
 };
 $('rsw').oninput = function() { S.sw=+this.value;        $('vsw').textContent=this.value+'px'; };
 $('csc').oninput = function() { S.sc=this.value; };
+$('tch').onchange  = function() { S.ch=this.checked; };
+$('rchSz').oninput = function() { S.chSz=+this.value/100; $('vchSz').textContent=this.value+'%'; };
+$('rchW').oninput  = function() { S.chW=+this.value/10;   $('vchW').textContent=S.chW.toFixed(1)+'px'; };
+$('cchC').oninput  = function() { S.chC=this.value; };
 $('tsb').onchange = function() { S.sb=this.checked; };
 $('cbc').oninput  = function() { S.bc=this.value; };
 $('rbo').oninput  = function() { S.bo=+this.value/100;   $('vbo').textContent=this.value+'%'; };

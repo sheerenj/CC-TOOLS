@@ -283,6 +283,26 @@ select { width: 100%; background: #f5f5f5; border: 1px solid var(--line); color:
     </div>
   </div>
 
+  <!-- CROSSHAIRS -->
+  <div class="section">
+    <div class="sec-title">Crosshairs</div>
+    <div class="ctrl tog-row" style="margin-bottom:10px">
+      <span>Show crosshairs</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="swatch"><input type="color" id="cchC" value="#000000"></div>
+        <label class="tog"><input type="checkbox" id="tch"><span class="tog-tr"></span></label>
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>Size <span class="val" id="vchSz">40%</span></label>
+      <input type="range" id="rchSz" min="5" max="100" value="40" step="1">
+    </div>
+    <div class="ctrl">
+      <label>Width <span class="val" id="vchW">1.0 px</span></label>
+      <input type="range" id="rchW" min="1" max="40" value="10" step="1">
+    </div>
+  </div>
+
   <!-- BONDS -->
   <div class="section">
     <div class="sec-title">Bonds</div>
@@ -539,7 +559,8 @@ const S = {
   play: true,
   rx: .6155, ry: .7854, rz: 0, zoom: 1,
   expFrames: 60, expAlpha: true, exporting: false,
-  svgMerge: false
+  svgMerge: false,
+  ch: false, chSz: 0.4, chW: 1.0, chC: '#000000'
 };
 
 // ── Offscreen canvases ─────────────────────────────────────────────────────
@@ -731,6 +752,20 @@ function drawScene(tCtx, transparent, dpr = DPR) {
     }
   }
 
+  // Crosshairs
+  if (S.ch && S.showAtoms) {
+    const chLen = ar * S.chSz;
+    tCtx.save();
+    tCtx.strokeStyle = S.chC;
+    tCtx.lineWidth = S.chW;
+    tCtx.lineCap = 'round';
+    for (const { sx, sy } of atoms) {
+      tCtx.beginPath(); tCtx.moveTo(sx - chLen, sy); tCtx.lineTo(sx + chLen, sy); tCtx.stroke();
+      tCtx.beginPath(); tCtx.moveTo(sx, sy - chLen); tCtx.lineTo(sx, sy + chLen); tCtx.stroke();
+    }
+    tCtx.restore();
+  }
+
   tCtx.restore();
 }
 
@@ -834,6 +869,17 @@ function exportSVG() {
         body += `<circle cx="${f2(sx)}" cy="${f2(sy)}" r="${f2(ar + S.sw)}" fill="${S.sc}"/>`;
       body += `<circle cx="${f2(sx)}" cy="${f2(sy)}" r="${f2(ar)}" fill="${S.ac}"${glowAttr}/>`;
     }
+  }
+
+  // Crosshairs
+  if (S.ch && S.showAtoms) {
+    const chLen = ar * S.chSz;
+    body += `<g stroke="${S.chC}" stroke-width="${f2(S.chW)}" stroke-linecap="round" fill="none">`;
+    for (const { sx, sy } of sorted) {
+      body += `<line x1="${f2(sx-chLen)}" y1="${f2(sy)}" x2="${f2(sx+chLen)}" y2="${f2(sy)}"/>`;
+      body += `<line x1="${f2(sx)}" y1="${f2(sy-chLen)}" x2="${f2(sx)}" y2="${f2(sy+chLen)}"/>`;
+    }
+    body += '</g>';
   }
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">\n  <defs>${defs}</defs>\n  ${body}\n</svg>`;
@@ -1148,6 +1194,11 @@ $('rgi').oninput = function() { S.gi=+this.value/100; $('vgi').textContent=this.
 $('cgc').oninput = function() { S.gc=this.value; };
 $('rgs').oninput = function() { S.gs=+this.value/100; $('vgs').textContent=this.value+'%'; };
 $('rgp').oninput = function() { S.gp=+this.value;     $('vgp').textContent=this.value; };
+
+$('tch').onchange  = function() { S.ch=this.checked; };
+$('rchSz').oninput = function() { S.chSz=+this.value/100; $('vchSz').textContent=this.value+'%'; };
+$('rchW').oninput  = function() { S.chW=+this.value/10;   $('vchW').textContent=S.chW.toFixed(1)+' px'; };
+$('cchC').oninput  = function() { S.chC=this.value; };
 
 $('tsb').onchange = function() { S.sb=this.checked; };
 $('cbc').oninput  = function() { S.bc=this.value; };

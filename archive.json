@@ -1,19 +1,4 @@
 [
-  {
-    "slug": "topotype",
-    "hasPreview": false,
-    "category": "typography"
-  },
-  {
-    "category": "video",
-    "slug": "BCA-halftone-lines-video",
-    "hasPreview": true,
-    "name": "Boothclub Halftone Lines"
-  },
-  {
-    "category": "image",
-    "slug": "BCA-halftone-lines-image",
-    "hasPreview": true,
-    "name": "Boothclub Halftone Lines"
-  }
+  {"slug": "topotype", "name": "Topotype", "hasPreview": false},
+  {"slug": "blob-sculptor", "name": "Blob Sculptor", "hasPreview": false}
 ]

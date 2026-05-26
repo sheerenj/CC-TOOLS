@@ -194,6 +194,17 @@
         }
     }
 
+    if (crosshairs && doAtoms) {
+        var chLen = ar * clampF(crosshairSize, 0.05, 1.0);
+        for (var ci = 0; ci < sorted.length; ci++) {
+            var chX = sorted[ci].sx, chY = sorted[ci].sy;
+            path.moveTo(chX - chLen, chY);
+            path.lineTo(chX + chLen, chY);
+            path.moveTo(chX, chY - chLen);
+            path.lineTo(chX, chY + chLen);
+        }
+    }
+
     // ─── Return ───────────────────────────────────────────────────────
     var mesh = new cavalry.Mesh();
     mesh.addPath(path);
