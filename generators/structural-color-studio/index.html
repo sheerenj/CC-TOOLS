@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Iridis — Structural Colour Studio</title>
+<style>
+  :root{
+    --bg:#06070b; --panel:#0c0f17; --panel2:#0f1320; --line:#1c2231;
+    --ink:#e9eef8; --mut:#838ea3; --acc:#46e0c4; --acc2:#7a8cff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg); color:var(--ink);
+    font:13px/1.45 ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    display:flex; overflow:hidden;}
+  #stage{flex:1; position:relative; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(1200px 800px at 70% -10%,#0f1320 0,transparent 60%),
+      radial-gradient(900px 700px at -10% 110%,#0b0f15 0,transparent 55%),var(--bg);
+    cursor:crosshair; overflow:hidden; padding:26px;}
+  #frame{position:relative; height:min(92vh,1000px); aspect-ratio:2/3; max-width:100%;
+    box-shadow:0 30px 90px -25px #000,0 0 0 1px #00000080;}
+  #art{width:100%; height:100%; display:block; background:#000;}
+  #art.checker, #cv.checker{background:repeating-conic-gradient(#2a2f3a 0% 25%, #1c2029 0% 50%) 50%/22px 22px;}
+  #cv{position:absolute; inset:0; width:100%; height:100%; display:none;}
+  #hud{position:absolute; left:16px; bottom:13px; font-variant-numeric:tabular-nums;
+    color:var(--mut); letter-spacing:.02em; pointer-events:none; text-shadow:0 1px 4px #000;}
+  #hud b{color:var(--ink); font-weight:600}
+  #liveDot{color:var(--acc)} #hud.frozen #liveDot{color:#ff5a7a} #hud.frozen #liveTxt{color:#ff8aa0}
+  #freezeBadge{position:absolute; top:12px; left:50%; transform:translateX(-50%) translateY(-8px);
+    background:#ff2d55; color:#fff; font-size:11px; font-weight:800; letter-spacing:.14em;
+    padding:5px 12px; border-radius:30px; opacity:0; pointer-events:none; transition:.18s;
+    box-shadow:0 6px 20px -4px #ff2d5588;}
+  #freezeBadge.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  #brand{position:absolute; left:18px; top:14px; pointer-events:none}
+  #brand .t{font-weight:800; letter-spacing:.18em; font-size:12px}
+  #brand .s{color:var(--mut); font-size:10.5px; letter-spacing:.05em}
+
+  #panel{width:312px; flex:0 0 312px; background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border-left:1px solid var(--line); display:flex; flex-direction:column; height:100%;}
+  #panel header{padding:15px 18px 12px; border-bottom:1px solid var(--line)}
+  #panel header h1{margin:0; font-size:13px; letter-spacing:.08em}
+  #panel header p{margin:5px 0 0; color:var(--mut); font-size:11px}
+  #scroll{padding:6px 16px 20px; overflow:auto; flex:1}
+  #scroll::-webkit-scrollbar{width:9px} #scroll::-webkit-scrollbar-thumb{background:#1d2433;border-radius:9px}
+  .sec{border-bottom:1px solid #141a26; padding:12px 0 13px}
+  .sec > h2{margin:0 0 9px; font-size:10px; text-transform:uppercase; letter-spacing:.16em; color:#6f7a8f; font-weight:700}
+  .grp{margin:10px 0}
+  .grp > .lbl{display:flex; justify-content:space-between; align-items:baseline; margin:0 0 5px}
+  .grp .name{font-size:11.5px; color:#b9c2d4}
+  .grp .val{font-size:11px; color:var(--acc); font-variant-numeric:tabular-nums}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:4px; border-radius:4px;
+    background:#212838; outline:none; margin:2px 0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+    background:var(--acc); cursor:pointer; box-shadow:0 0 0 4px #46e0c422; border:2px solid #0a0c12}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--acc);cursor:pointer;border:2px solid #0a0c12}
+  .seg{display:flex; gap:5px; flex-wrap:wrap}
+  .seg button{flex:1 1 auto; min-width:46px; padding:7px 5px; border:1px solid var(--line); background:#0b0e16;
+    color:var(--mut); border-radius:7px; cursor:pointer; font-size:11px; transition:.12s}
+  .seg button:hover{border-color:#2d3850; color:#c4cdde}
+  .seg button.on{background:var(--acc); color:#04140f; border-color:var(--acc); font-weight:700}
+  .seg.alt2 button.on{background:var(--acc2); color:#fff; border-color:var(--acc2)}
+  .row{display:flex; gap:8px}
+  .btn{flex:1; padding:9px; border-radius:8px; border:1px solid var(--line); cursor:pointer;
+    background:#0b0e16; color:var(--ink); font-size:12px; font-weight:600; transition:.12s}
+  .btn:hover{border-color:var(--acc)}
+  .btn.primary{background:linear-gradient(180deg,var(--acc),#33c6ad); color:#04140f; border:none}
+  .btn.alt{background:linear-gradient(180deg,var(--acc2),#5f72e6); color:#fff; border:none}
+  .btn.big{padding:11px; font-size:12.5px}
+  .hint{color:#697485; font-size:10.5px; margin:8px 0 0; line-height:1.5}
+  .toggle{display:flex; align-items:center; justify-content:space-between; padding:6px 0}
+  .toggle span{font-size:11.5px; color:#b9c2d4}
+  .sw{position:relative; width:38px; height:21px; background:#222a3a; border-radius:20px; cursor:pointer; transition:.15s}
+  .sw.on{background:var(--acc)}
+  .sw::after{content:""; position:absolute; top:2px; left:2px; width:17px; height:17px; border-radius:50%; background:#fff; transition:.15s}
+  .sw.on::after{transform:translateX(17px)}
+  footer{padding:9px 16px; border-top:1px solid var(--line); color:#5d6678; font-size:10px}
+  @media (max-width:840px){ body{flex-direction:column; overflow:auto} #panel{width:100%;flex:none;border-left:none;border-top:1px solid var(--line)} #frame{height:auto; width:min(78vw,340px)} #stage{padding:22px}}
+</style>
+</head>
+<body>
+  <div id="stage">
+    <div id="brand"><div class="t">IRIDIS</div><div class="s">structural-colour studio</div></div>
+    <div id="frame"><svg id="art" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"></svg>
+      <canvas id="cv"></canvas>
+      <div id="freezeBadge">● FROZEN</div></div>
+    <div id="hud"><span id="liveDot">●</span> <span id="liveTxt">LIVE</span> &nbsp;·&nbsp; tilt <b id="hAng">—</b> · film <b id="hThk">—</b>nm &nbsp;<span style="color:#4a5468">— drag canvas or use sliders · <b style="color:#7e8aa0">F</b>/space = freeze · M = mutate</span></div>
+  </div>
+
+  <aside id="panel">
+    <header>
+      <h1>IRIDIS CONTROLS</h1>
+      <p>Colour is computed from real thin-film optics, never picked. Mouse X tilts the viewing angle; mouse Y sets film thickness.</p>
+    </header>
+    <div id="scroll">
+
+      <div class="sec">
+        <h2>My presets <span style="color:#5d6678">saved on this computer</span></h2>
+        <div class="row" style="gap:6px">
+          <input id="presetName" placeholder="name this look…" style="flex:1;min-width:0;padding:8px;border:1px solid var(--line);background:#0b0e16;color:var(--ink);border-radius:7px;font-size:12px;outline:none">
+          <button class="btn" id="savePreset" style="flex:0 0 auto;width:auto;padding:8px 14px">Save</button>
+        </div>
+        <div class="row" style="margin-top:7px;gap:6px">
+          <select id="presetList" style="flex:1;min-width:0;padding:8px;border:1px solid var(--line);background:#0b0e16;color:var(--ink);border-radius:7px;font-size:12px;outline:none"><option value="">— load a preset —</option></select>
+          <button class="btn" id="delPreset" title="Delete selected" style="flex:0 0 auto;width:auto;padding:8px 12px">✕</button>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h2>Pattern</h2>
+        <div class="seg" id="mode">
+          <button data-m="truchet">Truchet</button>
+          <button data-m="quarter">Quarters</button>
+          <button data-m="diag">Diagonals</button>
+          <button data-m="flow">Flow mesh</button>
+          <button data-m="scatter" class="on">Scales</button>
+        </div>
+        <div class="grp"><div class="lbl"><span class="name">Density</span><span class="val" id="vCols">30</span></div>
+          <input type="range" id="cols" min="4" max="46" value="30" step="1"></div>
+        <div class="grp"><div class="lbl"><span class="name">Pattern seed</span><span class="val" id="vSeed">264</span></div>
+          <input type="range" id="seed" min="1" max="999" value="264" step="1"></div>
+      </div>
+
+      <div class="sec" id="scaleSec" style="display:none">
+        <h2>Scales mode</h2>
+        <div class="grp"><div class="lbl"><span class="name">Scale density</span><span class="val" id="vCoverage">0.50</span></div>
+          <input type="range" id="coverage" min="0" max="1" value="0.5" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Scale size</span><span class="val" id="vScaleSize">1.00</span></div>
+          <input type="range" id="scaleSize" min="0.3" max="3" value="1" step="0.05"></div>
+        <div class="grp"><div class="lbl"><span class="name">Cluster scale <span style="color:#5d6678">broad→specks</span></span><span class="val" id="vClusterScale">1.00</span></div>
+          <input type="range" id="clusterScale" min="0.3" max="6" value="1" step="0.05"></div>
+        <div class="grp"><div class="lbl"><span class="name">Scale opacity</span><span class="val" id="vScaleOp">0.90</span></div>
+          <input type="range" id="scaleOp" min="0.2" max="1" value="0.9" step="0.01"></div>
+      </div>
+
+      <div class="sec" id="animSec" style="display:none">
+        <h2>Animation — shimmer</h2>
+        <div class="toggle"><span>Play motion <span style="color:#5d6678">(F/space freezes)</span></span><div class="sw on" id="play"></div></div>
+        <div class="grp"><div class="lbl"><span class="name">Motion</span></div>
+          <div class="seg" id="motion">
+            <button data-k="ripple" class="on">Ripple</button>
+            <button data-k="radial">Radial</button>
+            <button data-k="turbulent">Turbulent</button>
+            <button data-k="breathe">Breathe</button>
+          </div></div>
+        <div class="grp"><div class="lbl"><span class="name">Speed</span><span class="val" id="vSpeed">1.00</span></div>
+          <input type="range" id="speed" min="0" max="3" value="1" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Ripple size</span><span class="val" id="vWavelen">0.32</span></div>
+          <input type="range" id="wavelen" min="0.06" max="1" value="0.32" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Direction</span><span class="val" id="vDir">35°</span></div>
+          <input type="range" id="dir" min="0" max="360" value="35" step="1"></div>
+        <div class="grp"><div class="lbl"><span class="name">Iridescence sway <span style="color:#5d6678">hue ripple</span></span><span class="val" id="vSway">0.50</span></div>
+          <input type="range" id="sway" min="0" max="1" value="0.5" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Hue drift <span style="color:#5d6678">nm</span></span><span class="val" id="vHueDrift">140</span></div>
+          <input type="range" id="hueDrift" min="0" max="500" value="140" step="5"></div>
+        <div class="grp"><div class="lbl"><span class="name">Wind sway <span style="color:#5d6678">bend angle</span></span><span class="val" id="vRelief">0.45</span></div>
+          <input type="range" id="relief" min="0" max="1" value="0.45" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Stand <span style="color:#5d6678">3D lift/foreshorten</span></span><span class="val" id="vStand">0.80</span></div>
+          <input type="range" id="stand" min="0" max="1" value="0.8" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Shadow <span style="color:#5d6678">ground contact</span></span><span class="val" id="vShadow">0.35</span></div>
+          <input type="range" id="shadow" min="0" max="1" value="0.35" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Glint <span style="color:#5d6678">moving highlight</span></span><span class="val" id="vGlint">0.35</span></div>
+          <input type="range" id="glint" min="0" max="1" value="0.35" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Twinkle <span style="color:#5d6678">per-scale sparkle</span></span><span class="val" id="vTwinkle">0.35</span></div>
+          <input type="range" id="twinkle" min="0" max="1" value="0.35" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Depth <span style="color:#5d6678">parallax separation</span></span><span class="val" id="vDepth">0.55</span></div>
+          <input type="range" id="depth" min="0" max="1" value="0.55" step="0.01"></div>
+      </div>
+
+      <div class="sec">
+        <h2>Organic distortion</h2>
+        <div class="grp"><div class="lbl"><span class="name">Warp (flow)</span><span class="val" id="vWarp">0.18</span></div>
+          <input type="range" id="warp" min="0" max="1.6" value="0.18" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Jitter (random)</span><span class="val" id="vJit">0.12</span></div>
+          <input type="range" id="jit" min="0" max="0.9" value="0.12" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Noise scale</span><span class="val" id="vNz">0.55</span></div>
+          <input type="range" id="nz" min="0.2" max="4" value="0.55" step="0.05"></div>
+        <div class="grp"><div class="lbl"><span class="name">Turbulence</span><span class="val" id="vOct">6</span></div>
+          <input type="range" id="oct" min="1" max="6" value="6" step="1"></div>
+      </div>
+
+      <div class="sec">
+        <h2>Viewing angle <span style="color:#5d6678">or drag on canvas</span></h2>
+        <div class="grp"><div class="lbl"><span class="name">Tilt <span style="color:#5d6678">hue shift</span></span><span class="val" id="vTilt">0.34</span></div>
+          <input type="range" id="tilt" min="0" max="1.25" value="0.34" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Film thickness <span style="color:#5d6678">nm</span></span><span class="val" id="vBaseD">520</span></div>
+          <input type="range" id="baseD" min="120" max="1000" value="520" step="5"></div>
+        <div class="toggle"><span>Hover to scrub <span style="color:#5d6678">(else click-drag)</span></span><div class="sw" id="hover"></div></div>
+      </div>
+
+      <div class="sec">
+        <h2>Optics — material</h2>
+        <div class="seg alt2" id="preset">
+          <button data-p="soap">Soap</button>
+          <button data-p="oil" class="on">Oil slick</button>
+          <button data-p="morpho">Morpho</button>
+          <button data-p="beetle">Beetle</button>
+          <button data-p="bismuth">Bismuth</button>
+          <button data-p="pearl">Pearl</button>
+        </div>
+        <div class="grp"><div class="lbl"><span class="name">Film index n</span><span class="val" id="vIdx">1.35</span></div>
+          <input type="range" id="idx" min="1.10" max="2.60" value="1.35" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Thickness sweep</span><span class="val" id="vRange">480</span></div>
+          <input type="range" id="range" min="120" max="1800" value="480" step="10"></div>
+        <div class="grp"><div class="lbl"><span class="name">Band period (geom.)</span><span class="val" id="vPeriod">0.88</span></div>
+          <input type="range" id="period" min="0.16" max="1.6" value="0.88" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Band sharpness</span><span class="val" id="vSharp">1.4</span></div>
+          <input type="range" id="sharp" min="0.4" max="4" value="1.4" step="0.05"></div>
+      </div>
+
+      <div class="sec">
+        <h2>Colour treatment</h2>
+        <div class="grp"><div class="lbl"><span class="name">Saturation / gain</span><span class="val" id="vGain">0.87</span></div>
+          <input type="range" id="gain" min="0.6" max="2.6" value="0.87" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Posterize bands</span><span class="val" id="vPost">off</span></div>
+          <input type="range" id="post" min="0" max="14" value="0" step="1"></div>
+        <div class="grp"><div class="lbl"><span class="name">Hue shift</span><span class="val" id="vHue">0°</span></div>
+          <input type="range" id="hue" min="0" max="360" value="0" step="1"></div>
+        <div class="toggle"><span>Invert spectrum</span><div class="sw" id="inv"></div></div>
+      </div>
+
+      <div class="sec">
+        <h2>Colour steering <span style="color:#5d6678">brand the spectrum</span></h2>
+        <div class="seg" id="palette">
+          <button data-p="full" class="on">Full</button>
+          <button data-p="emerald">Emerald</button>
+          <button data-p="teal">Teal</button>
+          <button data-p="peacock">Peacock</button>
+          <button data-p="ocean">Ocean</button>
+          <button data-p="violet">Violet</button>
+        </div>
+        <div class="grp" style="margin-top:12px"><div class="lbl"><span class="name">Confine hue <span style="color:#5d6678">to brand arc</span></span><span class="val" id="vHueConfine">0.00</span></div>
+          <input type="range" id="hueConfine" min="0" max="1" value="0" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Hue from</span><span class="val" id="vHueA">150°</span></div>
+          <input type="range" id="hueA" min="0" max="360" value="150" step="1"></div>
+        <div class="grp"><div class="lbl"><span class="name">Hue to</span><span class="val" id="vHueB">240°</span></div>
+          <input type="range" id="hueB" min="0" max="360" value="240" step="1"></div>
+        <div class="grp"><div class="lbl"><span class="name">Pigment filter <span style="color:#5d6678">absorbs outside band</span></span><span class="val" id="vPig">0.00</span></div>
+          <input type="range" id="pig" min="0" max="1" value="0" step="0.01"></div>
+        <div class="grp"><div class="lbl"><span class="name">Pigment centre <span style="color:#5d6678">nm</span></span><span class="val" id="vPigC">510</span></div>
+          <input type="range" id="pigC" min="410" max="660" value="510" step="2"></div>
+        <div class="grp"><div class="lbl"><span class="name">Pigment width <span style="color:#5d6678">nm</span></span><span class="val" id="vPigW">90</span></div>
+          <input type="range" id="pigW" min="25" max="220" value="90" step="2"></div>
+      </div>
+
+      <div class="sec">
+        <h2>Composition</h2>
+        <div class="grp"><div class="lbl"><span class="name">Aspect</span></div>
+          <div class="seg" id="aspect">
+            <button data-r="0.6667" class="on">2:3</button>
+            <button data-r="0.75">3:4</button>
+            <button data-r="0.8">4:5</button>
+            <button data-r="1">1:1</button>
+            <button data-r="0.7071">A</button>
+            <button data-r="1.7778">16:9</button>
+          </div></div>
+        <div class="grp"><div class="lbl"><span class="name">Background</span></div>
+          <div class="seg" id="bgmode">
+            <button data-b="#05060a" class="on">Ink</button>
+            <button data-b="#000000">Black</button>
+            <button data-b="#11131d">Slate</button>
+            <button data-b="#f4f1ea">Bone</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;margin-top:8px">
+            <input type="color" id="bgcustom" value="#05060a" style="width:40px;height:30px;border:1px solid var(--line);border-radius:7px;background:#0b0e16;cursor:pointer;padding:2px">
+            <span style="font-size:11px;color:#838ea3">Custom background</span>
+          </div></div>
+        <div class="toggle"><span>Transparent bg <span style="color:#5d6678">(for export)</span></span><div class="sw" id="trans"></div></div>
+        <div class="toggle"><span>Film grain</span><div class="sw" id="grain"></div></div>
+        <div class="toggle"><span>Vignette</span><div class="sw" id="vig"></div></div>
+        <div class="toggle"><span>Freeze tilt</span><div class="sw" id="freeze"></div></div>
+      </div>
+
+      <div class="sec" style="border:none">
+        <div class="row" style="margin-bottom:8px">
+          <button class="btn" id="shuffle">Shuffle</button>
+          <button class="btn alt big" id="mutate">✦ Mutate</button>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="svg">Export SVG</button>
+          <button class="btn" id="png">PNG</button>
+        </div>
+        <div class="row" id="recRow" style="margin-top:8px;display:none">
+          <button class="btn" id="rec">● Record 6s (WebM)</button>
+        </div>
+        <p class="hint">SVG/PNG capture the current frame (pause with F first for a clean grab). WebM records the live motion.</p>
+      </div>
+    </div>
+    <footer>Thin-film interference · CIE-1931 → sRGB · domain-warped Truchet / flow / scatter</footer>
+  </aside>
+
+<script>
+/* =====================================================================
+   THIN-FILM INTERFERENCE  →  sRGB
+   Spectral reflectance of a thin film (two-beam interference) integrated
+   against analytic CIE-1931 colour matching functions, converted to sRGB.
+   ===================================================================== */
+function gs(x,m,a,b){const t=(x-m)*(x<m?a:b);return Math.exp(-0.5*t*t);}
+function cieX(w){return 1.056*gs(w,599.8,0.0264,0.0323)+0.362*gs(w,442,0.0624,0.0374)-0.065*gs(w,501.1,0.049,0.0382);}
+function cieY(w){return 0.821*gs(w,568.8,0.0213,0.0247)+0.286*gs(w,530.9,0.0613,0.0322);}
+function cieZ(w){return 1.217*gs(w,437,0.0845,0.0278)+0.681*gs(w,459,0.0385,0.0725);}
+const WL=[],CX=[],CY=[],CZ=[];let WN=0;
+for(let w=390;w<=720;w+=5){WL.push(w);const y=cieY(w);CX.push(cieX(w));CY.push(y);CZ.push(cieZ(w));WN+=y;}
+
+function rgb2hsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h,s,l=(mx+mn)/2;
+  if(mx===mn){h=s=0;}else{const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);
+    h=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;h/=6;}return [h,s,l];}
+function hsl2rgb(h,s,l){let r,g,b;if(s===0){r=g=b=l;}else{const q=l<0.5?l*(1+s):l+s-l*s,p=2*l-q;
+  const f=t=>{t=(t+1)%1;return t<1/6?p+(q-p)*6*t:t<0.5?q:t<2/3?p+(q-p)*(2/3-t)*6:p;};
+  r=f(h+1/3);g=f(h);b=f(h-1/3);}return [r*255,g*255,b*255];}
+
+// ---- spectral steering ----
+// PIG: per-wavelength transmission of a "pigment" band-pass (absorbs outside the band)
+const PIG=new Float32Array(WL.length).fill(1);
+function updatePigment(){const amt=P.pig||0,c=P.pigC||510,w=Math.max(12,P.pigW||90);
+  for(let i=0;i<WL.length;i++){const g=Math.exp(-0.5*((WL[i]-c)/w)*((WL[i]-c)/w)); PIG[i]=(1-amt)+amt*g;}}
+// postColor: invert + free hue shift + confine hue into a brand arc (keeps relative shimmer)
+function postColor(c){
+  if(P.inv) c=[255-c[0],255-c[1],255-c[2]];
+  if(P.hue||P.hueConfine>0){let q=rgb2hsl(c[0],c[1],c[2]),h=q[0];
+    if(P.hue) h=(h+P.hue/360)%1;
+    if(P.hueConfine>0){let h0=P.hueA/360,h1=P.hueB/360,span=h1-h0; if(span<0)span+=1;
+      const mapped=(h0+((h%1)+1)%1*span); h=h*(1-P.hueConfine)+mapped*P.hueConfine;}
+    c=hsl2rgb(((h%1)+1)%1,q[1],q[2]);}
+  return c;
+}
+
+// thickness d(nm), index n, incidence angle(rad), gain, sharpness -> [r,g,b] 0..255
+function filmRGB(d,n,th,gain,sharp){
+  const s=Math.sin(th)/n, cosT=Math.sqrt(Math.max(0,1-s*s)), opl=2*n*d*cosT;
+  let X=0,Y=0,Z=0;
+  for(let i=0;i<WL.length;i++){
+    let R=0.5-0.5*Math.cos(2*Math.PI*opl/WL[i]+Math.PI);
+    if(sharp!==1) R=Math.pow(R,sharp);
+    R*=PIG[i];
+    X+=CX[i]*R;Y+=CY[i]*R;Z+=CZ[i]*R;
+  }
+  X/=WN;Y/=WN;Z/=WN;
+  let r=(3.2406*X-1.5372*Y-0.4986*Z)*gain, g=(-0.9689*X+1.8758*Y+0.0415*Z)*gain, b=(0.0557*X-0.204*Y+1.057*Z)*gain;
+  const e=v=>{v=Math.min(1,Math.max(0,v));v=v<=0.0031308?12.92*v:1.055*Math.pow(v,1/2.4)-0.055;return v*255;};
+  return [e(r),e(g),e(b)];
+}
+function hex(c){return '#'+c.map(x=>Math.round(Math.min(255,Math.max(0,x))).toString(16).padStart(2,'0')).join('');}
+
+/* =====================================================================
+   VALUE NOISE + fBm  (seedable, dependency-free)
+   ===================================================================== */
+function vnoise(x,y,seed){
+  const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
+  const h=(i,j)=>{let n=Math.imul((i+seed*374761393)^Math.imul(j,668265263),2246822519);
+    n^=n>>>13;n=Math.imul(n,3266489917);n^=n>>>16;return (n>>>0)/4294967296;};
+  const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+  const a=h(xi,yi),b=h(xi+1,yi),c=h(xi,yi+1),d=h(xi+1,yi+1);
+  return a*(1-u)*(1-v)+b*u*(1-v)+c*(1-u)*v+d*u*v;
+}
+function fbm(x,y,seed,oct){let s=0,amp=0.5,f=1,nrm=0;for(let i=0;i<oct;i++){s+=amp*vnoise(x*f,y*f,seed+i*131);nrm+=amp;amp*=0.5;f*=2;}return s/nrm;}
+
+/* =====================================================================
+   STATE
+   ===================================================================== */
+const P={mode:'scatter',cols:30,seed:264,warp:0.18,jit:0.12,nz:0.55,oct:6,
+  idx:1.35,range:480,period:0.88,sharp:1.4,gain:0.87,post:0,hue:0,inv:false,
+  pig:0,pigC:510,pigW:90,hueConfine:0,hueA:150,hueB:240,
+  aspect:0.6667,bg:'#05060a',transparent:false,grain:false,vig:false,freeze:false,
+  coverage:0.5,scaleOp:0.9,clusterScale:1,scaleSize:1,
+  playing:true,motion:'ripple',speed:1,wavelen:0.32,dir:35,sway:0.5,hueDrift:140,relief:0.45,stand:0.8,shadow:0.35,glint:0.35,twinkle:0.35,depth:0.55,
+  hoverScrub:false,theta:0.34,baseD:520};
+const K=64;                       // colour buckets for flat (organic) modes
+const art=document.getElementById('art');
+let stopEls=[], lutStyle=null, flatPrims=[];
+
+/* =====================================================================
+   COLOUR PIPELINE (cheap recolour)
+   ===================================================================== */
+function colorForT(t){
+  if(P.post>1){const n=P.post;t=Math.round(t*(n-1))/(n-1);}
+  return postColor(filmRGB(P.baseD+t*P.range,P.idx,P.theta,P.gain,P.sharp));
+}
+function recolor(){
+  updatePigment();
+  // master gradient stops (band modes)
+  if(stopEls&&stopEls.length){
+    const N=stopEls.length;
+    for(let i=0;i<N;i++) stopEls[i].setAttribute('stop-color',hex(colorForT(i/(N-1))));
+  }
+  // flat-cell LUT via one <style> block (flow / scatter)
+  if(lutStyle){
+    let css='';
+    for(let k=0;k<K;k++) css+='.b'+k+'{fill:'+hex(colorForT(k/(K-1)))+'}';
+    lutStyle.textContent=css;
+  }
+  document.getElementById('hAng').textContent=Math.round(P.theta*180/Math.PI)+'°';
+  document.getElementById('hThk').textContent=Math.round(P.baseD);
+}
+
+/* =====================================================================
+   GEOMETRY
+   ===================================================================== */
+function dims(){const W=1000,H=Math.round(1000/P.aspect);return {W,H};}
+
+function vertexGrid(W,H){
+  // displaced lattice shared by truchet / quarter / diag / flow (watertight warp)
+  const t=W/P.cols, rows=Math.ceil(H/t)+1, cols=P.cols+1;
+  const f=P.nz/ (W/6);                 // noise frequency in world units
+  const wAmp=P.warp*t, jAmp=P.jit*t;
+  const rnd=mul(P.seed*2654435761);
+  const V=[];
+  for(let j=0;j<=rows;j++){V[j]=[];for(let i=0;i<cols;i++){
+    let x=i*t, y=j*t;
+    if(P.warp){ x+=wAmp*(fbm(x*f,y*f,P.seed,P.oct)-0.5)*2; y+=wAmp*(fbm(x*f+5.2,y*f+1.7,P.seed+99,P.oct)-0.5)*2; }
+    if(P.jit){ x+=(rnd()-0.5)*jAmp; y+=(rnd()-0.5)*jAmp; }
+    V[j][i]={x,y};
+  }}
+  return {V,t,rows,cols};
+}
+function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+function P2(p){return p.x.toFixed(1)+' '+p.y.toFixed(1);}
+function tri(a,b,c){return 'M'+P2(a)+'L'+P2(b)+'L'+P2(c)+'Z';}
+
+/* =====================================================================
+   SCALES — animated canvas engine (3D shimmer)
+   Per-scale traveling wave swings the effective viewing angle (hue ripple)
+   and film thickness; depth drives parallax + swell; a moving glint and
+   per-scale twinkle add live iridescent sparkle. Colour via a 2D LUT.
+   ===================================================================== */
+const cv=document.getElementById('cv'), cx=cv.getContext('2d'); const TAU=Math.PI*2;
+let SCALES=[], scW=1000, scH=1500;
+const LA=48, LT=96, LUT=new Uint8ClampedArray(LA*LT*3);
+let lutA0=0,lutA1=1,lutT0=0,lutT1=1,lutDirty=true;
+function buildScaleLUT(){
+  updatePigment();
+  const sway=P.sway*0.95, hd=P.hueDrift;
+  lutA0=Math.max(0,P.theta-sway); lutA1=Math.min(1.45,P.theta+sway+1e-3);
+  lutT0=P.baseD-hd; lutT1=P.baseD+P.range+hd;
+  for(let ai=0;ai<LA;ai++){const th=lutA0+(lutA1-lutA0)*ai/(LA-1);
+    for(let ti=0;ti<LT;ti++){let tn=ti/(LT-1); if(P.post>1)tn=Math.round(tn*(P.post-1))/(P.post-1);
+      let d=lutT0+(lutT1-lutT0)*tn; let c=postColor(filmRGB(d,P.idx,th,P.gain,P.sharp));
+      const o=(ai*LT+ti)*3; LUT[o]=c[0];LUT[o+1]=c[1];LUT[o+2]=c[2];
+    }}
+  lutDirty=false;
+}
+function buildScales(){
+  lutDirty=true;
+  const D=dims(); scW=D.W; scH=D.H;
+  const RES=1.4; cv.width=Math.round(scW*RES); cv.height=Math.round(scH*RES);
+  cv.classList.toggle('checker',P.transparent);
+  SCALES=[];
+  const t=scW/P.cols, cov=P.coverage, step=t/2.6, fd=P.clusterScale/(scW/4), thr=0.86-cov*0.80;
+  const rnd=mul(P.seed*40503), f=P.nz/(scW/6), zf=0.6/(scW/6);
+  for(let y=step*0.5;y<scH+step;y+=step)for(let x=step*0.5;x<scW+step;x+=step){
+    const jx=x+(rnd()-0.5)*step*1.2, jy=y+(rnd()-0.5)*step*1.2;
+    const dens=fbm(jx*fd+3,jy*fd+9,P.seed+55,P.oct+1); if(dens<thr) continue;
+    SCALES.push({x:jx,y:jy,sz:step*(0.30+dens*0.62),
+      rot:fbm(jx*fd*0.6,jy*fd*0.6,P.seed+700,2)*TAU,
+      u:Math.min(0.999,Math.max(0,fbm(jx*f+11,jy*f+7,P.seed+1234,P.oct))),
+      z:Math.min(1,Math.max(0,fbm(jx*zf+30,jy*zf+8,P.seed+321,2))),
+      ph:rnd()*TAU, dens});
+  }
+  SCALES.sort((a,b)=>a.z-b.z);                          // back-to-front for depth
+  if(P.playing) startAnim(); else { stopAnim(); drawScales(); }
+}
+function waveAt(s,time){
+  const k=TAU/Math.max(20,P.wavelen*scW), ph=s.ph*P.twinkle*3.0;
+  if(P.motion==='radial'){const dx=s.x-scW*0.5,dy=s.y-scH*0.5;return Math.sin(Math.sqrt(dx*dx+dy*dy)*k-time+ph);}
+  if(P.motion==='turbulent'){const fr=2.0/scW;return (fbm(s.x*fr+time*0.12,s.y*fr,P.seed+9,P.oct)-0.5)*2;}
+  if(P.motion==='breathe')return Math.sin(time+ph);
+  const a=P.dir*Math.PI/180;return Math.sin(s.x*Math.cos(a)*k+s.y*Math.sin(a)*k-time+ph);
+}
+function drawScalesCtx(g,res,time){
+  if(lutDirty) buildScaleLUT();
+  g.setTransform(res,0,0,res,0,0);
+  if(P.transparent) g.clearRect(0,0,scW,scH); else { g.fillStyle=P.bg; g.fillRect(0,0,scW,scH); }
+  const sway=P.sway*0.95, dir=P.dir*Math.PI/180, pc=Math.cos(dir), psn=Math.sin(dir),
+        relief=P.relief, glint=P.glint, dpt=P.depth, stand=P.stand, shA=P.shadow,
+        denom1=(lutA1-lutA0), denom2=(lutT1-lutT0);
+  for(let i=0;i<SCALES.length;i++){const s=SCALES[i];
+    const w=waveAt(s,time), dw=(1-dpt)+dpt*s.z;
+    // colour from interference LUT (angle ripples with the wave)
+    const th=P.theta+w*sway, d=P.baseD+s.u*P.range+w*P.hueDrift;
+    let ai=Math.round((th-lutA0)/denom1*(LA-1)); ai=ai<0?0:ai>LA-1?LA-1:ai;
+    let ti=Math.round((d-lutT0)/denom2*(LT-1)); ti=ti<0?0:ti>LT-1?LT-1:ti;
+    const o=(ai*LT+ti)*3; let r=LUT[o],gn=LUT[o+1],b=LUT[o+2];
+    // grass-blade lift: the scale pivots about its base in the wind — foreshortens + rises
+    const sz2=s.sz*P.scaleSize;
+    const ang=w*relief*dw*1.7, sn=Math.sin(ang), cs=Math.cos(ang);
+    const hgt=sz2*(1-stand*(1-cs));               // projected height shrinks as it leans
+    const lean=sn*sz2*0.95*stand;                 // tip pivots along the wind direction
+    const riseY=-stand*(sz2-hgt)*2.0;             // blade rises off the surface
+    const cxp=s.x+pc*lean, cyp=s.y+psn*lean*0.45+riseY;
+    const rot=s.rot+ang*0.5*pc*stand;
+    const rx=Math.max(0.3,sz2*0.62*(1+0.14*Math.abs(sn)*stand)), ry=Math.max(0.3,hgt);
+    const bf=0.72+0.28*cs;                         // upright catches light, edge-on dims
+    r*=bf;gn*=bf;b*=bf;
+    if(glint>0){const gl=glint*Math.max(0,w)*dw; r+=(255-r)*gl;gn+=(255-gn)*gl;b+=(255-b)*gl;}
+    if(shA>0){g.globalAlpha=Math.min(0.7,shA*0.5*dw*(0.3+0.7*Math.abs(w))); g.fillStyle='#000';
+      g.beginPath(); g.ellipse(s.x-pc*lean*0.4, s.y+sz2*0.34, rx*1.12, sz2*0.3*(0.5+0.7*Math.abs(sn)), s.rot,0,TAU); g.fill();}
+    g.globalAlpha=Math.min(1,P.scaleOp*(0.72+0.4*s.dens)*(1-dpt*0.55*(1-s.z)));
+    g.fillStyle='rgb('+(r|0)+','+(gn|0)+','+(b|0)+')';
+    g.beginPath(); g.ellipse(cxp,cyp,rx,ry,rot,0,TAU); g.fill();
+  }
+  g.globalAlpha=1;
+  if(P.vig){const vg=g.createRadialGradient(scW*0.5,scH*0.46,scH*0.2,scW*0.5,scH*0.46,scH*0.78);
+    vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0.55)');g.fillStyle=vg;g.fillRect(0,0,scW,scH);}
+}
+function drawScales(time){ if(time===undefined)time=animPhase; drawScalesCtx(cx,cv.width/scW,time); }
+let animPhase=0, lastTs=0, animOn=false, rafA=null;
+function loop(ts){ if(!animOn)return; if(!lastTs)lastTs=ts; let dt=(ts-lastTs)/1000; if(dt>0.05)dt=0.05; lastTs=ts;
+  animPhase+=dt*P.speed*2.2; drawScales(animPhase); rafA=requestAnimationFrame(loop); }
+function startAnim(){ if(animOn)return; animOn=true; lastTs=0; rafA=requestAnimationFrame(loop); }
+function stopAnim(){ animOn=false; if(rafA)cancelAnimationFrame(rafA); rafA=null; }
+function showCanvas(on){ cv.style.display=on?'block':'none'; art.style.display=on?'none':'block'; }
+function refreshScales(){ if(P.mode==='scatter' && !animOn) drawScales(); }
+
+function build(){
+  if(P.mode==='scatter'){
+    document.getElementById('frame').style.aspectRatio=P.aspect;
+    showCanvas(true); buildScales(); return;
+  }
+  stopAnim(); showCanvas(false);
+  const {W,H}=dims();
+  art.setAttribute('viewBox','0 0 '+W+' '+H);
+  document.getElementById('frame').style.aspectRatio=P.aspect;
+  const t=W/P.cols, r=(t*P.period).toFixed(1);
+  const fillBg = P.transparent ? 'none' : P.bg;
+  document.getElementById('art').classList.toggle('checker', P.transparent);
+
+  let defs='<radialGradient id="master" gradientUnits="objectBoundingBox">';
+  for(let i=0;i<40;i++) defs+='<stop offset="'+(i/39).toFixed(4)+'" stop-color="#000"/>';
+  defs+='</radialGradient><style id="lut"></style>';
+
+  let grads='',shapes='',gid=0;
+  flatPrims=[];
+
+  const f=P.nz/(W/6);                 // colour-field frequency
+  const tNormAt=(x,y)=>{
+    let v=fbm(x*f+11,y*f+7,P.seed+1234,P.oct);
+    return Math.min(0.999,Math.max(0,v));
+  };
+  const bucket=tn=>'b'+Math.min(K-1,Math.max(0,Math.round(tn*(K-1))));
+
+  if(P.mode==='flow'){
+    // warped triangle mesh, each face flat-coloured by interference noise field
+    const {V,rows,cols}=vertexGrid(W,H);
+    for(let j=0;j<rows;j++)for(let i=0;i<cols-1;i++){
+      const a=V[j][i],b=V[j][i+1],c=V[j+1][i+1],d=V[j+1][i];
+      const c1=(a.x+b.x+d.x)/3,c1y=(a.y+b.y+d.y)/3;
+      const c2=(b.x+c.x+d.x)/3,c2y=(b.y+c.y+d.y)/3;
+      shapes+='<path class="'+bucket(tNormAt(c1,c1y))+'" d="'+tri(a,b,d)+'"/>';
+      shapes+='<path class="'+bucket(tNormAt(c2,c2y))+'" d="'+tri(b,c,d)+'"/>';
+    }
+  } else {
+    // BAND modes — per-tile radial gradients sharing #master (cheap recolour)
+    const {V,rows,cols}=vertexGrid(W,H);
+    const rnd=mul(P.seed*2654435761+13);
+    const grad=(cx,cy)=>{const id='g'+(gid++);
+      grads+='<radialGradient id="'+id+'" gradientUnits="userSpaceOnUse" spreadMethod="reflect" cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="'+r+'" xlink:href="#master" href="#master"/>';return id;};
+    const fill=(d,id)=>{shapes+='<path d="'+d+'" fill="url(#'+id+')"/>';};
+    for(let j=0;j<rows;j++)for(let i=0;i<cols-1;i++){
+      const TL=V[j][i],TR=V[j][i+1],BR=V[j+1][i+1],BL=V[j+1][i];
+      if(P.mode==='quarter'){
+        const cs=[TL,TR,BR,BL],c=cs[(rnd()*4)|0];
+        fill('M'+P2(TL)+'L'+P2(TR)+'L'+P2(BR)+'L'+P2(BL)+'Z', grad(c.x,c.y));
+      } else if(P.mode==='diag'){
+        if(rnd()<0.5){ fill(tri(TL,TR,BR),grad(TL.x,TL.y)); fill(tri(TL,BR,BL),grad(BR.x,BR.y)); }
+        else        { fill(tri(TR,BR,BL),grad(TR.x,TR.y)); fill(tri(TL,TR,BL),grad(BL.x,BL.y)); }
+      } else { // truchet quarter-circle contour
+        if(rnd()<0.5){ fill(tri(TL,TR,BL),grad(TL.x,TL.y)); fill(tri(TR,BR,BL),grad(BR.x,BR.y)); }
+        else         { fill(tri(TR,BR,TL),grad(TR.x,TR.y)); fill(tri(TL,BR,BL),grad(BL.x,BL.y)); }
+      }
+    }
+  }
+
+  // overlays
+  let overlay='';
+  if(P.vig) overlay+='<radialGradient id="vig" cx="50%" cy="46%" r="75%"><stop offset="55%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity="0.55"/></radialGradient><rect x="0" y="0" width="'+W+'" height="'+H+'" fill="url(#vig)" style="mix-blend-mode:multiply"/>';
+  if(P.grain){ overlay+='<filter id="gr"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0"/></filter><rect x="0" y="0" width="'+W+'" height="'+H+'" filter="url(#gr)" opacity="0.10" style="mix-blend-mode:overlay"/>'; }
+
+  art.innerHTML='<defs>'+defs+grads+'</defs>'+
+    '<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="'+fillBg+'"/>'+shapes+overlay;
+  stopEls=Array.from(art.querySelectorAll('#master stop'));
+  lutStyle=art.querySelector('#lut');
+  recolor();
+}
+
+/* =====================================================================
+   INTERACTION
+   ===================================================================== */
+const stage=document.getElementById('stage');
+let raf=null,pending=null,dragging=false;
+const clamp01=x=>Math.min(1,Math.max(0,x));
+function scrub(e){
+  const r=stage.getBoundingClientRect();
+  pending=[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height];
+  if(!raf) raf=requestAnimationFrame(()=>{raf=null;
+    if(P.freeze) return;
+    P.theta=clamp01(pending[0])*1.25; P.baseD=120+clamp01(pending[1])*880; lutDirty=true;
+    const tl=document.getElementById('tilt'); tl.value=P.theta; document.getElementById('vTilt').textContent=P.theta.toFixed(2);
+    const bd=document.getElementById('baseD'); bd.value=P.baseD; document.getElementById('vBaseD').textContent=Math.round(P.baseD);
+    colorUpdate();});
+}
+stage.addEventListener('pointerdown',e=>{ if(P.freeze)return; dragging=true; scrub(e); });
+addEventListener('pointerup',()=>{ dragging=false; });
+stage.addEventListener('pointermove',e=>{ if(P.freeze)return; if(P.hoverScrub||dragging) scrub(e); });
+
+function setVal(id,v,fix,suf){const el=document.getElementById('v'+id);if(el)el.textContent=(fix!=null?Number(v).toFixed(fix):v)+(suf||'');}
+function colorUpdate(){ lutDirty=true;
+  document.getElementById('hAng').textContent=Math.round(P.theta*180/Math.PI)+'°';
+  document.getElementById('hThk').textContent=Math.round(P.baseD);
+  if(P.mode==='scatter') refreshScales(); else recolor(); }
+function bindRange(id,key,fix,suf,recol){
+  const el=document.getElementById(id);
+  const show=()=>setVal(id.charAt(0).toUpperCase()+id.slice(1),el.value,fix,suf);
+  el.addEventListener('input',()=>{P[key]=parseFloat(el.value);show();recol?colorUpdate():build();});
+  show();
+}
+bindRange('cols','cols',0,'',false);
+bindRange('seed','seed',0,'',false);
+bindRange('tilt','theta',2,'',true);
+bindRange('baseD','baseD',0,'',true);
+bindRange('coverage','coverage',2,'',false);
+bindRange('scaleSize','scaleSize',2,'',true);
+bindRange('scaleOp','scaleOp',2,'',false);
+bindRange('clusterScale','clusterScale',2,'',false);
+bindRange('warp','warp',2,'',false);
+bindRange('jit','jit',2,'',false);
+bindRange('nz','nz',2,'',false);
+bindRange('oct','oct',0,'',false);
+bindRange('idx','idx',2,'',true);
+bindRange('range','range',0,'',true);
+bindRange('period','period',2,'',false);
+bindRange('sharp','sharp',1,'',true);
+bindRange('gain','gain',2,'',true);
+bindRange('hue','hue',0,'°',true);
+bindRange('hueConfine','hueConfine',2,'',true);
+bindRange('hueA','hueA',0,'°',true);
+bindRange('hueB','hueB',0,'°',true);
+bindRange('pig','pig',2,'',true);
+bindRange('pigC','pigC',0,'',true);
+bindRange('pigW','pigW',0,'',true);
+bindRange('speed','speed',2,'',true);
+bindRange('wavelen','wavelen',2,'',true);
+bindRange('dir','dir',0,'°',true);
+bindRange('sway','sway',2,'',true);
+bindRange('hueDrift','hueDrift',0,'',true);
+bindRange('relief','relief',2,'',true);
+bindRange('stand','stand',2,'',true);
+bindRange('shadow','shadow',2,'',true);
+bindRange('glint','glint',2,'',true);
+bindRange('twinkle','twinkle',2,'',true);
+bindRange('depth','depth',2,'',true);
+// posterize special label
+(function(){const el=document.getElementById('post');el.addEventListener('input',()=>{P.post=parseInt(el.value);
+  document.getElementById('vPost').textContent=P.post<2?'off':P.post;colorUpdate();});})();
+
+function bindSeg(id,fn){document.querySelectorAll('#'+id+' button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('on'));b.classList.add('on');fn(b);}));}
+function updateModeUI(){const sc=P.mode==='scatter';
+  document.getElementById('scaleSec').style.display=sc?'block':'none';
+  document.getElementById('animSec').style.display=sc?'block':'none';
+  document.getElementById('recRow').style.display=sc?'flex':'none';}
+bindSeg('mode',b=>{P.mode=b.dataset.m;updateModeUI();build();});
+bindSeg('aspect',b=>{P.aspect=parseFloat(b.dataset.r);build();});
+const transSw=document.getElementById('trans');
+function applyBgFill(){const rect=art.querySelector('rect');if(rect)rect.setAttribute('fill',P.transparent?'none':P.bg);
+  document.getElementById('art').classList.toggle('checker',P.transparent);
+  cv.classList.toggle('checker',P.transparent);
+  if(P.mode==='scatter' && !animOn) drawScales();}
+function setTransparent(v){P.transparent=v;transSw.classList.toggle('on',v);applyBgFill();}
+transSw.addEventListener('click',()=>setTransparent(!P.transparent));
+function setBg(c){P.bg=c;P.transparent=false;transSw.classList.remove('on');applyBgFill();document.getElementById('bgcustom').value=c;}
+bindSeg('bgmode',b=>setBg(b.dataset.b));
+document.getElementById('bgcustom').addEventListener('input',e=>{
+  document.querySelectorAll('#bgmode button').forEach(x=>x.classList.remove('on'));
+  setBg(e.target.value);});
+updateModeUI();
+
+function bindSw(id,key,after){const el=document.getElementById(id);el.addEventListener('click',()=>{
+  P[key]=!P[key];el.classList.toggle('on',P[key]);after?after():build();});}
+bindSw('inv','inv',()=>colorUpdate());
+bindSw('grain','grain');
+bindSw('vig','vig');
+bindSw('hover','hoverScrub',()=>{});
+
+// ---- animation play / motion ----
+const playSw=document.getElementById('play');
+function setPlay(v){P.playing=v;playSw.classList.toggle('on',v);
+  if(P.mode==='scatter'){ v?startAnim():(stopAnim(),drawScales()); }}
+playSw.addEventListener('click',()=>setPlay(!P.playing));
+bindSeg('motion',b=>{P.motion=b.dataset.k;refreshScales();});
+
+// ---- freeze: lock the current tilt/thickness so you can export a frame ----
+const hud=document.getElementById('hud'), badge=document.getElementById('freezeBadge'),
+      liveTxt=document.getElementById('liveTxt'), freezeSw=document.getElementById('freeze');
+function setFreeze(v){
+  P.freeze=v;
+  if(P.mode==='scatter'){ if(v) stopAnim(); else if(P.playing) startAnim(); }
+  freezeSw.classList.toggle('on',v);
+  hud.classList.toggle('frozen',v);
+  liveTxt.textContent=v?'FROZEN':'LIVE';
+  badge.textContent=v?'● FROZEN':'● LIVE';
+  badge.style.background=v?'#ff2d55':'var(--acc)';
+  badge.classList.add('show');
+  clearTimeout(setFreeze._t);
+  setFreeze._t=setTimeout(()=>{ if(P.freeze) return; badge.classList.remove('show'); },900);
+  if(v) badge.classList.add('show'); // keep visible while frozen
+}
+freezeSw.addEventListener('click',()=>setFreeze(!P.freeze));
+
+const PRESETS={
+  soap:{idx:1.33,range:1000,gain:1.4,sharp:1,period:0.6},
+  oil:{idx:1.45,range:900,gain:1.45,sharp:1.2,period:0.5},
+  morpho:{idx:1.56,range:340,gain:1.75,sharp:1.6,period:0.42},
+  beetle:{idx:1.5,range:540,gain:1.5,sharp:1.4,period:0.55},
+  bismuth:{idx:2.05,range:1600,gain:1.6,sharp:1.1,period:0.5},
+  pearl:{idx:1.62,range:760,gain:1.2,sharp:0.8,period:0.7}
+};
+bindSeg('preset',b=>{const p=PRESETS[b.dataset.p];Object.assign(P,p);
+  ['idx','range','gain','sharp','period'].forEach(k=>{const el=document.getElementById(k);el.value=P[k];
+    setVal(k.charAt(0).toUpperCase()+k.slice(1),P[k],el.step.includes('.')?(k==='range'?0:2):0,(k==='idx'||k==='range'||k==='gain'||k==='sharp')?'':'');});
+  document.getElementById('vRange').textContent=P.range;document.getElementById('vPeriod').textContent=P.period.toFixed(2);
+  document.getElementById('vSharp').textContent=P.sharp.toFixed(1);document.getElementById('vGain').textContent=P.gain.toFixed(2);
+  document.getElementById('vIdx').textContent=P.idx.toFixed(2);build();});
+
+const PALETTES={
+  full:{hueConfine:0,pig:0},
+  emerald:{hueConfine:0.85,hueA:105,hueB:160,pig:0.40,pigC:535,pigW:80},
+  teal:{hueConfine:0.85,hueA:150,hueB:195,pig:0.45,pigC:495,pigW:70},
+  peacock:{hueConfine:0.90,hueA:150,hueB:235,pig:0.40,pigC:500,pigW:95},
+  ocean:{hueConfine:0.90,hueA:195,hueB:250,pig:0.50,pigC:470,pigW:70},
+  violet:{hueConfine:0.85,hueA:235,hueB:290,pig:0.40,pigC:440,pigW:70}
+};
+bindSeg('palette',b=>{Object.assign(P,PALETTES[b.dataset.p]);
+  ['hueConfine','hueA','hueB','pig','pigC','pigW'].forEach(k=>{const el=document.getElementById(k);if(el)el.value=P[k];});
+  document.getElementById('vHueConfine').textContent=P.hueConfine.toFixed(2);
+  document.getElementById('vHueA').textContent=P.hueA+'°'; document.getElementById('vHueB').textContent=P.hueB+'°';
+  document.getElementById('vPig').textContent=P.pig.toFixed(2);
+  document.getElementById('vPigC').textContent=P.pigC; document.getElementById('vPigW').textContent=P.pigW;
+  updatePigment(); colorUpdate();});
+
+document.getElementById('shuffle').addEventListener('click',()=>{
+  const s=1+((Math.random()*998)|0);P.seed=s;document.getElementById('seed').value=s;document.getElementById('vSeed').textContent=s;build();});
+
+function syncUI(){
+  const m={cols:0,seed:0,coverage:2,scaleSize:2,clusterScale:2,scaleOp:2,warp:2,jit:2,nz:2,oct:0,idx:2,range:0,period:2,sharp:1,gain:2,hue:0,
+    speed:2,wavelen:2,dir:0,sway:2,hueDrift:0,relief:2,stand:2,shadow:2,glint:2,twinkle:2,depth:2,
+    hueConfine:2,hueA:0,hueB:0,pig:2,pigC:0,pigW:0};
+  for(const k in m){const el=document.getElementById(k);if(el){el.value=P[k];
+    setVal(k.charAt(0).toUpperCase()+k.slice(1),P[k],m[k],(k==='hue'||k==='dir'||k==='hueA'||k==='hueB')?'°':'');}}
+  document.getElementById('post').value=P.post;document.getElementById('vPost').textContent=P.post<2?'off':P.post;
+  document.querySelectorAll('#mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===P.mode));
+  document.querySelectorAll('#motion button').forEach(b=>b.classList.toggle('on',b.dataset.k===P.motion));
+  document.getElementById('inv').classList.toggle('on',P.inv);
+  playSw.classList.toggle('on',P.playing);
+  updateModeUI();
+}
+document.getElementById('mutate').addEventListener('click',()=>{
+  const pick=a=>a[(Math.random()*a.length)|0], rr=(lo,hi)=>lo+Math.random()*(hi-lo);
+  P.mode=pick(['truchet','truchet','quarter','diag','flow','flow','scatter']);
+  P.seed=1+((Math.random()*998)|0);
+  P.cols=Math.round(rr(8,P.mode==='scatter'?26:34));
+  P.warp=rr(0,1.1); P.jit=rr(0,0.4); P.nz=rr(0.5,2.6); P.oct=Math.round(rr(2,5));
+  Object.assign(P,PRESETS[pick(Object.keys(PRESETS))]);
+  P.gain=rr(1.1,2.0); P.sharp=rr(0.7,2.4);
+  P.post=Math.random()<0.45?Math.round(rr(3,10)):0;
+  P.hue=Math.random()<0.4?Math.round(rr(0,360)):0; P.inv=Math.random()<0.2;
+  // animation art-direction
+  P.motion=pick(['ripple','ripple','radial','turbulent','breathe']);
+  P.speed=rr(0.5,1.8); P.wavelen=rr(0.12,0.6); P.dir=Math.round(rr(0,360));
+  P.sway=rr(0.3,0.85); P.hueDrift=Math.round(rr(60,280)); P.relief=rr(0.25,0.8);
+  P.stand=rr(0.5,1); P.shadow=rr(0,0.6);
+  P.glint=rr(0.1,0.6); P.twinkle=rr(0,0.7); P.depth=rr(0.3,0.9);
+  // colour steering — sometimes confine to a brand-ish arc
+  if(Math.random()<0.4){const a=Math.round(rr(0,360));P.hueConfine=rr(0.55,0.95);P.hueA=a;P.hueB=Math.round((a+rr(40,110))%360);
+    P.pig=rr(0.25,0.55);P.pigC=Math.round(rr(440,560));P.pigW=Math.round(rr(55,120));}
+  else {P.hueConfine=0;P.pig=0;}
+  updatePigment(); syncUI(); build();
+});
+
+/* keyboard */
+addEventListener('keydown',e=>{
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(e.code==='Space'||e.key==='f'||e.key==='F'){
+    if(tag==='input'&&e.code==='Space') return;   // let space work normally in fields
+    e.preventDefault(); setFreeze(!P.freeze);
+  }
+  else if(e.key==='m'||e.key==='M'){document.getElementById('mutate').click();}
+  else if(e.key==='s'||e.key==='S'){document.getElementById('shuffle').click();}
+});
+
+/* =====================================================================
+   EXPORT
+   ===================================================================== */
+function svgString(){const c=art.cloneNode(true);
+  c.setAttribute('xmlns','http://www.w3.org/2000/svg');c.setAttribute('xmlns:xlink','http://www.w3.org/1999/xlink');
+  return '<?xml version="1.0" encoding="UTF-8"?>\n'+c.outerHTML;}
+function dl(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),4000);}
+
+// snapshot the current animated scales frame as vector SVG
+function svgScales(){
+  buildScaleLUT();
+  const t=animPhase, sway=P.sway*0.95, dir=P.dir*Math.PI/180, pc=Math.cos(dir), psn=Math.sin(dir);
+  let s='<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+scW+' '+scH+'">';
+  if(!P.transparent) s+='<rect width="'+scW+'" height="'+scH+'" fill="'+P.bg+'"/>';
+  const stand=P.stand, shA=P.shadow;
+  for(const sc of SCALES){ const w=waveAt(sc,t), dw=(1-P.depth)+P.depth*sc.z;
+    const th=P.theta+w*sway, d=P.baseD+sc.u*P.range+w*P.hueDrift;
+    let ai=Math.round((th-lutA0)/(lutA1-lutA0)*(LA-1)); ai=ai<0?0:ai>LA-1?LA-1:ai;
+    let ti=Math.round((d-lutT0)/(lutT1-lutT0)*(LT-1)); ti=ti<0?0:ti>LT-1?LT-1:ti;
+    const o=(ai*LT+ti)*3; let r=LUT[o],gn=LUT[o+1],b=LUT[o+2];
+    const sz2=sc.sz*P.scaleSize;
+    const ang=w*P.relief*dw*1.7, sn=Math.sin(ang), cs=Math.cos(ang);
+    const hgt=sz2*(1-stand*(1-cs)), lean=sn*sz2*0.95*stand, riseY=-stand*(sz2-hgt)*2.0;
+    const cxp=sc.x+pc*lean, cyp=sc.y+psn*lean*0.45+riseY, rot=sc.rot+ang*0.5*pc*stand;
+    const rx=Math.max(0.3,sz2*0.62*(1+0.14*Math.abs(sn)*stand)), ry=Math.max(0.3,hgt);
+    const bf=0.72+0.28*cs; r*=bf;gn*=bf;b*=bf;
+    if(P.glint>0){const gl=P.glint*Math.max(0,w)*dw; r+=(255-r)*gl;gn+=(255-gn)*gl;b+=(255-b)*gl;}
+    const op=Math.min(1,P.scaleOp*(0.72+0.4*sc.dens)*(1-P.depth*0.55*(1-sc.z)));
+    const px=cxp.toFixed(1),py=cyp.toFixed(1);
+    if(shA>0){const so=Math.min(0.7,shA*0.5*dw*(0.3+0.7*Math.abs(w)));
+      s+='<ellipse cx="'+(sc.x-pc*lean*0.4).toFixed(1)+'" cy="'+(sc.y+sz2*0.34).toFixed(1)+'" rx="'+(rx*1.12).toFixed(1)+'" ry="'+(sz2*0.3*(0.5+0.7*Math.abs(sn))).toFixed(1)+'" fill="#000" opacity="'+so.toFixed(2)+'" transform="rotate('+(sc.rot*180/Math.PI).toFixed(1)+' '+(sc.x-pc*lean*0.4).toFixed(1)+' '+(sc.y+sz2*0.34).toFixed(1)+')"/>';}
+    s+='<ellipse cx="'+px+'" cy="'+py+'" rx="'+rx.toFixed(1)+'" ry="'+ry.toFixed(1)+'" fill="rgb('+(r|0)+','+(gn|0)+','+(b|0)+')" opacity="'+op.toFixed(2)+'" transform="rotate('+(rot*180/Math.PI).toFixed(1)+' '+px+' '+py+')"/>';
+  }
+  if(P.vig)s+='<radialGradient id="vg" cx="50%" cy="46%" r="78%"><stop offset="26%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity="0.55"/></radialGradient><rect width="'+scW+'" height="'+scH+'" fill="url(#vg)"/>';
+  return s+'</svg>';
+}
+document.getElementById('svg').addEventListener('click',()=>{
+  if(P.mode==='scatter') return dl(new Blob([svgScales()],{type:'image/svg+xml'}),'iridis-scales-'+P.seed+'.svg');
+  dl(new Blob([svgString()],{type:'image/svg+xml'}),'iridis-'+P.mode+'-'+P.seed+'.svg');});
+document.getElementById('png').addEventListener('click',()=>{
+  if(P.mode==='scatter'){const off=document.createElement('canvas');off.width=scW*2;off.height=scH*2;
+    drawScalesCtx(off.getContext('2d'),2,animPhase);
+    return off.toBlob(b=>dl(b,'iridis-scales-'+P.seed+'.png'),'image/png');}
+  const {W,H}=dims(),long=2400,sc=long/Math.max(W,H);
+  const img=new Image();img.onload=()=>{const c2=document.createElement('canvas');
+    c2.width=Math.round(W*sc);c2.height=Math.round(H*sc);const g2=c2.getContext('2d');
+    g2.drawImage(img,0,0,c2.width,c2.height);c2.toBlob(b=>dl(b,'iridis-'+P.mode+'-'+P.seed+'.png'),'image/png');};
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgString());});
+document.getElementById('rec').addEventListener('click',()=>{
+  if(P.mode!=='scatter') return;
+  if(typeof MediaRecorder==='undefined'||!cv.captureStream){alert('Recording is not supported in this browser.');return;}
+  if(!P.playing) setPlay(true);
+  const stream=cv.captureStream(30); const chunks=[];
+  let rc; try{rc=new MediaRecorder(stream,{mimeType:'video/webm'});}catch(e){rc=new MediaRecorder(stream);}
+  rc.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+  rc.onstop=()=>dl(new Blob(chunks,{type:'video/webm'}),'iridis-scales-'+P.seed+'.webm');
+  const btn=document.getElementById('rec'),txt=btn.textContent; btn.textContent='● Recording…'; btn.disabled=true;
+  rc.start(); setTimeout(()=>{rc.stop();btn.textContent=txt;btn.disabled=false;},6000);});
+
+/* =====================================================================
+   PRESETS — saved to localStorage on this computer
+   ===================================================================== */
+const PKEY='iridis_presets_v1';
+function getPresetsLS(){try{return JSON.parse(localStorage.getItem(PKEY))||{};}catch(e){return {};}}
+function setPresetsLS(o){try{localStorage.setItem(PKEY,JSON.stringify(o));return true;}catch(e){alert('Could not save — browser storage is unavailable here.');return false;}}
+function refreshPresetList(sel){const el=document.getElementById('presetList'),all=getPresetsLS();
+  el.innerHTML='<option value="">— load a preset ('+Object.keys(all).length+') —</option>'+
+    Object.keys(all).sort().map(n=>'<option>'+n.replace(/[<>&]/g,'')+'</option>').join('');
+  if(sel)el.value=sel;}
+function refreshAllUI(){
+  syncUI();                                    // sliders, motion, play, inv, mode, post
+  document.getElementById('grain').classList.toggle('on',!!P.grain);
+  document.getElementById('vig').classList.toggle('on',!!P.vig);
+  transSw.classList.toggle('on',!!P.transparent);
+  document.getElementById('hover').classList.toggle('on',!!P.hoverScrub);
+  const tl=document.getElementById('tilt'); tl.value=P.theta; document.getElementById('vTilt').textContent=Number(P.theta).toFixed(2);
+  const bd=document.getElementById('baseD'); bd.value=P.baseD; document.getElementById('vBaseD').textContent=Math.round(P.baseD);
+  if(/^#([0-9a-f]{6})$/i.test(P.bg)) document.getElementById('bgcustom').value=P.bg;
+  document.querySelectorAll('#bgmode button').forEach(b=>b.classList.toggle('on',b.dataset.b===P.bg));
+  document.querySelectorAll('#aspect button').forEach(b=>b.classList.toggle('on',Math.abs(parseFloat(b.dataset.r)-P.aspect)<1e-4));
+  updatePigment(); applyBgFill();
+}
+document.getElementById('savePreset').addEventListener('click',()=>{
+  const inp=document.getElementById('presetName'); let n=(inp.value||'').trim();
+  if(!n) n='preset '+(Object.keys(getPresetsLS()).length+1);
+  const all=getPresetsLS(), snap=Object.assign({},P);
+  delete snap.theta; delete snap.baseD; delete snap.freeze;   // keep live view, not the frozen tilt
+  all[n]=snap; if(setPresetsLS(all)){ inp.value=''; refreshPresetList(n); }
+});
+document.getElementById('presetList').addEventListener('change',e=>{
+  const n=e.target.value; if(!n) return;
+  const s=getPresetsLS()[n]; if(!s) return;
+  Object.assign(P,s); refreshAllUI(); build();
+});
+document.getElementById('delPreset').addEventListener('click',()=>{
+  const el=document.getElementById('presetList'), n=el.value; if(!n) return;
+  if(!confirm('Delete preset "'+n+'"?')) return;
+  const all=getPresetsLS(); delete all[n]; setPresetsLS(all); refreshPresetList('');
+});
+refreshPresetList();
+
+build();
+</script>
+</body>
+</html>

@@ -10,6 +10,7 @@
   {"category":"generators","slug":"pcb-node-generator","name":"PCB Node Generator","hasPreview":true},
   {"category":"generators","slug":"gradient-composer","name":"Gradient Composer","hasPreview":true},
   {"category":"generators","slug":"reaction-diffusion","name":"Reaction–Diffusion","hasPreview":true},
+  {"category":"generators","slug":"structural-color-studio","name":"Iridis · Structural Colour","hasPreview":true},
   {"category":"image","slug":"halftone-dot-studio","name":"Halftone Dot Studio","hasPreview":true},
   {"category":"image","slug":"chromatic-bloom","name":"Chromatic Bloom","hasPreview":true},
   {"category":"image","slug":"BCA-halftone-lines-image","name":"BCA Halftone Lines (Image)","hasPreview":true},
