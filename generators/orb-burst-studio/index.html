@@ -201,6 +201,36 @@ body.warp-mode .burst-only { display: none; }
     </div>
   </div>
 
+  <!-- SHAPE -->
+  <div class="section">
+    <div class="section-title">Shape</div>
+    <div class="ctrl">
+      <label>Spiral / curl <span class="val" id="v-spiral">0.00</span></label>
+      <input type="range" id="sl-spiral" min="-100" max="100" value="0" />
+    </div>
+    <div class="ctrl">
+      <label>Turbulence <span class="val" id="v-turb">0.00</span></label>
+      <input type="range" id="sl-turb" min="0" max="100" value="0" />
+    </div>
+    <div class="ctrl">
+      <label>Turbulence scale <span class="val" id="v-turbf">2.0</span></label>
+      <input type="range" id="sl-turbf" min="5" max="60" value="20" />
+    </div>
+    <div class="ctrl">
+      <label>Taper profile</label>
+      <select id="sel-taper">
+        <option value="0" selected>Uniform — even thickness</option>
+        <option value="1">Comet — fat core → thin tip</option>
+        <option value="2">Spindle — thin ends, fat middle</option>
+        <option value="3">Flare — thin core → fat tip</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>Taper amount <span class="val" id="v-taperamt">80%</span></label>
+      <input type="range" id="sl-taperamt" min="0" max="100" value="80" />
+    </div>
+  </div>
+
   <!-- MOTION -->
   <div class="section">
     <div class="section-title">Motion</div>
@@ -233,6 +263,39 @@ body.warp-mode .burst-only { display: none; }
       <label>Bloom blur px <span class="val" id="v-bpx">4</span></label>
       <input type="range" id="sl-bpx" min="0" max="32" value="4" />
     </div>
+  </div>
+
+  <!-- LENS -->
+  <div class="section">
+    <div class="section-title">Lens</div>
+    <div class="ctrl">
+      <label>Anamorphic streak <span class="val" id="v-ana">0%</span></label>
+      <input type="range" id="sl-ana" min="0" max="150" value="0" />
+    </div>
+    <div class="ctrl">
+      <label>Streak length px <span class="val" id="v-analen">28</span></label>
+      <input type="range" id="sl-analen" min="4" max="80" value="28" />
+    </div>
+    <div class="ctrl">
+      <label>Chromatic aberration <span class="val" id="v-ca">0%</span></label>
+      <input type="range" id="sl-ca" min="0" max="100" value="0" />
+    </div>
+    <div class="ctrl">
+      <label>Vignette <span class="val" id="v-vig">0%</span></label>
+      <input type="range" id="sl-vig" min="0" max="100" value="0" />
+    </div>
+    <div class="ctrl">
+      <label class="hub-check"><input type="checkbox" id="ck-bggrad" /> Background gradient</label>
+    </div>
+    <fieldset class="fset" id="bggrad-field" disabled>
+      <div class="ctrl">
+        <label>Edge color</label>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <div class="swatch-wrap"><input type="color" id="cp-bgedge" value="#0a0a1a" /></div>
+          <span style="font-size:11px;color:var(--text-dim)">Center stays your Background color; this fades in toward the corners.</span>
+        </div>
+      </div>
+    </fieldset>
   </div>
 
   <!-- CENTER CORE -->
@@ -310,6 +373,15 @@ body.warp-mode .burst-only { display: none; }
     <label style="font-size:12px;font-weight:500;display:block;margin-bottom:4px">Palette colors</label>
     <div class="col-swatches" id="col-swatches"></div>
     <div class="ctrl">
+      <label>Palette mapping</label>
+      <select id="sel-colsrc">
+        <option value="auto" selected>Auto — angle (warp) / index (burst)</option>
+        <option value="angle">By angle — color wheel around center</option>
+        <option value="index">By streak — sequential</option>
+        <option value="radius">By radius — concentric rings</option>
+      </select>
+    </div>
+    <div class="ctrl">
       <label>Saturation <span class="val" id="v-csat">100%</span></label>
       <input type="range" id="sl-csat" min="30" max="220" value="100" />
     </div>
@@ -320,6 +392,14 @@ body.warp-mode .burst-only { display: none; }
     <div class="ctrl">
       <label>Brightness <span class="val" id="v-cgain">100%</span></label>
       <input type="range" id="sl-cgain" min="40" max="220" value="100" />
+    </div>
+    <div class="ctrl">
+      <label>Core → tip glow <span class="val" id="v-coretip">0%</span></label>
+      <input type="range" id="sl-coretip" min="0" max="100" value="0" />
+    </div>
+    <div class="ctrl">
+      <label>Hue jitter <span class="val" id="v-huejit">0%</span></label>
+      <input type="range" id="sl-huejit" min="0" max="100" value="0" />
     </div>
   </div>
 
@@ -397,6 +477,8 @@ body.warp-mode .burst-only { display: none; }
   /* ── state ─────────────────────────────────────────────── */
   let warpMode = false;
   let customColors = ['#ff2200','#ff8800','#ffee00','#44ff44','#00ddff','#3355ff','#aa00ff','#ff0099'];
+  let colorMode = 'auto';   // 'auto' | 'angle' | 'index' | 'radius'
+  let hueJitter = 0;        // 0..1 → up to ±60°
 
   /* ── presets ─────────────────────────────────────────────── */
   function hslToHex(h, s, l) {
@@ -429,11 +511,38 @@ layout(location=3) in vec4 a_meta;
 uniform mat4 u_mvp;
 uniform vec3 u_eye;
 uniform vec2 u_streak;
+uniform float u_spiral;
+uniform float u_turb;
+uniform float u_turbFreq;
+uniform int u_taperMode;
+uniform float u_taperAmt;
+uniform float u_t;
 out vec2 v_uv; out vec3 v_col; out float v_axial; out float v_camDist;
 flat out float v_kind;
+float hash31(vec3 p){ p=fract(p*0.3183099+vec3(0.1,0.2,0.3)); p*=17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
+float vnoise(vec3 x){
+  vec3 i=floor(x), f=fract(x); f=f*f*(3.0-2.0*f);
+  float n000=hash31(i+vec3(0,0,0)), n100=hash31(i+vec3(1,0,0));
+  float n010=hash31(i+vec3(0,1,0)), n110=hash31(i+vec3(1,1,0));
+  float n001=hash31(i+vec3(0,0,1)), n101=hash31(i+vec3(1,0,1));
+  float n011=hash31(i+vec3(0,1,1)), n111=hash31(i+vec3(1,1,1));
+  float nx00=mix(n000,n100,f.x), nx10=mix(n010,n110,f.x);
+  float nx01=mix(n001,n101,f.x), nx11=mix(n011,n111,f.x);
+  return mix(mix(nx00,nx10,f.y), mix(nx01,nx11,f.y), f.z);
+}
+vec3 rotAxis(vec3 v, vec3 k, float a){
+  float c=cos(a), s=sin(a);
+  return v*c + cross(k,v)*s + k*dot(k,v)*(1.0-c);
+}
 void main() {
   vec3 C = a_world; float kind = a_meta.w; v_kind = kind;
   v_uv = a_corner; v_col = a_color; v_axial = a_corner.x;
+  vec3 nAxis = (length(u_eye) > 1e-5) ? normalize(u_eye) : vec3(0.0,0.0,1.0);
+  float rr = length(C);
+  /* Spiral: rotate the streak's anchor about the view axis by angle proportional to radius */
+  if (abs(u_spiral) > 1e-4 && kind < 0.5) {
+    C = rotAxis(C, nAxis, u_spiral * rr * 3.5);
+  }
   v_camDist = length(u_eye - C);
   float thickRamp = smoothstep(0.04, 0.96, a_meta.z);
   const float WL = 0.92; const float WT_BLOB = 24.0; const float WT_STREAK = 6.8;
@@ -448,6 +557,11 @@ void main() {
     pos = C + side*(a_corner.x*rx) + upm*(a_corner.y*ry);
   } else {
     vec3 ax = length(C) > 1e-6 ? normalize(C) : vec3(0,0,1);
+    /* Spiral lean: tilt the streak toward the tangent so arms curve, not just shift */
+    if (abs(u_spiral) > 1e-4) {
+      vec3 tcand = cross(nAxis, ax); float tl = length(tcand);
+      if (tl > 1e-4) ax = normalize(ax + (tcand/tl) * u_spiral * 1.15);
+    }
     vec3 vd = normalize(u_eye - C);
     vec3 side = cross(ax, vd);
     float sl = length(side);
@@ -457,7 +571,22 @@ void main() {
     } else { side /= sl; }
     float hl = u_streak.x * a_meta.y * (1.02 + 1.05*thickRamp) * WL;
     float ht = u_streak.y * a_meta.x * (0.88 + 1.55*thickRamp) * WT_STREAK;
+    /* Taper: scale thickness along the streak length (a_corner.x: -1 core .. +1 tip) */
+    float t01 = a_corner.x*0.5 + 0.5;
+    float prof = 1.0;
+    if (u_taperMode==1)      prof = mix(1.0, 1.0 - t01, u_taperAmt);              // comet
+    else if (u_taperMode==2) prof = mix(1.0, 1.0 - abs(a_corner.x), u_taperAmt);  // spindle
+    else if (u_taperMode==3) prof = mix(1.0, t01, u_taperAmt);                    // flare
+    ht *= max(prof, 0.02);
     pos = C + ax*(a_corner.x*hl) + side*(a_corner.y*ht);
+    /* Turbulence: perpendicular wiggle that varies along the streak → wavy field lines */
+    if (u_turb > 1e-4) {
+      vec3 perp2 = normalize(cross(ax, side));
+      vec3 sp = pos*u_turbFreq + vec3(0.0, 0.0, u_t*0.15);
+      float n1 = vnoise(sp) - 0.5;
+      float n2 = vnoise(sp + vec3(31.4,17.7,5.2)) - 0.5;
+      pos += side*(n1*2.0*u_turb) + perp2*(n2*2.0*u_turb);
+    }
   }
   gl_Position = u_mvp * vec4(pos, 1.0);
 }`;
@@ -468,7 +597,7 @@ in vec2 v_uv; in vec3 v_col; in float v_axial; in float v_camDist;
 flat in float v_kind;
 uniform float u_core; uniform float u_soft; uniform int u_blendMode;
 uniform vec3 u_bg; uniform float u_colHue; uniform float u_colSat;
-uniform float u_colGain; uniform int u_transparentPlate;
+uniform float u_colGain; uniform int u_transparentPlate; uniform float u_coreTip;
 out vec4 fragColor;
 vec3 saturateRgb(vec3 c, float k) {
   float L = dot(c, vec3(0.299,0.587,0.114));
@@ -506,6 +635,9 @@ void main() {
     return;
   }
   float ax=abs(v_axial); float rad=length(v_uv);
+  /* Core → tip glow: whiten the inner (core) end, fade to palette color at the tip */
+  float t01s=clamp(v_axial*0.5+0.5,0.0,1.0);
+  Cc=mix(Cc, mix(vec3(1.0), Cc, t01s), u_coreTip);
   float cap=pow(max(1.0-smoothstep(0.62,1.0+u_soft*0.32*dof,max(ax*0.9+rad*0.36,rad)),0.0),1.08);
   float core=exp(-ax*ax*(1.85+u_core*6.5))*exp(-rad*rad*(1.35+u_core*4.2));
   float rim=smoothstep(0.12,1.0,rad+ax*0.22);
@@ -593,18 +725,58 @@ void main(){
   o=vec4(toSrgb(acc),1.0);
 }`;
 
+  /* Anamorphic: wide single-axis horizontal blur of bloom-excess → cinematic lens streak */
+  const FS_ANAMORPH = `#version 300 es
+precision highp float;
+uniform sampler2D u_tex; uniform vec2 u_px; uniform vec3 u_bg;
+in vec2 v_uv; out vec4 o;
+vec3 toLin(vec3 c){return pow(max(c,vec3(0.0)),vec3(2.2));}
+vec3 toSrgb(vec3 c){return pow(clamp(c,0.0,1.0),vec3(1.0/2.2));}
+vec3 exc(vec2 uv,vec3 b){return max(toLin(texture(u_tex,uv).rgb)-b,vec3(0.0));}
+void main(){
+  vec3 b=toLin(u_bg); vec2 d=u_px; vec3 acc=vec3(0.0);
+  acc+=exc(v_uv,b)*0.130;
+  acc+=(exc(v_uv+d*1.0,b)+exc(v_uv-d*1.0,b))*0.120;
+  acc+=(exc(v_uv+d*2.0,b)+exc(v_uv-d*2.0,b))*0.105;
+  acc+=(exc(v_uv+d*3.0,b)+exc(v_uv-d*3.0,b))*0.085;
+  acc+=(exc(v_uv+d*4.0,b)+exc(v_uv-d*4.0,b))*0.062;
+  acc+=(exc(v_uv+d*6.0,b)+exc(v_uv-d*6.0,b))*0.040;
+  acc+=(exc(v_uv+d*8.0,b)+exc(v_uv-d*8.0,b))*0.022;
+  o=vec4(toSrgb(acc),1.0);
+}`;
+
   const FS_COMP = `#version 300 es
 precision highp float;
-uniform sampler2D u_scene; uniform sampler2D u_bloom;
-uniform float u_bloomMix; uniform float u_grain; uniform float u_grainT;
+uniform sampler2D u_scene; uniform sampler2D u_bloom; uniform sampler2D u_ana;
+uniform float u_bloomMix; uniform float u_anaMix; uniform vec3 u_anaTint;
+uniform float u_ca; uniform float u_vignette;
+uniform vec3 u_bg; uniform vec3 u_bgEdge;
+uniform float u_grain; uniform float u_grainT;
 in vec2 v_uv; out vec4 o;
 vec3 toLin(vec3 c){return pow(max(c,vec3(0.0)),vec3(2.2));}
 vec3 toSrgb(vec3 c){return pow(clamp(c,0.0,1.0),vec3(1.0/2.2));}
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 void main(){
-  vec3 scene=texture(u_scene,v_uv).rgb;
+  vec2 ctr=v_uv-0.5;
+  float r=clamp(length(ctr)*1.41421356,0.0,1.0);
+  /* Chromatic aberration: radial RGB split, growing toward the edges */
+  vec3 scene;
+  if(u_ca>0.0001){
+    vec2 dir=ctr*u_ca;
+    scene.r=texture(u_scene,v_uv+dir).r;
+    scene.g=texture(u_scene,v_uv).g;
+    scene.b=texture(u_scene,v_uv-dir).b;
+  } else { scene=texture(u_scene,v_uv).rgb; }
   vec3 bloom=texture(u_bloom,v_uv).rgb;
-  vec3 lin=toLin(scene)+u_bloomMix*toLin(bloom);
+  vec3 ana=texture(u_ana,v_uv).rgb;
+  /* Swap the flat background for a center→edge gradient by re-adding streak excess over bg */
+  vec3 bgL=toLin(u_bg);
+  vec3 baseL=mix(bgL, toLin(u_bgEdge), r);
+  vec3 excess=max(toLin(scene)-bgL, 0.0);
+  vec3 lin=baseL + excess + u_bloomMix*toLin(bloom) + u_anaMix*toLin(ana)*u_anaTint;
+  /* Vignette */
+  float vig=mix(1.0, smoothstep(1.15,0.15,r), u_vignette);
+  lin*=vig;
   vec3 rgb=toSrgb(min(lin,vec3(1.0)));
   if(u_grain>0.001){
     float g=hash(v_uv*873.0+vec2(fract(u_grainT*0.197),fract(u_grainT*0.337)))*2.0-1.0;
@@ -637,8 +809,9 @@ void main(){
   const pHot  = link(compile(gl.VERTEX_SHADER, VS_FULL),   compile(gl.FRAGMENT_SHADER, FS_HOTCORE));
   const pBH   = link(compile(gl.VERTEX_SHADER, VS_FULL),   compile(gl.FRAGMENT_SHADER, FS_BLUR_H));
   const pBV   = link(compile(gl.VERTEX_SHADER, VS_FULL),   compile(gl.FRAGMENT_SHADER, FS_BLUR_V));
+  const pAna  = link(compile(gl.VERTEX_SHADER, VS_FULL),   compile(gl.FRAGMENT_SHADER, FS_ANAMORPH));
   const pComp = link(compile(gl.VERTEX_SHADER, VS_FULL),   compile(gl.FRAGMENT_SHADER, FS_COMP));
-  if (!pOrb||!pHub||!pHot||!pBH||!pBV||!pComp) {
+  if (!pOrb||!pHub||!pHot||!pBH||!pBV||!pAna||!pComp) {
     fb.textContent = 'Shader compile failed (see console).'; fb.classList.add('show'); return;
   }
 
@@ -654,11 +827,21 @@ void main(){
     orb_bg: gl.getUniformLocation(pOrb,'u_bg'), col_hue: gl.getUniformLocation(pOrb,'u_colHue'),
     col_sat: gl.getUniformLocation(pOrb,'u_colSat'), col_gain: gl.getUniformLocation(pOrb,'u_colGain'),
     transparent_plate: gl.getUniformLocation(pOrb,'u_transparentPlate'),
+    orb_spiral: gl.getUniformLocation(pOrb,'u_spiral'), orb_turb: gl.getUniformLocation(pOrb,'u_turb'),
+    orb_turbFreq: gl.getUniformLocation(pOrb,'u_turbFreq'), orb_taperMode: gl.getUniformLocation(pOrb,'u_taperMode'),
+    orb_taperAmt: gl.getUniformLocation(pOrb,'u_taperAmt'), orb_t: gl.getUniformLocation(pOrb,'u_t'),
+    orb_coreTip: gl.getUniformLocation(pOrb,'u_coreTip'),
     bh_tex: gl.getUniformLocation(pBH,'u_tex'), bh_px: gl.getUniformLocation(pBH,'u_px'),
     bh_bg: gl.getUniformLocation(pBH,'u_bg'),
     bv_tex: gl.getUniformLocation(pBV,'u_tex'), bv_px: gl.getUniformLocation(pBV,'u_px'),
     bv_bg: gl.getUniformLocation(pBV,'u_bg'),
+    ana_tex: gl.getUniformLocation(pAna,'u_tex'), ana_px: gl.getUniformLocation(pAna,'u_px'),
+    ana_bg: gl.getUniformLocation(pAna,'u_bg'),
     c_scene: gl.getUniformLocation(pComp,'u_scene'), c_bloom: gl.getUniformLocation(pComp,'u_bloom'),
+    c_ana: gl.getUniformLocation(pComp,'u_ana'), c_anaMix: gl.getUniformLocation(pComp,'u_anaMix'),
+    c_anaTint: gl.getUniformLocation(pComp,'u_anaTint'), c_ca: gl.getUniformLocation(pComp,'u_ca'),
+    c_vig: gl.getUniformLocation(pComp,'u_vignette'), c_bg: gl.getUniformLocation(pComp,'u_bg'),
+    c_bgEdge: gl.getUniformLocation(pComp,'u_bgEdge'),
     c_mix: gl.getUniformLocation(pComp,'u_bloomMix'),
     c_grain: gl.getUniformLocation(pComp,'u_grain'), c_grainT: gl.getUniformLocation(pComp,'u_grainT'),
   };
@@ -675,12 +858,14 @@ void main(){
 
   let W=0, H=0, dpr=1;
   let texScene=null, fboScene=null, fboBlurA=null, texBlurA=null, fboBlurB=null, texBlurB=null;
+  let fboBlurC=null, texBlurC=null, anaReady=false;
   let sceneTexReady=false;
 
   function destroyFbos() {
-    [texScene,texBlurA,texBlurB].forEach(t=>t&&gl.deleteTexture(t));
-    [fboScene,fboBlurA,fboBlurB].forEach(f=>f&&gl.deleteFramebuffer(f));
-    texScene=texBlurA=texBlurB=fboScene=fboBlurA=fboBlurB=null; sceneTexReady=false;
+    [texScene,texBlurA,texBlurB,texBlurC].forEach(t=>t&&gl.deleteTexture(t));
+    [fboScene,fboBlurA,fboBlurB,fboBlurC].forEach(f=>f&&gl.deleteFramebuffer(f));
+    texScene=texBlurA=texBlurB=texBlurC=fboScene=fboBlurA=fboBlurB=fboBlurC=null;
+    sceneTexReady=false; anaReady=false;
   }
   function makeTex(w,h) {
     const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
@@ -693,9 +878,9 @@ void main(){
   }
   function allocFbos() {
     destroyFbos();
-    texScene=makeTex(W,H); texBlurA=makeTex(W,H); texBlurB=makeTex(W,H);
-    fboScene=gl.createFramebuffer(); fboBlurA=gl.createFramebuffer(); fboBlurB=gl.createFramebuffer();
-    [[fboScene,texScene],[fboBlurA,texBlurA],[fboBlurB,texBlurB]].forEach(([fbo,tex])=>{
+    texScene=makeTex(W,H); texBlurA=makeTex(W,H); texBlurB=makeTex(W,H); texBlurC=makeTex(W,H);
+    fboScene=gl.createFramebuffer(); fboBlurA=gl.createFramebuffer(); fboBlurB=gl.createFramebuffer(); fboBlurC=gl.createFramebuffer();
+    [[fboScene,texScene],[fboBlurA,texBlurA],[fboBlurB,texBlurB],[fboBlurC,texBlurC]].forEach(([fbo,tex])=>{
       gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
       gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);
     });
@@ -726,16 +911,59 @@ void main(){
     if (!cols.length) return [1,1,1];
     return cols[i % cols.length];
   }
+  /* Non-wrapping ramp across the palette (center→edge), used by 'radius' mapping */
+  function getColorByRamp(t) {
+    const cols = getCustomColorsRgb();
+    if (!cols.length) return [1,1,1];
+    if (cols.length === 1) return cols[0];
+    t = Math.max(0, Math.min(0.99999, t));
+    const fi = t*(cols.length-1), i0 = Math.floor(fi), i1 = Math.min(cols.length-1, i0+1), f = fi-i0;
+    return [cols[i0][0]*(1-f)+cols[i1][0]*f, cols[i0][1]*(1-f)+cols[i1][1]*f, cols[i0][2]*(1-f)+cols[i1][2]*f];
+  }
+
+  /* ── hue-jitter helpers ─────────────────────────────────── */
+  function srand(n) { return ((Math.sin(n*12.9898)*43758.5453)%1+1)%1; }
+  function rgb2hsl(r,g,b) {
+    const mx=Math.max(r,g,b), mn=Math.min(r,g,b); let h=0,s=0; const l=(mx+mn)/2;
+    if (mx!==mn) {
+      const d=mx-mn; s=l>0.5?d/(2-mx-mn):d/(mx+mn);
+      if (mx===r) h=(g-b)/d+(g<b?6:0); else if (mx===g) h=(b-r)/d+2; else h=(r-g)/d+4;
+      h/=6;
+    }
+    return [h,s,l];
+  }
+  function hsl2rgb(h,s,l) {
+    if (s===0) return [l,l,l];
+    const q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q;
+    const hk=v=>{ v=(v%1+1)%1; if(v<1/6)return p+(q-p)*6*v; if(v<1/2)return q; if(v<2/3)return p+(q-p)*(2/3-v)*6; return p; };
+    return [hk(h+1/3), hk(h), hk(h-1/3)];
+  }
+  function jitterHue(rgb, idx, amt) {
+    if (amt<=0) return rgb;
+    const [h,s,l]=rgb2hsl(rgb[0],rgb[1],rgb[2]);
+    const dh=(srand(idx*7.13+1.7)*2-1)*amt*(60/360);
+    return hsl2rgb(h+dh, s, l);
+  }
+
+  function effectiveColorMode() {
+    if (colorMode==='auto') return warpMode ? 'angle' : 'index';
+    return colorMode;
+  }
+  /* Resolve a streak's color from the active mapping mode + hue jitter */
+  function colorForParticle(i, j, x, y, zf) {
+    const mode = effectiveColorMode();
+    let c;
+    if (mode==='angle')       c = getColorByAngle(Math.atan2(y, x));
+    else if (mode==='radius') c = getColorByRamp(zf);
+    else                      c = getColorByIndex(j);
+    return jitterHue(c, i, hueJitter);
+  }
 
   function recolorParticles() {
     for (let i=0; i<totalInstances; i++) {
-      let c;
-      if (warpMode) {
-        const angle = Math.atan2(world[i*3+1], world[i*3]);
-        c = getColorByAngle(angle);
-      } else {
-        c = getColorByIndex(i);
-      }
+      if (!warpMode && blobCount>0 && i<blobCount) continue; // blobs keep their warm palette
+      const j = warpMode ? i : Math.max(0, i-blobCount);
+      const c = colorForParticle(i, j, world[i*3], world[i*3+1], meta[i*4+2]);
       color[i*3]=c[0]; color[i*3+1]=c[1]; color[i*3+2]=c[2];
     }
     gl.bindBuffer(gl.ARRAY_BUFFER, instColor);
@@ -783,9 +1011,9 @@ void main(){
     world[i*3]=x; world[i*3+1]=y; world[i*3+2]=z;
     const len=Math.max(1e-4,Math.hypot(x,y,z));
     vel[i*3]=x/len; vel[i*3+1]=y/len; vel[i*3+2]=z/len;
-    const c=getColorByIndex(j);
-    color[i*3]=c[0]; color[i*3+1]=c[1]; color[i*3+2]=c[2];
     const zf=(R-innerR)/Math.max(1e-3,outerR-innerR);
+    const c=colorForParticle(i,j,x,y,zf);
+    color[i*3]=c[0]; color[i*3+1]=c[1]; color[i*3+2]=c[2];
     meta[i*4]=0.55+Math.random()*0.9; meta[i*4+1]=0.65+Math.random()*0.95;
     meta[i*4+2]=zf; meta[i*4+3]=0.0;
   }
@@ -793,11 +1021,12 @@ void main(){
   function respawnWarpStreak(i) {
     const angle=(i/streakCount)*Math.PI*2+(Math.random()-0.5)*0.18;
     const R=rnd(innerR, outerR);
-    world[i*3]=Math.cos(angle)*R; world[i*3+1]=Math.sin(angle)*R; world[i*3+2]=0;
+    const x=Math.cos(angle)*R, y=Math.sin(angle)*R;
+    world[i*3]=x; world[i*3+1]=y; world[i*3+2]=0;
     vel[i*3]=Math.cos(angle); vel[i*3+1]=Math.sin(angle); vel[i*3+2]=0;
-    const c=getColorByAngle(angle);
-    color[i*3]=c[0]; color[i*3+1]=c[1]; color[i*3+2]=c[2];
     const zf=(R-innerR)/Math.max(1e-3,outerR-innerR);
+    const c=colorForParticle(i,i,x,y,zf);
+    color[i*3]=c[0]; color[i*3+1]=c[1]; color[i*3+2]=c[2];
     meta[i*4]=0.55+Math.random()*0.9; meta[i*4+1]=0.65+Math.random()*0.95;
     meta[i*4+2]=zf; meta[i*4+3]=0.0;
   }
@@ -920,6 +1149,12 @@ void main(){
       th:       Math.max(0,+$('sl-th').value)/10000,
       core:     +$('sl-core').value/100,
       soft:     +$('sl-soft').value/100,
+      spiral:   +$('sl-spiral').value/100,
+      turb:     +$('sl-turb').value/100*0.18,
+      turbFreq: +$('sl-turbf').value/10,
+      taperMode:+$('sel-taper').value|0,
+      taperAmt: +$('sl-taperamt').value/100,
+      coreTip:  +$('sl-coretip').value/100,
       sp:       +$('sl-sp').value/100,
       sw:       +$('sl-sw').value/100,
       orb:      +$('sl-orb').value/100,
@@ -941,6 +1176,12 @@ void main(){
       hotRadius:+$('sl-hotrad').value/100*0.35,
       grainOn:  $('ck-grain').checked,
       grain:    +$('sl-grain').value/100,
+      anaMix:   +$('sl-ana').value/100,
+      anaLen:   +$('sl-analen').value,
+      ca:       +$('sl-ca').value/100*0.02,
+      vignette: +$('sl-vig').value/100,
+      bgGradOn: $('ck-bggrad').checked,
+      bgEdge:   $('cp-bgedge').value,
     };
   }
 
@@ -948,6 +1189,8 @@ void main(){
   function updateParticles(dt, u) {
     const speed=u.sp*0.85, swirl=u.sw*0.65;
     const zfac=0.25+u.zspread*1.1;
+    const liveRadius = effectiveColorMode()==='radius';
+    let colorDirty = false;
     for (let i=0; i<totalInstances; i++) {
       const isBlob=!warpMode && blobCount>0 && i<blobCount;
       let x=world[i*3], y=world[i*3+1], z=world[i*3+2];
@@ -980,13 +1223,24 @@ void main(){
         respawnAt(i);
       } else {
         world[i*3]=x; world[i*3+1]=y; world[i*3+2]=z;
-        meta[i*4+2]=(dist-innerR)/Math.max(1e-3,outerR-innerR);
+        const zf=(dist-innerR)/Math.max(1e-3,outerR-innerR);
+        meta[i*4+2]=zf;
+        if (liveRadius) {
+          const j = warpMode ? i : Math.max(0, i-blobCount);
+          const c = colorForParticle(i, j, x, y, zf);
+          color[i*3]=c[0]; color[i*3+1]=c[1]; color[i*3+2]=c[2];
+          colorDirty = true;
+        }
       }
     }
     gl.bindBuffer(gl.ARRAY_BUFFER,instWorld);
     gl.bufferSubData(gl.ARRAY_BUFFER,0,world.subarray(0,totalInstances*3));
     gl.bindBuffer(gl.ARRAY_BUFFER,instMeta);
     gl.bufferSubData(gl.ARRAY_BUFFER,0,meta.subarray(0,totalInstances*4));
+    if (colorDirty) {
+      gl.bindBuffer(gl.ARRAY_BUFFER,instColor);
+      gl.bufferSubData(gl.ARRAY_BUFFER,0,color.subarray(0,totalInstances*3));
+    }
   }
 
   /* ── render ─────────────────────────────────────────────── */
@@ -1033,6 +1287,13 @@ void main(){
     gl.uniform2f(loc.streak,u.len*1.25,Math.max(u.th,1e-8));
     gl.uniform1f(loc.core,u.core);
     gl.uniform1f(loc.soft,u.soft);
+    gl.uniform1f(loc.orb_spiral,u.spiral||0);
+    gl.uniform1f(loc.orb_turb,u.turb||0);
+    gl.uniform1f(loc.orb_turbFreq,u.turbFreq||2);
+    gl.uniform1i(loc.orb_taperMode,u.taperMode|0);
+    gl.uniform1f(loc.orb_taperAmt,u.taperAmt||0);
+    gl.uniform1f(loc.orb_t,u.time||time);
+    gl.uniform1f(loc.orb_coreTip,u.coreTip||0);
     gl.uniform1i(loc.blendMode,additive?1:0);
     const b=hexRgb(u.bg); gl.uniform3f(loc.orb_bg,b[0],b[1],b[2]);
     gl.uniform1f(loc.col_hue,u.colHue);
@@ -1062,18 +1323,40 @@ void main(){
     gl.bindFramebuffer(gl.FRAMEBUFFER,null); gl.bindVertexArray(null);
   }
 
+  function drawAnamorph(u) {
+    anaReady=false;
+    if (!texScene||!sceneTexReady||(u.anaMix||0)<=0.001) return;
+    const s=(u.anaLen||28)*pixelScaleForBloom(), b=hexRgb(u.bg);
+    gl.disable(gl.BLEND);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,fboBlurC); gl.viewport(0,0,W,H);
+    gl.useProgram(pAna); gl.uniform1i(loc.ana_tex,0); gl.uniform3f(loc.ana_bg,b[0],b[1],b[2]);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,texScene);
+    gl.uniform2f(loc.ana_px,s/W,0);
+    gl.bindVertexArray(vaoQuad); gl.drawArrays(gl.TRIANGLES,0,6);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null); gl.bindVertexArray(null);
+    anaReady=true;
+  }
+
   function composite(u) {
     if (!sceneTexReady) return;
     gl.bindFramebuffer(gl.FRAMEBUFFER,null); gl.viewport(0,0,W,H);
     gl.disable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
     gl.useProgram(pComp);
-    gl.uniform1i(loc.c_scene,0); gl.uniform1i(loc.c_bloom,1);
+    gl.uniform1i(loc.c_scene,0); gl.uniform1i(loc.c_bloom,1); gl.uniform1i(loc.c_ana,2);
     const bloomAmt=u.bpx<0.5?0:u.bloom*1.22;
     gl.uniform1f(loc.c_mix,bloomAmt);
+    gl.uniform1f(loc.c_anaMix, anaReady?(u.anaMix||0)*1.3:0);
+    gl.uniform3f(loc.c_anaTint, 0.72,0.82,1.0);
+    gl.uniform1f(loc.c_ca, u.ca||0);
+    gl.uniform1f(loc.c_vig, u.vignette||0);
+    const bg=hexRgb(u.bg), be=(u.bgGradOn?hexRgb(u.bgEdge):bg);
+    gl.uniform3f(loc.c_bg, bg[0],bg[1],bg[2]);
+    gl.uniform3f(loc.c_bgEdge, be[0],be[1],be[2]);
     gl.uniform1f(loc.c_grain, u.grainOn?u.grain:0);
     gl.uniform1f(loc.c_grainT, time);
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,texScene);
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,texBlurB);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D,texBlurC);
     gl.bindVertexArray(vaoQuad); gl.drawArrays(gl.TRIANGLES,0,6);
     gl.bindVertexArray(null); gl.activeTexture(gl.TEXTURE0);
   }
@@ -1147,6 +1430,7 @@ void main(){
           downloadBlob(await rgbaToPngBlob(rgba,W,H),`orb-burst_${idx}.png`);
         } else {
           if (uT.bpx>0.5) drawBlurChain(uT.bpx,uT.bg);
+          drawAnamorph(uT);
           composite(uT); drawHotCore(uT);
           await new Promise(res=>canvas.toBlob(blob=>{downloadBlob(blob,`orb-burst_${idx}.png`);res()},'image/png'));
         }
@@ -1185,6 +1469,7 @@ void main(){
     const eye=getEye(u);
     drawParticlesToCanvas({...u,time},eye,false);
     drawBlurChain(u.bpx,u.bg);
+    drawAnamorph(u);
     composite(u);
     drawHotCore(u);
 
@@ -1202,6 +1487,16 @@ void main(){
       ['sl-th','v-th',v=>(+v/10000).toFixed(4)],
       ['sl-core','v-core',v=>(+v/100).toFixed(2)],
       ['sl-soft','v-soft',v=>(+v/100).toFixed(2)],
+      ['sl-spiral','v-spiral',v=>(+v/100).toFixed(2)],
+      ['sl-turb','v-turb',v=>(+v/100).toFixed(2)],
+      ['sl-turbf','v-turbf',v=>(+v/10).toFixed(1)],
+      ['sl-taperamt','v-taperamt',v=>`${v}%`],
+      ['sl-coretip','v-coretip',v=>`${v}%`],
+      ['sl-huejit','v-huejit',v=>`${v}%`],
+      ['sl-ana','v-ana',v=>`${v}%`],
+      ['sl-analen','v-analen',v=>String(v)],
+      ['sl-ca','v-ca',v=>`${v}%`],
+      ['sl-vig','v-vig',v=>`${v}%`],
       ['sl-sp','v-sp',v=>(+v/100).toFixed(2)],
       ['sl-sw','v-sw',v=>(+v/100).toFixed(2)],
       ['sl-orb','v-orb',v=>(+v/100).toFixed(2)],
@@ -1236,6 +1531,11 @@ void main(){
   bindFieldsetToggle('ck-hub','hub-field');
   bindFieldsetToggle('ck-hotcore','hotcore-field');
   bindFieldsetToggle('ck-grain','grain-field');
+  bindFieldsetToggle('ck-bggrad','bggrad-field');
+
+  /* color source + hue jitter → recolor existing particles immediately */
+  $('sel-colsrc').addEventListener('change',function(){ colorMode=this.value; recolorParticles(); });
+  $('sl-huejit').addEventListener('input',function(){ hueJitter=+this.value/100; recolorParticles(); });
 
   /* mode pills */
   function setMode(toWarp) {
