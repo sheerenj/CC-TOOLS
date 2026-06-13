@@ -60,7 +60,8 @@ input[type=number].num-in{width:100%;padding:8px 10px;border:1px solid var(--lin
 #fallback.show{display:flex;}
 #export-status{font-size:11px;color:var(--text-dim);margin-top:8px;min-height:1.4em;}
 .pal-swatches{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
-.pal-chip{position:relative;width:34px;height:34px;}
+.pal-chip{position:relative;width:34px;height:34px;cursor:grab;}
+.pal-chip:active{cursor:grabbing;}
 .pal-chip input[type=color]{width:34px;height:34px;border:1px solid var(--line-2);border-radius:9px;padding:0;background:none;cursor:pointer;}
 .pal-chip .del{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:#000;color:#fff;border:none;font-size:10px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
 .pal-chip .del:hover{background:#444;}
@@ -307,6 +308,7 @@ function lin2oklab(r,g,b){
 }
 let customCols=PALS.aura.slice();   // editable swatch list for the Custom palette
 let currentHexes=PALS.aura.slice(); // whatever palette is live right now
+let dragIdx=null;                   // drag-to-reorder state for the swatch editor
 function normHex(h){ h=(h||'#000000').replace('#','').trim(); if(h.length===3)h=h.split('').map(x=>x+x).join('');
   if(h.length<6)h=(h+'000000').slice(0,6); return '#'+h.slice(0,6); }
 let palLab=new Float32Array(16*3), palN=0;
@@ -325,16 +327,27 @@ function syncPalEditor(){
   ed.style.display='block'; ed.innerHTML='';
   const row=document.createElement('div'); row.className='pal-swatches';
   customCols.forEach((hex,i)=>{
-    const chip=document.createElement('div'); chip.className='pal-chip';
-    const inp=document.createElement('input'); inp.type='color'; inp.value=normHex(hex);
+    const chip=document.createElement('div'); chip.className='pal-chip'; chip.draggable=true;
+    const inp=document.createElement('input'); inp.type='color'; inp.value=normHex(hex); inp.draggable=false;
     inp.addEventListener('input',e=>{ customCols[i]=e.target.value; rebuildPalette(); });
     const del=document.createElement('button'); del.className='del'; del.textContent='×'; del.title='Remove';
     del.addEventListener('click',()=>{ if(customCols.length<=2)return; customCols.splice(i,1); syncPalEditor(); rebuildPalette(); });
+    /* drag to reorder */
+    chip.addEventListener('dragstart',e=>{ dragIdx=i; chip.style.opacity='0.4'; e.dataTransfer.effectAllowed='move'; });
+    chip.addEventListener('dragend',()=>{ dragIdx=null; chip.style.opacity=''; });
+    chip.addEventListener('dragover',e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; });
+    chip.addEventListener('drop',e=>{ e.preventDefault();
+      if(dragIdx===null||dragIdx===i) return;
+      const moved=customCols.splice(dragIdx,1)[0]; customCols.splice(i,0,moved);
+      dragIdx=null; syncPalEditor(); rebuildPalette(); });
     chip.appendChild(inp); chip.appendChild(del); row.appendChild(chip);
   });
   const add=document.createElement('button'); add.className='pal-add'; add.textContent='+'; add.title='Add color';
   add.addEventListener('click',()=>{ if(customCols.length>=16)return; customCols.push('#ffffff'); syncPalEditor(); rebuildPalette(); });
   row.appendChild(add); ed.appendChild(row);
+  const hint=document.createElement('div'); hint.className='hint'; hint.style.marginTop='6px';
+  hint.textContent='Drag to reorder · click to edit · × to remove';
+  ed.appendChild(hint);
 }
 
 /* ── shaders ──────────────────────────────────────────── */
