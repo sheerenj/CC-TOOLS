@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lumen Field Studio</title>
+<style>
+:root{
+  --bg:#ececec; --card:#fff; --text:#000; --text-dim:#6b6b6b;
+  --line:#e4e4e4; --line-2:#d4d4d4; --accent:#d4fc4e;
+  --radius-lg:20px; --radius-md:14px; --radius-pill:999px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
+  font-family:-apple-system,"Inter","Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased;}
+body{display:flex;}
+#sidebar{width:312px;flex-shrink:0;background:var(--bg);padding:16px;overflow-y:auto;height:100vh;
+  border-right:1px solid var(--line-2);}
+#sidebar::-webkit-scrollbar{width:6px;}
+#sidebar::-webkit-scrollbar-thumb{background:#cfcfcf;border-radius:3px;}
+.brand-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;padding:0 2px;}
+.brand{font-size:16px;font-weight:900;letter-spacing:-0.02em;}
+.brand .dot{display:inline-block;width:5px;height:5px;background:#000;border-radius:50%;margin-left:1px;}
+.brand-sub{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;font-weight:700;}
+.section{background:var(--card);border-radius:var(--radius-lg);padding:14px 14px 16px;margin-bottom:10px;}
+.section-title{display:inline-block;background:var(--accent);color:#000;padding:3px 7px;
+  font-family:ui-monospace,monospace;font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:0.08em;margin-bottom:12px;border-radius:3px;}
+.ctrl{margin-bottom:12px;}
+.ctrl:last-child{margin-bottom:0;}
+.ctrl>label{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:500;margin-bottom:6px;}
+.ctrl>label .val{color:var(--text-dim);font-size:11px;font-family:ui-monospace,monospace;}
+label.tog{justify-content:flex-start;gap:8px;cursor:pointer;}
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;background:var(--line-2);border-radius:2px;outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#000;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15);}
+select{width:100%;background:#f4f4f4;border:1px solid var(--line);color:var(--text);padding:9px 12px;
+  border-radius:var(--radius-pill);font-size:12px;outline:none;cursor:pointer;font-family:inherit;font-weight:500;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;}
+button.btn{width:100%;background:#000;color:#fff;border:none;padding:10px 14px;border-radius:var(--radius-pill);
+  font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;font-family:inherit;}
+button.btn:hover{background:#222;}
+button.btn.ghost{background:#fff;color:#000;border:1px solid var(--line-2);}
+button.btn.ghost:hover{background:#f5f5f5;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+.btn-row .btn{flex:1;min-width:0;}
+.hint{font-size:11px;color:var(--text-dim);line-height:1.55;margin-top:8px;}
+#pal-sw{display:flex;flex-wrap:wrap;gap:0;height:14px;border-radius:7px;overflow:hidden;margin-top:8px;}
+#pal-sw span{flex:1;height:100%;}
+fieldset.fset{border:none;padding:0;margin:0;min-width:0;}
+fieldset.fset:disabled{opacity:.4;pointer-events:none;}
+input[type=number].num-in{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
+  font-size:12px;font-family:ui-monospace,monospace;background:#fafafa;}
+#canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;background:#1a1a1a;overflow:hidden;position:relative;min-width:0;}
+#c{display:block;max-width:100%;max-height:100%;}
+#fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:24px;
+  text-align:center;font-size:13px;color:#bbb;}
+#fallback.show{display:flex;}
+#export-status{font-size:11px;color:var(--text-dim);margin-top:8px;min-height:1.4em;}
+.pal-swatches{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.pal-chip{position:relative;width:34px;height:34px;}
+.pal-chip input[type=color]{width:34px;height:34px;border:1px solid var(--line-2);border-radius:9px;padding:0;background:none;cursor:pointer;}
+.pal-chip .del{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:#000;color:#fff;border:none;font-size:10px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+.pal-chip .del:hover{background:#444;}
+.pal-add{width:34px;height:34px;border:1px dashed var(--line-2);border-radius:9px;background:#f0f0f0;color:#888;font-size:18px;cursor:pointer;flex-shrink:0;}
+.pal-add:hover{background:#e8e8e8;}
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <div class="brand-row">
+    <div>
+      <div class="brand">HEAR THE YOUTH<span class="dot"></span></div>
+      <div class="brand-sub">Lumen Field Studio</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Preset</div>
+    <div class="ctrl">
+      <select id="sel-preset"></select>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn ghost" id="btn-save">Save preset</button>
+      <button type="button" class="btn ghost" id="btn-del">Delete</button>
+    </div>
+  </div>
+
+  <div id="controls"></div>
+
+  <div class="section">
+    <div class="section-title">Palette</div>
+    <div class="ctrl">
+      <select id="sel-pal">
+        <option value="aura">Aura (maroon → blue → black)</option>
+        <option value="tunnel">Tunnel (red → pink → cream)</option>
+        <option value="spectrum">Spectrum (full hue loop)</option>
+        <option value="refWarm">Ref · Warm spectrum</option>
+        <option value="refBlue">Ref · Blue → fire</option>
+        <option value="refGreen">Ref · Green → pink</option>
+        <option value="refTan">Ref · Tan → violet</option>
+        <option value="cathedral">Cathedral (teal · pink · orange)</option>
+        <option value="dusk">Dusk</option>
+        <option value="custom">Custom (edit swatches)</option>
+      </select>
+    </div>
+    <div id="pal-editor" style="display:none"></div>
+    <div id="pal-sw"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Canvas</div>
+    <div class="ctrl">
+      <select id="sel-size">
+        <option value="fit" selected>Fit panel</option>
+        <option value="1080x1350">1080 × 1350 — portrait</option>
+        <option value="1080x1080">1080 × 1080 — square</option>
+        <option value="1080x1920">1080 × 1920 — story</option>
+        <option value="1920x1080">1920 × 1080 — landscape</option>
+        <option value="custom">Custom…</option>
+      </select>
+    </div>
+    <div id="wrap-size" style="display:none">
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div style="flex:1"><div style="font-size:11px;margin-bottom:4px">W</div><input type="number" id="in-cw" value="1080" class="num-in"/></div>
+        <div style="flex:1"><div style="font-size:11px;margin-bottom:4px">H</div><input type="number" id="in-ch" value="1350" class="num-in"/></div>
+      </div>
+      <button type="button" class="btn ghost" id="btn-size">Apply</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Export</div>
+    <button type="button" class="btn ghost" id="btn-png">Save PNG</button>
+    <div class="ctrl" style="margin-top:12px">
+      <label>Record seconds</label>
+      <select id="sel-rec"><option>3</option><option selected>6</option><option>10</option><option>15</option></select>
+    </div>
+    <div class="btn-row"><button type="button" class="btn" id="btn-rec">Record video</button></div>
+    <div id="export-status"></div>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <canvas id="c"></canvas>
+  <div id="fallback"></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const canvas=$('c'), fbEl=$('fallback');
+const gl=canvas.getContext('webgl2',{alpha:true,premultipliedAlpha:false,antialias:false,depth:false,preserveDrawingBuffer:true});
+if(!gl){fbEl.textContent='WebGL2 is required.';fbEl.classList.add('show');return;}
+
+/* ── declarative controls ─────────────────────────────── */
+// k = multiply slider value to get the real param. type t: 's' slider, 'g' toggle.
+const C=[
+ ['Field',[
+   ['base','Base level',-100,100,0,0.01],
+   ['freq','Contour frequency',5,600,55,0.01],
+   ['perspective','Perspective',40,100,100,0.01],
+   ['hardBands','Hard band restart',0,1,0,1,'g'],
+ ]],
+ ['Tunnel',[
+   ['exitX','Exit point — left / right',0,100,50,0.01],
+   ['exitY','Exit point — up / down',0,100,42,0.01],
+   ['rings','Number of rings',10,600,90,0.1],
+   ['depth','Depth (foreshorten)',0,100,60,0.01],
+   ['corner','Corners: square → round',0,100,0,0.01],
+   ['hole','Exit hole size',0,140,30,0.001],
+   ['holeCol','Exit hole color','#000000',null,null,null,'col'],
+   ['holeAlpha','Transparent hole',0,1,0,1,'g'],
+   ['walls','Wall facets',0,100,0,0.01],
+   ['seam','Seam lines',0,100,0,0.01],
+ ]],
+ ['Horizon',[
+   ['horOn','Enable',0,1,1,1,'g'],
+   ['horW','Weight',0,200,100,0.01],
+   ['horVpx','Vanishing X',0,100,50,0.01],
+   ['horVpy','Vanishing Y',-20,100,3,0.01],
+   ['horSpread','Radial spread',0,300,120,0.01],
+   ['horVert','Vertical bias',-200,200,70,0.01],
+ ]],
+ ['Aura',[
+   ['auraOn','Enable',0,1,0,1,'g'],
+   ['auraW','Weight (±)',-300,300,150,0.01],
+   ['auraX','Center X',0,100,50,0.01],
+   ['auraY','Center Y',0,100,50,0.01],
+   ['auraSx','Width',2,60,26,0.01],
+   ['auraSy','Height',2,60,34,0.01],
+   ['auraR','Corner radius',0,50,14,0.01],
+ ]],
+ ['Rays',[
+   ['rayOn','Enable',0,1,1,1,'g'],
+   ['rayW','Weight',0,200,55,0.01],
+   ['rayVpx','Focal X',0,100,50,0.01],
+   ['rayVpy','Focal Y',-20,100,2,0.01],
+   ['rayCount','Count',2,40,9,1],
+   ['raySharp','Sharpness',2,160,46,1],
+   ['rayFall','Falloff',0,80,16,0.1],
+ ]],
+ ['Mass',[
+   ['massOn','Enable',0,1,1,1,'g'],
+   ['massW','Weight',0,300,150,0.01],
+   ['massX','Center X',0,100,50,0.01],
+   ['massY','Center Y',0,140,108,0.01],
+   ['massSize','Size',5,120,46,0.01],
+ ]],
+ ['Softness',[
+   ['blur','Diffusion',0,40,7,1],
+ ]],
+ ['Motion',[
+   ['animate','Animate',0,1,1,1,'g'],
+   ['flow','Flow speed',-200,200,18,0.01],
+   ['breathe','Breathe',0,150,24,0.01],
+ ]],
+];
+
+const P={}; // current values
+function buildControls(){
+  const root=$('controls');
+  for(const [sec,items] of C){
+    const sd=document.createElement('div'); sd.className='section'; sd.id='sec-'+sec;
+    sd.innerHTML=`<div class="section-title">${sec}</div>`;
+    const fs=document.createElement('fieldset'); fs.className='fset';
+    const body=[]; let enableId=null;
+    const collapse=()=>{ const on=enableId?P[enableId]:1; body.forEach(c=>c.style.display=on?'':'none'); };
+    items.forEach((it,idx)=>{
+      const [id,label,mn,mx,dv,k,type]=it;
+      const c=document.createElement('div'); c.className='ctrl';
+      if(type==='g'){
+        c.innerHTML=`<label class="tog"><input type="checkbox" id="x-${id}" ${dv?'checked':''}/> ${label}</label>`;
+        fs.appendChild(c);
+        c.querySelector('input').addEventListener('change',e=>{P[id]=e.target.checked?1:0; if(id===enableId)collapse();});
+        P[id]=dv?1:0;
+        if(idx===0 && id.endsWith('On')) enableId=id; else body.push(c);  // first *On toggle = section enable
+      }else if(type==='col'){
+        c.innerHTML=`<label>${label}</label>
+          <div class="pal-chip" style="width:40px;height:30px"><input type="color" id="k-${id}" value="${dv}" style="width:40px;height:30px"/></div>`;
+        fs.appendChild(c);
+        const el=c.querySelector('input');
+        el.addEventListener('input',e=>{P[id]=e.target.value;});
+        P[id]=dv;
+        body.push(c);
+      }else{
+        c.innerHTML=`<label>${label} <span class="val" id="v-${id}"></span></label>
+          <input type="range" id="s-${id}" min="${mn}" max="${mx}" value="${dv}" step="1"/>`;
+        fs.appendChild(c);
+        const el=c.querySelector('input'), out=c.querySelector('.val');
+        const upd=()=>{P[id]=(+el.value)*k; out.textContent=(k<1?P[id].toFixed(2):String(P[id]));};
+        el.addEventListener('input',upd); upd();
+        body.push(c);
+      }
+    });
+    collapse();
+    sd.appendChild(fs); root.appendChild(sd);
+  }
+}
+/* Which sections show in each mode (keeps the panel from overwhelming) */
+const MODE_SECTIONS={
+  field:['Field','Horizon','Aura','Rays','Mass','Softness','Motion'],
+  tunnel:['Tunnel','Softness','Motion'],
+};
+let curMode='field';
+function applyMode(m){
+  curMode=(m==='tunnel')?'tunnel':'field';
+  const show=new Set(MODE_SECTIONS[curMode]);
+  for(const [sec] of C){ const el=$('sec-'+sec); if(el) el.style.display=show.has(sec)?'':'none'; }
+}
+function setCtrl(id,realVal){
+  const el=$('s-'+id);
+  if(el){ const item=findItem(id); el.value=realVal/item.k; el.dispatchEvent(new Event('input')); return; }
+  const col=$('k-'+id); if(col){ col.value=realVal; col.dispatchEvent(new Event('input')); return; }
+  const cb=$('x-'+id); if(cb){ cb.checked=!!realVal; cb.dispatchEvent(new Event('change')); }
+}
+function findItem(id){ for(const [,items] of C) for(const it of items) if(it[0]===id) return {k:it[5]}; return {k:1}; }
+
+/* ── palettes ─────────────────────────────────────────── */
+const PALS={
+  aura:['#160410','#5e0c1e','#c01530','#ff4a3d','#ff5f93','#d646cf','#7b3ff2','#2f44d6','#070514'],
+  cathedral:['#ff2f6e','#ff7a3a','#9d63ff','#19b9d6','#1fc6cf','#ff5f8f','#ff9b3c','#0a1030'],
+  dusk:['#2a1247','#7a2a8c','#d6418f','#ff7a5c','#ffd27a','#8ad6d0','#243a8c','#0a0a1f'],
+  tunnel:['#0c0008','#e01540','#ff5a3c','#ff9bd0','#fff2e6'],
+  spectrum:['#0a0a1a','#3a52e6','#19b9d6','#39d98a','#ffe05a','#ff6a3d','#ff2d6b','#b04bff'],
+  // pulled from the reference grid
+  refWarm:['#2a0000','#ff2a14','#ff7a1a','#ffd24a','#fff4e0','#a0e0d0','#ff5fa0','#7a0010'],
+  refBlue:['#10104a','#3a30e0','#9a7aff','#ffffff','#ff9a3c','#ff3416','#5a0010'],
+  refGreen:['#06360f','#1aa83f','#b58cff','#ffffff','#ff8fd0','#ff4a1a','#3a0a8c'],
+  refTan:['#2e1600','#b5712a','#e6c79a','#ffffff','#e3b6e6','#8a4fbf','#241043'],
+};
+let palKey='aura';
+function hexRgb(h){h=(h||'#000').replace('#','').trim();if(h.length===3)h=h.split('').map(x=>x+x).join('');
+  return [parseInt(h.slice(0,2),16)/255,parseInt(h.slice(2,4),16)/255,parseInt(h.slice(4,6),16)/255];}
+function srgb2lin(c){return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4);}
+function lin2oklab(r,g,b){
+  const l=0.4122214708*r+0.5363325363*g+0.0514459929*b;
+  const m=0.2119034982*r+0.6806995451*g+0.1073969566*b;
+  const s=0.0883024619*r+0.2817188376*g+0.6299787005*b;
+  const l_=Math.cbrt(l),m_=Math.cbrt(m),s_=Math.cbrt(s);
+  return [0.2104542553*l_+0.7936177850*m_-0.0040720468*s_,
+          1.9779984951*l_-2.4285922050*m_+0.4505937099*s_,
+          0.0259040371*l_+0.7827717662*m_-0.8086757660*s_];
+}
+let customCols=PALS.aura.slice();   // editable swatch list for the Custom palette
+let currentHexes=PALS.aura.slice(); // whatever palette is live right now
+function normHex(h){ h=(h||'#000000').replace('#','').trim(); if(h.length===3)h=h.split('').map(x=>x+x).join('');
+  if(h.length<6)h=(h+'000000').slice(0,6); return '#'+h.slice(0,6); }
+let palLab=new Float32Array(16*3), palN=0;
+function rebuildPalette(){
+  const hexes=(palKey==='custom')?customCols:PALS[palKey];
+  currentHexes=hexes.slice();
+  palN=Math.max(2,Math.min(16,hexes.length));
+  for(let i=0;i<palN;i++){const[r,g,b]=hexRgb(hexes[i]);const lab=lin2oklab(srgb2lin(r),srgb2lin(g),srgb2lin(b));
+    palLab[i*3]=lab[0];palLab[i*3+1]=lab[1];palLab[i*3+2]=lab[2];}
+  $('pal-sw').innerHTML=hexes.slice(0,palN).map(h=>`<span style="background:${h}"></span>`).join('');
+  dirty=true;
+}
+function syncPalEditor(){
+  const ed=$('pal-editor');
+  if(palKey!=='custom'){ ed.style.display='none'; ed.innerHTML=''; return; }
+  ed.style.display='block'; ed.innerHTML='';
+  const row=document.createElement('div'); row.className='pal-swatches';
+  customCols.forEach((hex,i)=>{
+    const chip=document.createElement('div'); chip.className='pal-chip';
+    const inp=document.createElement('input'); inp.type='color'; inp.value=normHex(hex);
+    inp.addEventListener('input',e=>{ customCols[i]=e.target.value; rebuildPalette(); });
+    const del=document.createElement('button'); del.className='del'; del.textContent='×'; del.title='Remove';
+    del.addEventListener('click',()=>{ if(customCols.length<=2)return; customCols.splice(i,1); syncPalEditor(); rebuildPalette(); });
+    chip.appendChild(inp); chip.appendChild(del); row.appendChild(chip);
+  });
+  const add=document.createElement('button'); add.className='pal-add'; add.textContent='+'; add.title='Add color';
+  add.addEventListener('click',()=>{ if(customCols.length>=16)return; customCols.push('#ffffff'); syncPalEditor(); rebuildPalette(); });
+  row.appendChild(add); ed.appendChild(row);
+}
+
+/* ── shaders ──────────────────────────────────────────── */
+const VS=`#version 300 es
+layout(location=0) in vec2 a_p; out vec2 v_uv;
+void main(){ v_uv=a_p*0.5+0.5; gl_Position=vec4(a_p,0.0,1.0); }`;
+
+const FS_FIELD=`#version 300 es
+precision highp float;
+in vec2 v_uv; out vec4 o;
+uniform vec2 u_res; uniform float u_aspect;
+uniform float u_base,u_freq,u_phase;
+uniform float u_horOn,u_horW,u_horSpread,u_horVert; uniform vec2 u_horVP;
+uniform float u_auraOn,u_auraW,u_auraR; uniform vec2 u_auraPos,u_auraSize;
+uniform float u_rayOn,u_rayW,u_rayCount,u_raySharp,u_rayFall,u_rayPhase; uniform vec2 u_rayVP;
+uniform float u_massOn,u_massW,u_massSize; uniform vec2 u_massPos;
+uniform float u_hard,u_persp;
+uniform float u_mode,u_rings,u_depthExp,u_corner,u_hole,u_walls,u_seam; uniform vec2 u_exit;
+uniform vec3 u_pal[16]; uniform int u_palN;
+vec3 oklab2srgb(vec3 lab){
+  float l_=lab.x+0.3963377774*lab.y+0.2158037573*lab.z;
+  float m_=lab.x-0.1055613458*lab.y-0.0638541728*lab.z;
+  float s_=lab.x-0.0894841775*lab.y-1.2914855480*lab.z;
+  float l=l_*l_*l_,m=m_*m_*m_,s=s_*s_*s_;
+  vec3 lin=vec3(4.0767416621*l-3.3077115913*m+0.2309699292*s,
+   -1.2684380046*l+2.6097574011*m-0.3413193965*s,
+   -0.0041960863*l-0.7034186147*m+1.7076147010*s);
+  return pow(max(lin,0.0),vec3(1.0/2.2));
+}
+vec3 ramp(float t){ t=clamp(t,0.0,1.0); float x=t*float(u_palN-1);
+  int i=int(floor(x)); int j=min(i+1,u_palN-1); float f=x-float(i); f=f*f*(3.0-2.0*f);
+  return mix(u_pal[i],u_pal[j],f); }
+float tri(float x){ return 1.0-abs(1.0-2.0*fract(x)); }   // 0 at x=0, period 1, no seam
+float sdRound(vec2 p, vec2 b, float r){ vec2 d=abs(p)-b+r; return length(max(d,0.0))+min(max(d.x,d.y),0.0)-r; }
+void main(){
+  vec2 uvW=v_uv;
+  vec2 ac=(uvW-0.5); ac.x*=u_aspect;
+  float band; float td=2.0;   // td<u_hole later punches the exit hole
+  float wallShade=1.0; float seamShade=1.0;
+  if(u_mode>0.5){
+    /* ── Tunnel ──────────────────────────────────────────────
+       Each ring = a fraction of the distance from the exit point to the
+       frame edge, measured per-axis. Off-centre exit → the edges are nearer
+       on one side → rings pack asymmetrically = true vanishing-point depth. */
+    vec2 q=uvW-u_exit;
+    float fx = q.x>0.0 ? (1.0-u_exit.x) : u_exit.x;
+    float fy = q.y>0.0 ? (1.0-u_exit.y) : u_exit.y;
+    float tx=min(abs(q.x)/max(fx,1e-4),3.0);
+    float ty=min(abs(q.y)/max(fy,1e-4),3.0);
+    /* corner 0 = exact chebyshev (perfectly sharp rectangle); >0 = superellipse
+       (n high → near-rect, n=2 → ellipse) for clean convex rounding. */
+    float td0;
+    if(u_corner<=0.0){ td0=max(tx,ty); }
+    else { float n=mix(64.0,2.0,u_corner); td0=pow(pow(tx,n)+pow(ty,n),1.0/n); }
+    td=clamp(td0,0.0,1.0);
+    float depth=pow(td,u_depthExp);            // foreshorten: bands bunch toward exit
+    band=fract(depth*u_rings + u_phase);       // hard restart per ring; phase = zoom
+    /* Segmentation: split into the 4 tunnel walls (top/bottom/left/right).
+       Wall facets = per-wall brightness; seams = darken the diagonal corners. */
+    if(u_walls>0.0){ wallShade = 1.0 + u_walls*((tx>ty)?-0.16:0.12); }
+    if(u_seam>0.0){ float sm=abs(tx-ty)/(tx+ty+1e-4); seamShade=mix(mix(1.0,0.18,u_seam),1.0,smoothstep(0.0,0.14,sm)); }
+  } else {
+    /* ── Field (Aura / Cathedral / Nebula) ───────────────────── */
+    float f=u_base;
+    if(u_horOn>0.5){ vec2 dv=uvW-u_horVP; dv.x*=u_aspect;
+      float n=length(dv)*u_horSpread + (uvW.y-u_horVP.y)*u_horVert;
+      f+=n*u_horW; }
+    if(u_auraOn>0.5){ vec2 q=ac-(u_auraPos-0.5)*vec2(u_aspect,1.0);
+      float mn=min(u_auraSize.x,u_auraSize.y);
+      float sd=sdRound(q,u_auraSize,min(u_auraR,mn));
+      float n=clamp((sd+mn)/0.72,0.0,1.0);
+      f+=n*u_auraW; }
+    if(u_rayOn>0.5){ vec2 dv=uvW-u_rayVP; dv.x*=u_aspect; float ang=atan(dv.y,dv.x);
+      float beams=pow(0.5+0.5*cos(ang*u_rayCount+u_rayPhase),u_raySharp);
+      f+=beams*exp(-length(dv)*u_rayFall)*u_rayW; }
+    if(u_massOn>0.5){ vec2 dv=ac-(u_massPos-0.5)*vec2(u_aspect,1.0);
+      f-=exp(-dot(dv,dv)/(2.0*u_massSize*u_massSize))*u_massW; }
+    float fp = (u_persp>=0.999) ? f : sign(f)*pow(abs(f), u_persp);
+    float g = fp*u_freq + u_phase;
+    band = mix(tri(g), fract(g), u_hard);
+  }
+  vec3 col=oklab2srgb(ramp(band))*wallShade*seamShade;
+  /* hole encoded in alpha → composited (colour/transparency) in final.
+     smoothstep gives a clean anti-aliased edge; hole 0 = no hole at all. */
+  float holeMask = 1.0;
+  if(u_mode>0.5 && u_hole>0.0){ float fw=max(fwidth(td),1e-5); holeMask=smoothstep(u_hole-fw, u_hole+fw, td); }
+  o=vec4(col, holeMask);
+}`;
+
+const FS_BLUR=`#version 300 es
+precision highp float; in vec2 v_uv; out vec4 o;
+uniform sampler2D u_tex; uniform vec2 u_step; uniform float u_sigma;
+void main(){ vec3 acc=vec3(0.0); float ws=0.0;
+  for(int i=-12;i<=12;i++){ float fi=float(i);
+    float w=exp(-(fi*fi)/(2.0*u_sigma*u_sigma+0.2));
+    acc+=texture(u_tex,clamp(v_uv+u_step*fi,vec2(0.001),vec2(0.999))).rgb*w; ws+=w; }
+  /* blur colour, but keep the hole mask (alpha) crisp so small holes stay solid, not gradient */
+  o=vec4(acc/max(ws,1e-4), texture(u_tex,v_uv).a); }`;
+
+const FS_FINAL=`#version 300 es
+precision highp float; in vec2 v_uv; out vec4 o;
+uniform sampler2D u_tex; uniform float u_time; uniform vec3 u_holeColor; uniform float u_holeAlpha;
+float hash(vec2 p){p=fract(p*vec2(123.34,345.45));p+=dot(p,p+34.345);return fract(p.x*p.y);}
+void main(){
+  vec4 t=texture(u_tex,v_uv);
+  float mask=t.a;                          // 1 = scene, 0 = exit hole
+  vec3 c=mix(u_holeColor, t.rgb, mask);    // fill the hole with the chosen colour
+  /* Fixed sub-perceptual dither — never user-facing, just kills 8-bit gradient banding. */
+  float d=hash(gl_FragCoord.xy+fract(u_time)*vec2(13.1,7.7))-0.5;
+  c+=d*0.012;
+  float a=(u_holeAlpha>0.5)? mask : 1.0;   // transparent hole option
+  o=vec4(clamp(c,0.0,1.0),a);
+}`;
+
+function compile(t,s){const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);
+  if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS)){console.error(gl.getShaderInfoLog(sh));return null;}return sh;}
+function link(vs,fs){const p=gl.createProgram();gl.attachShader(p,compile(gl.VERTEX_SHADER,vs));
+  gl.attachShader(p,compile(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS)){console.error(gl.getProgramInfoLog(p));return null;}return p;}
+const pField=link(VS,FS_FIELD), pBlur=link(VS,FS_BLUR), pFinal=link(VS,FS_FINAL);
+if(!pField||!pBlur||!pFinal){fbEl.textContent='Shader compile failed (see console).';fbEl.classList.add('show');return;}
+
+const U={};
+function uni(p,names){for(const n of names)U[n]=gl.getUniformLocation(p,n);}
+uni(pField,['u_res','u_aspect','u_base','u_freq','u_phase','u_horOn','u_horW','u_horSpread','u_horVert','u_horVP',
+  'u_auraOn','u_auraW','u_auraR','u_auraPos','u_auraSize','u_rayOn','u_rayW','u_rayCount','u_raySharp','u_rayFall',
+  'u_rayPhase','u_rayVP','u_massOn','u_massW','u_massSize','u_massPos','u_hard','u_persp',
+  'u_mode','u_rings','u_depthExp','u_corner','u_hole','u_walls','u_seam','u_exit','u_pal','u_palN']);
+uni(pBlur,['u_tex','u_step','u_sigma']);
+uni(pFinal,['u_tex','u_time','u_holeColor','u_holeAlpha']);
+
+/* ── geometry ─────────────────────────────────────────── */
+const quad=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,quad);
+gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
+const vao=gl.createVertexArray(); gl.bindVertexArray(vao);
+gl.bindBuffer(gl.ARRAY_BUFFER,quad); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0,2,gl.FLOAT,false,8,0);
+gl.bindVertexArray(null);
+
+let W=0,H=0,dpr=1;
+let texA=null,texB=null,texC=null,fboA=null,fboB=null,fboC=null;
+function mkTex(w,h){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);return t;}
+function mkFbo(t){const f=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,f);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);return f;}
+function allocFbos(){
+  [texA,texB,texC].forEach(t=>t&&gl.deleteTexture(t));[fboA,fboB,fboC].forEach(f=>f&&gl.deleteFramebuffer(f));
+  texA=mkTex(W,H);texB=mkTex(W,H);texC=mkTex(W,H);fboA=mkFbo(texA);fboB=mkFbo(texB);fboC=mkFbo(texC);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+}
+function resize(){
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  const mode=$('sel-size').value, wrap=canvas.parentElement;
+  const cw=Math.max(280,wrap.clientWidth-24), ch=Math.max(280,wrap.clientHeight-24);
+  if(mode==='fit'){ W=Math.floor(cw*dpr); H=Math.floor(ch*dpr);
+    canvas.style.width=cw+'px';canvas.style.height=ch+'px'; }
+  else{ let pw,ph; if(mode==='custom'){pw=+$('in-cw').value|0;ph=+$('in-ch').value|0;}
+    else{const s=mode.split('x');pw=+s[0]|0;ph=+s[1]|0;}
+    const mt=Math.min(8192,gl.getParameter(gl.MAX_TEXTURE_SIZE)||8192),ml=Math.max(pw,ph);
+    if(ml>mt){const sc=mt/ml;pw=Math.floor(pw*sc);ph=Math.floor(ph*sc);}
+    W=pw;H=ph; const sc=Math.min(cw/W,ch/H,1);
+    canvas.style.width=(W*sc)+'px';canvas.style.height=(H*sc)+'px'; }
+  canvas.width=W;canvas.height=H; allocFbos(); dirty=true;
+}
+
+/* ── presets ──────────────────────────────────────────── */
+// All values in REAL (post-k) units.
+const PRESETS={
+  aura:{mode:'field',pal:'aura',c:{horOn:0,auraOn:1,rayOn:0,massOn:0,base:0,freq:0.5,perspective:1,hardBands:0,
+    auraW:1.0,auraX:0.5,auraY:0.5,auraSx:0.24,auraSy:0.32,auraR:0.16,
+    blur:6,animate:1,flow:0.16,breathe:0.4}},
+  cathedral:{mode:'field',pal:'cathedral',c:{horOn:1,auraOn:0,rayOn:1,massOn:1,base:0,freq:0.78,perspective:1,hardBands:0,
+    horW:1.0,horVpx:0.5,horVpy:0.97,horSpread:1.25,horVert:-0.3,
+    rayW:0.1,rayVpx:0.5,rayVpy:0.97,rayCount:11,raySharp:104,rayFall:0.85,
+    massW:0.6,massX:0.5,massY:0.04,massSize:0.5,
+    blur:6,animate:1,flow:0.1,breathe:0.16}},
+  nebula:{mode:'field',pal:'dusk',c:{horOn:1,auraOn:1,rayOn:0,massOn:0,base:0,freq:1.4,perspective:1,hardBands:0,
+    horW:0.6,horVpx:0.5,horVpy:0.5,horSpread:1.0,horVert:0.0,
+    auraW:0.7,auraX:0.5,auraY:0.5,auraSx:0.18,auraSy:0.22,auraR:0.18,
+    blur:9,animate:1,flow:0.22,breathe:0.5}},
+  tunnel:{mode:'tunnel',pal:'tunnel',c:{
+    exitX:0.5,exitY:0.42,rings:9,depth:0.6,corner:0,hole:0.03,holeCol:'#000000',holeAlpha:0,walls:0,seam:0,
+    blur:3,animate:0,flow:0.14,breathe:0.0}},
+};
+function applyPreset(key){
+  const pr=PRESETS[key]; if(!pr)return;
+  applyMode(pr.mode||'field');
+  palKey=pr.pal; $('sel-pal').value=pr.pal; syncPalEditor(); rebuildPalette();
+  for(const [id,val] of Object.entries(pr.c)) setCtrl(id,val);
+}
+
+/* ── render ───────────────────────────────────────────── */
+let time=0, last=performance.now(), raf=0, busy=false, dirty=true;
+function drawField(tNow){
+  const phase=tNow*P.flow*0.15 + (P.base*0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,fboA); gl.viewport(0,0,W,H);
+  gl.useProgram(pField); gl.bindVertexArray(vao);
+  const breathe=1+P.breathe*0.5*Math.sin(tNow*0.6);
+  gl.uniform2f(U.u_res,W,H); gl.uniform1f(U.u_aspect,W/Math.max(H,1));
+  gl.uniform1f(U.u_base,P.base); gl.uniform1f(U.u_freq,P.freq); gl.uniform1f(U.u_phase,phase);
+  gl.uniform1f(U.u_horOn,P.horOn); gl.uniform1f(U.u_horW,P.horW);
+  gl.uniform1f(U.u_horSpread,P.horSpread); gl.uniform1f(U.u_horVert,P.horVert);
+  gl.uniform2f(U.u_horVP,P.horVpx,P.horVpy);
+  gl.uniform1f(U.u_auraOn,P.auraOn); gl.uniform1f(U.u_auraW,P.auraW); gl.uniform1f(U.u_auraR,P.auraR);
+  gl.uniform2f(U.u_auraPos,P.auraX,P.auraY); gl.uniform2f(U.u_auraSize,P.auraSx*breathe,P.auraSy*breathe);
+  gl.uniform1f(U.u_rayOn,P.rayOn); gl.uniform1f(U.u_rayW,P.rayW); gl.uniform1f(U.u_rayCount,P.rayCount);
+  gl.uniform1f(U.u_raySharp,P.raySharp); gl.uniform1f(U.u_rayFall,P.rayFall);
+  gl.uniform1f(U.u_rayPhase,tNow*P.flow*0.08); gl.uniform2f(U.u_rayVP,P.rayVpx,P.rayVpy);
+  gl.uniform1f(U.u_massOn,P.massOn); gl.uniform1f(U.u_massW,P.massW);
+  gl.uniform1f(U.u_massSize,P.massSize); gl.uniform2f(U.u_massPos,P.massX,P.massY);
+  gl.uniform1f(U.u_hard,P.hardBands); gl.uniform1f(U.u_persp,P.perspective);
+  gl.uniform1f(U.u_mode, curMode==='tunnel'?1:0);
+  gl.uniform2f(U.u_exit,P.exitX,P.exitY); gl.uniform1f(U.u_rings,P.rings);
+  gl.uniform1f(U.u_depthExp, 1.0-0.62*P.depth); gl.uniform1f(U.u_corner,P.corner); gl.uniform1f(U.u_hole,P.hole);
+  gl.uniform1f(U.u_walls,P.walls); gl.uniform1f(U.u_seam,P.seam);
+  gl.uniform3fv(U.u_pal,palLab.subarray(0,palN*3)); gl.uniform1i(U.u_palN,palN);
+  gl.drawArrays(gl.TRIANGLES,0,6);
+
+  // diffusion blur A -> (B,A)
+  let src=texA; const rounds=Math.round(P.blur/2);
+  const sigma=Math.max(2.0,P.blur*0.9);
+  for(let r=0;r<rounds;r++){
+    gl.bindFramebuffer(gl.FRAMEBUFFER,fboB); gl.useProgram(pBlur); gl.uniform1i(U.u_tex,0);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,src);
+    gl.uniform2f(U.u_step,1/W,0); gl.uniform1f(U.u_sigma,sigma); gl.drawArrays(gl.TRIANGLES,0,6);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,fboA); gl.bindTexture(gl.TEXTURE_2D,texB);
+    gl.uniform2f(U.u_step,0,1/H); gl.drawArrays(gl.TRIANGLES,0,6);
+    src=texA;
+  }
+  // final → screen
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null); gl.viewport(0,0,W,H);
+  gl.useProgram(pFinal); gl.uniform1i(U.u_tex,0);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,src);
+  const hc=hexRgb(P.holeCol||'#000000');
+  gl.uniform3f(U.u_holeColor,hc[0],hc[1],hc[2]); gl.uniform1f(U.u_holeAlpha,P.holeAlpha||0);
+  gl.uniform1f(U.u_time,tNow); gl.drawArrays(gl.TRIANGLES,0,6);
+  gl.bindVertexArray(null);
+}
+function frame(now){
+  raf=requestAnimationFrame(frame); if(busy)return;
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(P.animate){ time+=dt; drawField(time); }        // live
+  else if(dirty){ dirty=false; drawField(time); }    // static: redraw only on change (cheap, export-clean)
+}
+
+/* ── export ───────────────────────────────────────────── */
+let recorder=null,chunks=[],recStop=0;
+function dl(blob,name){if(!blob)return;const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);}
+$('btn-png').addEventListener('click',()=>{ drawField(time); canvas.toBlob(b=>dl(b,'lumen-field.png'),'image/png'); });
+$('btn-rec').addEventListener('click',()=>{
+  const st=$('export-status');
+  if(!window.MediaRecorder){st.textContent='MediaRecorder not supported.';return;}
+  if(recorder&&recorder.state==='recording')return;
+  const cands=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm'];
+  let mime=''; for(const m of cands){if(MediaRecorder.isTypeSupported(m)){mime=m;break;}}
+  if(!mime){st.textContent='No supported video MIME.';return;}
+  const stream=canvas.captureStream(30); chunks=[];
+  recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:12e6});
+  recorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
+  recorder.onstop=()=>{const ext=mime.indexOf('mp4')>=0?'mp4':'webm';dl(new Blob(chunks,{type:mime}),'lumen-field.'+ext);st.textContent='Saved lumen-field.'+ext;recorder=null;};
+  recorder.start(200); const sec=+$('sel-rec').value||6; recStop=performance.now()+sec*1000;
+  st.textContent='Recording '+sec+'s ('+mime+')…';
+  const tick=()=>{ if(recorder&&recorder.state==='recording'){ if(performance.now()>=recStop)recorder.stop(); else requestAnimationFrame(tick); } };
+  requestAnimationFrame(tick);
+});
+
+/* ── saved presets (localStorage) ─────────────────────── */
+const LSKEY='lumenFieldPresets';
+function loadSaved(){ try{ return JSON.parse(localStorage.getItem(LSKEY)||'{}'); }catch(e){ return {}; } }
+function allIds(){ const ids=[]; for(const [,items] of C) for(const it of items) ids.push(it[0]); return ids; }
+function getState(){ const c={}; for(const id of allIds()) c[id]=P[id]; return {mode:curMode, pal:palKey, cols:customCols.slice(), c}; }
+function applyState(s){
+  if(!s)return;
+  applyMode(s.mode||'field');
+  if(s.pal==='custom'){ customCols=(s.cols&&s.cols.length?s.cols:PALS.aura).slice(); palKey='custom'; $('sel-pal').value='custom'; }
+  else { palKey=s.pal||'aura'; $('sel-pal').value=palKey; }
+  syncPalEditor(); rebuildPalette();
+  for(const [id,val] of Object.entries(s.c||{})) setCtrl(id,val);
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+function refreshPresetDropdown(sel){
+  const saved=loadSaved();
+  let html='<option value="b:aura">Aura — soft concentric</option>'
+         + '<option value="b:tunnel">Tunnel — banded depth</option>'
+         + '<option value="b:cathedral">Cathedral — rays + horizon</option>'
+         + '<option value="b:nebula">Nebula — wash</option>';
+  const names=Object.keys(saved);
+  if(names.length) html+='<optgroup label="Saved">'+names.map(n=>`<option value="s:${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup>';
+  $('sel-preset').innerHTML=html;
+  if(sel) $('sel-preset').value=sel;
+}
+
+/* ── wire UI ──────────────────────────────────────────── */
+buildControls();
+$('sidebar').addEventListener('input',()=>{dirty=true;});
+$('sidebar').addEventListener('change',()=>{dirty=true;});
+$('sel-pal').addEventListener('change',function(){
+  palKey=this.value;
+  if(palKey==='custom') customCols=currentHexes.slice();   // seed from whatever was showing
+  syncPalEditor(); rebuildPalette();
+});
+$('sel-preset').addEventListener('change',function(){
+  const v=this.value;
+  if(v.startsWith('b:')) applyPreset(v.slice(2));
+  else if(v.startsWith('s:')) applyState(loadSaved()[v.slice(2)]);
+});
+$('btn-save').addEventListener('click',()=>{
+  const name=(prompt('Save preset as:')||'').trim(); if(!name)return;
+  const saved=loadSaved(); saved[name]=getState();
+  localStorage.setItem(LSKEY,JSON.stringify(saved));
+  refreshPresetDropdown('s:'+name);
+});
+$('btn-del').addEventListener('click',()=>{
+  const v=$('sel-preset').value; if(!v.startsWith('s:'))return;
+  const saved=loadSaved(); delete saved[v.slice(2)];
+  localStorage.setItem(LSKEY,JSON.stringify(saved));
+  refreshPresetDropdown('b:aura');
+});
+$('sel-size').addEventListener('change',()=>{$('wrap-size').style.display=$('sel-size').value==='custom'?'block':'none';resize();});
+$('btn-size').addEventListener('click',resize);
+window.addEventListener('resize',()=>{if($('sel-size').value==='fit')resize();});
+
+refreshPresetDropdown(); rebuildPalette(); resize();
+applyPreset('aura'); $('sel-preset').value='b:aura';
+raf=requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
