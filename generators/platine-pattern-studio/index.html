@@ -502,9 +502,10 @@ function buildSVGEl(c) {
   return svg;
 }
 
-/* ── live render (uses the current animation time) ────────────── */
+/* ── live render — motion only applies while playing; paused shows
+   the base config so every control edits the static pattern ───── */
 function render() {
-  const c = playing ? cfgAtTime(curT) : cfgAtTime(0);
+  const c = playing ? cfgAtTime(curT) : readConfig();
   const svg = buildSVGEl(c);
   const stage = $('stage');
   stage.classList.toggle('solid', !c.trans);
@@ -535,7 +536,7 @@ function markupOf(svg) {
   svg.setAttribute('xmlns', SVGNS);
   return '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(svg);
 }
-function currentCfg() { return playing ? cfgAtTime(curT) : cfgAtTime(0); }
+function currentCfg() { return playing ? cfgAtTime(curT) : readConfig(); }
 function download(blob, name) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
