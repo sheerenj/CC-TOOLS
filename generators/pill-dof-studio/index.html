@@ -101,7 +101,7 @@ textarea.ta-pal { width:100%; min-height:100px; padding:10px; border:1px solid v
         <option value="custom">Custom (list below)</option>
       </select></div>
     <div class="ctrl" id="wrap-custom-pal">
-      <label>Swatch colors — click a swatch to pick a colour, <b>+</b> to add, <b>×</b> to remove. (Or type one per line: <code>#aabbcc</code> or <code>0.2,0.3,0.4</code>.)</label>
+      <label style="display:block;line-height:1.5">Swatch colors — click a swatch to pick a colour, <b>+</b> to add, <b>×</b> to remove. (Or type one per line: <code>#aabbcc</code> or <code>0.2,0.3,0.4</code>.)</label>
       <textarea id="ta-pal" class="ta-pal" spellcheck="false"></textarea>
       <div id="pal-swatches"></div>
       <button type="button" class="btn ghost" id="btn-pal-apply" style="margin-top:8px">Apply typed colors</button>
@@ -363,7 +363,10 @@ void main() {
   /* reach∝radius² → compact core, long edge trails. Bleed intensity lengthens the
      trail (slower weight falloff) and re-vivifies; averaging toward the light bg keeps
      empty space airy so streaks read as discrete comets, not a solid colour fill. */
-  float reach = 0.26 * u_burst * (0.08 + lenA * 0.5 + lenA * lenA * 3.0 * u_reach);
+  /* Ramp reach from 0 at the exact centre: the smear direction is undefined there,
+     so any non-zero reach pinches into a dark vortex dot. Fading reach (not the final
+     colour) removes the singularity while keeping saturation treatment continuous. */
+  float reach = 0.26 * u_burst * (0.08 + lenA * 0.5 + lenA * lenA * 3.0 * u_reach) * smoothstep(0.0, 0.045, lenA);
   /* 0..1 keeps original calibration; >1 keeps dropping fallK → ever longer trails */
   float fallK = max(0.32, mix(2.5, 0.9, clamp(u_intensity, 0.0, 1.0)) - max(u_intensity - 1.0, 0.0) * 0.22);
   const int N = 40;
