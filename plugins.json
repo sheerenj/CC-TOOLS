@@ -16,6 +16,14 @@
     "repoUrl": "https://github.com/sheerenj/CC-TOOLS/tree/main/plugins/platine-fcc-cavalry"
   },
   {
+    "slug": "platine-dot-pattern",
+    "name": "PLATINE Dot Pattern",
+    "type": "plugin",
+    "app": "Cavalry",
+    "hasPreview": true,
+    "repoUrl": "https://github.com/sheerenj/CC-TOOLS/tree/main/plugins/platine-dot-pattern"
+  },
+  {
     "slug": "squircles-for-illustrator",
     "name": "Squircle Corners",
     "type": "script",

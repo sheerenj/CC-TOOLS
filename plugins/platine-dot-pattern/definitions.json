@@ -1,0 +1,85 @@
+[{
+    "author": "platine",
+    "type": "platineDotPattern",
+    "superType": "thirdPartyJavaScriptShape",
+    "jsFile": "layer.js",
+    "version": "1.0",
+    "attributes": {
+        "time":         { "type": "double", "default": 0.0,  "compConnect": "time" },
+        "fps":          { "type": "double", "default": 24.0, "compConnect": "fps" },
+
+        "patternSize":  { "type": "double", "default": 600,  "min": 10, "softMax": 8000 },
+        "latticeType":  { "type": "enum",   "default": 0,    "enumValues": [0, 1, 2] },
+        "spacing":      { "type": "double", "default": 40,   "min": 4,  "softMax": 400, "step": 1 },
+        "rot2d":        { "type": "double", "default": 0,    "softMax": 360 },
+        "dotSize":      { "type": "double", "default": 0.5,  "min": 0,  "softMax": 1.3, "step": 0.01 },
+        "sizeField":    { "type": "double", "default": 0,    "min": 0,  "max": 1, "step": 0.01 },
+        "sizeRandom":   { "type": "double", "default": 0,    "min": 0,  "max": 1, "step": 0.01 },
+        "jitter":       { "type": "double", "default": 0,    "min": 0,  "max": 1, "step": 0.01 },
+        "symmetry":     { "type": "enum",   "default": 0,    "enumValues": [0, 1, 2, 3] },
+        "seed":         { "type": "int",    "default": 1337, "min": 0,  "softMax": 999999 },
+
+        "shapeSource":  { "type": "enum",   "default": 0,    "enumValues": [0, 1] },
+        "abstractLogo": { "type": "double", "default": 1,    "min": 0,  "max": 1, "step": 0.01 },
+        "logoScale":    { "type": "double", "default": 0.9,  "min": 0.05, "softMax": 2, "step": 0.01 },
+        "tile":         { "type": "int",    "default": 1,    "min": 1,  "max": 16 },
+        "edgeSoftness": { "type": "double", "default": 0.06, "min": 0.004, "softMax": 1, "step": 0.01 },
+        "invert":       { "type": "bool",   "default": false },
+        "density":      { "type": "double", "default": 0.6,  "min": 0,  "max": 1, "step": 0.01 },
+        "noiseScale":   { "type": "double", "default": 1.0,  "min": 0.05, "softMax": 8, "step": 0.05 },
+        "scatter":      { "type": "double", "default": 0,    "min": 0,  "max": 1, "step": 0.01 },
+
+        "cells":        { "type": "int",    "default": 2,    "min": 1,  "max": 8 },
+        "latticeSize":  { "type": "double", "default": 400,  "min": 10, "softMax": 8000 },
+        "atomSize":     { "type": "double", "default": 8,    "min": 0,  "softMax": 20, "step": 0.5 },
+        "animMode":     { "type": "enum",   "default": 1,    "enumValues": [0, 1, 2, 3] },
+        "rotX":         { "type": "double", "default": 35.26, "softMax": 360 },
+        "rotY":         { "type": "double", "default": 45.0,  "softMax": 360 },
+        "rotZ":         { "type": "double", "default": 0,     "softMax": 360 },
+        "spinAxis":     { "type": "enum",   "default": 1,    "enumValues": [0, 1, 2, 3, 4] },
+        "spinSpeed":    { "type": "double", "default": 30,   "min": 0, "softMax": 360 },
+        "swingAxis":    { "type": "enum",   "default": 1,    "enumValues": [0, 1, 2] },
+        "swingSpeed":   { "type": "double", "default": 0.5,  "min": 0, "softMax": 5, "step": 0.1 },
+        "swingRange":   { "type": "double", "default": 90,   "min": 1, "max": 360 },
+        "swingEase":    { "type": "enum",   "default": 4,    "enumValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] },
+        "tumbleX":      { "type": "double", "default": 5,    "softMax": 360 },
+        "tumbleY":      { "type": "double", "default": 10,   "softMax": 360 },
+        "tumbleZ":      { "type": "double", "default": 3,    "softMax": 360 },
+        "oscOn":        { "type": "bool",   "default": false },
+        "oscAxis":      { "type": "enum",   "default": 0,    "enumValues": [0, 1, 2] },
+        "oscAmp":       { "type": "double", "default": 20,   "min": 0, "max": 180 },
+        "oscFreq":      { "type": "double", "default": 0.5,  "min": 0, "softMax": 10, "step": 0.1 },
+        "loopFrames":   { "type": "int",    "default": 0,    "min": 0, "softMax": 480 },
+
+        "material":     { "defaultSubnodeType": "colorMaterial" }
+    },
+    "triggers": {
+        "polyMesh": [
+            "time", "fps",
+            "patternSize", "latticeType", "spacing", "rot2d", "dotSize", "sizeField", "sizeRandom", "jitter", "symmetry", "seed",
+            "shapeSource", "abstractLogo", "logoScale", "tile", "edgeSoftness", "invert", "density", "noiseScale", "scatter",
+            "cells", "latticeSize", "atomSize",
+            "animMode", "rotX", "rotY", "rotZ",
+            "spinAxis", "spinSpeed", "swingAxis", "swingSpeed", "swingRange", "swingEase",
+            "tumbleX", "tumbleY", "tumbleZ",
+            "oscOn", "oscAxis", "oscAmp", "oscFreq", "loopFrames"
+        ]
+    },
+    "UI": {
+        "attributeOrder": [
+            "---A",
+            "patternSize", "latticeType", "spacing", "rot2d",
+            "---B",
+            "dotSize", "sizeField", "sizeRandom", "jitter", "symmetry", "seed",
+            "---C",
+            "shapeSource", "abstractLogo", "logoScale", "tile", "edgeSoftness", "invert", "density", "noiseScale", "scatter",
+            "---D",
+            "cells", "latticeSize", "atomSize",
+            "animMode", "rotX", "rotY", "rotZ",
+            "spinAxis", "spinSpeed", "swingAxis", "swingSpeed", "swingRange", "swingEase",
+            "tumbleX", "tumbleY", "tumbleZ",
+            "oscOn", "oscAxis", "oscAmp", "oscFreq", "loopFrames"
+        ]
+    },
+    "icon": "layerIcon.png"
+}]
