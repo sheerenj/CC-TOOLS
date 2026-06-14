@@ -27,8 +27,13 @@ textarea.ta-pal { width:100%; min-height:100px; padding:10px; border:1px solid v
 .num-in { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:12px; background:#f4f4f4; }
 #wrap-custom-pal { display:none; }
 #wrap-custom-pal.show { display:block; }
-#pal-swatches { display:flex; flex-wrap:wrap; gap:4px; margin:8px 0; min-height:0; }
-#pal-swatches span { width:22px; height:22px; border-radius:5px; border:1px solid rgba(0,0,0,0.1); flex-shrink:0; }
+#pal-swatches { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; min-height:0; }
+.pal-sw { position:relative; width:26px; height:26px; border-radius:6px; border:1px solid rgba(0,0,0,0.14); overflow:hidden; flex-shrink:0; cursor:pointer; }
+.pal-sw input[type=color] { position:absolute; inset:-4px; width:calc(100% + 8px); height:calc(100% + 8px); border:none; padding:0; margin:0; background:none; cursor:pointer; }
+.pal-sw .rm { position:absolute; top:-1px; right:-1px; width:14px; height:14px; line-height:12px; text-align:center; font-size:12px; font-weight:700; color:#fff; background:rgba(0,0,0,0.6); border-radius:0 5px 0 6px; opacity:0; transition:opacity .12s; z-index:2; }
+.pal-sw:hover .rm { opacity:1; }
+.pal-add { width:26px; height:26px; border-radius:6px; border:1px dashed #b3b3b3; background:#fafafa; color:#666; font:300 18px/22px ui-monospace,monospace; text-align:center; cursor:pointer; padding:0; flex-shrink:0; }
+.pal-add:hover { border-color:#777; color:#000; }
 #canvas-wrap { flex:1; display:flex; align-items:center; justify-content:center; background:#ddd; min-width:200px; min-height:200px; position:relative; }
 #c { display:block; max-width:100%; max-height:100%; }
 #fb { position:absolute; inset:0; display:none; align-items:center; justify-content:center; padding:24px; font-size:13px; color:var(--dim); }
@@ -71,11 +76,11 @@ textarea.ta-pal { width:100%; min-height:100px; padding:10px; border:1px solid v
   <div class="section">
     <div class="section-title">Radial Burst</div>
     <div class="ctrl"><label>Burst amount <span class="val" id="v-burst">0.00</span></label>
-      <input type="range" id="sl-burst" min="0" max="100" value="0" /></div>
+      <input type="range" id="sl-burst" min="0" max="300" value="0" /></div>
     <div class="ctrl"><label>Reach falloff <span class="val" id="v-reach">0.60</span></label>
       <input type="range" id="sl-reach" min="0" max="100" value="60" /></div>
     <div class="ctrl"><label>Bleed intensity <span class="val" id="v-bleed">0.50</span></label>
-      <input type="range" id="sl-bleed" min="0" max="100" value="50" /></div>
+      <input type="range" id="sl-bleed" min="0" max="300" value="50" /></div>
     <div class="ctrl"><label>Outward bias <span class="val" id="v-obias">0.85</span></label>
       <input type="range" id="sl-obias" min="0" max="100" value="85" /></div>
     <div class="ctrl"><label>Center size bias <span class="val" id="v-csize">0.00</span></label>
@@ -84,7 +89,7 @@ textarea.ta-pal { width:100%; min-height:100px; padding:10px; border:1px solid v
       <input type="range" id="sl-white" min="0" max="100" value="0" /></div>
     <div class="ctrl"><label>Edge glow <span class="val" id="v-eglow">1.00</span></label>
       <input type="range" id="sl-eglow" min="0" max="100" value="100" /></div>
-    <p class="hint">Burst smears shapes outward into comet trails; Bleed intensity makes those trails long and vivid. Center size bias grows central blobs and shrinks outer pills. Whiteout melts the focal core; lower Edge glow for soft gradient edges (Erlich look), raise it for neon rims (classic look).</p>
+    <p class="hint">Burst smears shapes outward into comet trails; Bleed intensity makes those trails long and vivid. Push Burst and Bleed past 1.00 for extreme, dramatic streaks. Center size bias grows central blobs and shrinks outer pills. Whiteout melts the focal core; lower Edge glow for soft gradient edges (Erlich look), raise it for neon rims (classic look).</p>
   </div>
   <div class="section">
     <div class="section-title">Color</div>
@@ -96,10 +101,10 @@ textarea.ta-pal { width:100%; min-height:100px; padding:10px; border:1px solid v
         <option value="custom">Custom (list below)</option>
       </select></div>
     <div class="ctrl" id="wrap-custom-pal">
-      <label>Swatch colors (one per line: <code>#aabbcc</code> or <code>0.2,0.3,0.4</code>)</label>
+      <label>Swatch colors — click a swatch to pick a colour, <b>+</b> to add, <b>×</b> to remove. (Or type one per line: <code>#aabbcc</code> or <code>0.2,0.3,0.4</code>.)</label>
       <textarea id="ta-pal" class="ta-pal" spellcheck="false"></textarea>
       <div id="pal-swatches"></div>
-      <button type="button" class="btn ghost" id="btn-pal-apply" style="margin-top:8px">Apply custom colors</button>
+      <button type="button" class="btn ghost" id="btn-pal-apply" style="margin-top:8px">Apply typed colors</button>
     </div>
     <div class="ctrl"><label>Background</label><div class="swatch-wrap"><input type="color" id="cp-bg" value="#f4f3f8" /></div></div>
   </div>
@@ -359,7 +364,8 @@ void main() {
      trail (slower weight falloff) and re-vivifies; averaging toward the light bg keeps
      empty space airy so streaks read as discrete comets, not a solid colour fill. */
   float reach = 0.26 * u_burst * (0.08 + lenA * 0.5 + lenA * lenA * 3.0 * u_reach);
-  float fallK = mix(2.5, 0.9, clamp(u_intensity, 0.0, 1.0));
+  /* 0..1 keeps original calibration; >1 keeps dropping fallK → ever longer trails */
+  float fallK = max(0.32, mix(2.5, 0.9, clamp(u_intensity, 0.0, 1.0)) - max(u_intensity - 1.0, 0.0) * 0.22);
   const int N = 40;
   const vec2 lo = vec2(0.0006), hi = vec2(0.9994);
   vec3 acc = vec3(0.0);
@@ -798,14 +804,90 @@ void main() {
     return parseCustomPalFromTextarea();
   }
 
+  function rgbToHex([r, g, b]) {
+    return '#' + [r, g, b].map(v => Math.round(clamp01(v) * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
+  }
+
+  /* Each textarea line that parses to a colour, paired with its line index so a
+     swatch edit rewrites exactly that line (preserving comments / blank lines). */
+  function getPalColorEntries() {
+    const lines = $('ta-pal').value.split(/\r?\n/);
+    const out = [];
+    lines.forEach((line, idx) => {
+      const c = parsePalLine(line);
+      if (c) out.push({ lineIndex: idx, hex: rgbToHex(c) });
+    });
+    return out;
+  }
+
+  function setPalLine(lineIndex, hex) {
+    const lines = $('ta-pal').value.split(/\r?\n/);
+    if (lineIndex < 0 || lineIndex >= lines.length) return;
+    lines[lineIndex] = hex.toUpperCase();
+    $('ta-pal').value = lines.join('\n');
+  }
+
+  function removePalLine(lineIndex) {
+    const lines = $('ta-pal').value.split(/\r?\n/);
+    if (lineIndex < 0 || lineIndex >= lines.length) return;
+    lines.splice(lineIndex, 1);
+    $('ta-pal').value = lines.join('\n');
+  }
+
+  function addPalColor(hex) {
+    const cur = $('ta-pal').value.replace(/\s+$/, '');
+    $('ta-pal').value = (cur ? cur + '\n' : '') + hex.toUpperCase();
+  }
+
+  function liveApplyIfCustom() {
+    if (palKey === 'custom') applyPaletteColors();
+  }
+
   function updatePalSwatches() {
     const container = $('pal-swatches');
-    const lines = $('ta-pal').value.split(/\r?\n/);
-    const colors = lines.map(parsePalLine).filter(Boolean);
-    container.innerHTML = colors.map(([r, g, b]) => {
-      const hex = '#' + [r, g, b].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
-      return `<span style="background:${hex}" title="${hex}"></span>`;
-    }).join('');
+    container.innerHTML = '';
+    getPalColorEntries().forEach(({ lineIndex, hex }) => {
+      const sw = document.createElement('label');
+      sw.className = 'pal-sw';
+      sw.title = hex + ' — click to edit';
+      const inp = document.createElement('input');
+      inp.type = 'color';
+      inp.value = hex;
+      // input: fires live while dragging in the picker — update text + render, keep element alive
+      inp.addEventListener('input', () => {
+        setPalLine(lineIndex, inp.value);
+        sw.title = inp.value.toUpperCase() + ' — click to edit';
+        liveApplyIfCustom();
+      });
+      const rm = document.createElement('span');
+      rm.className = 'rm';
+      rm.textContent = '×';
+      rm.title = 'Remove colour';
+      rm.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        removePalLine(lineIndex);
+        updatePalSwatches();
+        liveApplyIfCustom();
+      });
+      sw.appendChild(inp);
+      sw.appendChild(rm);
+      container.appendChild(sw);
+    });
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'pal-add';
+    add.textContent = '+';
+    add.title = 'Add colour';
+    add.addEventListener('click', () => {
+      addPalColor('#FFFFFF');
+      updatePalSwatches();
+      liveApplyIfCustom();
+      const inputs = container.querySelectorAll('.pal-sw input[type=color]');
+      const last = inputs[inputs.length - 1];
+      if (last) last.click(); // open the picker for the freshly added swatch
+    });
+    container.appendChild(add);
   }
 
   function syncCustomPalUI() {
@@ -873,6 +955,18 @@ void main() {
       vel[i * 3] = vx / vL;
       vel[i * 3 + 1] = vy / vL;
       vel[i * 3 + 2] = vz / vL;
+      const c = pal[i % pal.length];
+      colArr[i * 3] = c[0];
+      colArr[i * 3 + 1] = c[1];
+      colArr[i * 3 + 2] = c[2];
+    }
+    uploadInst();
+  }
+
+  /* Re-colour existing particles without re-rolling positions/geometry. */
+  function applyPaletteColors() {
+    const pal = getActivePalette();
+    for (let i = 0; i < nInst; i++) {
       const c = pal[i % pal.length];
       colArr[i * 3] = c[0];
       colArr[i * 3 + 1] = c[1];
@@ -1062,7 +1156,8 @@ void main() {
   });
   $('ta-pal').addEventListener('input', () => { updatePalSwatches(); });
   $('btn-pal-apply').addEventListener('click', () => {
-    if (palKey === 'custom') initParticles();
+    updatePalSwatches();
+    if (palKey === 'custom') applyPaletteColors();
   });
   $('btn-reshuffle').addEventListener('click', () => { initParticles(); });
   $('sel-size').addEventListener('change', () => {
