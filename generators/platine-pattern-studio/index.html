@@ -145,27 +145,28 @@ select { width: 100%; background: #f5f5f5; border: 1px solid var(--line); color:
   </div>
 
   <div class="section">
-    <div class="sec-title">Pattern</div>
-    <div class="ctrl"><label>Field</label>
-      <select id="sel-field">
-        <option value="uniform">Uniform — full lattice</option>
-        <option value="radial">Radial — from center</option>
-        <option value="linear">Linear — gradient</option>
-        <option value="noise">Noise — organic clusters</option>
-        <option value="logo">Logo — hexagram mask</option>
-      </select></div>
-    <div class="ctrl fld-radial"><label>Falloff <span class="val" id="v-fall">1.0</span></label>
-      <input type="range" id="sl-fall" min="20" max="320" value="100"></div>
-    <div class="ctrl fld-linear"><label>Angle <span class="val" id="v-lang">45°</span></label>
-      <input type="range" id="sl-lang" min="0" max="360" value="45"></div>
-    <div class="ctrl fld-noise"><label>Noise scale <span class="val" id="v-nsc">1.0</span></label>
+    <div class="sec-title">Logo field</div>
+    <div class="ctrl"><label>Abstract ↔ Logo <span class="val" id="v-abs">1.00</span></label>
+      <input type="range" id="sl-abs" min="0" max="100" value="100"></div>
+    <div class="ctrl"><label>Logo scale <span class="val" id="v-scale">0.90</span></label>
+      <input type="range" id="sl-scale" min="20" max="200" value="90"></div>
+    <div class="ctrl"><label>Tile <span class="val" id="v-tile">1</span></label>
+      <input type="range" id="sl-tile" min="1" max="8" value="1"></div>
+    <div class="ctrl"><label>Edge softness <span class="val" id="v-soft">0.06</span></label>
+      <input type="range" id="sl-soft" min="1" max="90" value="6"></div>
+    <div class="ctrl"><div class="tog-row"><span>Invert (fill around logo)</span>
+      <label class="tog"><input type="checkbox" id="cb-inv"><span class="tog-tr"></span></label></div></div>
+    <p class="hint">At full Logo the dots form the brandmark (zoom out to read it). Drag toward Abstract to dissolve it into organic dot fields — still grown from the logo.</p>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Texture</div>
+    <div class="ctrl"><label>Density <span class="val" id="v-dens">0.55</span></label>
+      <input type="range" id="sl-dens" min="0" max="100" value="55"></div>
+    <div class="ctrl"><label>Noise scale <span class="val" id="v-nsc">1.0</span></label>
       <input type="range" id="sl-nsc" min="20" max="400" value="100"></div>
-    <div class="ctrl"><label>Density <span class="val" id="v-dens">1.00</span></label>
-      <input type="range" id="sl-dens" min="0" max="100" value="100"></div>
     <div class="ctrl"><label>Scatter <span class="val" id="v-scat">0.00</span></label>
       <input type="range" id="sl-scat" min="0" max="100" value="0"></div>
-    <div class="ctrl"><div class="tog-row"><span>Invert field</span>
-      <label class="tog"><input type="checkbox" id="cb-inv"><span class="tog-tr"></span></label></div></div>
   </div>
 
   <div class="section">
@@ -237,7 +238,7 @@ const SVGNS = 'http://www.w3.org/2000/svg';
 const TAU = Math.PI * 2;
 
 const state = {
-  lattice: 'tri', sym: 'none', field: 'uniform',
+  lattice: 'tri', sym: 'none', exactLogo: false,
   W: 1080, H: 1080, seed: 1337
 };
 
@@ -267,6 +268,44 @@ const HEXAGRAM = new Set([
   '0,-2', '0,2', '2,-1', '2,1', '-2,-1', '-2,1'
 ]);
 
+/* ── logo as a continuous field: 13 dot centres + radius in a
+   normalised space where the logo half-height = 1.0 ───────────── */
+const RN = 0.1734;
+const LOGO_DOTS_N = [
+  [0, 0],
+  [0.7159, 0.4133], [0.3579, 0.2067], [0, 0.8266], [0, 0.4132],
+  [-0.7159, 0.4132], [-0.3580, 0.2066], [-0.7159, -0.4133], [-0.3579, -0.2067],
+  [0, -0.8266], [0, -0.4133], [0.7159, -0.4133], [0.3579, -0.2066]
+];
+const clamp01 = x => x < 0 ? 0 : x > 1 ? 1 : x;
+function sstep(a, b, x) { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); }
+
+/* logo coverage in [0,1] at canvas px (1 inside a logo dot, 0 outside) */
+function logoFieldAt(px, py, W, H) {
+  const S = +$('sl-scale').value / 100;
+  const T = +$('sl-tile').value | 0;
+  const soft = +$('sl-soft').value / 100;
+  const cx = W / 2, cy = H / 2;
+  let nu, nv;
+  if (T <= 1) {
+    const half = Math.min(W, H) / 2 * S;
+    nu = (px - cx) / half; nv = (py - cy) / half;
+  } else {
+    const cell = Math.min(W, H) / T;
+    const lx = (px - cx) / cell, ly = (py - cy) / cell;
+    nu = (lx - Math.round(lx)) / (0.5 * S);
+    nv = (ly - Math.round(ly)) / (0.5 * S);
+  }
+  let d = 1e9;
+  for (let k = 0; k < LOGO_DOTS_N.length; k++) {
+    const dx = nu - LOGO_DOTS_N[k][0], dy = nv - LOGO_DOTS_N[k][1];
+    const dd = dx * dx + dy * dy;
+    if (dd < d) d = dd;
+  }
+  d = Math.sqrt(d);
+  return 1 - sstep(RN, RN + Math.max(0.004, soft), d);
+}
+
 /* ── symmetry folding of a point relative to canvas centre ────── */
 function fold(x, y, sym) {
   if (sym === 'x') return [Math.abs(x), y];
@@ -282,25 +321,10 @@ function fold(x, y, sym) {
   return [x, y];
 }
 
-/* ── field value in [0,1] at point relative to canvas centre ──── */
-function fieldAt(fx, fy, halfDiag) {
-  switch (state.field) {
-    case 'radial': {
-      const fall = +$('sl-fall').value / 100;
-      const t = Math.min(1, Math.hypot(fx, fy) / halfDiag);
-      return Math.pow(1 - t, fall);
-    }
-    case 'linear': {
-      const ang = (+$('sl-lang').value) * Math.PI / 180;
-      const proj = (fx * Math.cos(ang) + fy * Math.sin(ang)) / (2 * halfDiag) + 0.5;
-      return Math.max(0, Math.min(1, proj));
-    }
-    case 'noise': {
-      const sc = (+$('sl-nsc').value / 100) / 260;
-      return Math.max(0, Math.min(1, fbm(fx * sc, fy * sc, state.seed)));
-    }
-    default: return 1; // uniform / logo handled at presence stage
-  }
+/* ── organic noise field (the "abstract" end of the spectrum) ─── */
+function noiseFieldAt(px, py) {
+  const sc = (+$('sl-nsc').value / 100) / 260;
+  return clamp01(fbm(px * sc, py * sc, state.seed));
 }
 
 /* ── build the lattice point list (px coords) ─────────────────── */
@@ -343,7 +367,6 @@ function latticePoints() {
 /* ── main build ───────────────────────────────────────────────── */
 function build() {
   const W = state.W, H = state.H, cx = W / 2, cy = H / 2;
-  const halfDiag = Math.hypot(W, H) / 2;
   const s = +$('sl-space').value;
   const rot = (+$('sl-rot').value) * Math.PI / 180;
   const cosR = Math.cos(rot), sinR = Math.sin(rot);
@@ -354,8 +377,9 @@ function build() {
   const dens = +$('sl-dens').value / 100;
   const scat = +$('sl-scat').value / 100;
   const inv = $('cb-inv').checked;
+  const abs = +$('sl-abs').value / 100; // 1 = pure logo, 0 = pure noise
   const tau = 1 - dens;
-  const isLogo = state.field === 'logo';
+  const isLogo = state.exactLogo;
 
   const svg = document.createElementNS(SVGNS, 'svg');
   svg.setAttribute('xmlns', SVGNS);
@@ -389,16 +413,19 @@ function build() {
 
     let f, show;
     if (isLogo) {
-      show = (state.lattice === 'tri') ? HEXAGRAM.has(p.i + ',' + p.j) : false;
+      show = HEXAGRAM.has(p.i + ',' + p.j);
       f = 1;
     } else {
-      let rx = px - cx, ry = py - cy;
-      const [fx, fy] = fold(rx, ry, state.sym);
-      f = fieldAt(fx, fy, halfDiag);
-      if (inv) f = 1 - f;
+      // fold around centre for symmetry, then sample logo + noise and blend
+      const [fx, fy] = fold(px - cx, py - cy, state.sym);
+      const sx = cx + fx, sy = cy + fy;
+      let lf = logoFieldAt(sx, sy, W, H);
+      if (inv) lf = 1 - lf;
+      const nf = noiseFieldAt(sx, sy);
+      f = nf * (1 - abs) + lf * abs;
       let test = f;
       if (scat > 0) test += (hash2(p.i, p.j, state.seed + 101) - 0.5) * 2 * scat;
-      show = (state.field === 'uniform') ? (dens >= 1 ? true : test > tau) : test > tau;
+      show = test > tau;
     }
     if (!show) continue;
 
@@ -461,35 +488,36 @@ function savePNG() {
 }
 
 /* ── UI wiring ────────────────────────────────────────────────── */
-function syncFieldRows() {
-  const f = state.field;
-  document.querySelectorAll('.fld-radial').forEach(e => e.classList.toggle('hide', f !== 'radial'));
-  document.querySelectorAll('.fld-linear').forEach(e => e.classList.toggle('hide', f !== 'linear'));
-  document.querySelectorAll('.fld-noise').forEach(e => e.classList.toggle('hide', f !== 'noise'));
-}
 function syncBgRow() {
   document.querySelector('.bg-row').classList.toggle('hide', $('cb-trans').checked);
 }
 
 const valFmt = {
-  'sl-space': v => v, 'sl-rot': v => v + '°', 'sl-fall': v => (v / 100).toFixed(1),
-  'sl-lang': v => v + '°', 'sl-nsc': v => (v / 100).toFixed(1), 'sl-dens': v => (v / 100).toFixed(2),
+  'sl-space': v => v, 'sl-rot': v => v + '°', 'sl-abs': v => (v / 100).toFixed(2),
+  'sl-scale': v => (v / 100).toFixed(2), 'sl-tile': v => v, 'sl-soft': v => (v / 100).toFixed(2),
+  'sl-nsc': v => (v / 100).toFixed(1), 'sl-dens': v => (v / 100).toFixed(2),
   'sl-scat': v => (v / 100).toFixed(2), 'sl-size': v => (v / 100).toFixed(2),
   'sl-sf': v => (v / 100).toFixed(2), 'sl-sr': v => (v / 100).toFixed(2), 'sl-jit': v => (v / 100).toFixed(2),
   'sl-op': v => v + '%'
 };
 const valTarget = {
-  'sl-space': 'v-space', 'sl-rot': 'v-rot', 'sl-fall': 'v-fall', 'sl-lang': 'v-lang', 'sl-nsc': 'v-nsc',
-  'sl-dens': 'v-dens', 'sl-scat': 'v-scat', 'sl-size': 'v-size', 'sl-sf': 'v-sf', 'sl-sr': 'v-sr',
-  'sl-jit': 'v-jit', 'sl-op': 'v-op'
+  'sl-space': 'v-space', 'sl-rot': 'v-rot', 'sl-abs': 'v-abs', 'sl-scale': 'v-scale', 'sl-tile': 'v-tile',
+  'sl-soft': 'v-soft', 'sl-nsc': 'v-nsc', 'sl-dens': 'v-dens', 'sl-scat': 'v-scat', 'sl-size': 'v-size',
+  'sl-sf': 'v-sf', 'sl-sr': 'v-sr', 'sl-jit': 'v-jit', 'sl-op': 'v-op'
 };
 function refreshVals() {
   for (const id in valTarget) $(valTarget[id]).textContent = valFmt[id]($(id).value);
 }
 
-Object.keys(valTarget).forEach(id => $(id).addEventListener('input', () => { refreshVals(); build(); }));
-$('sel-field').addEventListener('change', () => { state.field = $('sel-field').value; syncFieldRows(); build(); });
-['cb-inv', 'cb-trans'].forEach(id => $(id).addEventListener('change', () => { syncBgRow(); build(); }));
+// sliders that change geometry should drop the exact-logo snap
+const GEOM = new Set(['sl-space', 'sl-rot', 'sl-abs', 'sl-scale', 'sl-tile', 'sl-soft',
+  'sl-nsc', 'sl-dens', 'sl-scat', 'sl-jit', 'sl-sf', 'sl-sr']);
+Object.keys(valTarget).forEach(id => $(id).addEventListener('input', () => {
+  if (GEOM.has(id)) state.exactLogo = false;
+  refreshVals(); build();
+}));
+$('cb-inv').addEventListener('change', () => { state.exactLogo = false; build(); });
+$('cb-trans').addEventListener('change', () => { syncBgRow(); build(); });
 $('cp-dot').addEventListener('input', build);
 $('cp-bg').addEventListener('input', build);
 
@@ -500,8 +528,8 @@ function pillGroup(wrap, fn) {
     fn(b); build();
   });
 }
-pillGroup('lat-pills', b => state.lattice = b.dataset.v);
-pillGroup('sym-pills', b => state.sym = b.dataset.v);
+pillGroup('lat-pills', b => { state.exactLogo = false; state.lattice = b.dataset.v; });
+pillGroup('sym-pills', b => { state.exactLogo = false; state.sym = b.dataset.v; });
 pillGroup('size-pills', b => { state.W = +b.dataset.w; state.H = +b.dataset.h; });
 
 $('b-shuffle').addEventListener('click', () => { state.seed = (Math.random() * 1e6) | 0; build(); });
@@ -509,17 +537,15 @@ $('b-svg').addEventListener('click', saveSVG);
 $('b-png').addEventListener('click', savePNG);
 
 $('b-logo').addEventListener('click', () => {
-  state.lattice = 'tri'; state.field = 'logo'; state.sym = 'none';
+  state.lattice = 'tri'; state.sym = 'none'; state.exactLogo = true;
   [...$('lat-pills').children].forEach(c => c.classList.toggle('on', c.dataset.v === 'tri'));
   [...$('sym-pills').children].forEach(c => c.classList.toggle('on', c.dataset.v === 'none'));
-  $('sel-field').value = 'logo';
   $('sl-space').value = 150; $('sl-size').value = 84; $('sl-rot').value = 0;
   $('sl-sf').value = 0; $('sl-sr').value = 0; $('sl-jit').value = 0;
-  $('sl-dens').value = 100; $('sl-scat').value = 0; $('cb-inv').checked = false;
-  syncFieldRows(); refreshVals(); build();
+  refreshVals(); build();
 });
 
-syncFieldRows(); syncBgRow(); refreshVals(); build();
+syncBgRow(); refreshVals(); build();
 </script>
 </body>
 </html>
