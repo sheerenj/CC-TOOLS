@@ -192,6 +192,27 @@ select { width: 100%; background: #f5f5f5; border: 1px solid var(--line); color:
   </div>
 
   <div class="section">
+    <div class="sec-title">Motion</div>
+    <div class="ctrl"><div class="tog-row"><span>Play (loop)</span>
+      <label class="tog"><input type="checkbox" id="cb-play"><span class="tog-tr"></span></label></div></div>
+    <div class="ctrl"><label>Loop duration <span class="val" id="v-dur">4.0s</span></label>
+      <input type="range" id="sl-dur" min="10" max="200" value="40"></div>
+    <div class="ctrl"><div class="tog-row"><span>Assemble ↻ <span class="val" id="v-asm">1.00</span></span>
+      <label class="tog"><input type="checkbox" id="cb-asm" checked><span class="tog-tr"></span></label></div>
+      <input type="range" id="sl-asm" min="0" max="100" value="100"></div>
+    <div class="ctrl"><div class="tog-row"><span>Spin <span class="val" id="v-spin">1.00 t</span></span>
+      <label class="tog"><input type="checkbox" id="cb-spin"><span class="tog-tr"></span></label></div>
+      <input type="range" id="sl-spin" min="-300" max="300" value="100"></div>
+    <div class="ctrl"><div class="tog-row"><span>Drift <span class="val" id="v-drift">0.40</span></span>
+      <label class="tog"><input type="checkbox" id="cb-drift"><span class="tog-tr"></span></label></div>
+      <input type="range" id="sl-drift" min="0" max="100" value="40"></div>
+    <div class="ctrl"><div class="tog-row"><span>Pulse <span class="val" id="v-pulse">0.40</span></span>
+      <label class="tog"><input type="checkbox" id="cb-pulse"><span class="tog-tr"></span></label></div>
+      <input type="range" id="sl-pulse" min="0" max="100" value="40"></div>
+    <p class="hint">All motion loops seamlessly over the duration. <b>Assemble</b> dissolves the dots out to abstract and reforms them into the logo each loop.</p>
+  </div>
+
+  <div class="section">
     <div class="sec-title">Colours</div>
     <div class="ctrl"><label>Dots</label>
       <div class="row2"><div class="swatch"><input type="color" id="cp-dot" value="#d9d9d9"></div>
@@ -221,6 +242,21 @@ select { width: 100%; background: #f5f5f5; border: 1px solid var(--line); color:
       <button class="btn btn-ghost" id="b-png">↓ PNG</button>
     </div>
     <p class="hint">SVG exports as crisp vector circles. Transparent background gives you an overlay to drop over images.</p>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Export sequence</div>
+    <div class="ctrl"><label>Frame rate</label>
+      <select id="sel-fps">
+        <option value="24">24 fps</option>
+        <option value="30" selected>30 fps</option>
+        <option value="60">60 fps</option>
+      </select></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="b-mp4">↓ MP4</button>
+      <button class="btn btn-ghost" id="b-seq">↓ PNG seq</button>
+    </div>
+    <p class="hint" id="exp-status">Renders one full loop. MP4 needs a Chromium browser; PNG seq downloads a ZIP (keeps transparency).</p>
   </div>
 </div>
 
@@ -281,10 +317,8 @@ const clamp01 = x => x < 0 ? 0 : x > 1 ? 1 : x;
 function sstep(a, b, x) { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); }
 
 /* logo coverage in [0,1] at canvas px (1 inside a logo dot, 0 outside) */
-function logoFieldAt(px, py, W, H) {
-  const S = +$('sl-scale').value / 100;
-  const T = +$('sl-tile').value | 0;
-  const soft = +$('sl-soft').value / 100;
+function logoFieldAt(px, py, c) {
+  const W = c.W, H = c.H, S = c.scale, T = c.tile, soft = c.soft;
   const cx = W / 2, cy = H / 2;
   let nu, nv;
   if (T <= 1) {
@@ -322,26 +356,27 @@ function fold(x, y, sym) {
 }
 
 /* ── organic noise field (the "abstract" end of the spectrum) ─── */
-function noiseFieldAt(px, py) {
-  const sc = (+$('sl-nsc').value / 100) / 260;
-  return clamp01(fbm(px * sc, py * sc, state.seed));
+function noiseFieldAt(px, py, c) {
+  const sc = c.nsc / 260;
+  return clamp01(fbm((px + c.driftX) * sc, (py + c.driftY) * sc, c.seed));
 }
 
-/* ── build the lattice point list (px coords) ─────────────────── */
-function latticePoints() {
-  const s = +$('sl-space').value;
-  const W = state.W, H = state.H, cx = W / 2, cy = H / 2;
+/* ── build the lattice point list (px coords) ─────────────────────
+   Coverage uses the canvas DIAGONAL, not W/H, so the lattice still
+   fills every corner after the pattern is rotated. ──────────────── */
+function latticePoints(c) {
+  const s = c.space;
+  const W = c.W, H = c.H, cx = W / 2, cy = H / 2;
   const pts = [];
-  const margin = s * 2;
-  if (state.lattice === 'sq') {
-    const nx = Math.ceil((W + margin * 2) / s), ny = Math.ceil((H + margin * 2) / s);
-    const c0 = -Math.ceil(nx / 2), r0 = -Math.ceil(ny / 2);
-    for (let c = c0; c <= -c0; c++)
-      for (let r = r0; r <= -r0; r++)
-        pts.push({ x: cx + c * s, y: cy + r * s, i: c, j: r });
-  } else if (state.lattice === 'con') {
+  const ext = Math.hypot(W, H) + s * 2; // square region large enough for any rotation
+  if (c.lattice === 'sq') {
+    const n = Math.ceil(ext / s), h = Math.ceil(n / 2);
+    for (let col = -h; col <= h; col++)
+      for (let r = -h; r <= h; r++)
+        pts.push({ x: cx + col * s, y: cy + r * s, i: col, j: r });
+  } else if (c.lattice === 'con') {
     pts.push({ x: cx, y: cy, i: 0, j: 0 });
-    const maxR = Math.hypot(W, H) / 2 + margin;
+    const maxR = ext / 2;
     let ring = 1;
     for (let rad = s; rad <= maxR; rad += s, ring++) {
       const n = Math.max(6, Math.round(TAU * rad / s));
@@ -353,138 +388,235 @@ function latticePoints() {
     }
   } else { // triangular (logo orientation: vertical close-packed columns)
     const colStep = s * Math.sqrt(3) / 2;
-    const nx = Math.ceil((W + margin * 2) / colStep), ny = Math.ceil((H + margin * 2) / s);
-    const c0 = -Math.ceil(nx / 2), r0 = -Math.ceil(ny / 2);
-    for (let c = c0; c <= -c0; c++) {
-      const yo = (c & 1) ? s / 2 : 0;
-      for (let r = r0; r <= -r0; r++)
-        pts.push({ x: cx + c * colStep, y: cy + r * s + yo, i: c, j: r });
+    const hc = Math.ceil(ext / colStep / 2), hr = Math.ceil(ext / s / 2);
+    for (let col = -hc; col <= hc; col++) {
+      const yo = (col & 1) ? s / 2 : 0;
+      for (let r = -hr; r <= hr; r++)
+        pts.push({ x: cx + col * colStep, y: cy + r * s + yo, i: col, j: r });
     }
   }
   return pts;
 }
 
-/* ── main build ───────────────────────────────────────────────── */
-function build() {
-  const W = state.W, H = state.H, cx = W / 2, cy = H / 2;
-  const s = +$('sl-space').value;
-  const rot = (+$('sl-rot').value) * Math.PI / 180;
-  const cosR = Math.cos(rot), sinR = Math.sin(rot);
-  const baseR = (+$('sl-size').value / 100) * s * 0.5;
-  const sizeF = +$('sl-sf').value / 100;
-  const sizeRand = +$('sl-sr').value / 100;
-  const jit = +$('sl-jit').value / 100 * s;
-  const dens = +$('sl-dens').value / 100;
-  const scat = +$('sl-scat').value / 100;
-  const inv = $('cb-inv').checked;
-  const abs = +$('sl-abs').value / 100; // 1 = pure logo, 0 = pure noise
-  const tau = 1 - dens;
-  const isLogo = state.exactLogo;
+/* ── snapshot all controls into a plain config object ─────────── */
+function readConfig() {
+  return {
+    lattice: state.lattice, sym: state.sym, exactLogo: state.exactLogo, seed: state.seed,
+    W: state.W, H: state.H,
+    space: +$('sl-space').value, rot: +$('sl-rot').value, abs: +$('sl-abs').value / 100,
+    scale: +$('sl-scale').value / 100, tile: +$('sl-tile').value | 0, soft: +$('sl-soft').value / 100,
+    nsc: +$('sl-nsc').value / 100, dens: +$('sl-dens').value / 100, scat: +$('sl-scat').value / 100,
+    size: +$('sl-size').value / 100, sf: +$('sl-sf').value / 100, sr: +$('sl-sr').value / 100,
+    jit: +$('sl-jit').value / 100, op: +$('sl-op').value / 100,
+    dot: $('cp-dot').value, bg: $('cp-bg').value, trans: $('cb-trans').checked,
+    driftX: 0, driftY: 0
+  };
+}
+
+/* ── apply looping motion to a config at loop-time t (seconds) ─── */
+function cfgAtTime(t) {
+  const c = readConfig();
+  const dur = +$('sl-dur').value / 10;          // seconds
+  const ph = dur > 0 ? t / dur : 0;             // loops (fractional)
+  const w = ph * TAU;
+  if ($('cb-spin').checked) c.rot += (+$('sl-spin').value / 100) * 360 * ph;
+  if ($('cb-asm').checked) {
+    const amt = +$('sl-asm').value / 100, sweep = 0.5 - 0.5 * Math.cos(w);
+    c.abs = c.abs * (1 - amt) + sweep * amt;    // dissolve out & assemble back
+    c.exactLogo = false;
+  }
+  if ($('cb-pulse').checked) c.scale *= 1 + 0.32 * (+$('sl-pulse').value / 100) * Math.sin(w);
+  if ($('cb-drift').checked) {
+    const R = (+$('sl-drift').value / 100) * 420;
+    c.driftX = Math.cos(w) * R; c.driftY = Math.sin(w) * R;
+  }
+  return c;
+}
+
+/* ── build an <svg> element for a given config ────────────────── */
+const CAP = 14000;
+function buildSVGEl(c) {
+  const W = c.W, H = c.H, cx = W / 2, cy = H / 2;
+  const rot = c.rot * Math.PI / 180, cosR = Math.cos(rot), sinR = Math.sin(rot);
+  const baseR = c.size * c.space * 0.5;
+  const jit = c.jit * c.space, tau = 1 - c.dens;
 
   const svg = document.createElementNS(SVGNS, 'svg');
   svg.setAttribute('xmlns', SVGNS);
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  svg.setAttribute('width', W);
-  svg.setAttribute('height', H);
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
 
-  const trans = $('cb-trans').checked;
-  if (!trans) {
+  if (!c.trans) {
     const rect = document.createElementNS(SVGNS, 'rect');
-    rect.setAttribute('x', 0); rect.setAttribute('y', 0);
     rect.setAttribute('width', W); rect.setAttribute('height', H);
-    rect.setAttribute('fill', $('cp-bg').value);
+    rect.setAttribute('fill', c.bg);
     svg.appendChild(rect);
   }
-
   const g = document.createElementNS(SVGNS, 'g');
-  g.setAttribute('fill', $('cp-dot').value);
-  const op = +$('sl-op').value / 100;
-  if (op < 1) g.setAttribute('fill-opacity', op.toFixed(3));
+  g.setAttribute('fill', c.dot);
+  if (c.op < 1) g.setAttribute('fill-opacity', c.op.toFixed(3));
 
-  const pts = latticePoints();
   let drawn = 0;
-  const CAP = 14000;
-
-  for (const p of pts) {
-    // rotate the lattice around the canvas centre
-    let dx = p.x - cx, dy = p.y - cy;
-    let px = cx + dx * cosR - dy * sinR;
-    let py = cy + dx * sinR + dy * cosR;
-
+  for (const p of latticePoints(c)) {
+    // sample the field at the lattice HOME (folded for symmetry) so the
+    // whole composition — logo + dots — rotates rigidly together.
     let f, show;
-    if (isLogo) {
-      show = HEXAGRAM.has(p.i + ',' + p.j);
-      f = 1;
+    if (c.exactLogo) {
+      show = HEXAGRAM.has(p.i + ',' + p.j); f = 1;
     } else {
-      // fold around centre for symmetry, then sample logo + noise and blend
-      const [fx, fy] = fold(px - cx, py - cy, state.sym);
+      const [fx, fy] = fold(p.x - cx, p.y - cy, c.sym);
       const sx = cx + fx, sy = cy + fy;
-      let lf = logoFieldAt(sx, sy, W, H);
-      if (inv) lf = 1 - lf;
-      const nf = noiseFieldAt(sx, sy);
-      f = nf * (1 - abs) + lf * abs;
+      let lf = logoFieldAt(sx, sy, c);
+      if ($('cb-inv').checked) lf = 1 - lf;
+      const nf = noiseFieldAt(sx, sy, c);
+      f = nf * (1 - c.abs) + lf * c.abs;
       let test = f;
-      if (scat > 0) test += (hash2(p.i, p.j, state.seed + 101) - 0.5) * 2 * scat;
+      if (c.scat > 0) test += (hash2(p.i, p.j, c.seed + 101) - 0.5) * 2 * c.scat;
       show = test > tau;
     }
     if (!show) continue;
 
-    let r = baseR * (1 - sizeF + sizeF * Math.max(0.04, f));
-    if (sizeRand > 0) r *= 1 + (hash2(p.i, p.j, state.seed + 202) - 0.5) * 2 * sizeRand;
+    let r = baseR * (1 - c.sf + c.sf * Math.max(0.04, f));
+    if (c.sr > 0) r *= 1 + (hash2(p.i, p.j, c.seed + 202) - 0.5) * 2 * c.sr;
     r = Math.max(0.4, r);
 
+    // draw at the rotated position
+    const dx = p.x - cx, dy = p.y - cy;
+    let px = cx + dx * cosR - dy * sinR;
+    let py = cy + dx * sinR + dy * cosR;
     if (jit > 0) {
-      px += (hash2(p.i, p.j, state.seed + 303) - 0.5) * 2 * jit;
-      py += (hash2(p.i, p.j, state.seed + 404) - 0.5) * 2 * jit;
+      px += (hash2(p.i, p.j, c.seed + 303) - 0.5) * 2 * jit;
+      py += (hash2(p.i, p.j, c.seed + 404) - 0.5) * 2 * jit;
     }
-
-    // cull dots fully outside the canvas
     if (px < -r || py < -r || px > W + r || py > H + r) continue;
 
-    const c = document.createElementNS(SVGNS, 'circle');
-    c.setAttribute('cx', +px.toFixed(2));
-    c.setAttribute('cy', +py.toFixed(2));
-    c.setAttribute('r', +r.toFixed(2));
-    g.appendChild(c);
+    const ci = document.createElementNS(SVGNS, 'circle');
+    ci.setAttribute('cx', +px.toFixed(2));
+    ci.setAttribute('cy', +py.toFixed(2));
+    ci.setAttribute('r', +r.toFixed(2));
+    g.appendChild(ci);
     if (++drawn >= CAP) break;
   }
-
   svg.appendChild(g);
+  svg._drawn = drawn;
+  return svg;
+}
+
+/* ── live render (uses the current animation time) ────────────── */
+function render() {
+  const c = playing ? cfgAtTime(curT) : cfgAtTime(0);
+  const svg = buildSVGEl(c);
   const stage = $('stage');
-  stage.classList.toggle('solid', !trans);
-  stage.style.aspectRatio = W + ' / ' + H;
+  stage.classList.toggle('solid', !c.trans);
+  stage.style.aspectRatio = c.W + ' / ' + c.H;
   stage.innerHTML = '';
   stage.appendChild(svg);
-  $('count').textContent = drawn + (drawn >= CAP ? '+ dots · capped' : ' dots') + ' · ' + W + '×' + H;
+  $('count').textContent = svg._drawn + (svg._drawn >= CAP ? '+ dots · capped' : ' dots') + ' · ' + c.W + '×' + c.H;
+}
+const build = render; // controls call build() to re-render
+
+/* ── animation loop ───────────────────────────────────────────── */
+let playing = false, t0 = 0, curT = 0, raf = 0;
+function loop(now) {
+  if (!playing) return;
+  if (!t0) t0 = now;
+  curT = (now - t0) / 1000;
+  render();
+  raf = requestAnimationFrame(loop);
+}
+function setPlaying(p) {
+  playing = p;
+  if (p) { t0 = 0; raf = requestAnimationFrame(loop); }
+  else { cancelAnimationFrame(raf); curT = 0; render(); }
 }
 
 /* ── export ───────────────────────────────────────────────────── */
-function svgMarkup() {
-  const svg = $('stage').querySelector('svg').cloneNode(true);
+function markupOf(svg) {
   svg.setAttribute('xmlns', SVGNS);
   return '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(svg);
 }
+function currentCfg() { return playing ? cfgAtTime(curT) : cfgAtTime(0); }
 function download(blob, name) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
-function saveSVG() {
-  download(new Blob([svgMarkup()], { type: 'image/svg+xml' }), 'platine-pattern.svg');
+function rasterize(markup, W, H) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    const url = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml' }));
+    img.onload = () => {
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      cv.getContext('2d').drawImage(img, 0, 0, W, H);
+      URL.revokeObjectURL(url); res(cv);
+    };
+    img.onerror = e => { URL.revokeObjectURL(url); rej(e); };
+    img.src = url;
+  });
 }
-function savePNG() {
-  const data = svgMarkup();
-  const img = new Image();
-  const url = URL.createObjectURL(new Blob([data], { type: 'image/svg+xml' }));
-  img.onload = () => {
-    const cv = document.createElement('canvas');
-    cv.width = state.W; cv.height = state.H;
-    cv.getContext('2d').drawImage(img, 0, 0, state.W, state.H);
-    URL.revokeObjectURL(url);
-    cv.toBlob(b => download(b, 'platine-pattern.png'), 'image/png');
-  };
-  img.src = url;
+function saveSVG() {
+  download(new Blob([markupOf(buildSVGEl(currentCfg()))], { type: 'image/svg+xml' }), 'platine-pattern.svg');
+}
+async function savePNG() {
+  const c = currentCfg();
+  const cv = await rasterize(markupOf(buildSVGEl(c)), c.W, c.H);
+  cv.toBlob(b => download(b, 'platine-pattern.png'), 'image/png');
+}
+
+const status = m => { $('exp-status').textContent = m || ''; };
+function seqFrames() {
+  const fps = +$('sel-fps').value, dur = +$('sl-dur').value / 10;
+  return { fps, N: Math.max(1, Math.round(dur * fps)) };
+}
+let exporting = false;
+async function exportSeq() {
+  if (exporting) return; exporting = true;
+  try {
+    const { fps, N } = seqFrames();
+    status('Loading zip…');
+    const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
+    const zip = new JSZip();
+    for (let i = 0; i < N; i++) {
+      const c = cfgAtTime(i / fps);
+      const cv = await rasterize(markupOf(buildSVGEl(c)), c.W, c.H);
+      const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+      zip.file(`platine_${String(i).padStart(4, '0')}.png`, blob);
+      status(`Rendering frame ${i + 1}/${N}`);
+    }
+    status('Zipping…');
+    download(await zip.generateAsync({ type: 'blob' }), 'platine-pattern-seq.zip');
+    status(`Done · ${N} PNG frames`);
+  } catch (e) { status('PNG seq failed: ' + e.message); }
+  exporting = false;
+}
+async function exportMP4() {
+  if (exporting) return;
+  if (!('VideoEncoder' in window)) { status('MP4 needs a Chromium browser (WebCodecs). Try PNG seq.'); return; }
+  exporting = true;
+  try {
+    const { fps, N } = seqFrames();
+    const W = state.W, H = state.H;
+    status('Loading encoder…');
+    const { Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.1/+esm');
+    const muxer = new Muxer({ target: new ArrayBufferTarget(), video: { codec: 'avc', width: W, height: H }, fastStart: 'in-memory' });
+    const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: e => status('Encode error: ' + e.message) });
+    enc.configure({ codec: 'avc1.640028', width: W, height: H, bitrate: 12e6, framerate: fps });
+    for (let i = 0; i < N; i++) {
+      const c = cfgAtTime(i / fps);
+      const cv = await rasterize(markupOf(buildSVGEl(c)), W, H);
+      const frame = new VideoFrame(cv, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) });
+      enc.encode(frame, { keyFrame: i % fps === 0 });
+      frame.close();
+      status(`Encoding frame ${i + 1}/${N}`);
+      if (i % 4 === 0) await new Promise(r => setTimeout(r));
+    }
+    await enc.flush(); muxer.finalize();
+    download(new Blob([muxer.target.buffer], { type: 'video/mp4' }), 'platine-pattern.mp4');
+    status(`Done · MP4 · ${N} frames`);
+  } catch (e) { status('MP4 failed: ' + e.message); }
+  exporting = false;
 }
 
 /* ── UI wiring ────────────────────────────────────────────────── */
@@ -498,12 +630,15 @@ const valFmt = {
   'sl-nsc': v => (v / 100).toFixed(1), 'sl-dens': v => (v / 100).toFixed(2),
   'sl-scat': v => (v / 100).toFixed(2), 'sl-size': v => (v / 100).toFixed(2),
   'sl-sf': v => (v / 100).toFixed(2), 'sl-sr': v => (v / 100).toFixed(2), 'sl-jit': v => (v / 100).toFixed(2),
-  'sl-op': v => v + '%'
+  'sl-op': v => v + '%',
+  'sl-dur': v => (v / 10).toFixed(1) + 's', 'sl-spin': v => (v / 100).toFixed(2) + ' t',
+  'sl-asm': v => (v / 100).toFixed(2), 'sl-drift': v => (v / 100).toFixed(2), 'sl-pulse': v => (v / 100).toFixed(2)
 };
 const valTarget = {
   'sl-space': 'v-space', 'sl-rot': 'v-rot', 'sl-abs': 'v-abs', 'sl-scale': 'v-scale', 'sl-tile': 'v-tile',
   'sl-soft': 'v-soft', 'sl-nsc': 'v-nsc', 'sl-dens': 'v-dens', 'sl-scat': 'v-scat', 'sl-size': 'v-size',
-  'sl-sf': 'v-sf', 'sl-sr': 'v-sr', 'sl-jit': 'v-jit', 'sl-op': 'v-op'
+  'sl-sf': 'v-sf', 'sl-sr': 'v-sr', 'sl-jit': 'v-jit', 'sl-op': 'v-op',
+  'sl-dur': 'v-dur', 'sl-spin': 'v-spin', 'sl-asm': 'v-asm', 'sl-drift': 'v-drift', 'sl-pulse': 'v-pulse'
 };
 function refreshVals() {
   for (const id in valTarget) $(valTarget[id]).textContent = valFmt[id]($(id).value);
@@ -535,6 +670,12 @@ pillGroup('size-pills', b => { state.W = +b.dataset.w; state.H = +b.dataset.h; }
 $('b-shuffle').addEventListener('click', () => { state.seed = (Math.random() * 1e6) | 0; build(); });
 $('b-svg').addEventListener('click', saveSVG);
 $('b-png').addEventListener('click', savePNG);
+
+// motion
+$('cb-play').addEventListener('change', e => setPlaying(e.target.checked));
+['cb-spin', 'cb-asm', 'cb-drift', 'cb-pulse'].forEach(id => $(id).addEventListener('change', () => { if (!playing) render(); }));
+$('b-mp4').addEventListener('click', exportMP4);
+$('b-seq').addEventListener('click', exportSeq);
 
 $('b-logo').addEventListener('click', () => {
   state.lattice = 'tri'; state.sym = 'none'; state.exactLogo = true;
