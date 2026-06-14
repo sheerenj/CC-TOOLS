@@ -968,7 +968,7 @@ function drawScene(tCtx, transparent, dpr = DPR) {
       tCtx.save();
       tCtx.strokeStyle = S.chC;
       tCtx.lineWidth = S.chW;
-      tCtx.lineCap = 'round';
+      tCtx.lineCap = 'butt';
       for (const { sx, sy } of atoms) {
         tCtx.beginPath(); tCtx.moveTo(sx - chLen, sy); tCtx.lineTo(sx + chLen, sy); tCtx.stroke();
         tCtx.beginPath(); tCtx.moveTo(sx, sy - chLen); tCtx.lineTo(sx, sy + chLen); tCtx.stroke();
@@ -1091,7 +1091,7 @@ function exportSVG() {
   // Crosshairs
   if (S.ch) {
     const chLen = ar * S.chSz;
-    body += `<g stroke="${S.chC}" stroke-width="${f2(S.chW)}" stroke-linecap="round" fill="none">`;
+    body += `<g stroke="${S.chC}" stroke-width="${f2(S.chW)}" stroke-linecap="butt" fill="none">`;
     for (const { sx, sy } of sorted) {
       body += `<line x1="${f2(sx-chLen)}" y1="${f2(sy)}" x2="${f2(sx+chLen)}" y2="${f2(sy)}"/>`;
       body += `<line x1="${f2(sx)}" y1="${f2(sy-chLen)}" x2="${f2(sx)}" y2="${f2(sy+chLen)}"/>`;
