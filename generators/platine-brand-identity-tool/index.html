@@ -236,6 +236,9 @@ select { width: 100%; background: #f5f5f5; border: 1px solid var(--line); color:
     <div class="sec-title" style="background:#d4fc4e">Dot Overlay</div>
     <div class="ctrl"><div class="tog-row" style="display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:500"><span>Overlay on</span>
       <label class="tog"><input type="checkbox" id="ov-on" checked><span class="tog-tr"></span></label></div></div>
+    <div class="ctrl"><label>Shape source</label><div class="pills" id="ov-src">
+      <button class="pill on" data-v="3d">3D logo (live)</button>
+      <button class="pill" data-v="static">Static logo</button></div></div>
     <div class="ctrl"><div class="pills" id="ov-lat">
       <button class="pill on" data-v="tri">Triangular</button>
       <button class="pill" data-v="sq">Square</button>
@@ -627,6 +630,12 @@ const OV = (() => {
     return 1 - ss(RN, RN + Math.max(0.004, soft), Math.sqrt(d));
   }
   const noiseField = (px, py, c) => cl(fbm(px * (c.nsc / 260), py * (c.nsc / 260), c.seed));
+  // live 3D-logo silhouette field: 1 inside the union of the rotating atom discs
+  function field3D(px, py, atoms, ar, edge) {
+    let dmin = 1e18;
+    for (let i = 0; i < atoms.length; i++) { const a = atoms[i], dx = px - a.sx, dy = py - a.sy, dd = dx * dx + dy * dy; if (dd < dmin) dmin = dd; }
+    return 1 - ss(ar - edge, ar + edge, Math.sqrt(dmin));
+  }
   function lattice(c) {
     const s = c.space, W = c.W, H = c.H, cx = W / 2, cy = H / 2, pts = [], ext = Math.hypot(W, H) + s * 2;
     if (c.lat === 'sq') {
@@ -653,28 +662,36 @@ const OV = (() => {
       jit: +$('ov-jit').value / 100
     };
   }
-  function draw(ctx, W, H) {
+  function draw(ctx, W, H, atoms, ar) {
     if (!api.enabled || !$('ov-on') || !$('ov-on').checked) return;
     const c = cfg(W, H), cx = W / 2, cy = H / 2;
     const rot = c.rot * Math.PI / 180, cosR = Math.cos(rot), sinR = Math.sin(rot);
     const baseR = c.size * c.space * 0.5, jit = c.jit * c.space, tau = 1 - c.dens, inv = $('ov-inv').checked;
+    const use3D = api.src === '3d' && atoms && atoms.length;
+    const edge3D = Math.max(1.5, (ar || 40) * c.soft);   // silhouette edge softness in px
     ctx.save();
     ctx.fillStyle = $('ov-dot').value;
     ctx.globalAlpha = +$('ov-op').value / 100;
     let drawn = 0; const CAP = 14000;
     for (const p of lattice(c)) {
-      const [fx, fy] = fold(p.x - cx, p.y - cy, c.sym);
-      const sx = cx + fx, sy = cy + fy;
-      let lf = logoField(sx, sy, c); if (inv) lf = 1 - lf;
-      const nf = noiseField(sx, sy, c);
-      const f = nf * (1 - c.abs) + lf * c.abs;
+      const dx = p.x - cx, dy = p.y - cy;
+      const px0 = cx + dx * cosR - dy * sinR, py0 = cy + dx * sinR + dy * cosR; // lattice pos (pre-jitter)
+      let shape;
+      if (use3D) {
+        shape = field3D(px0, py0, atoms, ar, edge3D);   // sample the live rotating 3D logo
+      } else {
+        const [fx, fy] = fold(dx, dy, c.sym);
+        shape = logoField(cx + fx, cy + fy, c);          // fixed hexagram
+      }
+      if (inv) shape = 1 - shape;
+      const nf = noiseField(px0, py0, c);
+      const f = nf * (1 - c.abs) + shape * c.abs;
       let test = f; if (c.scat > 0) test += (hash2(p.i, p.j, c.seed + 101) - 0.5) * 2 * c.scat;
       if (test <= tau) continue;
       let r = baseR * (1 - c.sf + c.sf * Math.max(0.04, f));
       if (c.sr > 0) r *= 1 + (hash2(p.i, p.j, c.seed + 202) - 0.5) * 2 * c.sr;
       r = Math.max(0.4, r);
-      const dx = p.x - cx, dy = p.y - cy;
-      let px = cx + dx * cosR - dy * sinR, py = cy + dx * sinR + dy * cosR;
+      let px = px0, py = py0;
       if (jit > 0) { px += (hash2(p.i, p.j, c.seed + 303) - 0.5) * 2 * jit; py += (hash2(p.i, p.j, c.seed + 404) - 0.5) * 2 * jit; }
       if (px < -r || py < -r || px > W + r || py > H + r) continue;
       ctx.beginPath(); ctx.arc(px, py, r, 0, TAU); ctx.fill();
@@ -698,10 +715,11 @@ const OV = (() => {
     const el = $(wrap); if (!el) return;
     el.addEventListener('click', e => { const b = e.target.closest('.pill'); if (!b) return; [...el.children].forEach(c => c.classList.toggle('on', c === b)); set(b.dataset.v); });
   }
-  const api = { draw, lat: 'tri', sym: 'none', enabled: false };
+  const api = { draw, lat: 'tri', sym: 'none', src: '3d', enabled: false };
   function init() {
     if (document.documentElement.classList.contains('composite')) api.enabled = true;
     Object.keys(VF).forEach(id => { const e = $(id); if (e) e.addEventListener('input', refreshLabels); });
+    pills('ov-src', v => api.src = v);
     pills('ov-lat', v => api.lat = v);
     pills('ov-sym', v => api.sym = v);
     const sh = $('ov-shuffle'); if (sh) sh.addEventListener('click', () => { seed = (Math.random() * 1e6) | 0; });
@@ -943,8 +961,9 @@ function drawScene(tCtx, transparent, dpr = DPR) {
     tCtx.restore();
   }
 
-  // Dot pattern overlay (composite mode) — drawn on top, in logical coords
-  if (typeof OV !== 'undefined') OV.draw(tCtx, W, H);
+  // Dot pattern overlay (composite mode) — drawn on top, in logical coords.
+  // `atoms`/`ar` are the live (rotating) 3D logo, usable as the shape source.
+  if (typeof OV !== 'undefined') OV.draw(tCtx, W, H, atoms, ar);
 
   tCtx.restore();
 }
