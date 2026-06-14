@@ -14,6 +14,8 @@
                 "atomSize":    ["Atom Size",     "Atom radius as a fraction of the lattice unit."],
                 "outputMode":  ["Output",        "What to draw: atoms only, bonds only, or both."],
                 "mergeAtoms":  ["Single Path",   "Output all atoms merged into one seamless closed path. Fill and glow effects apply to the entire shape as a whole."],
+                "crosshairs":    ["Crosshairs",     "Draw a small crosshair at each atom centre. Crosshairs are line strokes — give the layer a stroke colour/width to see them."],
+                "crosshairSize": ["Crosshair Size", "Crosshair arm length as a fraction of the atom radius."],
                 "---B":        ["Animation", ""],
                 "animMode":    ["Anim Mode",     "Keyframe: drive rotX/Y/Z in the timeline. Spin/Swing/Tumble: computed from time."],
                 "rotX":        ["Rot X",         "Base X rotation in degrees. Offset in Spin/Swing/Tumble modes."],

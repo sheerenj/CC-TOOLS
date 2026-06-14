@@ -3,7 +3,7 @@
     "type": "platineFCC",
     "superType": "thirdPartyJavaScriptShape",
     "jsFile": "layer.js",
-    "version": "1.3",
+    "version": "1.4",
     "attributes": {
         "time": {
             "type": "double",
@@ -42,6 +42,17 @@
         "mergeAtoms": {
             "type": "bool",
             "default": false
+        },
+        "crosshairs": {
+            "type": "bool",
+            "default": false
+        },
+        "crosshairSize": {
+            "type": "double",
+            "default": 0.4,
+            "min": 0.05,
+            "max": 1.0,
+            "step": 0.05
         },
         "animMode": {
             "type": "enum",
@@ -148,7 +159,7 @@
         "polyMesh": [
             "time", "fps",
             "cells", "latticeSize", "atomSize",
-            "outputMode", "mergeAtoms",
+            "outputMode", "mergeAtoms", "crosshairs", "crosshairSize",
             "animMode",
             "rotX", "rotY", "rotZ",
             "spinAxis", "spinSpeed",
@@ -162,7 +173,7 @@
         "attributeOrder": [
             "---A",
             "cells", "latticeSize", "atomSize",
-            "outputMode", "mergeAtoms",
+            "outputMode", "mergeAtoms", "crosshairs", "crosshairSize",
             "---B",
             "animMode",
             "rotX", "rotY", "rotZ",
