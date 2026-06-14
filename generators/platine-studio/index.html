@@ -40,6 +40,7 @@ iframe.on { display: block; }
     <div class="tabs">
       <button class="tab on" data-tab="logo">Logo</button>
       <button class="tab" data-tab="patterns">Patterns</button>
+      <button class="tab" data-tab="composite">Composite</button>
     </div>
     <div class="spacer"></div>
     <a class="hub" href="../../index.html">← Hub</a>
@@ -47,12 +48,14 @@ iframe.on { display: block; }
   <div id="frames">
     <iframe id="f-logo" class="on" data-src="../platine-brand-identity-tool/index.html?embed" title="Logo"></iframe>
     <iframe id="f-patterns" data-src="../platine-pattern-studio/index.html?embed" title="Patterns"></iframe>
+    <iframe id="f-composite" data-src="../platine-brand-identity-tool/index.html?embed&composite" title="Composite"></iframe>
   </div>
 
 <script>
   const frames = {
     logo: document.getElementById('f-logo'),
-    patterns: document.getElementById('f-patterns')
+    patterns: document.getElementById('f-patterns'),
+    composite: document.getElementById('f-composite')
   };
   function loadFrame(f) { if (!f.src) f.src = f.dataset.src; }
   function show(tab) {

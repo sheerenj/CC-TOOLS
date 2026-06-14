@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>PLATINE Brand Identity Tool</title>
-<script>try{if(new URLSearchParams(location.search).has('embed'))document.documentElement.classList.add('embed');}catch(e){}</script>
-<style>html.embed .brand-row{display:none!important}html.embed #sidebar{padding-top:14px}</style>
+<script>try{const q=new URLSearchParams(location.search);if(q.has('embed'))document.documentElement.classList.add('embed');if(q.has('composite'))document.documentElement.classList.add('composite');}catch(e){}</script>
+<style>html.embed .brand-row{display:none!important}html.embed #sidebar{padding-top:14px}#ov-panel{display:none}html.composite #ov-panel{display:block}</style>
 <style>
 :root {
   --bg:       #efefef;
@@ -229,6 +229,56 @@ select { width: 100%; background: #f5f5f5; border: 1px solid var(--line); color:
       <div class="brand-sub">Brand Identity Tool</div>
     </div>
     <a class="back-link" href="../../index.html">← Hub</a>
+  </div>
+
+  <!-- DOT OVERLAY (composite mode only) -->
+  <div class="section" id="ov-panel">
+    <div class="sec-title" style="background:#d4fc4e">Dot Overlay</div>
+    <div class="ctrl"><div class="tog-row" style="display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:500"><span>Overlay on</span>
+      <label class="tog"><input type="checkbox" id="ov-on" checked><span class="tog-tr"></span></label></div></div>
+    <div class="ctrl"><div class="pills" id="ov-lat">
+      <button class="pill on" data-v="tri">Triangular</button>
+      <button class="pill" data-v="sq">Square</button>
+      <button class="pill" data-v="con">Concentric</button></div></div>
+    <div class="ctrl"><label>Spacing <span class="val" id="ovv-space">64</span></label>
+      <input type="range" id="ov-space" min="16" max="240" value="64"></div>
+    <div class="ctrl"><label>Rotation <span class="val" id="ovv-rot">0°</span></label>
+      <input type="range" id="ov-rot" min="-180" max="180" value="0"></div>
+    <div class="ctrl"><label>Abstract ↔ Logo <span class="val" id="ovv-abs">1.00</span></label>
+      <input type="range" id="ov-abs" min="0" max="100" value="100"></div>
+    <div class="ctrl"><label>Logo scale <span class="val" id="ovv-scale">0.90</span></label>
+      <input type="range" id="ov-scale" min="20" max="200" value="90"></div>
+    <div class="ctrl"><label>Tile <span class="val" id="ovv-tile">1</span></label>
+      <input type="range" id="ov-tile" min="1" max="8" value="1"></div>
+    <div class="ctrl"><label>Edge softness <span class="val" id="ovv-soft">0.06</span></label>
+      <input type="range" id="ov-soft" min="1" max="90" value="6"></div>
+    <div class="ctrl"><div class="tog-row" style="display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:500"><span>Invert (fill around logo)</span>
+      <label class="tog"><input type="checkbox" id="ov-inv"><span class="tog-tr"></span></label></div></div>
+    <div class="ctrl"><label>Density <span class="val" id="ovv-dens">0.55</span></label>
+      <input type="range" id="ov-dens" min="0" max="100" value="55"></div>
+    <div class="ctrl"><label>Noise scale <span class="val" id="ovv-nsc">1.0</span></label>
+      <input type="range" id="ov-nsc" min="20" max="400" value="100"></div>
+    <div class="ctrl"><label>Scatter <span class="val" id="ovv-scat">0.00</span></label>
+      <input type="range" id="ov-scat" min="0" max="100" value="0"></div>
+    <div class="ctrl"><label>Base size <span class="val" id="ovv-size">0.50</span></label>
+      <input type="range" id="ov-size" min="6" max="130" value="50"></div>
+    <div class="ctrl"><label>Size ← field <span class="val" id="ovv-sf">0.00</span></label>
+      <input type="range" id="ov-sf" min="0" max="100" value="0"></div>
+    <div class="ctrl"><label>Size random <span class="val" id="ovv-sr">0.00</span></label>
+      <input type="range" id="ov-sr" min="0" max="100" value="0"></div>
+    <div class="ctrl"><label>Position jitter <span class="val" id="ovv-jit">0.00</span></label>
+      <input type="range" id="ov-jit" min="0" max="100" value="0"></div>
+    <div class="ctrl"><div class="pills" id="ov-sym">
+      <button class="pill on" data-v="none">None</button>
+      <button class="pill" data-v="x">Mir X</button>
+      <button class="pill" data-v="xy">Mir XY</button>
+      <button class="pill" data-v="hex">6-fold</button></div></div>
+    <div class="ctrl"><label>Dot colour <span class="val" id="ovv-op">100%</span></label>
+      <div style="display:flex;align-items:center;gap:7px">
+        <div class="swatch"><input type="color" id="ov-dot" value="#ffffff"></div>
+        <input type="range" id="ov-op" min="10" max="100" value="100" style="flex:1"></div></div>
+    <div class="ctrl"><button class="btn btn-ghost" id="ov-shuffle">↻ Shuffle overlay seed</button></div>
+    <p class="hint">Dots are drawn on top of the animating logo and are included in PNG / MP4 / ZIP exports. Full Pattern-Studio engine; dots stay static while the logo animates.</p>
   </div>
 
   <!-- LATTICE -->
@@ -537,6 +587,131 @@ select { width: 100%; background: #f5f5f5; border: 1px solid var(--line); color:
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js"></script>
+
+<!-- ── Dot-pattern overlay engine (ported from PLATINE Pattern Studio) ── -->
+<script>
+const OV = (() => {
+  const $ = id => document.getElementById(id);
+  const TAU = Math.PI * 2;
+  function hash2(x, y, s) {
+    let h = (x | 0) * 374761393 + (y | 0) * 668265263 + (s | 0) * 1442695041;
+    h = (h ^ (h >>> 13)) * 1274126177; h = h ^ (h >>> 16);
+    return (h >>> 0) / 4294967295;
+  }
+  const sm = t => t * t * (3 - 2 * t);
+  function vnoise(x, y, s) {
+    const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = sm(xf), v = sm(yf);
+    const a = hash2(xi, yi, s), b = hash2(xi + 1, yi, s), c = hash2(xi, yi + 1, s), d = hash2(xi + 1, yi + 1, s);
+    return a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v;
+  }
+  const fbm = (x, y, s) => vnoise(x, y, s) * 0.6 + vnoise(x * 2.03, y * 2.03, s + 7) * 0.3 + vnoise(x * 4.1, y * 4.1, s + 19) * 0.1;
+  const cl = x => x < 0 ? 0 : x > 1 ? 1 : x;
+  const ss = (a, b, x) => { const t = cl((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+  const RN = 0.1734;
+  const LOGO = [[0, 0], [0.7159, 0.4133], [0.3579, 0.2067], [0, 0.8266], [0, 0.4132],
+    [-0.7159, 0.4132], [-0.358, 0.2066], [-0.7159, -0.4133], [-0.3579, -0.2067],
+    [0, -0.8266], [0, -0.4133], [0.7159, -0.4133], [0.3579, -0.2066]];
+  function fold(x, y, sym) {
+    if (sym === 'x') return [Math.abs(x), y];
+    if (sym === 'xy') return [Math.abs(x), Math.abs(y)];
+    if (sym === 'hex') { let a = Math.atan2(y, x); const r = Math.hypot(x, y), seg = Math.PI / 3; a = ((a % seg) + seg) % seg; if (a > seg / 2) a = seg - a; return [Math.cos(a) * r, Math.sin(a) * r]; }
+    return [x, y];
+  }
+  function logoField(px, py, c) {
+    const W = c.W, H = c.H, S = c.scale, T = c.tile, soft = c.soft, cx = W / 2, cy = H / 2;
+    let nu, nv;
+    if (T <= 1) { const half = Math.min(W, H) / 2 * S; nu = (px - cx) / half; nv = (py - cy) / half; }
+    else { const cell = Math.min(W, H) / T, lx = (px - cx) / cell, ly = (py - cy) / cell; nu = (lx - Math.round(lx)) / (0.5 * S); nv = (ly - Math.round(ly)) / (0.5 * S); }
+    let d = 1e9;
+    for (const [a, b] of LOGO) { const dx = nu - a, dy = nv - b, dd = dx * dx + dy * dy; if (dd < d) d = dd; }
+    return 1 - ss(RN, RN + Math.max(0.004, soft), Math.sqrt(d));
+  }
+  const noiseField = (px, py, c) => cl(fbm(px * (c.nsc / 260), py * (c.nsc / 260), c.seed));
+  function lattice(c) {
+    const s = c.space, W = c.W, H = c.H, cx = W / 2, cy = H / 2, pts = [], ext = Math.hypot(W, H) + s * 2;
+    if (c.lat === 'sq') {
+      const h = Math.ceil(ext / s / 2);
+      for (let col = -h; col <= h; col++) for (let r = -h; r <= h; r++) pts.push({ x: cx + col * s, y: cy + r * s, i: col, j: r });
+    } else if (c.lat === 'con') {
+      pts.push({ x: cx, y: cy, i: 0, j: 0 });
+      const mR = ext / 2; let ring = 1;
+      for (let rad = s; rad <= mR; rad += s, ring++) { const n = Math.max(6, Math.round(TAU * rad / s)), ph = (ring % 2) * (Math.PI / n); for (let k = 0; k < n; k++) { const a = ph + k * TAU / n; pts.push({ x: cx + Math.cos(a) * rad, y: cy + Math.sin(a) * rad, i: ring, j: k }); } }
+    } else {
+      const colStep = s * Math.sqrt(3) / 2, hc = Math.ceil(ext / colStep / 2), hr = Math.ceil(ext / s / 2);
+      for (let col = -hc; col <= hc; col++) { const yo = (col & 1) ? s / 2 : 0; for (let r = -hr; r <= hr; r++) pts.push({ x: cx + col * colStep, y: cy + r * s + yo, i: col, j: r }); }
+    }
+    return pts;
+  }
+  let seed = 1337;
+  function cfg(W, H) {
+    return {
+      W, H, lat: api.lat, sym: api.sym, seed,
+      space: +$('ov-space').value, rot: +$('ov-rot').value, abs: +$('ov-abs').value / 100,
+      scale: +$('ov-scale').value / 100, tile: +$('ov-tile').value | 0, soft: +$('ov-soft').value / 100,
+      nsc: +$('ov-nsc').value / 100, dens: +$('ov-dens').value / 100, scat: +$('ov-scat').value / 100,
+      size: +$('ov-size').value / 100, sf: +$('ov-sf').value / 100, sr: +$('ov-sr').value / 100,
+      jit: +$('ov-jit').value / 100
+    };
+  }
+  function draw(ctx, W, H) {
+    if (!api.enabled || !$('ov-on') || !$('ov-on').checked) return;
+    const c = cfg(W, H), cx = W / 2, cy = H / 2;
+    const rot = c.rot * Math.PI / 180, cosR = Math.cos(rot), sinR = Math.sin(rot);
+    const baseR = c.size * c.space * 0.5, jit = c.jit * c.space, tau = 1 - c.dens, inv = $('ov-inv').checked;
+    ctx.save();
+    ctx.fillStyle = $('ov-dot').value;
+    ctx.globalAlpha = +$('ov-op').value / 100;
+    let drawn = 0; const CAP = 14000;
+    for (const p of lattice(c)) {
+      const [fx, fy] = fold(p.x - cx, p.y - cy, c.sym);
+      const sx = cx + fx, sy = cy + fy;
+      let lf = logoField(sx, sy, c); if (inv) lf = 1 - lf;
+      const nf = noiseField(sx, sy, c);
+      const f = nf * (1 - c.abs) + lf * c.abs;
+      let test = f; if (c.scat > 0) test += (hash2(p.i, p.j, c.seed + 101) - 0.5) * 2 * c.scat;
+      if (test <= tau) continue;
+      let r = baseR * (1 - c.sf + c.sf * Math.max(0.04, f));
+      if (c.sr > 0) r *= 1 + (hash2(p.i, p.j, c.seed + 202) - 0.5) * 2 * c.sr;
+      r = Math.max(0.4, r);
+      const dx = p.x - cx, dy = p.y - cy;
+      let px = cx + dx * cosR - dy * sinR, py = cy + dx * sinR + dy * cosR;
+      if (jit > 0) { px += (hash2(p.i, p.j, c.seed + 303) - 0.5) * 2 * jit; py += (hash2(p.i, p.j, c.seed + 404) - 0.5) * 2 * jit; }
+      if (px < -r || py < -r || px > W + r || py > H + r) continue;
+      ctx.beginPath(); ctx.arc(px, py, r, 0, TAU); ctx.fill();
+      if (++drawn >= CAP) break;
+    }
+    ctx.restore();
+  }
+
+  // value labels + pill wiring (controls re-render via the tool's continuous loop)
+  const VF = {
+    'ov-space': v => v, 'ov-rot': v => v + '°', 'ov-abs': v => (v / 100).toFixed(2),
+    'ov-scale': v => (v / 100).toFixed(2), 'ov-tile': v => v, 'ov-soft': v => (v / 100).toFixed(2),
+    'ov-nsc': v => (v / 100).toFixed(1), 'ov-dens': v => (v / 100).toFixed(2), 'ov-scat': v => (v / 100).toFixed(2),
+    'ov-size': v => (v / 100).toFixed(2), 'ov-sf': v => (v / 100).toFixed(2), 'ov-sr': v => (v / 100).toFixed(2),
+    'ov-jit': v => (v / 100).toFixed(2), 'ov-op': v => v + '%'
+  };
+  function refreshLabels() {
+    for (const id in VF) { const t = $('ovv-' + id.slice(3)); if (t) t.textContent = VF[id]($(id).value); }
+  }
+  function pills(wrap, set) {
+    const el = $(wrap); if (!el) return;
+    el.addEventListener('click', e => { const b = e.target.closest('.pill'); if (!b) return; [...el.children].forEach(c => c.classList.toggle('on', c === b)); set(b.dataset.v); });
+  }
+  const api = { draw, lat: 'tri', sym: 'none', enabled: false };
+  function init() {
+    if (document.documentElement.classList.contains('composite')) api.enabled = true;
+    Object.keys(VF).forEach(id => { const e = $(id); if (e) e.addEventListener('input', refreshLabels); });
+    pills('ov-lat', v => api.lat = v);
+    pills('ov-sym', v => api.sym = v);
+    const sh = $('ov-shuffle'); if (sh) sh.addEventListener('click', () => { seed = (Math.random() * 1e6) | 0; });
+    refreshLabels();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  return api;
+})();
+</script>
+
 <script>
 'use strict';
 
@@ -767,6 +942,9 @@ function drawScene(tCtx, transparent, dpr = DPR) {
     }
     tCtx.restore();
   }
+
+  // Dot pattern overlay (composite mode) — drawn on top, in logical coords
+  if (typeof OV !== 'undefined') OV.draw(tCtx, W, H);
 
   tCtx.restore();
 }
