@@ -5,7 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>PLATINE Brand Identity Tool</title>
 <script>try{const q=new URLSearchParams(location.search);if(q.has('embed'))document.documentElement.classList.add('embed');if(q.has('composite'))document.documentElement.classList.add('composite');}catch(e){}</script>
-<style>html.embed .brand-row{display:none!important}html.embed #sidebar{padding-top:14px}#ov-panel{display:none}html.composite #ov-panel{display:block}</style>
+<style>html.embed .brand-row{display:none!important}html.embed #sidebar{padding-top:14px}#ov-panel{display:none}html.composite #ov-panel{display:block}
+.layer-row{display:flex;align-items:center;justify-content:space-between;padding:6px 9px;margin-bottom:4px;background:#f4f4f4;border:1px solid #e4e4e4;border-radius:8px;font-size:12px;font-weight:500}
+.layer-row .layer-btns{display:flex;gap:4px}
+.layer-row button{width:24px;height:22px;border:1px solid #d0d0d0;background:#fff;border-radius:6px;cursor:pointer;font-size:12px;line-height:1;color:#333}
+.layer-row button:hover:not(:disabled){border-color:#000;background:#000;color:#fff}
+.layer-row button:disabled{opacity:.3;cursor:default}</style>
 <style>
 :root {
   --bg:       #efefef;
@@ -282,6 +287,13 @@ select { width: 100%; background: #f5f5f5; border: 1px solid var(--line); color:
         <input type="range" id="ov-op" min="10" max="100" value="100" style="flex:1"></div></div>
     <div class="ctrl"><button class="btn btn-ghost" id="ov-shuffle">↻ Shuffle overlay seed</button></div>
     <p class="hint">Dots are drawn on top of the animating logo and are included in PNG / MP4 / ZIP exports. Full Pattern-Studio engine; dots stay static while the logo animates.</p>
+  </div>
+
+  <!-- LAYER ORDER -->
+  <div class="section" id="layer-panel">
+    <div class="sec-title">Layer order</div>
+    <div id="layer-list"></div>
+    <p class="hint">Top = drawn first (back), bottom = on top. Reorder to stack bonds, atoms, crosshairs &amp; dots differently.</p>
   </div>
 
   <!-- LATTICE -->
@@ -755,7 +767,8 @@ const S = {
   rx: .6155, ry: .7854, rz: 0, zoom: 1,
   expFrames: 60, expAlpha: true, exporting: false,
   svgMerge: false,
-  ch: false, chSz: 0.4, chW: 1.0, chC: '#000000'
+  ch: false, chSz: 0.4, chW: 1.0, chC: '#000000',
+  layerOrder: ['bonds', 'atoms', 'crosshairs', 'dots']
 };
 
 // ── Offscreen canvases ─────────────────────────────────────────────────────
@@ -856,114 +869,119 @@ function drawScene(tCtx, transparent, dpr = DPR) {
   if (transparent) tCtx.clearRect(0, 0, W, H);
   else { tCtx.fillStyle = S.bg; tCtx.fillRect(0, 0, W, H); }
 
-  // Bonds
-  if (S.sb && bonds.length) {
-    tCtx.save();
-    tCtx.globalAlpha = S.bo; tCtx.strokeStyle = S.bc; tCtx.lineWidth = S.bw; tCtx.lineCap = 'round';
-    for (const [i, j] of bonds) {
-      tCtx.beginPath(); tCtx.moveTo(atoms[i].sx, atoms[i].sy);
-      tCtx.lineTo(atoms[j].sx, atoms[j].sy); tCtx.stroke();
-    }
-    tCtx.restore();
-  }
-
-  if (S.showAtoms && S.merged) {
-    // ── MERGED rendering ──────────────────────────────────────────
-    ensureOff(pw, ph);
-    const cA = offA.getContext('2d'), cB = offB.getContext('2d');
-
-    // 1. Outer stroke ring (drawn first so fill covers the inner half)
-    if (S.sw > 0) {
-      const outerR = arP + S.sw * DPR;   // full outer stroke: ar → ar+sw
-      cB.clearRect(0, 0, pw, ph);
-      fillCircles(cB, atomsP, outerR, S.sc);
-      cB.globalCompositeOperation = 'destination-out';
-      fillCircles(cB, atomsP, arP, '#000');           // punch out fill area
-      cB.globalCompositeOperation = 'source-over';
-      tCtx.drawImage(offB, 0, 0, W, H);
-    }
-
-    // 2. Fill
-    cA.clearRect(0, 0, pw, ph);
-    fillCircles(cA, atomsP, arP, S.ac);
-    tCtx.drawImage(offA, 0, 0, W, H);
-
-    // 3. Glow — silhouette-based inner glow (no visible per-circle seams)
-    if (S.gi > 0) {
-      const cC = offC.getContext('2d');
-      const blurD = Math.max(4, arP * S.gs);
-
-      // Rebuild silhouette mask in cA (white = inside merged shape)
-      cA.clearRect(0, 0, pw, ph);
-      fillCircles(cA, atomsP, arP, '#fff');
-
-      // cB = glow color everywhere OUTSIDE the merged silhouette
-      cB.clearRect(0, 0, pw, ph);
-      cB.fillStyle = S.gc; cB.fillRect(0, 0, pw, ph);
-      cB.globalCompositeOperation = 'destination-out';
-      cB.drawImage(offA, 0, 0);       // punch out using merged outline (not individual circles)
-      cB.globalCompositeOperation = 'source-over';
-
-      // cC = blur cB so glow bleeds inward past the silhouette edge
-      cC.clearRect(0, 0, pw, ph);
-      cC.filter = `blur(${blurD}px)`;
-      cC.drawImage(offB, 0, 0);
-      cC.filter = 'none';
-
-      // Clip cC to inside the silhouette only
-      cC.globalCompositeOperation = 'destination-in';
-      cC.drawImage(offA, 0, 0);
-      cC.globalCompositeOperation = 'source-over';
-
+  // ── Reorderable layers (default: bonds → atoms → crosshairs → dots) ──
+  const LAYERS = {
+    bonds() {
+      if (!(S.sb && bonds.length)) return;
       tCtx.save();
-      tCtx.globalAlpha = S.gi;
-      for (let p = 0; p < S.gp; p++) tCtx.drawImage(offC, 0, 0, W, H);
+      tCtx.globalAlpha = S.bo; tCtx.strokeStyle = S.bc; tCtx.lineWidth = S.bw; tCtx.lineCap = 'round';
+      for (const [i, j] of bonds) {
+        tCtx.beginPath(); tCtx.moveTo(atoms[i].sx, atoms[i].sy);
+        tCtx.lineTo(atoms[j].sx, atoms[j].sy); tCtx.stroke();
+      }
       tCtx.restore();
-    }
+    },
+    atoms() {
+      if (S.showAtoms && S.merged) {
+        // ── MERGED rendering ──────────────────────────────────────────
+        ensureOff(pw, ph);
+        const cA = offA.getContext('2d'), cB = offB.getContext('2d');
 
-  } else if (S.showAtoms) {
-    // ── INDIVIDUAL rendering (back → front z-sort) ─────────────────
-    const sorted = [...atoms].sort((a, b) => a.sz - b.sz);
-    const [R, G, B] = hexRGB(S.gc);
+        // 1. Outer stroke ring (drawn first so fill covers the inner half)
+        if (S.sw > 0) {
+          const outerR = arP + S.sw * DPR;   // full outer stroke: ar → ar+sw
+          cB.clearRect(0, 0, pw, ph);
+          fillCircles(cB, atomsP, outerR, S.sc);
+          cB.globalCompositeOperation = 'destination-out';
+          fillCircles(cB, atomsP, arP, '#000');           // punch out fill area
+          cB.globalCompositeOperation = 'source-over';
+          tCtx.drawImage(offB, 0, 0, W, H);
+        }
 
-    for (const { sx, sy } of sorted) {
-      // Outer stroke disc first (behind fill)
-      if (S.sw > 0) {
-        tCtx.beginPath(); tCtx.arc(sx, sy, ar + S.sw, 0, Math.PI*2);
-        tCtx.fillStyle = S.sc; tCtx.fill();
+        // 2. Fill
+        cA.clearRect(0, 0, pw, ph);
+        fillCircles(cA, atomsP, arP, S.ac);
+        tCtx.drawImage(offA, 0, 0, W, H);
+
+        // 3. Glow — silhouette-based inner glow (no visible per-circle seams)
+        if (S.gi > 0) {
+          const cC = offC.getContext('2d');
+          const blurD = Math.max(4, arP * S.gs);
+
+          // Rebuild silhouette mask in cA (white = inside merged shape)
+          cA.clearRect(0, 0, pw, ph);
+          fillCircles(cA, atomsP, arP, '#fff');
+
+          // cB = glow color everywhere OUTSIDE the merged silhouette
+          cB.clearRect(0, 0, pw, ph);
+          cB.fillStyle = S.gc; cB.fillRect(0, 0, pw, ph);
+          cB.globalCompositeOperation = 'destination-out';
+          cB.drawImage(offA, 0, 0);       // punch out using merged outline (not individual circles)
+          cB.globalCompositeOperation = 'source-over';
+
+          // cC = blur cB so glow bleeds inward past the silhouette edge
+          cC.clearRect(0, 0, pw, ph);
+          cC.filter = `blur(${blurD}px)`;
+          cC.drawImage(offB, 0, 0);
+          cC.filter = 'none';
+
+          // Clip cC to inside the silhouette only
+          cC.globalCompositeOperation = 'destination-in';
+          cC.drawImage(offA, 0, 0);
+          cC.globalCompositeOperation = 'source-over';
+
+          tCtx.save();
+          tCtx.globalAlpha = S.gi;
+          for (let p = 0; p < S.gp; p++) tCtx.drawImage(offC, 0, 0, W, H);
+          tCtx.restore();
+        }
+
+      } else if (S.showAtoms) {
+        // ── INDIVIDUAL rendering (back → front z-sort) ─────────────────
+        const sorted = [...atoms].sort((a, b) => a.sz - b.sz);
+        const [R, G, B] = hexRGB(S.gc);
+
+        for (const { sx, sy } of sorted) {
+          // Outer stroke disc first (behind fill)
+          if (S.sw > 0) {
+            tCtx.beginPath(); tCtx.arc(sx, sy, ar + S.sw, 0, Math.PI*2);
+            tCtx.fillStyle = S.sc; tCtx.fill();
+          }
+          // Fill disc
+          tCtx.beginPath(); tCtx.arc(sx, sy, ar, 0, Math.PI*2);
+          tCtx.fillStyle = S.ac; tCtx.fill();
+          // Inner glow gradient (transparent center → colored rim), stacked S.gp times
+          if (S.gi > 0) {
+            const inn = Math.max(0, ar * (1 - S.gs));
+            const g = tCtx.createRadialGradient(sx, sy, inn, sx, sy, ar);
+            g.addColorStop(0, 'rgba(0,0,0,0)');
+            g.addColorStop(1, `rgba(${R},${G},${B},${S.gi})`);
+            tCtx.beginPath(); tCtx.arc(sx, sy, ar, 0, Math.PI*2); tCtx.fillStyle = g;
+            for (let p = 0; p < S.gp; p++) tCtx.fill();
+          }
+        }
       }
-      // Fill disc
-      tCtx.beginPath(); tCtx.arc(sx, sy, ar, 0, Math.PI*2);
-      tCtx.fillStyle = S.ac; tCtx.fill();
-      // Inner glow gradient (transparent center → colored rim), stacked S.gp times
-      if (S.gi > 0) {
-        const inn = Math.max(0, ar * (1 - S.gs));
-        const g = tCtx.createRadialGradient(sx, sy, inn, sx, sy, ar);
-        g.addColorStop(0, 'rgba(0,0,0,0)');
-        g.addColorStop(1, `rgba(${R},${G},${B},${S.gi})`);
-        tCtx.beginPath(); tCtx.arc(sx, sy, ar, 0, Math.PI*2); tCtx.fillStyle = g;
-        for (let p = 0; p < S.gp; p++) tCtx.fill();
+    },
+    crosshairs() {
+      if (!(S.ch && S.showAtoms)) return;
+      const chLen = ar * S.chSz;
+      tCtx.save();
+      tCtx.strokeStyle = S.chC;
+      tCtx.lineWidth = S.chW;
+      tCtx.lineCap = 'round';
+      for (const { sx, sy } of atoms) {
+        tCtx.beginPath(); tCtx.moveTo(sx - chLen, sy); tCtx.lineTo(sx + chLen, sy); tCtx.stroke();
+        tCtx.beginPath(); tCtx.moveTo(sx, sy - chLen); tCtx.lineTo(sx, sy + chLen); tCtx.stroke();
       }
+      tCtx.restore();
+    },
+    dots() {
+      // Dot pattern overlay (composite mode); `atoms`/`ar` = the live 3D logo
+      if (typeof OV !== 'undefined') OV.draw(tCtx, W, H, atoms, ar);
     }
-  }
-
-  // Crosshairs
-  if (S.ch && S.showAtoms) {
-    const chLen = ar * S.chSz;
-    tCtx.save();
-    tCtx.strokeStyle = S.chC;
-    tCtx.lineWidth = S.chW;
-    tCtx.lineCap = 'round';
-    for (const { sx, sy } of atoms) {
-      tCtx.beginPath(); tCtx.moveTo(sx - chLen, sy); tCtx.lineTo(sx + chLen, sy); tCtx.stroke();
-      tCtx.beginPath(); tCtx.moveTo(sx, sy - chLen); tCtx.lineTo(sx, sy + chLen); tCtx.stroke();
-    }
-    tCtx.restore();
-  }
-
-  // Dot pattern overlay (composite mode) — drawn on top, in logical coords.
-  // `atoms`/`ar` are the live (rotating) 3D logo, usable as the shape source.
-  if (typeof OV !== 'undefined') OV.draw(tCtx, W, H, atoms, ar);
+  };
+  const order = (S.layerOrder && S.layerOrder.length) ? S.layerOrder : ['bonds', 'atoms', 'crosshairs', 'dots'];
+  for (const key of order) if (LAYERS[key]) LAYERS[key]();
 
   tCtx.restore();
 }
@@ -1657,6 +1675,28 @@ document.getElementById('tl-dur').addEventListener('input', function() {
   updateTLTimeDisp();
   renderTL();
 });
+
+// ── Layer order UI ───────────────────────────────────────────────────────────
+const LAYER_LABELS = { bonds: 'Bonds', atoms: 'Atoms (logo)', crosshairs: 'Crosshairs', dots: 'Dots overlay' };
+function renderLayers() {
+  const host = document.getElementById('layer-list'); if (!host) return;
+  host.innerHTML = '';
+  S.layerOrder.forEach((key, idx) => {
+    const row = document.createElement('div');
+    row.className = 'layer-row';
+    const name = document.createElement('span'); name.textContent = LAYER_LABELS[key] || key;
+    const btns = document.createElement('span'); btns.className = 'layer-btns';
+    const mk = (d, label, dis) => {
+      const b = document.createElement('button'); b.textContent = label; if (dis) b.disabled = true;
+      b.onclick = () => { const ni = idx + d; if (ni < 0 || ni >= S.layerOrder.length) return; const a = S.layerOrder;[a[idx], a[ni]] = [a[ni], a[idx]]; renderLayers(); };
+      return b;
+    };
+    btns.append(mk(-1, '↑', idx === 0), mk(1, '↓', idx === S.layerOrder.length - 1));
+    row.append(name, btns);
+    host.appendChild(row);
+  });
+}
+renderLayers();
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 rebuild(); resize(); tick(performance.now());
