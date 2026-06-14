@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PLATINE Brand Identity Tool</title>
+<style>
+:root { --bg:#efefef; --line:#d4d4d4; --accent:#d4fc4e; --dim:#666; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { display: flex; flex-direction: column; background: #141414; overflow: hidden;
+  font-family: -apple-system, "Inter", "Helvetica Neue", BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased; }
+
+#topbar { height: 46px; flex-shrink: 0; display: flex; align-items: center; gap: 16px;
+  padding: 0 14px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.tw-brand { font-weight: 900; font-size: 15px; letter-spacing: -0.01em; color: #000; }
+.tw-brand small { font-size: 9px; font-weight: 600; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 0.12em; margin-left: 7px; }
+.tabs { display: flex; gap: 5px; }
+.tab { padding: 6px 15px; border-radius: 999px; border: 1px solid #d0d0d0; background: transparent;
+  color: #888; font-weight: 600; font-size: 12px; letter-spacing: 0.02em; cursor: pointer;
+  font-family: inherit; transition: all 0.12s; }
+.tab:hover { border-color: #aaa; color: #333; }
+.tab.on { background: #000; color: #fff; border-color: #000; }
+.tab.on:hover { color: #fff; }
+.spacer { flex: 1; }
+.hub { font-size: 10px; color: var(--dim); text-decoration: none; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em; }
+.hub:hover { color: #000; }
+
+#frames { flex: 1; position: relative; min-height: 0; }
+iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: none; background: #141414; }
+iframe.on { display: block; }
+</style>
+</head>
+<body>
+  <div id="topbar">
+    <div class="tw-brand">PLATINE<small>Brand Identity Tool</small></div>
+    <div class="tabs">
+      <button class="tab on" data-tab="logo">Logo</button>
+      <button class="tab" data-tab="patterns">Patterns</button>
+    </div>
+    <div class="spacer"></div>
+    <a class="hub" href="../../index.html">← Hub</a>
+  </div>
+  <div id="frames">
+    <iframe id="f-logo" class="on" data-src="../platine-brand-identity-tool/index.html?embed" title="Logo"></iframe>
+    <iframe id="f-patterns" data-src="../platine-pattern-studio/index.html?embed" title="Patterns"></iframe>
+  </div>
+
+<script>
+  const frames = {
+    logo: document.getElementById('f-logo'),
+    patterns: document.getElementById('f-patterns')
+  };
+  function loadFrame(f) { if (!f.src) f.src = f.dataset.src; }
+  function show(tab) {
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+    for (const k in frames) frames[k].classList.toggle('on', k === tab);
+    loadFrame(frames[tab]);
+  }
+  document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => show(b.dataset.tab)));
+  // load the default (Logo) tab; the other loads lazily on first click
+  loadFrame(frames.logo);
+</script>
+</body>
+</html>
