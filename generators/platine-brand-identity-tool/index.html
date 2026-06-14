@@ -963,7 +963,7 @@ function drawScene(tCtx, transparent, dpr = DPR) {
       }
     },
     crosshairs() {
-      if (!(S.ch && S.showAtoms)) return;
+      if (!S.ch) return;   // independent of atom fill — show even when atoms are hidden
       const chLen = ar * S.chSz;
       tCtx.save();
       tCtx.strokeStyle = S.chC;
@@ -1089,7 +1089,7 @@ function exportSVG() {
   }
 
   // Crosshairs
-  if (S.ch && S.showAtoms) {
+  if (S.ch) {
     const chLen = ar * S.chSz;
     body += `<g stroke="${S.chC}" stroke-width="${f2(S.chW)}" stroke-linecap="round" fill="none">`;
     for (const { sx, sy } of sorted) {
