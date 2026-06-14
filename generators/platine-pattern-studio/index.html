@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PLATINE Pattern Studio</title>
+<style>
+:root {
+  --bg:     #efefef;
+  --card:   #ffffff;
+  --text:   #000000;
+  --dim:    #666666;
+  --line:   #e4e4e4;
+  --line2:  #d0d0d0;
+  --accent: #d4fc4e;
+  --r-lg:   18px;
+  --r-pill: 999px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
+  font-family: -apple-system, "Inter", "Helvetica Neue", BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased; }
+body { display: flex; }
+
+#sidebar { width: 290px; flex-shrink: 0; height: 100vh; overflow-y: auto;
+  padding: 16px 14px 24px; background: var(--bg); border-right: 1px solid var(--line);
+  scrollbar-width: thin; scrollbar-color: #ccc transparent; }
+#sidebar::-webkit-scrollbar { width: 5px; }
+#sidebar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+.brand-row { display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 16px; padding: 0 2px; }
+.brand { font-size: 17px; font-weight: 900; letter-spacing: -0.01em; line-height: 1; }
+.brand-sub { font-size: 10px; color: var(--dim); text-transform: uppercase;
+  letter-spacing: 0.12em; font-weight: 600; margin-top: 3px; }
+.back-link { font-size: 10px; color: var(--dim); text-decoration: none; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; margin-top: 3px; }
+.back-link:hover { color: var(--text); }
+
+.section { background: var(--card); border-radius: var(--r-lg); padding: 14px 14px 16px; margin-bottom: 8px; }
+.sec-title { display: inline-block; background: var(--accent); color: #000;
+  padding: 2px 6px; font-family: ui-monospace, "SF Mono", "Menlo", monospace;
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+  border-radius: 3px; margin-bottom: 12px; }
+
+.ctrl { margin-bottom: 10px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl > label, .ctrl-row { display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 5px; }
+.ctrl > label .val, .val { color: var(--dim); font-size: 11px;
+  font-family: ui-monospace, "SF Mono", monospace; font-variant-numeric: tabular-nums; }
+.hide { display: none !important; }
+
+.swatch { width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--line2);
+  overflow: hidden; flex-shrink: 0; position: relative; cursor: pointer; }
+.swatch input[type=color] { position: absolute; inset: -4px;
+  width: calc(100% + 8px); height: calc(100% + 8px); border: none; padding: 0; cursor: pointer; }
+.row2 { display: flex; align-items: center; gap: 8px; }
+
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+  background: var(--line2); border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px;
+  border-radius: 50%; background: #000; cursor: pointer; transition: transform 0.1s; }
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%;
+  background: #000; cursor: pointer; border: none; }
+
+.tog { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
+.tog input { opacity: 0; width: 0; height: 0; position: absolute; }
+.tog-tr { position: absolute; inset: 0; background: #d0d0d0; border-radius: 11px;
+  cursor: pointer; transition: background 0.15s; }
+.tog-tr::before { content: ''; position: absolute; width: 16px; height: 16px;
+  left: 3px; top: 3px; background: #fff; border-radius: 50%;
+  transition: transform 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,.18); }
+.tog input:checked ~ .tog-tr { background: #000; }
+.tog input:checked ~ .tog-tr::before { transform: translateX(16px); }
+.tog-row { display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; font-weight: 500; }
+
+.pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.pill { padding: 5px 11px; border: 1px solid var(--line2); border-radius: var(--r-pill);
+  background: transparent; color: #888; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.03em; cursor: pointer; transition: all 0.12s; font-family: inherit; }
+.pill:hover { border-color: #aaa; color: #333; }
+.pill.on { border-color: #000; background: #000; color: #fff; }
+
+select { width: 100%; background: #f5f5f5; border: 1px solid var(--line); color: var(--text);
+  padding: 8px 12px; border-radius: var(--r-pill); font-size: 12px; font-weight: 500;
+  outline: none; cursor: pointer; font-family: inherit; appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
+
+.btn { width: 100%; padding: 9px 14px; border-radius: var(--r-pill); font-size: 12px;
+  font-weight: 700; cursor: pointer; transition: all 0.15s; font-family: inherit;
+  letter-spacing: 0.02em; border: none; }
+.btn-primary { background: #000; color: #fff; } .btn-primary:hover { background: #222; }
+.btn-ghost { background: var(--card); color: var(--text); border: 1px solid var(--line2); }
+.btn-ghost:hover { background: #f0f0f0; }
+.btn-accent { background: var(--accent); color: #000; } .btn-accent:hover { opacity: 0.85; }
+.btn-row { display: flex; gap: 6px; } .btn-row .btn { flex: 1; }
+.hint { font-size: 10px; color: var(--dim); line-height: 1.5; margin-top: 6px; }
+
+#canvas-area { flex: 1; display: flex; flex-direction: column; min-width: 0; background: #141414; }
+#canvas-wrap { flex: 1; position: relative; display: flex; align-items: center;
+  justify-content: center; min-height: 0; overflow: hidden; padding: 28px; }
+#stage { display: block; max-width: 100%; max-height: 100%;
+  box-shadow: 0 6px 40px rgba(0,0,0,0.5);
+  background-image: linear-gradient(45deg,#2a2a2a 25%,transparent 25%),linear-gradient(-45deg,#2a2a2a 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#2a2a2a 75%),linear-gradient(-45deg,transparent 75%,#2a2a2a 75%);
+  background-size: 22px 22px; background-position: 0 0,0 11px,11px -11px,-11px 0; }
+#stage.solid { background-image: none; }
+#stage svg { display: block; width: 100%; height: 100%; }
+
+#hud { position: absolute; bottom: 18px; left: 22px; pointer-events: none; }
+.hud-name { font-size: 14px; font-weight: 900; letter-spacing: 6px;
+  color: rgba(255,255,255,0.14); text-transform: uppercase; }
+.hud-sub { font-size: 7px; letter-spacing: 3px; color: rgba(255,255,255,0.09);
+  text-transform: uppercase; margin-top: 3px; }
+#count { position: absolute; top: 16px; right: 18px; font-family: ui-monospace, monospace;
+  font-size: 10px; color: rgba(255,255,255,0.35); pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <div class="brand-row">
+    <div>
+      <div class="brand">PLATINE</div>
+      <div class="brand-sub">Pattern Studio</div>
+    </div>
+    <a class="back-link" href="../../index.html">← Hub</a>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Lattice</div>
+    <div class="ctrl">
+      <div class="pills" id="lat-pills">
+        <button class="pill on" data-v="tri">Triangular</button>
+        <button class="pill" data-v="sq">Square</button>
+        <button class="pill" data-v="con">Concentric</button>
+      </div>
+    </div>
+    <div class="ctrl"><label>Spacing <span class="val" id="v-space">64</span></label>
+      <input type="range" id="sl-space" min="16" max="240" value="64"></div>
+    <div class="ctrl"><label>Rotation <span class="val" id="v-rot">0°</span></label>
+      <input type="range" id="sl-rot" min="-180" max="180" value="0"></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Pattern</div>
+    <div class="ctrl"><label>Field</label>
+      <select id="sel-field">
+        <option value="uniform">Uniform — full lattice</option>
+        <option value="radial">Radial — from center</option>
+        <option value="linear">Linear — gradient</option>
+        <option value="noise">Noise — organic clusters</option>
+        <option value="logo">Logo — hexagram mask</option>
+      </select></div>
+    <div class="ctrl fld-radial"><label>Falloff <span class="val" id="v-fall">1.0</span></label>
+      <input type="range" id="sl-fall" min="20" max="320" value="100"></div>
+    <div class="ctrl fld-linear"><label>Angle <span class="val" id="v-lang">45°</span></label>
+      <input type="range" id="sl-lang" min="0" max="360" value="45"></div>
+    <div class="ctrl fld-noise"><label>Noise scale <span class="val" id="v-nsc">1.0</span></label>
+      <input type="range" id="sl-nsc" min="20" max="400" value="100"></div>
+    <div class="ctrl"><label>Density <span class="val" id="v-dens">1.00</span></label>
+      <input type="range" id="sl-dens" min="0" max="100" value="100"></div>
+    <div class="ctrl"><label>Scatter <span class="val" id="v-scat">0.00</span></label>
+      <input type="range" id="sl-scat" min="0" max="100" value="0"></div>
+    <div class="ctrl"><div class="tog-row"><span>Invert field</span>
+      <label class="tog"><input type="checkbox" id="cb-inv"><span class="tog-tr"></span></label></div></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Dots</div>
+    <div class="ctrl"><label>Base size <span class="val" id="v-size">0.50</span></label>
+      <input type="range" id="sl-size" min="6" max="130" value="50"></div>
+    <div class="ctrl"><label>Size ← field <span class="val" id="v-sf">0.00</span></label>
+      <input type="range" id="sl-sf" min="0" max="100" value="0"></div>
+    <div class="ctrl"><label>Size random <span class="val" id="v-sr">0.00</span></label>
+      <input type="range" id="sl-sr" min="0" max="100" value="0"></div>
+    <div class="ctrl"><label>Position jitter <span class="val" id="v-jit">0.00</span></label>
+      <input type="range" id="sl-jit" min="0" max="100" value="0"></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Symmetry</div>
+    <div class="pills" id="sym-pills">
+      <button class="pill on" data-v="none">None</button>
+      <button class="pill" data-v="x">Mirror X</button>
+      <button class="pill" data-v="xy">Mirror XY</button>
+      <button class="pill" data-v="hex">6-fold</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Colours</div>
+    <div class="ctrl"><label>Dots</label>
+      <div class="row2"><div class="swatch"><input type="color" id="cp-dot" value="#d9d9d9"></div>
+        <input type="range" id="sl-op" min="10" max="100" value="100"><span class="val" id="v-op">100%</span></div></div>
+    <div class="ctrl"><div class="tog-row"><span>Transparent background</span>
+      <label class="tog"><input type="checkbox" id="cb-trans"><span class="tog-tr"></span></label></div></div>
+    <div class="ctrl bg-row"><label>Background</label>
+      <div class="swatch"><input type="color" id="cp-bg" value="#000000"></div></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Canvas</div>
+    <div class="pills" id="size-pills">
+      <button class="pill on" data-w="1080" data-h="1080">1:1</button>
+      <button class="pill" data-w="1080" data-h="1920">9:16</button>
+      <button class="pill" data-w="1920" data-h="1080">16:9</button>
+      <button class="pill" data-w="1414" data-h="2000">A-Port</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Generate</div>
+    <div class="ctrl"><button class="btn btn-accent" id="b-logo">Reproduce logo</button></div>
+    <div class="ctrl"><button class="btn btn-ghost" id="b-shuffle">↻ Shuffle seed</button></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="b-svg">↓ SVG</button>
+      <button class="btn btn-ghost" id="b-png">↓ PNG</button>
+    </div>
+    <p class="hint">SVG exports as crisp vector circles. Transparent background gives you an overlay to drop over images.</p>
+  </div>
+</div>
+
+<div id="canvas-area">
+  <div id="canvas-wrap">
+    <div id="stage"></div>
+    <div id="count"></div>
+    <div id="hud"><div class="hud-name">PLATINE</div><div class="hud-sub">Pattern Studio</div></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const SVGNS = 'http://www.w3.org/2000/svg';
+const TAU = Math.PI * 2;
+
+const state = {
+  lattice: 'tri', sym: 'none', field: 'uniform',
+  W: 1080, H: 1080, seed: 1337
+};
+
+/* ── hashing / noise (deterministic, seedable) ───────────────── */
+function hash2(x, y, s) {
+  let h = (x | 0) * 374761393 + (y | 0) * 668265263 + (s | 0) * 1442695041;
+  h = (h ^ (h >>> 13)) * 1274126177;
+  h = h ^ (h >>> 16);
+  return (h >>> 0) / 4294967295;
+}
+const smooth = t => t * t * (3 - 2 * t);
+function vnoise(x, y, s) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = smooth(xf), v = smooth(yf);
+  const a = hash2(xi, yi, s), b = hash2(xi + 1, yi, s);
+  const c = hash2(xi, yi + 1, s), d = hash2(xi + 1, yi + 1, s);
+  return a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v;
+}
+function fbm(x, y, s) {
+  return vnoise(x, y, s) * 0.6 + vnoise(x * 2.03, y * 2.03, s + 7) * 0.3 + vnoise(x * 4.1, y * 4.1, s + 19) * 0.1;
+}
+
+/* ── exact logo hexagram in (col,row) lattice indices ─────────── */
+const HEXAGRAM = new Set([
+  '0,0',
+  '0,-1', '0,1', '1,-1', '1,0', '-1,-1', '-1,0',
+  '0,-2', '0,2', '2,-1', '2,1', '-2,-1', '-2,1'
+]);
+
+/* ── symmetry folding of a point relative to canvas centre ────── */
+function fold(x, y, sym) {
+  if (sym === 'x') return [Math.abs(x), y];
+  if (sym === 'xy') return [Math.abs(x), Math.abs(y)];
+  if (sym === 'hex') {
+    let a = Math.atan2(y, x);
+    const r = Math.hypot(x, y);
+    const seg = Math.PI / 3;
+    a = ((a % seg) + seg) % seg;       // fold into 60° wedge
+    if (a > seg / 2) a = seg - a;       // mirror within wedge → D6
+    return [Math.cos(a) * r, Math.sin(a) * r];
+  }
+  return [x, y];
+}
+
+/* ── field value in [0,1] at point relative to canvas centre ──── */
+function fieldAt(fx, fy, halfDiag) {
+  switch (state.field) {
+    case 'radial': {
+      const fall = +$('sl-fall').value / 100;
+      const t = Math.min(1, Math.hypot(fx, fy) / halfDiag);
+      return Math.pow(1 - t, fall);
+    }
+    case 'linear': {
+      const ang = (+$('sl-lang').value) * Math.PI / 180;
+      const proj = (fx * Math.cos(ang) + fy * Math.sin(ang)) / (2 * halfDiag) + 0.5;
+      return Math.max(0, Math.min(1, proj));
+    }
+    case 'noise': {
+      const sc = (+$('sl-nsc').value / 100) / 260;
+      return Math.max(0, Math.min(1, fbm(fx * sc, fy * sc, state.seed)));
+    }
+    default: return 1; // uniform / logo handled at presence stage
+  }
+}
+
+/* ── build the lattice point list (px coords) ─────────────────── */
+function latticePoints() {
+  const s = +$('sl-space').value;
+  const W = state.W, H = state.H, cx = W / 2, cy = H / 2;
+  const pts = [];
+  const margin = s * 2;
+  if (state.lattice === 'sq') {
+    const nx = Math.ceil((W + margin * 2) / s), ny = Math.ceil((H + margin * 2) / s);
+    const c0 = -Math.ceil(nx / 2), r0 = -Math.ceil(ny / 2);
+    for (let c = c0; c <= -c0; c++)
+      for (let r = r0; r <= -r0; r++)
+        pts.push({ x: cx + c * s, y: cy + r * s, i: c, j: r });
+  } else if (state.lattice === 'con') {
+    pts.push({ x: cx, y: cy, i: 0, j: 0 });
+    const maxR = Math.hypot(W, H) / 2 + margin;
+    let ring = 1;
+    for (let rad = s; rad <= maxR; rad += s, ring++) {
+      const n = Math.max(6, Math.round(TAU * rad / s));
+      const ph = (ring % 2) * (Math.PI / n);
+      for (let k = 0; k < n; k++) {
+        const a = ph + k * TAU / n;
+        pts.push({ x: cx + Math.cos(a) * rad, y: cy + Math.sin(a) * rad, i: ring, j: k });
+      }
+    }
+  } else { // triangular (logo orientation: vertical close-packed columns)
+    const colStep = s * Math.sqrt(3) / 2;
+    const nx = Math.ceil((W + margin * 2) / colStep), ny = Math.ceil((H + margin * 2) / s);
+    const c0 = -Math.ceil(nx / 2), r0 = -Math.ceil(ny / 2);
+    for (let c = c0; c <= -c0; c++) {
+      const yo = (c & 1) ? s / 2 : 0;
+      for (let r = r0; r <= -r0; r++)
+        pts.push({ x: cx + c * colStep, y: cy + r * s + yo, i: c, j: r });
+    }
+  }
+  return pts;
+}
+
+/* ── main build ───────────────────────────────────────────────── */
+function build() {
+  const W = state.W, H = state.H, cx = W / 2, cy = H / 2;
+  const halfDiag = Math.hypot(W, H) / 2;
+  const s = +$('sl-space').value;
+  const rot = (+$('sl-rot').value) * Math.PI / 180;
+  const cosR = Math.cos(rot), sinR = Math.sin(rot);
+  const baseR = (+$('sl-size').value / 100) * s * 0.5;
+  const sizeF = +$('sl-sf').value / 100;
+  const sizeRand = +$('sl-sr').value / 100;
+  const jit = +$('sl-jit').value / 100 * s;
+  const dens = +$('sl-dens').value / 100;
+  const scat = +$('sl-scat').value / 100;
+  const inv = $('cb-inv').checked;
+  const tau = 1 - dens;
+  const isLogo = state.field === 'logo';
+
+  const svg = document.createElementNS(SVGNS, 'svg');
+  svg.setAttribute('xmlns', SVGNS);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('width', W);
+  svg.setAttribute('height', H);
+
+  const trans = $('cb-trans').checked;
+  if (!trans) {
+    const rect = document.createElementNS(SVGNS, 'rect');
+    rect.setAttribute('x', 0); rect.setAttribute('y', 0);
+    rect.setAttribute('width', W); rect.setAttribute('height', H);
+    rect.setAttribute('fill', $('cp-bg').value);
+    svg.appendChild(rect);
+  }
+
+  const g = document.createElementNS(SVGNS, 'g');
+  g.setAttribute('fill', $('cp-dot').value);
+  const op = +$('sl-op').value / 100;
+  if (op < 1) g.setAttribute('fill-opacity', op.toFixed(3));
+
+  const pts = latticePoints();
+  let drawn = 0;
+  const CAP = 14000;
+
+  for (const p of pts) {
+    // rotate the lattice around the canvas centre
+    let dx = p.x - cx, dy = p.y - cy;
+    let px = cx + dx * cosR - dy * sinR;
+    let py = cy + dx * sinR + dy * cosR;
+
+    let f, show;
+    if (isLogo) {
+      show = (state.lattice === 'tri') ? HEXAGRAM.has(p.i + ',' + p.j) : false;
+      f = 1;
+    } else {
+      let rx = px - cx, ry = py - cy;
+      const [fx, fy] = fold(rx, ry, state.sym);
+      f = fieldAt(fx, fy, halfDiag);
+      if (inv) f = 1 - f;
+      let test = f;
+      if (scat > 0) test += (hash2(p.i, p.j, state.seed + 101) - 0.5) * 2 * scat;
+      show = (state.field === 'uniform') ? (dens >= 1 ? true : test > tau) : test > tau;
+    }
+    if (!show) continue;
+
+    let r = baseR * (1 - sizeF + sizeF * Math.max(0.04, f));
+    if (sizeRand > 0) r *= 1 + (hash2(p.i, p.j, state.seed + 202) - 0.5) * 2 * sizeRand;
+    r = Math.max(0.4, r);
+
+    if (jit > 0) {
+      px += (hash2(p.i, p.j, state.seed + 303) - 0.5) * 2 * jit;
+      py += (hash2(p.i, p.j, state.seed + 404) - 0.5) * 2 * jit;
+    }
+
+    // cull dots fully outside the canvas
+    if (px < -r || py < -r || px > W + r || py > H + r) continue;
+
+    const c = document.createElementNS(SVGNS, 'circle');
+    c.setAttribute('cx', +px.toFixed(2));
+    c.setAttribute('cy', +py.toFixed(2));
+    c.setAttribute('r', +r.toFixed(2));
+    g.appendChild(c);
+    if (++drawn >= CAP) break;
+  }
+
+  svg.appendChild(g);
+  const stage = $('stage');
+  stage.classList.toggle('solid', !trans);
+  stage.style.aspectRatio = W + ' / ' + H;
+  stage.innerHTML = '';
+  stage.appendChild(svg);
+  $('count').textContent = drawn + (drawn >= CAP ? '+ dots · capped' : ' dots') + ' · ' + W + '×' + H;
+}
+
+/* ── export ───────────────────────────────────────────────────── */
+function svgMarkup() {
+  const svg = $('stage').querySelector('svg').cloneNode(true);
+  svg.setAttribute('xmlns', SVGNS);
+  return '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(svg);
+}
+function download(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+function saveSVG() {
+  download(new Blob([svgMarkup()], { type: 'image/svg+xml' }), 'platine-pattern.svg');
+}
+function savePNG() {
+  const data = svgMarkup();
+  const img = new Image();
+  const url = URL.createObjectURL(new Blob([data], { type: 'image/svg+xml' }));
+  img.onload = () => {
+    const cv = document.createElement('canvas');
+    cv.width = state.W; cv.height = state.H;
+    cv.getContext('2d').drawImage(img, 0, 0, state.W, state.H);
+    URL.revokeObjectURL(url);
+    cv.toBlob(b => download(b, 'platine-pattern.png'), 'image/png');
+  };
+  img.src = url;
+}
+
+/* ── UI wiring ────────────────────────────────────────────────── */
+function syncFieldRows() {
+  const f = state.field;
+  document.querySelectorAll('.fld-radial').forEach(e => e.classList.toggle('hide', f !== 'radial'));
+  document.querySelectorAll('.fld-linear').forEach(e => e.classList.toggle('hide', f !== 'linear'));
+  document.querySelectorAll('.fld-noise').forEach(e => e.classList.toggle('hide', f !== 'noise'));
+}
+function syncBgRow() {
+  document.querySelector('.bg-row').classList.toggle('hide', $('cb-trans').checked);
+}
+
+const valFmt = {
+  'sl-space': v => v, 'sl-rot': v => v + '°', 'sl-fall': v => (v / 100).toFixed(1),
+  'sl-lang': v => v + '°', 'sl-nsc': v => (v / 100).toFixed(1), 'sl-dens': v => (v / 100).toFixed(2),
+  'sl-scat': v => (v / 100).toFixed(2), 'sl-size': v => (v / 100).toFixed(2),
+  'sl-sf': v => (v / 100).toFixed(2), 'sl-sr': v => (v / 100).toFixed(2), 'sl-jit': v => (v / 100).toFixed(2),
+  'sl-op': v => v + '%'
+};
+const valTarget = {
+  'sl-space': 'v-space', 'sl-rot': 'v-rot', 'sl-fall': 'v-fall', 'sl-lang': 'v-lang', 'sl-nsc': 'v-nsc',
+  'sl-dens': 'v-dens', 'sl-scat': 'v-scat', 'sl-size': 'v-size', 'sl-sf': 'v-sf', 'sl-sr': 'v-sr',
+  'sl-jit': 'v-jit', 'sl-op': 'v-op'
+};
+function refreshVals() {
+  for (const id in valTarget) $(valTarget[id]).textContent = valFmt[id]($(id).value);
+}
+
+Object.keys(valTarget).forEach(id => $(id).addEventListener('input', () => { refreshVals(); build(); }));
+$('sel-field').addEventListener('change', () => { state.field = $('sel-field').value; syncFieldRows(); build(); });
+['cb-inv', 'cb-trans'].forEach(id => $(id).addEventListener('change', () => { syncBgRow(); build(); }));
+$('cp-dot').addEventListener('input', build);
+$('cp-bg').addEventListener('input', build);
+
+function pillGroup(wrap, fn) {
+  $(wrap).addEventListener('click', e => {
+    const b = e.target.closest('.pill'); if (!b) return;
+    [...$(wrap).children].forEach(c => c.classList.toggle('on', c === b));
+    fn(b); build();
+  });
+}
+pillGroup('lat-pills', b => state.lattice = b.dataset.v);
+pillGroup('sym-pills', b => state.sym = b.dataset.v);
+pillGroup('size-pills', b => { state.W = +b.dataset.w; state.H = +b.dataset.h; });
+
+$('b-shuffle').addEventListener('click', () => { state.seed = (Math.random() * 1e6) | 0; build(); });
+$('b-svg').addEventListener('click', saveSVG);
+$('b-png').addEventListener('click', savePNG);
+
+$('b-logo').addEventListener('click', () => {
+  state.lattice = 'tri'; state.field = 'logo'; state.sym = 'none';
+  [...$('lat-pills').children].forEach(c => c.classList.toggle('on', c.dataset.v === 'tri'));
+  [...$('sym-pills').children].forEach(c => c.classList.toggle('on', c.dataset.v === 'none'));
+  $('sel-field').value = 'logo';
+  $('sl-space').value = 150; $('sl-size').value = 84; $('sl-rot').value = 0;
+  $('sl-sf').value = 0; $('sl-sr').value = 0; $('sl-jit').value = 0;
+  $('sl-dens').value = 100; $('sl-scat').value = 0; $('cb-inv').checked = false;
+  syncFieldRows(); refreshVals(); build();
+});
+
+syncFieldRows(); syncBgRow(); refreshVals(); build();
+</script>
+</body>
+</html>
