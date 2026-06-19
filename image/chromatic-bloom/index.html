@@ -159,20 +159,22 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
       </div>
     </div>
     <div class="ctrl">
-      <label>Saturation <span class="val" id="v-sat">190</span>%</label>
-      <input type="range" id="sl-sat" min="100" max="400" value="190" step="1" />
+      <label>Chroma <span class="val" id="v-sat">220</span>%
+        <span style="font-size:10px;color:var(--dim);font-weight:400;margin-left:2px">OKLab → neon</span>
+      </label>
+      <input type="range" id="sl-sat" min="100" max="400" value="220" step="1" />
     </div>
     <div class="ctrl">
-      <label>BG fade <span class="val" id="v-wf">100</span>%
+      <label>BG fade <span class="val" id="v-wf">0</span>%
         <span style="font-size:10px;color:var(--dim);font-weight:400;margin-left:2px">neutrals → bg</span>
       </label>
-      <input type="range" id="sl-wf" min="0" max="200" value="100" step="1" />
+      <input type="range" id="sl-wf" min="0" max="200" value="0" step="1" />
     </div>
     <div class="ctrl">
-      <label>Fade threshold <span class="val" id="v-thr">30</span>%
+      <label>Fade threshold <span class="val" id="v-thr">0</span>%
         <span style="font-size:10px;color:var(--dim);font-weight:400;margin-left:2px">colour sensitivity</span>
       </label>
-      <input type="range" id="sl-thr" min="2" max="100" value="30" step="1" />
+      <input type="range" id="sl-thr" min="0" max="100" value="0" step="1" />
     </div>
     <div class="ctrl">
       <label>Hue shift <span class="val" id="v-hue">0</span>°</label>
@@ -382,46 +384,90 @@ function hslToRgb(h,s,l) {
   return [hue(h+1/3),hue(h),hue(h-1/3)];
 }
 
-// ── The key algorithm: selective saturation + bg fade ────────────────────────
-function selectiveColor(data, satMult, bgFade, threshold, hueShift, bgRgb) {
-  const thr     = Math.max(0.001, threshold/100);
-  const wf      = bgFade/100;        // 0–1: neutrals fade to bg; 1–2: vivid pixels also fade
-  const wfBase  = Math.min(1, wf);
-  const wfExtra = Math.max(0, wf-1);
-  const hs      = hueShift/360;
-  const [bgR, bgG, bgB] = bgRgb;
-  for (let i=0; i<data.length; i+=4) {
-    const r0=data[i]/255, g0=data[i+1]/255, b0=data[i+2]/255;
-    let [h,s,l] = rgbToHsl(r0, g0, b0);
-
-    // colorness: 0 = fully neutral, 1 = vivid colour
-    const colorness = Math.min(1, s/thr);
-
-    // How far is this pixel from the bg colour in RGB space?
-    // Pixels close to bg (blurred ghost artefacts) get no saturation boost —
-    // prevents the algorithm from amplifying faint image structure in bg areas.
-    const dr=r0-bgR, dg2=g0-bgG, db2=b0-bgB;
-    const bgDist = Math.min(1, Math.sqrt(dr*dr + dg2*dg2 + db2*db2) * 3);
-    const effectiveMult = 1 + (satMult - 1) * bgDist;
-
-    // Saturation boost (pulled back as >100% fade kicks in)
-    const boostedS = Math.min(1, s*effectiveMult) * (1 - wfExtra);
-    const finalS   = boostedS*colorness + s*(1-colorness)*(1-wfExtra);
-    const finalH   = (h+hs+1)%1;
-
-    // Hue/sat adjusted RGB at original lightness
-    const [r1,g1,b1] = hslToRgb(finalH, finalS, l);
-
-    // Blend toward bg: neutrals first, >100% also pulls vivid pixels
-    const blend = wfBase*(1-colorness) + wfExtra;
-    const fr = r1 + (bgR-r1)*blend;
-    const fg = g1 + (bgG-g1)*blend;
-    const fb = b1 + (bgB-b1)*blend;
-
-    data[i]   = Math.round(Math.max(0,Math.min(1,fr))*255);
-    data[i+1] = Math.round(Math.max(0,Math.min(1,fg))*255);
-    data[i+2] = Math.round(Math.max(0,Math.min(1,fb))*255);
+// ── OKLab vivid-blur core ─────────────────────────────────────────────────────
+// Blurring in sRGB averages hues toward grey (smooth but muddy). We instead blur
+// in OKLab (perceptual): blends stay glass-smooth and chroma can be pushed to neon.
+function s2l(c){ return c<=0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4); }
+function l2s(c){ return c<=0.0031308 ? 12.92*c : 1.055*Math.pow(c,1/2.4)-0.055; }
+function lin2oklab(r,g,b){
+  const l=0.4122214708*r+0.5363325363*g+0.0514459929*b;
+  const m=0.2119034982*r+0.6806995451*g+0.1073969566*b;
+  const s=0.0883024619*r+0.2817188376*g+0.6299787005*b;
+  const l_=Math.cbrt(l),m_=Math.cbrt(m),s_=Math.cbrt(s);
+  return [0.2104542553*l_+0.7936177850*m_-0.0040720468*s_,
+          1.9779984951*l_-2.4285922050*m_+0.4505937099*s_,
+          0.0259040371*l_+0.7827717662*m_-0.8086757660*s_];
+}
+function oklab2lin(L,a,b){
+  const l_=L+0.3963377774*a+0.2158037573*b;
+  const m_=L-0.1055613458*a-0.0638541728*b;
+  const s_=L-0.0894841775*a-1.2914855480*b;
+  const l=l_*l_*l_,m=m_*m_*m_,s=s_*s_*s_;
+  return [ 4.0767416621*l-3.3077115913*m+0.2309699292*s,
+          -1.2684380046*l+2.6097574011*m-0.3413193965*s,
+          -0.0041960863*l-0.7034186147*m+1.7076147010*s];
+}
+// separable box blur (3 passes ≈ gaussian) on one Float channel
+function boxBlur(src,w,h,r,passes){
+  if(r<1) return src;
+  const tmp=new Float32Array(w*h), inv=1/(2*r+1);
+  for(let p=0;p<passes;p++){
+    for(let y=0;y<h;y++){ const row=y*w; let acc=0;
+      for(let x=-r;x<=r;x++) acc+=src[row+Math.max(0,Math.min(w-1,x))];
+      for(let x=0;x<w;x++){ tmp[row+x]=acc*inv;
+        acc+=src[row+Math.max(0,Math.min(w-1,x+r+1))]-src[row+Math.max(0,Math.min(w-1,x-r))]; } }
+    for(let x=0;x<w;x++){ let acc=0;
+      for(let y=-r;y<=r;y++) acc+=tmp[Math.max(0,Math.min(h-1,y))*w+x];
+      for(let y=0;y<h;y++){ src[y*w+x]=acc*inv;
+        acc+=tmp[Math.max(0,Math.min(h-1,y+r+1))*w+x]-tmp[Math.max(0,Math.min(h-1,y-r))*w+x]; } }
   }
+  return src;
+}
+
+// Render the positioned image into a small proc buffer, blur it in OKLab,
+// boost chroma, rotate hue, fade neutrals → bg. Returns a canvas (proc-sized).
+const PROC_MAX = 720;
+function processImage(blurSliderPx, chromaK, hueDeg, bgFade, thrPct, bgRgb){
+  const asp = exportW/exportH; let pw,ph;
+  if(asp>=1){ pw=PROC_MAX; ph=Math.max(1,Math.round(PROC_MAX/asp)); }
+  else      { ph=PROC_MAX; pw=Math.max(1,Math.round(PROC_MAX*asp)); }
+  const sfp = pw/exportW;
+  const pc=document.createElement('canvas'); pc.width=pw; pc.height=ph;
+  const px=pc.getContext('2d');
+  px.fillStyle=`rgb(${Math.round(bgRgb[0]*255)},${Math.round(bgRgb[1]*255)},${Math.round(bgRgb[2]*255)})`;
+  px.fillRect(0,0,pw,ph);
+  const scale=g('sl-sc')/100, iw=imgW*scale*sfp, ih=imgH*scale*sfp;
+  const cx=pw/2+g('sl-px')*sfp, cy=ph/2+g('sl-py')*sfp;
+  px.drawImage(img, cx-iw/2, cy-ih/2, iw, ih);
+
+  const id=px.getImageData(0,0,pw,ph), d=id.data, n=pw*ph;
+  const L=new Float32Array(n),A=new Float32Array(n),B=new Float32Array(n),C0=new Float32Array(n);
+  for(let i=0,p=0;i<n;i++,p+=4){
+    const lab=lin2oklab(s2l(d[p]/255),s2l(d[p+1]/255),s2l(d[p+2]/255));
+    L[i]=lab[0];A[i]=lab[1];B[i]=lab[2];
+    C0[i]=Math.sqrt(lab[1]*lab[1]+lab[2]*lab[2]);      // ORIGINAL chroma (for seam-free bg fade)
+  }
+  const r=Math.max(0,Math.round(blurSliderPx*sfp));
+  if(r>=1){ boxBlur(L,pw,ph,r,3); boxBlur(A,pw,ph,r,3); boxBlur(B,pw,ph,r,3); boxBlur(C0,pw,ph,r,3); }
+
+  const ha=hueDeg*Math.PI/180, cH=Math.cos(ha), sH=Math.sin(ha);
+  const wf=bgFade/100, wfBase=Math.min(1,wf), wfExtra=Math.max(0,wf-1);
+  const chromaThr=Math.max(0.004,(thrPct/100)*0.4);
+  for(let i=0,p=0;i<n;i++,p+=4){
+    let a=A[i], b=B[i];
+    const ar=a*cH-b*sH, br=a*sH+b*cH; a=ar; b=br;     // hue rotate
+    // colorness from blurred ORIGINAL chroma → blue↔red transitions stay "colourful"
+    // (no white seams); only genuinely neutral regions count as background.
+    const colorness=Math.min(1,C0[i]/chromaThr);
+    a*=chromaK; b*=chromaK;                            // chroma boost → neon
+    const lin=oklab2lin(L[i],a,b);
+    let r0=l2s(Math.max(0,Math.min(1,lin[0]))), g0=l2s(Math.max(0,Math.min(1,lin[1]))), b0=l2s(Math.max(0,Math.min(1,lin[2])));
+    const blend=wfBase*(1-colorness)+wfExtra;          // fade neutrals (then vivid) → bg
+    if(blend>0){ r0+=(bgRgb[0]-r0)*blend; g0+=(bgRgb[1]-g0)*blend; b0+=(bgRgb[2]-b0)*blend; }
+    d[p]=Math.max(0,Math.min(255,r0*255)); d[p+1]=Math.max(0,Math.min(255,g0*255)); d[p+2]=Math.max(0,Math.min(255,b0*255)); d[p+3]=255;
+  }
+  px.putImageData(id,0,0);
+  return pc;
 }
 
 // ── Chromatic shift ───────────────────────────────────────────────────────────
@@ -462,21 +508,11 @@ function applyGrain(ctx2, W, H, amount, bgRgb) {
 
 // ── Core pipeline ─────────────────────────────────────────────────────────────
 function renderTo(ctx2, W, H, sf) {
-  const blurR  = g('sl-blur')*sf;
-  const satM   = g('sl-sat')/100;
-  const wf     = g('sl-wf');
-  const thr    = g('sl-thr');
-  const hueS   = g('sl-hue');
   const bloomI = g('sl-bmi')/100;
   const bloomS = g('sl-bms')*sf;
   const chrS   = g('sl-chr')*sf;
   const vigS   = g('sl-vig')/100;
   const grnA   = g('sl-grn');
-  const panX   = W/2 + g('sl-px')*sf;
-  const panY   = H/2 + g('sl-py')*sf;
-  const scale  = g('sl-sc')/100;
-  const iw     = imgW*scale*sf;
-  const ih     = imgH*scale*sf;
 
   // Parse bg colour once per render
   const bgHex = document.getElementById('inp-bg').value;
@@ -486,20 +522,17 @@ function renderTo(ctx2, W, H, sf) {
     parseInt(bgHex.slice(5,7),16)/255
   ];
 
-  // ── 1. BG base + blurred image ──
+  // ── 1. BG base ──
   ctx2.fillStyle = bgHex;
   ctx2.fillRect(0, 0, W, H);
 
   if (!img) return;
 
-  ctx2.filter = blurR > 0 ? `blur(${blurR}px)` : 'none';
-  ctx2.drawImage(img, panX-iw/2, panY-ih/2, iw, ih);
-  ctx2.filter = 'none';
-
-  // ── 2. Selective colour: boost saturated, fade neutrals to bg ──
-  const id = ctx2.getImageData(0, 0, W, H);
-  selectiveColor(id.data, satM, wf, thr, hueS, bgRgb);
-  ctx2.putImageData(id, 0, 0);
+  // ── 2. OKLab vivid blur: smooth perceptual blend, chroma stays neon ──
+  const pc = processImage(g('sl-blur'), g('sl-sat')/100, g('sl-hue'), g('sl-wf'), g('sl-thr'), bgRgb);
+  ctx2.imageSmoothingEnabled = true;
+  ctx2.imageSmoothingQuality = 'high';
+  ctx2.drawImage(pc, 0, 0, W, H);
 
   // ── 3. Bloom ──
   if (bloomI>0.01 && bloomS>0.5) {
