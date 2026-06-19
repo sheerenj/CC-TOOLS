@@ -1,4 +1,7 @@
 [
+  {"slug": "ascii-art-generator", "name": "ASCII Art Generator", "category": "generators", "hasPreview": true},
+  {"slug": "BCA-halftone-lines-image", "name": "BCA Halftone Lines (Image)", "category": "image", "hasPreview": true},
+  {"slug": "BCA-halftone-lines-video", "name": "BCA Halftone Lines (Video)", "category": "video", "hasPreview": true},
   {"slug": "topotype", "name": "Topotype", "hasPreview": false},
   {"slug": "blob-sculptor", "name": "Blob Sculptor", "hasPreview": false}
 ]
