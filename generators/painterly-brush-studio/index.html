@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Painterly Brush Studio</title>
+<style>
+:root {
+  --bg: #ececec; --card: #ffffff; --text: #000000; --dim: #6b6b6b;
+  --line: #e4e4e4; --line2: #d4d4d4; --accent: #d4fc4e;
+  --radius-lg: 20px; --radius-md: 14px; --radius-pill: 999px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, "Inter", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased; }
+body { display: flex; }
+
+#sidebar {
+  width: 300px; flex-shrink: 0; background: var(--bg);
+  padding: 16px; overflow-y: auto; height: 100vh;
+  border-right: 1px solid var(--line2);
+}
+#sidebar::-webkit-scrollbar { width: 6px; }
+#sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 3px; }
+
+.brand-row { display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 16px; padding: 0 2px; }
+.brand { font-size: 16px; font-weight: 900; letter-spacing: -0.02em; }
+.brand-sub { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 900; }
+
+.section { background: var(--card); border-radius: var(--radius-lg);
+  padding: 14px 14px 16px; margin-bottom: 10px; }
+.section-title { display: inline-block; background: var(--accent); color: #000;
+  padding: 3px 7px; font-family: ui-monospace, monospace; font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px; border-radius: 3px; }
+
+.ctrl { margin-bottom: 12px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl > label { display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+.ctrl > label .val { color: var(--dim); font-size: 11px; font-family: ui-monospace, monospace; }
+
+input[type=range] { -webkit-appearance: none; width: 100%; height: 4px;
+  background: var(--line2); border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
+  width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer;
+  transition: transform 0.1s; }
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+select, input[type=text] { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+  color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
+  font-size: 12px; outline: none; cursor: pointer; font-family: inherit; font-weight: 500;
+  appearance: none; -webkit-appearance: none; }
+input[type=text] { cursor: text; border-radius: var(--radius-md); }
+select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
+
+button.btn { width: 100%; background: #000; color: #fff; border: none;
+  padding: 10px 14px; border-radius: var(--radius-pill); font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit;
+  margin-bottom: 8px; }
+button.btn:last-of-type { margin-bottom: 0; }
+button.btn:hover:not(:disabled) { background: #222; }
+button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line2); }
+button.btn.ghost:hover:not(:disabled) { background: #f5f5f5; }
+button.btn.accent { background: var(--accent); color: #000; }
+button.btn.accent:hover:not(:disabled) { background: #c2ea3c; }
+
+.row2 { display: flex; gap: 6px; }
+.row2 > * { flex: 1; }
+
+.pal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pal { border: 1px solid var(--line2); border-radius: 10px; padding: 6px; cursor: pointer;
+  background: #fff; transition: all .12s; }
+.pal:hover { border-color: #999; }
+.pal.active { border-color: #000; box-shadow: 0 0 0 1px #000; }
+.pal-sw { display: flex; height: 16px; border-radius: 5px; overflow: hidden; margin-bottom: 5px; }
+.pal-sw > span { flex: 1; }
+.pal-name { font-size: 9.5px; color: var(--dim); font-weight: 600; letter-spacing: .02em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.ce-chips { display: flex; flex-wrap: wrap; gap: 9px; }
+.ce-chip { position: relative; }
+.ce-chip .swatch-wrap { width: 38px; height: 30px; }
+.ce-chip .x { position: absolute; top: -7px; right: -7px; width: 16px; height: 16px; border-radius: 50%;
+  background: #000; color: #fff; font-size: 11px; line-height: 15px; text-align: center; cursor: pointer;
+  display: none; border: 1.5px solid #fff; }
+.ce-chip:hover .x { display: block; }
+.swatch-add { width: 38px; height: 30px; border: 1px dashed var(--line2); border-radius: 8px; background: #fff;
+  color: var(--dim); font-size: 16px; cursor: pointer; line-height: 28px; }
+.swatch-add:hover { border-color: #999; color: #000; }
+
+.seg { display: flex; background: #f0f0f0; border-radius: var(--radius-pill); padding: 3px; gap: 2px; }
+.seg button { flex: 1; border: none; background: transparent; padding: 6px 4px; border-radius: var(--radius-pill);
+  font-size: 11px; font-weight: 600; cursor: pointer; color: var(--dim); font-family: inherit; }
+.seg button.on { background: #fff; color: #000; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+.text-line { margin-bottom: 6px; display: flex; gap: 6px; align-items: center; }
+.text-line input[type=text] { flex: 1; }
+.text-line .it { flex-shrink: 0; width: 30px; height: 32px; border-radius: 8px; border: 1px solid var(--line2);
+  background: #fff; cursor: pointer; font-style: italic; font-family: Georgia, serif; font-size: 14px; color: var(--dim); }
+.text-line .it.on { background: #000; color: #fff; border-color: #000; }
+
+.hint { font-size: 10px; color: var(--dim); margin-top: 8px; line-height: 1.6; }
+.seed-row { display: flex; gap: 6px; align-items: center; }
+.seed-row input { flex: 1; font-family: ui-monospace, monospace; }
+.lockbtn { flex-shrink: 0; width: 38px; height: 36px; border-radius: 10px; border: 1px solid var(--line2);
+  background: #fff; cursor: pointer; font-size: 14px; }
+.lockbtn.on { background: var(--accent); border-color: #000; }
+
+#canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center;
+  overflow: hidden; padding: 28px;
+  background-color: #3a3a3a;
+  background-image: repeating-conic-gradient(#444 0% 25%, #2e2e2e 0% 50%);
+  background-size: 16px 16px; }
+#c { display: block; box-shadow: 0 8px 40px rgba(0,0,0,.4); max-width: 100%; max-height: 100%; }
+.busy { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+  background: #000; color: #fff; padding: 8px 16px; border-radius: 999px; font-size: 12px;
+  opacity: 0; transition: opacity .2s; pointer-events: none; }
+.busy.show { opacity: .92; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="brand-row">
+    <span class="brand">Painterly</span>
+    <span class="brand-sub" style="color:#000">Brush Studio</span>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Composition</div>
+    <div class="ctrl">
+      <label>Energy <span class="val" id="v-energy">gentle</span></label>
+      <input type="range" id="sl-energy" min="0" max="100" value="42"/>
+    </div>
+    <div class="ctrl">
+      <label>Stroke count <span class="val" id="v-count">16</span></label>
+      <input type="range" id="sl-count" min="4" max="60" value="16"/>
+    </div>
+    <div class="ctrl">
+      <label>Brush scale <span class="val" id="v-scale">115</span>%</label>
+      <input type="range" id="sl-scale" min="40" max="200" value="115"/>
+    </div>
+    <div class="ctrl">
+      <label>Gesture spread <span class="val" id="v-spread">60</span>%</label>
+      <input type="range" id="sl-spread" min="0" max="100" value="60"/>
+    </div>
+    <div class="ctrl">
+      <label>Layout</label>
+      <div class="seg" id="seg-layout">
+        <button data-v="center" class="on">Cluster</button>
+        <button data-v="scatter">Scatter</button>
+        <button data-v="sweep">Sweep</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Brush texture</div>
+    <div class="ctrl">
+      <label>Bristle density <span class="val" id="v-bristle">100</span>%</label>
+      <input type="range" id="sl-bristle" min="40" max="160" value="100"/>
+    </div>
+    <div class="ctrl">
+      <label>Dry-brush fray <span class="val" id="v-fray">55</span>%</label>
+      <input type="range" id="sl-fray" min="0" max="100" value="55"/>
+    </div>
+    <div class="ctrl">
+      <label>Paint coverage <span class="val" id="v-cover">80</span>%</label>
+      <input type="range" id="sl-cover" min="30" max="100" value="80"/>
+    </div>
+    <div class="ctrl">
+      <label>Two-tone load <span class="val" id="v-twotone">45</span>%</label>
+      <input type="range" id="sl-twotone" min="0" max="100" value="45"/>
+    </div>
+    <div class="ctrl">
+      <label>Paper grain <span class="val" id="v-grain">30</span>%</label>
+      <input type="range" id="sl-grain" min="0" max="100" value="30"/>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Palette</div>
+    <div class="pal-grid" id="pal-grid"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Colors</div>
+    <div class="ctrl">
+      <label>Background <span class="val" id="bg-hex">#FFFFFF</span></label>
+      <div id="bg-edit" class="swatch-row"></div>
+    </div>
+    <div class="ctrl">
+      <label>Brush colors <span class="val" id="v-ncol">7</span></label>
+      <div class="ce-chips" id="col-chips"></div>
+    </div>
+    <button class="btn ghost" id="reset-col" style="font-size:12px;padding:7px;">Reset to palette</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Type</div>
+    <div id="text-lines"></div>
+    <button class="btn ghost" id="add-line" style="margin-top:4px;font-size:12px;padding:7px;">+ Add line</button>
+    <div class="ctrl" style="margin-top:12px;">
+      <label>Font</label>
+      <select id="sel-font">
+        <option value="Georgia, 'Times New Roman', serif" selected>Serif · Georgia</option>
+        <option value="'Times New Roman', Times, serif">Serif · Times</option>
+        <option value="'Iowan Old Style','Palatino Linotype',Palatino,serif">Serif · Old Style</option>
+        <option value="Baskerville,'Baskerville Old Face',Georgia,serif">Serif · Baskerville</option>
+        <option value="'Helvetica Neue',Arial,sans-serif">Sans · Neue</option>
+        <option value="Futura,'Century Gothic',sans-serif">Sans · Geometric</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>Size <span class="val" id="v-fsize">12</span>%</label>
+      <input type="range" id="sl-fsize" min="4" max="26" value="12"/>
+    </div>
+    <div class="ctrl">
+      <label>Line spacing <span class="val" id="v-lead">100</span>%</label>
+      <input type="range" id="sl-lead" min="70" max="160" value="100"/>
+    </div>
+    <div class="row2">
+      <div class="ctrl">
+        <label>Pos X <span class="val" id="v-tx">42</span>%</label>
+        <input type="range" id="sl-tx" min="0" max="100" value="42"/>
+      </div>
+      <div class="ctrl">
+        <label>Pos Y <span class="val" id="v-ty">42</span>%</label>
+        <input type="range" id="sl-ty" min="0" max="100" value="42"/>
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>Paint in front of type <span class="val" id="v-front">45</span>%</label>
+      <input type="range" id="sl-front" min="0" max="100" value="45"/>
+    </div>
+    <div class="ctrl">
+      <label>Align</label>
+      <div class="seg" id="seg-align">
+        <button data-v="left" class="on">Left</button>
+        <button data-v="center">Center</button>
+        <button data-v="right">Right</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Output</div>
+    <div class="ctrl">
+      <label>Aspect</label>
+      <div class="seg" id="seg-aspect">
+        <button data-v="0.8" class="on">4:5</button>
+        <button data-v="1">1:1</button>
+        <button data-v="0.75">3:4</button>
+        <button data-v="1.4142">A</button>
+        <button data-v="custom">Custom</button>
+      </div>
+    </div>
+    <div class="custom-res-wrap" id="custom-res">
+      <div class="custom-res-row">
+        <input type="number" id="cw" value="1600" min="8" max="12000"/>
+        <span class="custom-res-sep">×</span>
+        <input type="number" id="ch" value="2000" min="8" max="12000"/>
+        <span class="custom-res-sep">px</span>
+      </div>
+    </div>
+    <div class="ctrl" id="edge-ctrl">
+      <label>Export longest edge</label>
+      <select id="sel-export">
+        <option value="2048">2048 px</option>
+        <option value="3000" selected>3000 px</option>
+        <option value="4096">4096 px</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>Seed</label>
+      <div class="seed-row">
+        <input type="text" id="seed" value="1000"/>
+        <button class="lockbtn" id="lock" title="Lock seed">🔓</button>
+      </div>
+    </div>
+    <button class="btn accent" id="gen">Generate ↻</button>
+    <button class="btn" id="export">Export PNG</button>
+    <button class="btn ghost" id="export-svg">Export layered SVG</button>
+    <div class="hint">Layered SVG opens in Illustrator/Figma with each stroke on its own layer (named <code>stroke-01…</code>) and the type as an editable text layer — reorder freely to weave text between strokes.</div>
+  </div>
+</div>
+
+<div id="canvas-wrap"><canvas id="c"></canvas></div>
+<div class="busy" id="busy">Rendering…</div>
+
+<script>
+"use strict";
+/* ---------- utilities ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const TAU=Math.PI*2;
+function lerp(a,b,t){return a+(b-a)*t;}
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+
+function hexToHsl(hex){
+  hex=hex.replace('#','');
+  if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
+  const r=parseInt(hex.slice(0,2),16)/255,g=parseInt(hex.slice(2,4),16)/255,b=parseInt(hex.slice(4,6),16)/255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h,s,l=(mx+mn)/2;
+  if(mx===mn){h=s=0;}else{const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);
+    switch(mx){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;default:h=(r-g)/d+4;}h/=6;}
+  return[h*360,s*100,l*100];
+}
+function hsl(h,s,l,a){return`hsla(${h},${s}%,${l}%,${a})`;}
+function lerpHsl(a,b,t){return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];}
+
+/* value noise for paper tooth */
+function makeNoise(seed){
+  const rng=mulberry32(seed);
+  const N=256,p=new Float32Array(N);
+  for(let i=0;i<N;i++)p[i]=rng();
+  function h(x,y){const ix=((x|0)%N+N)%N,iy=((y|0)%N+N)%N;return p[(ix*57+iy*131)%N];}
+  return function(x,y){
+    const x0=Math.floor(x),y0=Math.floor(y);
+    const fx=x-x0,fy=y-y0;
+    const u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
+    const a=h(x0,y0),b=h(x0+1,y0),c=h(x0,y0+1),d=h(x0+1,y0+1);
+    return lerp(lerp(a,b,u),lerp(c,d,u),v);
+  };
+}
+
+/* ---------- palettes (drawn from the reference set) ---------- */
+const PALETTES=[
+  {name:"Lavender Garden",bg:"#F7F3DC",cols:["#B5AFD6","#9DC8B6","#E8862E","#D63A9A","#8A8B3C","#E6A2AC","#3a3530"]},
+  {name:"Cobalt Score",bg:"#F8F4DC",cols:["#2F4FB8","#E8742A","#C0379A","#2E8C7E","#C49A3A","#6f86d6","#2a2620"]},
+  {name:"Muted Sage",bg:"#F8F4DF",cols:["#9DBFA8","#CDB48E","#1d1d1d","#C44A86","#A98E4E","#d98f86","#7c8f7e"]},
+  {name:"Royal Flag",bg:"#F8F4DA",cols:["#2B3FB0","#C49A3A","#C0392B","#E8742A","#3E2F8C","#6f86d6","#2a2620"]},
+  {name:"Cornflower",bg:"#F9F5DD",cols:["#7AA0E8","#D8433A","#5FAE4E","#C49A3A","#8A8B3C","#E89AA0","#3a3028"]},
+  {name:"Forest Pop",bg:"#F8F4DE",cols:["#2E6E66","#4B2E83","#7FD86A","#E8742A","#E8856B","#C49A3A","#A6F09A"]},
+  {name:"Terracotta",bg:"#F8F3D8","cols":["#4B2E83","#C0392B","#E8742A","#D8B070","#3E8C5A","#E8C5A0","#2a2018"]},
+  {name:"Maroon Dusk",bg:"#F8F3DA",cols:["#7A2E4A","#D8B070","#2a2320","#C49A3A","#E8856B","#a9628a","#cf9b6a"]},
+  {name:"PF · Issue 12",bg:"#DEDACE",cols:["#1C2E20","#D2508E","#7C2038","#ED8A43","#9D9755","#1A1E64","#3FA88C","#FAF5E3"]},
+];
+
+/* ---------- state ---------- */
+const S={
+  energy:55,count:22,scale:100,spread:60,layout:"center",
+  bristle:100,fray:55,cover:80,twotone:45,grain:30,
+  palette:0, bg:PALETTES[0].bg, cols:PALETTES[0].cols.slice(),
+  lines:[{t:"Tugetz",it:false},{t:"Potz",it:false},{t:"Vanguardia",it:true}],
+  font:"Georgia, 'Times New Roman', serif",fsize:12,lead:100,tx:42,ty:42,front:45,align:"left",
+  aspect:0.8,exportEdge:3000,customW:1600,customH:2000,seed:1000,locked:false,
+};
+
+/* ---------- the brush engine ---------- */
+function buildStrokes(P,W,H,rng){
+  const energy=P.energy/100;
+  const minDim=Math.min(W,H);
+  const cx=W*0.5, cy=H*0.5;
+  const baseGesture=rng()*TAU;
+  const strokes=[];
+  for(let i=0;i<P.count;i++){
+    // placement (centre of the brush mark)
+    let sx,sy;
+    const spread=P.spread/100;
+    if(P.layout==="scatter"){
+      sx=lerp(W*0.12,W*0.88,rng()); sy=lerp(H*0.12,H*0.88,rng());
+    }else if(P.layout==="sweep"){
+      sx=lerp(W*0.1,W*0.9,rng());
+      sy=cy+(rng()-0.5)*H*0.6*spread;
+    }else{ // cluster: broad organic blob, NOT rays from a single point
+      const r=Math.sqrt(rng())*minDim*(0.26+0.42*spread);
+      const a=rng()*TAU;
+      sx=cx+Math.cos(a)*r*1.05; sy=cy+Math.sin(a)*r*0.95;
+    }
+    // direction: calm → near a shared gesture; chaotic → wide variance
+    const varAng=lerp(0.5,3.0,energy);
+    let ang=(P.layout==="sweep")
+        ? (rng()-0.5)*varAng*0.5
+        : baseGesture + (rng()-0.5)*varAng;
+    // FLAT-BRUSH proportions: wide footprint, short-to-medium drag
+    const width=minDim*lerp(0.05,0.15,rng()*rng())*(1.15-energy*0.3)*(P.scale/100);
+    const aspect=lerp(1.4,5.0,rng()*rng());           // length / width
+    const len=clamp(width*aspect, minDim*0.07, minDim*0.62);
+    // organic bend across the whole stroke (always a little curve, more when chaotic)
+    const steps=Math.max(16,Math.round(len/(minDim*0.015)));
+    const bend=(rng()-0.5)*lerp(0.5,2.2,energy);
+    const curl=bend/steps;
+    // mark the mark's centre → convert to a start point so it sits centred
+    const sxC=sx-Math.cos(ang)*len*0.5, syC=sy-Math.sin(ang)*len*0.5;
+    strokes.push({sx:sxC,sy:syC,ang,len,width,curl,ci:(rng()*1e6)|0,seed:(rng()*1e9)|0});
+  }
+  return strokes;
+}
+
+function pressureAt(t){
+  // flat through the middle, soft lift at the ends (not a sharp point)
+  const e=0.13; let p=1;
+  if(t<e) p=t/e; else if(t>1-e) p=(1-t)/e;
+  return Math.pow(clamp(p,0,1),0.6);
+}
+
+function strokePath(st,steps){
+  const pts=[];let x=st.sx,y=st.sy,a=st.ang;const ds=st.len/steps;
+  for(let i=0;i<=steps;i++){
+    pts.push([x,y]);
+    a+=st.curl*(0.6+0.8*Math.sin(i*0.6));
+    x+=Math.cos(a)*ds; y+=Math.sin(a)*ds;
+  }
+  return pts;
+}
+
+function paintStroke(ctx,st,P,pal,noise,minDim){
+  const rng=mulberry32(st.seed);
+  const steps=Math.max(16,Math.round(st.len/(minDim*0.015)));
+  const pts=strokePath(st,steps);
+  const cols=pal.cols;
+  const colA=hexToHsl(cols[st.ci%cols.length]);
+  const colB=hexToHsl(cols[(st.ci+1+((rng()*cols.length)|0))%cols.length]);
+  const twotone=P.twotone/100, coverage=P.cover/100, fray=P.fray/100;
+  const toothAmt=0.32*fray+0.12;
+
+  // bristles laid ACROSS the width — even spacing gives the pencil-hatch ribbing
+  const nB=clamp(Math.round(st.width/(minDim*0.0055)*(P.bristle/100)),8,90);
+  const spacing=st.width/Math.max(1,nB-1);
+  const dabR=spacing*0.95;
+  const ds=Math.max(dabR*0.55, minDim*0.0035);
+
+  // per-bristle character (constant along the stroke → continuous hatch streaks)
+  const ink=new Float32Array(nB), wAmp=new Float32Array(nB), wFreq=new Float32Array(nB),
+        wPh=new Float32Array(nB), sec=new Uint8Array(nB), s0=new Float32Array(nB), s1=new Float32Array(nB);
+  const split=(rng()-0.5)*0.3;
+  for(let b=0;b<nB;b++){
+    const u=nB>1?b/(nB-1):0.5;
+    const edge=Math.min(u,1-u)*2;                 // 1 at core, 0 at the two edges
+    let k=lerp(0.45,1,edge)+(rng()-0.5)*0.35;      // edges run drier
+    if(rng()<fray*0.6*(1-edge)) k*=rng()*0.5;      // occasional dead streaks near edges
+    ink[b]=clamp(k,0.04,1);
+    const isEdge=edge<0.32;
+    wAmp[b]=spacing*(isEdge?lerp(0.5,2.4,rng()):lerp(0.05,0.45,rng()));
+    wFreq[b]=0.3+rng()*1.5; wPh[b]=rng()*TAU;
+    sec[b]=(u+split)>(1-twotone)?1:0;              // secondary colour occupies a band
+    s0[b]=(isEdge&&rng()<fray)? rng()*0.4 : 0;     // edge bristles dry out over a sub-range
+    s1[b]=(isEdge&&rng()<fray)? 1-rng()*0.45 : 1;
+  }
+
+  for(let i=0;i<pts.length-1;i++){
+    const [x0,y0]=pts[i],[x1,y1]=pts[i+1];
+    const segLen=Math.hypot(x1-x0,y1-y0)||1e-3;
+    const dx=(x1-x0)/segLen,dy=(y1-y0)/segLen,nx=-dy,ny=dx;
+    for(let d=0; d<segLen; d+=ds){
+      const t=(i+d/segLen)/(pts.length-1);
+      const press=pressureAt(t);
+      if(press<=0.01) continue;
+      for(let b=0;b<nB;b++){
+        if(t<s0[b]||t>s1[b]) continue;
+        const u=nB>1?b/(nB-1):0.5;
+        const wob=Math.sin(t*Math.PI*2*wFreq[b]+wPh[b])*wAmp[b];
+        const off=(u-0.5)*st.width+wob;
+        const px=x0+dx*d+nx*off, py=y0+dy*d+ny*off;
+        const tooth=noise(px*0.05,py*0.05);
+        let a=coverage*press*ink[b]*lerp(1,tooth,toothAmt);
+        if(a<0.02) continue;
+        const c=sec[b]?colB:colA;
+        ctx.fillStyle=hsl(
+          clamp(c[0]+(rng()-0.5)*9,0,360),
+          clamp(c[1]+(rng()-0.5)*12,0,100),
+          clamp(c[2]+(rng()-0.5)*9+(tooth-0.5)*8,0,100),
+          clamp(a,0,1)
+        );
+        ctx.beginPath();
+        ctx.arc(px,py,dabR*lerp(0.82,1.06,(Math.sin((d+b)*0.5)+1)/2),0,TAU);
+        ctx.fill();
+      }
+    }
+  }
+}
+
+function drawText(ctx,P,W,H){
+  const lines=P.lines.filter(l=>l.t.length);
+  if(!lines.length)return;
+  const px=H*(P.fsize/100);
+  const lh=px*1.04*(P.lead/100);
+  ctx.textBaseline="alphabetic";
+  ctx.fillStyle="#1b1814";
+  const x=W*(P.tx/100), y0=H*(P.ty/100);
+  ctx.textAlign=P.align;
+  lines.forEach((l,i)=>{
+    ctx.font=`${l.it?"italic ":""}400 ${px}px ${P.font}`;
+    ctx.fillText(l.t, x, y0 + i*lh + px);
+  });
+}
+
+// Deterministic scene: same rng order as the old render() so seeds are stable.
+function composeScene(P,W,H){
+  const pal={bg:P.bg,cols:(P.cols&&P.cols.length)?P.cols:["#888888"]};
+  const rng=mulberry32(P.seed>>>0);
+  const noise=makeNoise((P.seed*2654435761)>>>0);
+  const strokes=buildStrokes(P,W,H,rng);
+  const frontN=Math.round(strokes.length*(P.front/100));
+  const idx=strokes.map((_,i)=>i);
+  for(let i=idx.length-1;i>0;i--){const j=(rng()*(i+1))|0;[idx[i],idx[j]]=[idx[j],idx[i]];}
+  const frontSet=new Set(idx.slice(0,frontN));
+  return {pal,noise,strokes,frontSet};
+}
+
+function render(ctx,W,H,P){
+  const minDim=Math.min(W,H);
+  const {pal,noise,strokes,frontSet}=composeScene(P,W,H);
+  // ground
+  ctx.fillStyle=pal.bg; ctx.fillRect(0,0,W,H);
+  ctx.save();
+  const g=ctx.createRadialGradient(W*0.5,H*0.42,minDim*0.1,W*0.5,H*0.5,minDim*0.8);
+  g.addColorStop(0,"rgba(255,255,255,0.25)"); g.addColorStop(1,"rgba(120,110,80,0.06)");
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.restore();
+
+  ctx.save(); ctx.globalCompositeOperation="source-over";
+  strokes.forEach((st,i)=>{ if(!frontSet.has(i)) paintStroke(ctx,st,P,pal,noise,minDim); });
+  ctx.restore();
+
+  drawText(ctx,P,W,H);
+
+  ctx.save(); ctx.globalCompositeOperation="source-over";
+  strokes.forEach((st,i)=>{ if(frontSet.has(i)) paintStroke(ctx,st,P,pal,noise,minDim); });
+  ctx.restore();
+
+  // paper grain overlay
+  if(P.grain>0){
+    const amt=P.grain/100;
+    ctx.save(); ctx.globalCompositeOperation="multiply";
+    const step=Math.max(2,Math.round(minDim/520));
+    for(let y=0;y<H;y+=step){
+      for(let x=0;x<W;x+=step){
+        const n=noise(x*0.6,y*0.6);
+        if(n<0.5){
+          ctx.fillStyle=`rgba(70,62,45,${(0.5-n)*0.18*amt})`;
+          ctx.fillRect(x,y,step,step);
+        }
+      }
+    }
+    ctx.restore();
+  }
+}
+
+/* ---------- preview / canvas sizing ---------- */
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+const wrap=document.getElementById('canvas-wrap');
+const busy=document.getElementById('busy');
+
+function curAspect(){
+  if(S.aspect==='custom'){const w=Math.max(1,S.customW),h=Math.max(1,S.customH);return w/h;}
+  return S.aspect;
+}
+// pixel dimensions for export
+function outDims(){
+  if(S.aspect==='custom') return {W:clamp(S.customW|0,8,12000), H:clamp(S.customH|0,8,12000)};
+  const edge=S.exportEdge, ar=S.aspect;
+  let W,H; if(ar>=1){W=edge;H=Math.round(edge/ar);}else{H=edge;W=Math.round(edge*ar);}
+  return {W,H};
+}
+function previewSize(){
+  const pad=56;
+  const aw=wrap.clientWidth-pad, ah=wrap.clientHeight-pad;
+  const ar=curAspect(); // w/h
+  let h=ah, w=h*ar;
+  if(w>aw){w=aw;h=w/ar;}
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  return {w:Math.round(w),h:Math.round(h),W:Math.round(w*dpr),H:Math.round(h*dpr)};
+}
+
+/* ---------- layered SVG export ---------- */
+function strokeBBox(st,W,H,minDim){
+  const steps=Math.max(16,Math.round(st.len/(minDim*0.015)));
+  const pts=strokePath(st,steps);
+  let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9;
+  for(const [x,y] of pts){ if(x<mnx)mnx=x; if(y<mny)mny=y; if(x>mxx)mxx=x; if(y>mxy)mxy=y; }
+  const m=st.width*1.7 + minDim*0.05;   // margin for width, wander & fray
+  const x=clamp(Math.floor(mnx-m),0,W), y=clamp(Math.floor(mny-m),0,H);
+  const w=clamp(Math.ceil(mxx+m),0,W)-x, h=clamp(Math.ceil(mxy+m),0,H)-y;
+  return {x,y,w:Math.max(1,w),h:Math.max(1,h)};
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function textSVG(P,W,H){
+  const lines=P.lines.filter(l=>l.t.length);
+  if(!lines.length) return '<g id="TEXT"></g>';
+  const px=H*(P.fsize/100), lh=px*1.04*(P.lead/100);
+  const x=W*(P.tx/100), y0=H*(P.ty/100);
+  const anchor=P.align==='center'?'middle':P.align==='right'?'end':'start';
+  let out=`<g id="TEXT"><!-- editable type: move me anywhere in the layer stack -->`;
+  lines.forEach((l,i)=>{
+    out+=`<text x="${x.toFixed(1)}" y="${(y0+i*lh+px).toFixed(1)}" font-family="${esc(P.font)}" font-size="${px.toFixed(1)}" `+
+         `font-style="${l.it?'italic':'normal'}" fill="#1b1814" text-anchor="${anchor}">${esc(l.t)}</text>`;
+  });
+  return out+'</g>';
+}
+function buildSVG(){
+  const {W,H}=outDims();
+  const minDim=Math.min(W,H);
+  const {pal,noise,strokes,frontSet}=composeScene(S,W,H);
+  const tmp=document.createElement('canvas');
+  const parts=[`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`];
+  parts.push(`<g id="background"><rect width="${W}" height="${H}" fill="${pal.bg}"/></g>`);
+  const layer=(i)=>{
+    const st=strokes[i], bb=strokeBBox(st,W,H,minDim);
+    tmp.width=bb.w; tmp.height=bb.h;
+    const cx=tmp.getContext('2d'); cx.clearRect(0,0,bb.w,bb.h); cx.save(); cx.translate(-bb.x,-bb.y);
+    paintStroke(cx,st,S,pal,noise,minDim); cx.restore();
+    const url=tmp.toDataURL('image/png');
+    return `<g id="stroke-${String(i+1).padStart(2,'0')}"><image x="${bb.x}" y="${bb.y}" width="${bb.w}" height="${bb.h}" xlink:href="${url}" href="${url}"/></g>`;
+  };
+  strokes.forEach((_,i)=>{ if(!frontSet.has(i)) parts.push(layer(i)); });  // behind type
+  parts.push(textSVG(S,W,H));
+  strokes.forEach((_,i)=>{ if(frontSet.has(i)) parts.push(layer(i)); });   // in front of type
+  parts.push('</svg>');
+  return parts.join('\n');
+}
+let rafId=null;
+function draw(){
+  const {w,h,W,H}=previewSize();
+  canvas.style.width=w+'px'; canvas.style.height=h+'px';
+  canvas.width=W; canvas.height=H;
+  render(ctx,W,H,S);
+}
+function scheduleDraw(){ if(rafId)cancelAnimationFrame(rafId); rafId=requestAnimationFrame(draw); }
+
+/* ---------- UI wiring ---------- */
+function bindRange(id,key,fmt){
+  const sl=document.getElementById('sl-'+id),v=document.getElementById('v-'+id);
+  function up(){S[key]=+sl.value; if(v)v.textContent=fmt?fmt(+sl.value):sl.value; scheduleDraw();}
+  sl.addEventListener('input',up); up();
+}
+const energyFmt=v=>v<25?'calm':v<55?'gentle':v<80?'lively':'chaotic';
+bindRange('energy','energy',energyFmt);
+bindRange('count','count');
+bindRange('scale','scale');
+bindRange('spread','spread');
+bindRange('bristle','bristle');
+bindRange('fray','fray');
+bindRange('cover','cover');
+bindRange('twotone','twotone');
+bindRange('grain','grain');
+bindRange('fsize','fsize');
+bindRange('lead','lead');
+bindRange('tx','tx');
+bindRange('ty','ty');
+bindRange('front','front');
+
+function bindSeg(id,key,after){
+  document.querySelectorAll('#'+id+' button').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); S[key]=isNaN(+b.dataset.v)?b.dataset.v:+b.dataset.v;
+      if(after)after(); scheduleDraw();
+    });
+  });
+}
+bindSeg('seg-layout','layout');
+bindSeg('seg-align','align');
+const customWrap=document.getElementById('custom-res'), edgeCtrl=document.getElementById('edge-ctrl');
+function syncAspectUI(){
+  const custom=S.aspect==='custom';
+  customWrap.classList.toggle('visible',custom);
+  edgeCtrl.style.display=custom?'none':'';
+}
+bindSeg('seg-aspect','aspect',syncAspectUI);
+document.getElementById('cw').addEventListener('input',e=>{S.customW=clamp(+e.target.value||8,8,12000);scheduleDraw();});
+document.getElementById('ch').addEventListener('input',e=>{S.customH=clamp(+e.target.value||8,8,12000);scheduleDraw();});
+
+document.getElementById('sel-font').addEventListener('change',e=>{S.font=e.target.value;scheduleDraw();});
+document.getElementById('sel-export').addEventListener('change',e=>{S.exportEdge=+e.target.value;});
+
+/* palettes */
+const palGrid=document.getElementById('pal-grid');
+PALETTES.forEach((p,i)=>{
+  const el=document.createElement('div');
+  el.className='pal'+(i===S.palette?' active':'');
+  el.innerHTML=`<div class="pal-sw">${p.cols.slice(0,6).map(c=>`<span style="background:${c}"></span>`).join('')}</div><div class="pal-name">${p.name}</div>`;
+  el.addEventListener('click',()=>{
+    S.palette=i; S.bg=PALETTES[i].bg; S.cols=PALETTES[i].cols.slice();
+    document.querySelectorAll('.pal').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active'); renderColors(); scheduleDraw();
+  });
+  palGrid.appendChild(el);
+});
+
+/* editable colors */
+function swatchEl(val,onChange){
+  const w=document.createElement('div');w.className='swatch-wrap';
+  const inp=document.createElement('input');inp.type='color';inp.value=val;
+  inp.addEventListener('input',()=>onChange(inp.value));
+  w.appendChild(inp);return w;
+}
+function renderColors(){
+  const bg=document.getElementById('bg-edit'); bg.innerHTML='';
+  bg.appendChild(swatchEl(S.bg,v=>{S.bg=v;document.getElementById('bg-hex').textContent=v.toUpperCase();scheduleDraw();}));
+  document.getElementById('bg-hex').textContent=S.bg.toUpperCase();
+  const chips=document.getElementById('col-chips'); chips.innerHTML='';
+  S.cols.forEach((col,i)=>{
+    const chip=document.createElement('div'); chip.className='ce-chip';
+    chip.appendChild(swatchEl(col,v=>{S.cols[i]=v;scheduleDraw();}));
+    const x=document.createElement('div'); x.className='x'; x.textContent='×'; x.title='Remove';
+    x.addEventListener('click',()=>{ if(S.cols.length>1){S.cols.splice(i,1);renderColors();scheduleDraw();} });
+    chip.appendChild(x); chips.appendChild(chip);
+  });
+  const add=document.createElement('button'); add.className='swatch-add'; add.textContent='+'; add.title='Add colour';
+  add.addEventListener('click',()=>{ S.cols.push(S.cols[S.cols.length-1]||'#888888'); renderColors(); scheduleDraw(); });
+  chips.appendChild(add);
+  document.getElementById('v-ncol').textContent=S.cols.length;
+}
+document.getElementById('reset-col').addEventListener('click',()=>{
+  S.bg=PALETTES[S.palette].bg; S.cols=PALETTES[S.palette].cols.slice(); renderColors(); scheduleDraw();
+});
+renderColors();
+
+/* text lines */
+const textLines=document.getElementById('text-lines');
+function renderTextLines(){
+  textLines.innerHTML='';
+  S.lines.forEach((l,i)=>{
+    const row=document.createElement('div');row.className='text-line';
+    const inp=document.createElement('input');inp.type='text';inp.value=l.t;inp.placeholder='line text';
+    inp.addEventListener('input',()=>{l.t=inp.value;scheduleDraw();});
+    const it=document.createElement('button');it.className='it'+(l.it?' on':'');it.textContent='I';it.title='Italic';
+    it.addEventListener('click',()=>{l.it=!l.it;it.classList.toggle('on');scheduleDraw();});
+    const del=document.createElement('button');del.className='it';del.textContent='×';del.title='Remove';del.style.fontStyle='normal';
+    del.addEventListener('click',()=>{S.lines.splice(i,1);renderTextLines();scheduleDraw();});
+    row.append(inp,it,del);
+    textLines.appendChild(row);
+  });
+}
+renderTextLines();
+document.getElementById('add-line').addEventListener('click',()=>{S.lines.push({t:"",it:false});renderTextLines();});
+
+/* seed + generate + lock */
+const seedInp=document.getElementById('seed');
+seedInp.addEventListener('change',()=>{S.seed=parseInt(seedInp.value)||0;scheduleDraw();});
+const lockBtn=document.getElementById('lock');
+lockBtn.addEventListener('click',()=>{S.locked=!S.locked;lockBtn.classList.toggle('on',S.locked);lockBtn.textContent=S.locked?'🔒':'🔓';});
+document.getElementById('gen').addEventListener('click',()=>{
+  if(!S.locked){S.seed=(Math.random()*1e6)|0;seedInp.value=S.seed;}
+  scheduleDraw();
+});
+
+/* export */
+function fname(ext){return `painterly_${PALETTES[S.palette].name.replace(/[^a-z0-9]+/gi,'-').toLowerCase()}_${S.seed}.${ext}`;}
+function dl(href,name){const a=document.createElement('a');a.href=href;a.download=name;a.click();}
+
+document.getElementById('export').addEventListener('click',async()=>{
+  busy.textContent='Rendering PNG…'; busy.classList.add('show');
+  await new Promise(r=>setTimeout(r,30));
+  const {W,H}=outDims();
+  const off=document.createElement('canvas');off.width=W;off.height=H;
+  render(off.getContext('2d'),W,H,S);
+  off.toBlob(blob=>{
+    const u=URL.createObjectURL(blob); dl(u,fname('png')); URL.revokeObjectURL(u);
+    busy.classList.remove('show');
+  },'image/png');
+});
+
+document.getElementById('export-svg').addEventListener('click',async()=>{
+  busy.textContent='Building layered SVG…'; busy.classList.add('show');
+  await new Promise(r=>setTimeout(r,30));
+  try{
+    const svg=buildSVG();
+    const u=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'}));
+    dl(u,fname('svg')); URL.revokeObjectURL(u);
+  }finally{ busy.classList.remove('show'); }
+});
+
+window.addEventListener('resize',scheduleDraw);
+scheduleDraw();
+</script>
+</body>
+</html>
