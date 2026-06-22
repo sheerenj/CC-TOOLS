@@ -3,858 +3,474 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Moiré SVG Studio</title>
+<title>Pattern Studio</title>
 <style>
-:root {
-  --bg: #ececec; --card: #ffffff; --text: #000000; --dim: #6b6b6b;
-  --line: #e4e4e4; --line2: #d4d4d4; --accent: #d4fc4e;
-  --radius-lg: 20px; --radius-md: 14px; --radius-pill: 999px;
+:root{
+  --bg:#ececec;--card:#fff;--text:#000;--dim:#6b6b6b;
+  --line:#e4e4e4;--line2:#d4d4d4;--accent:#d4fc4e;
+  --radius-lg:20px;--radius-md:14px;--radius-pill:999px;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; overflow: hidden;
-  background: var(--bg); color: var(--text);
-  font-family: -apple-system, "Inter", "Helvetica Neue", sans-serif;
-  -webkit-font-smoothing: antialiased; }
-body { display: flex; }
-
-#sidebar {
-  width: 296px; flex-shrink: 0; background: var(--bg);
-  padding: 16px; overflow-y: auto; height: 100vh;
-  border-right: 1px solid var(--line2);
-}
-#sidebar::-webkit-scrollbar { width: 6px; }
-#sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 3px; }
-
-.brand-row { display: flex; align-items: baseline; justify-content: space-between;
-  margin-bottom: 16px; padding: 0 2px; }
-.brand { font-size: 16px; font-weight: 900; letter-spacing: -0.02em; }
-.brand-sub { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 900; }
-
-.layer-label { display: block; font-size: 10px; font-weight: 900; text-transform: uppercase;
-  letter-spacing: 0.12em; color: var(--text); padding: 10px 2px 6px; }
-
-.divider { height: 1px; background: var(--line2); margin: 4px 0 12px; }
-
-.section { background: var(--card); border-radius: var(--radius-lg);
-  padding: 14px 14px 16px; margin-bottom: 10px; }
-.section-title { display: inline-block; background: var(--accent); color: #000;
-  padding: 3px 7px; font-family: ui-monospace, monospace; font-size: 10px;
-  font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-  margin-bottom: 12px; border-radius: 3px; }
-
-.ctrl { margin-bottom: 12px; }
-.ctrl:last-child { margin-bottom: 0; }
-.ctrl > label { display: flex; justify-content: space-between; align-items: center;
-  font-size: 12px; font-weight: 500; margin-bottom: 6px; }
-.ctrl > label .val { color: var(--dim); font-size: 11px; font-family: ui-monospace, monospace; }
-
-input[type=range] { -webkit-appearance: none; width: 100%; height: 4px;
-  background: var(--line2); border-radius: 2px; outline: none; cursor: pointer; }
-input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
-  width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer;
-  transition: transform 0.1s; }
-input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
-
-select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
-  color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
-  font-size: 12px; outline: none; cursor: pointer; font-family: inherit; font-weight: 500;
-  appearance: none; -webkit-appearance: none;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
-  background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
-
-button.btn { width: 100%; background: #000; color: #fff; border: none;
-  padding: 10px 14px; border-radius: var(--radius-pill); font-size: 13px;
-  font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit;
-  margin-bottom: 8px; }
-button.btn:last-of-type { margin-bottom: 0; }
-button.btn:hover { background: #222; }
-button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line2); }
-button.btn.ghost:hover { background: #f5f5f5; }
-button.btn.accent { background: var(--accent); color: #000; }
-button.btn.accent:hover { background: #c2ea3c; }
-
-.swatch-row { display: flex; align-items: center; gap: 8px; }
-.swatch-wrap { position: relative; width: 36px; height: 28px; border: 1px solid var(--line2);
-  border-radius: 8px; overflow: hidden; cursor: pointer; flex-shrink: 0; }
-.swatch-wrap input[type=color] { position: absolute; inset: -4px; opacity: 0; cursor: pointer;
-  width: calc(100% + 8px); height: calc(100% + 8px); }
-.swatch-hex { font-size: 11px; font-family: ui-monospace, monospace; color: var(--dim); }
-
-.hint { font-size: 10px; color: var(--dim); margin-top: 8px; line-height: 1.6; }
-
-.custom-res-wrap { margin-top: 8px; display: none; }
-.custom-res-wrap.visible { display: block; }
-.custom-res-row { display: flex; gap: 6px; align-items: center; }
-.custom-res-row input[type=number] { flex: 1; background: #f4f4f4; border: 1px solid var(--line);
-  color: #000; padding: 7px 9px; border-radius: var(--radius-md); font-size: 12px;
-  outline: none; font-family: inherit; min-width: 0; }
-.custom-res-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-.custom-res-sep { font-size: 11px; color: var(--dim); flex-shrink: 0; }
-
-.mode-tab-row { display: flex; gap: 5px; margin-bottom: 10px; }
-.mode-tab { flex: 1; padding: 8px 2px; border-radius: var(--radius-pill); font-size: 10px;
-  font-weight: 700; text-align: center; cursor: pointer; border: 1px solid var(--line2);
-  background: #fff; transition: all 0.12s; letter-spacing: 0.02em; text-transform: uppercase; }
-.mode-tab.active { background: #000; color: #fff; border-color: #000; }
-
-.family-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.family-header .section-title { margin-bottom: 0; }
-.family-toggle { font-size: 10px; font-weight: 700; padding: 3px 9px;
-  border-radius: 999px; border: 1px solid var(--line2); background: #000; color: #fff;
-  cursor: pointer; font-family: inherit; transition: all 0.12s; }
-.family-toggle.off { background: transparent; color: var(--dim); }
-.family-ctrls { transition: opacity 0.15s; }
-.family-ctrls.dim { opacity: 0.35; pointer-events: none; }
-
-#l2-color-section { transition: opacity 0.15s; }
-#l2-color-section.dim { opacity: 0.35; pointer-events: none; }
-
-#canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center;
-  overflow: hidden; background-color: #444;
-  background-image: repeating-conic-gradient(#555 0% 25%, #333 0% 50%);
-  background-size: 16px 16px; cursor: crosshair; }
-#svg-preview { display: block; }
-#svg-preview svg { display: block; }
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);
+  font-family:-apple-system,"Inter","Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased;}
+body{display:flex;}
+#sidebar{width:300px;flex-shrink:0;background:var(--bg);padding:16px;overflow-y:auto;height:100vh;border-right:1px solid var(--line2);}
+#sidebar::-webkit-scrollbar{width:6px;}
+#sidebar::-webkit-scrollbar-thumb{background:#cfcfcf;border-radius:3px;}
+.brand-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px;padding:0 2px;}
+.brand{font-size:16px;font-weight:900;letter-spacing:-.02em;}
+.brand-sub{font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:900;color:var(--accent);}
+.layer-label{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--text);padding:10px 2px 6px;}
+.divider{height:1px;background:var(--line2);margin:4px 0 12px;}
+.section{background:var(--card);border-radius:var(--radius-lg);padding:14px 14px 16px;margin-bottom:10px;}
+.section-title{display:inline-block;background:var(--accent);color:#000;padding:3px 7px;font-family:ui-monospace,monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;border-radius:3px;}
+.ctrl{margin-bottom:12px;}.ctrl:last-child{margin-bottom:0;}
+.ctrl>label{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:500;margin-bottom:6px;}
+.ctrl>label .val{color:var(--dim);font-size:11px;font-family:ui-monospace,monospace;}
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;background:var(--line2);border-radius:2px;outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#000;cursor:pointer;transition:transform .1s;}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15);}
+select{width:100%;background:#f4f4f4;border:1px solid var(--line);color:var(--text);padding:9px 12px;border-radius:var(--radius-pill);font-size:12px;outline:none;cursor:pointer;font-family:inherit;font-weight:500;appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;}
+button.btn{width:100%;background:#000;color:#fff;border:none;padding:10px 14px;border-radius:var(--radius-pill);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;margin-bottom:8px;}
+button.btn:last-of-type{margin-bottom:0;}
+button.btn:hover{background:#222;}
+button.btn.ghost{background:#fff;color:#000;border:1px solid var(--line2);}
+button.btn.ghost:hover{background:#f5f5f5;}
+button.btn.accent{background:var(--accent);color:#000;}
+button.btn.accent:hover{background:#c2ea3c;}
+.swatch-row{display:flex;align-items:center;gap:8px;}
+.swatch-wrap{position:relative;width:36px;height:28px;border:1px solid var(--line2);border-radius:8px;overflow:hidden;cursor:pointer;flex-shrink:0;}
+.swatch-wrap input[type=color]{position:absolute;inset:-4px;opacity:0;cursor:pointer;width:calc(100% + 8px);height:calc(100% + 8px);}
+.swatch-hex{font-size:11px;font-family:ui-monospace,monospace;color:var(--dim);}
+.hint{font-size:10px;color:var(--dim);margin-top:8px;line-height:1.6;}
+.custom-res-wrap{margin-top:8px;display:none;}.custom-res-wrap.visible{display:block;}
+.custom-res-row{display:flex;gap:6px;align-items:center;}
+.custom-res-row input[type=number]{flex:1;background:#f4f4f4;border:1px solid var(--line);color:#000;padding:7px 9px;border-radius:var(--radius-md);font-size:12px;outline:none;font-family:inherit;min-width:0;}
+.custom-res-row input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+.custom-res-sep{font-size:11px;color:var(--dim);flex-shrink:0;}
+.mode-tab-row{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;}
+.mode-tab{flex:1;min-width:46px;padding:8px 2px;border-radius:var(--radius-pill);font-size:10px;font-weight:700;text-align:center;cursor:pointer;border:1px solid var(--line2);background:#fff;transition:all .12s;letter-spacing:.02em;text-transform:uppercase;}
+.mode-tab.active{background:#000;color:#fff;border-color:#000;}
+.family-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.family-header .section-title{margin-bottom:0;}
+.family-toggle{font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;border:1px solid var(--line2);background:#000;color:#fff;cursor:pointer;font-family:inherit;transition:all .12s;}
+.family-toggle.off{background:transparent;color:var(--dim);}
+.family-ctrls.dim{opacity:.35;pointer-events:none;}
+#l2-color-section.dim,#l2-body.dim{opacity:.35;pointer-events:none;}
+.toggle{position:relative;width:38px;height:22px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle .track{position:absolute;inset:0;background:var(--line2);border-radius:999px;transition:.15s;cursor:pointer;}
+.toggle .track:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;}
+.toggle input:checked + .track{background:var(--accent);}
+.toggle input:checked + .track:before{transform:translateX(16px);}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:500;margin-bottom:10px;}
+.sub-ctrls{display:none;}.sub-ctrls.visible{display:block;}
+#canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;background-color:#444;
+  background-image:repeating-conic-gradient(#555 0% 25%,#333 0% 50%);background-size:16px 16px;cursor:crosshair;}
+#svg-preview{display:block;}#svg-preview svg{display:block;box-shadow:0 4px 24px rgba(0,0,0,.25);}
 </style>
 </head>
 <body>
-
 <div id="sidebar">
-  <div class="brand-row">
-    <span class="brand">Moiré</span>
-    <span class="brand-sub" style="color:var(--accent)">SVG</span>
-  </div>
+  <div class="brand-row"><span class="brand">Pattern</span><span class="brand-sub">Studio</span></div>
 
   <!-- ══ LAYER 1 ══ -->
   <span class="layer-label">Layer 1</span>
-
   <div class="mode-tab-row">
-    <div class="mode-tab active" data-layer="1" data-mode="rings">Rings</div>
-    <div class="mode-tab"        data-layer="1" data-mode="radial">Radial</div>
-    <div class="mode-tab"        data-layer="1" data-mode="lines">Lines</div>
-    <div class="mode-tab"        data-layer="1" data-mode="grid">Grid</div>
+    <div class="mode-tab active" data-layer="1" data-mode="lines">Lines</div>
+    <div class="mode-tab" data-layer="1" data-mode="rings">Rings</div>
+    <div class="mode-tab" data-layer="1" data-mode="radial">Radial</div>
+    <div class="mode-tab" data-layer="1" data-mode="grid">Grid</div>
+    <div class="mode-tab" data-layer="1" data-mode="cells">Cells</div>
   </div>
+  <div id="layer1-body"></div>
 
-  <!-- Rings -->
-  <div id="rings-l1">
-    <div class="section">
-      <div class="section-title">Rings</div>
-      <div class="ctrl">
-        <label>Count <span class="val" id="v-l1-rings">20</span></label>
-        <input type="range" id="sl-l1-rings" min="3" max="80" value="20" step="1"/>
-      </div>
-      <div class="ctrl">
-        <label>Phase <span class="val" id="v-l1-rph">0</span>%</label>
-        <input type="range" id="sl-l1-rph" min="0" max="99" value="0" step="1"/>
-      </div>
-    </div>
-  </div>
-
-  <!-- Radial -->
-  <div id="radial-l1" style="display:none">
-    <div class="section">
-      <div class="section-title">Radial</div>
-      <div class="ctrl">
-        <label>Sectors <span class="val" id="v-l1-sectors">24</span></label>
-        <input type="range" id="sl-l1-sectors" min="3" max="120" value="24" step="1"/>
-      </div>
-      <div class="ctrl">
-        <label>Rotation <span class="val" id="v-l1-srot">0</span>°</label>
-        <input type="range" id="sl-l1-srot" min="0" max="360" value="0" step="1"/>
-      </div>
-    </div>
-  </div>
-
-  <!-- Shared center (rings + radial) -->
-  <div id="center-l1">
-    <div class="section">
-      <div class="section-title">Center</div>
-      <div class="ctrl">
-        <label>X <span class="val" id="v-l1-cx">50</span>%</label>
-        <input type="range" id="sl-l1-cx" min="0" max="100" value="50" step="1"/>
-      </div>
-      <div class="ctrl">
-        <label>Y <span class="val" id="v-l1-cy">50</span>%</label>
-        <input type="range" id="sl-l1-cy" min="0" max="100" value="50" step="1"/>
-      </div>
-    </div>
-  </div>
-
-  <!-- Lines -->
-  <div id="lines-l1" style="display:none">
-    <div class="section">
-      <div class="section-title">Lines</div>
-      <div class="ctrl">
-        <label>Sections <span class="val" id="v-l1-ls">20</span></label>
-        <input type="range" id="sl-l1-ls" min="2" max="80" value="20" step="1"/>
-      </div>
-      <div class="ctrl">
-        <label>Angle <span class="val" id="v-l1-la">0</span>°</label>
-        <input type="range" id="sl-l1-la" min="0" max="179" value="0" step="1"/>
-      </div>
-    </div>
-  </div>
-
-  <!-- Grid -->
-  <div id="grid-l1" style="display:none">
-    <div class="section">
-      <div class="family-header">
-        <span class="section-title">Family 1</span>
-        <button class="family-toggle" id="tog-l1-f1">On</button>
-      </div>
-      <div class="family-ctrls" id="ctrls-l1-f1">
-        <div class="ctrl">
-          <label>Sections <span class="val" id="v-l1-gf1">20</span></label>
-          <input type="range" id="sl-l1-gf1" min="2" max="80" value="20" step="1"/>
-        </div>
-        <div class="ctrl">
-          <label>Angle <span class="val" id="v-l1-ga1">0</span>°</label>
-          <input type="range" id="sl-l1-ga1" min="0" max="179" value="0" step="1"/>
-        </div>
-      </div>
-    </div>
-    <div class="section">
-      <div class="family-header">
-        <span class="section-title">Family 2</span>
-        <button class="family-toggle" id="tog-l1-f2">On</button>
-      </div>
-      <div class="family-ctrls" id="ctrls-l1-f2">
-        <div class="ctrl">
-          <label>Sections <span class="val" id="v-l1-gf2">20</span></label>
-          <input type="range" id="sl-l1-gf2" min="2" max="80" value="20" step="1"/>
-        </div>
-        <div class="ctrl">
-          <label>Angle <span class="val" id="v-l1-ga2">45</span>°</label>
-          <input type="range" id="sl-l1-ga2" min="0" max="179" value="45" step="1"/>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- L1 Color -->
-  <div class="section">
-    <div class="section-title">Color</div>
-    <div class="ctrl">
-      <label>Foreground</label>
-      <div class="swatch-row">
-        <div class="swatch-wrap" id="sw-l1-ca" style="background:#0000ff">
-          <input type="color" id="inp-l1-ca" value="#0000ff"/>
-        </div>
-        <span class="swatch-hex" id="v-l1-ca">#0000ff</span>
-      </div>
-    </div>
-    <div class="ctrl">
-      <label>Background</label>
-      <div class="swatch-row">
-        <div class="swatch-wrap" id="sw-l1-cb" style="background:#ffffff">
-          <input type="color" id="inp-l1-cb" value="#ffffff"/>
-        </div>
-        <span class="swatch-hex" id="v-l1-cb">#ffffff</span>
-      </div>
-    </div>
-    <button class="btn ghost" id="btn-swap-l1">⇄ Swap</button>
-  </div>
-
-  <!-- ══ COMBINE ══ -->
+  <!-- ══ COMBINE / LAYER 2 ══ -->
   <div class="divider"></div>
-  <div class="section">
-    <div class="section-title">Combine</div>
-    <div class="ctrl">
+  <span class="layer-label">Layer 2
+    <label class="toggle"><input type="checkbox" id="chk-l2"><span class="track"></span></label>
+  </span>
+  <div id="l2-body" class="dim">
+    <div class="section">
+      <div class="section-title">Combine</div>
       <select id="sel-combine">
-        <optgroup label="Geometric">
-          <option value="xor" selected>XOR</option>
-        </optgroup>
+        <optgroup label="Geometric"><option value="xor">XOR</option></optgroup>
         <optgroup label="Blend">
-          <option value="multiply">Multiply</option>
-          <option value="screen">Screen</option>
-          <option value="overlay">Overlay</option>
-          <option value="difference">Difference</option>
-          <option value="exclusion">Exclusion</option>
-          <option value="darken">Darken</option>
-          <option value="lighten">Lighten</option>
-          <option value="hard-light">Hard Light</option>
-          <option value="soft-light">Soft Light</option>
-          <option value="color-dodge">Color Dodge</option>
-          <option value="color-burn">Color Burn</option>
-          <option value="normal">Normal (on top)</option>
+          <option value="normal" selected>Normal (on top)</option>
+          <option value="multiply">Multiply</option><option value="screen">Screen</option>
+          <option value="overlay">Overlay</option><option value="difference">Difference</option>
+          <option value="exclusion">Exclusion</option><option value="darken">Darken</option>
+          <option value="lighten">Lighten</option><option value="hard-light">Hard Light</option>
         </optgroup>
       </select>
     </div>
-    <p class="hint">XOR uses L1 colors — overlap cancels geometrically.<br>Blend modes use per-layer colors.</p>
+    <div class="mode-tab-row">
+      <div class="mode-tab active" data-layer="2" data-mode="lines">Lines</div>
+      <div class="mode-tab" data-layer="2" data-mode="rings">Rings</div>
+      <div class="mode-tab" data-layer="2" data-mode="radial">Radial</div>
+      <div class="mode-tab" data-layer="2" data-mode="grid">Grid</div>
+      <div class="mode-tab" data-layer="2" data-mode="cells">Cells</div>
+    </div>
+    <div id="layer2-body"></div>
   </div>
+
+  <!-- ══ FRAME ══ -->
   <div class="divider"></div>
-
-  <!-- ══ LAYER 2 ══ -->
-  <span class="layer-label">Layer 2</span>
-
-  <div class="mode-tab-row">
-    <div class="mode-tab"        data-layer="2" data-mode="rings">Rings</div>
-    <div class="mode-tab active" data-layer="2" data-mode="radial">Radial</div>
-    <div class="mode-tab"        data-layer="2" data-mode="lines">Lines</div>
-    <div class="mode-tab"        data-layer="2" data-mode="grid">Grid</div>
-  </div>
-
-  <!-- Rings -->
-  <div id="rings-l2" style="display:none">
-    <div class="section">
-      <div class="section-title">Rings</div>
-      <div class="ctrl">
-        <label>Count <span class="val" id="v-l2-rings">20</span></label>
-        <input type="range" id="sl-l2-rings" min="3" max="80" value="20" step="1"/>
-      </div>
-      <div class="ctrl">
-        <label>Phase <span class="val" id="v-l2-rph">0</span>%</label>
-        <input type="range" id="sl-l2-rph" min="0" max="99" value="0" step="1"/>
-      </div>
+  <div class="section">
+    <div class="section-title">Frame</div>
+    <div class="toggle-row">Enable<label class="toggle"><input type="checkbox" id="chk-frame"><span class="track"></span></label></div>
+    <div class="sub-ctrls" id="frame-ctrls">
+      <div class="ctrl"><label>Width <span class="val" id="v-fw">40</span>px</label><input type="range" id="sl-fw" min="2" max="240" value="40" step="1"/></div>
+      <div class="ctrl"><label>Color</label><div class="swatch-row"><div class="swatch-wrap" id="sw-fcolor" style="background:#ec2b8f"><input type="color" id="inp-fcolor" value="#ec2b8f"></div><span class="swatch-hex" id="v-fcolor">#ec2b8f</span></div></div>
     </div>
   </div>
 
-  <!-- Radial -->
-  <div id="radial-l2">
-    <div class="section">
-      <div class="section-title">Radial</div>
-      <div class="ctrl">
-        <label>Sectors <span class="val" id="v-l2-sectors">24</span></label>
-        <input type="range" id="sl-l2-sectors" min="3" max="120" value="24" step="1"/>
-      </div>
-      <div class="ctrl">
-        <label>Rotation <span class="val" id="v-l2-srot">0</span>°</label>
-        <input type="range" id="sl-l2-srot" min="0" max="360" value="0" step="1"/>
-      </div>
+  <!-- ══ DIVIDERS ══ -->
+  <div class="section">
+    <div class="section-title">Dividers</div>
+    <div class="toggle-row">Enable<label class="toggle"><input type="checkbox" id="chk-div"><span class="track"></span></label></div>
+    <div class="sub-ctrls" id="div-ctrls">
+      <div class="ctrl"><label>Orientation</label><select id="sel-dorient"><option value="horizontal">Horizontal</option><option value="vertical">Vertical</option></select></div>
+      <div class="ctrl"><label>Count <span class="val" id="v-divn">5</span></label><input type="range" id="sl-divn" min="2" max="40" value="5" step="1"/></div>
+      <div class="ctrl"><label>Thickness <span class="val" id="v-divt">4</span>px</label><input type="range" id="sl-divt" min="1" max="60" value="4" step="1"/></div>
+      <div class="ctrl"><label>Color</label><div class="swatch-row"><div class="swatch-wrap" id="sw-dcolor" style="background:#ec2b8f"><input type="color" id="inp-dcolor" value="#ec2b8f"></div><span class="swatch-hex" id="v-dcolor">#ec2b8f</span></div></div>
     </div>
   </div>
 
-  <!-- Shared center (rings + radial) -->
-  <div id="center-l2">
-    <div class="section">
-      <div class="section-title">Center</div>
-      <div class="ctrl">
-        <label>X <span class="val" id="v-l2-cx">50</span>%</label>
-        <input type="range" id="sl-l2-cx" min="0" max="100" value="50" step="1"/>
-      </div>
-      <div class="ctrl">
-        <label>Y <span class="val" id="v-l2-cy">50</span>%</label>
-        <input type="range" id="sl-l2-cy" min="0" max="100" value="50" step="1"/>
-      </div>
-    </div>
-  </div>
-
-  <!-- Lines -->
-  <div id="lines-l2" style="display:none">
-    <div class="section">
-      <div class="section-title">Lines</div>
-      <div class="ctrl">
-        <label>Sections <span class="val" id="v-l2-ls">20</span></label>
-        <input type="range" id="sl-l2-ls" min="2" max="80" value="20" step="1"/>
-      </div>
-      <div class="ctrl">
-        <label>Angle <span class="val" id="v-l2-la">0</span>°</label>
-        <input type="range" id="sl-l2-la" min="0" max="179" value="0" step="1"/>
-      </div>
-    </div>
-  </div>
-
-  <!-- Grid -->
-  <div id="grid-l2" style="display:none">
-    <div class="section">
-      <div class="family-header">
-        <span class="section-title">Family 1</span>
-        <button class="family-toggle" id="tog-l2-f1">On</button>
-      </div>
-      <div class="family-ctrls" id="ctrls-l2-f1">
-        <div class="ctrl">
-          <label>Sections <span class="val" id="v-l2-gf1">20</span></label>
-          <input type="range" id="sl-l2-gf1" min="2" max="80" value="20" step="1"/>
-        </div>
-        <div class="ctrl">
-          <label>Angle <span class="val" id="v-l2-ga1">15</span>°</label>
-          <input type="range" id="sl-l2-ga1" min="0" max="179" value="15" step="1"/>
-        </div>
-      </div>
-    </div>
-    <div class="section">
-      <div class="family-header">
-        <span class="section-title">Family 2</span>
-        <button class="family-toggle" id="tog-l2-f2">On</button>
-      </div>
-      <div class="family-ctrls" id="ctrls-l2-f2">
-        <div class="ctrl">
-          <label>Sections <span class="val" id="v-l2-gf2">20</span></label>
-          <input type="range" id="sl-l2-gf2" min="2" max="80" value="20" step="1"/>
-        </div>
-        <div class="ctrl">
-          <label>Angle <span class="val" id="v-l2-ga2">75</span>°</label>
-          <input type="range" id="sl-l2-ga2" min="0" max="179" value="75" step="1"/>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- L2 Color -->
-  <div class="section" id="l2-color-section">
-    <div class="section-title">Color</div>
-    <div class="ctrl">
-      <label>Foreground</label>
-      <div class="swatch-row">
-        <div class="swatch-wrap" id="sw-l2-ca" style="background:#ff3300">
-          <input type="color" id="inp-l2-ca" value="#ff3300"/>
-        </div>
-        <span class="swatch-hex" id="v-l2-ca">#ff3300</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ CLIP SHAPE ══ -->
-  <div class="divider"></div>
+  <!-- ══ CLIP ══ -->
   <div class="section">
     <div class="section-title">Clip Shape</div>
-    <div class="ctrl">
-      <select id="sel-clip">
-        <option value="none">Rectangle (full canvas)</option>
-        <option value="circle">Circle</option>
-      </select>
-    </div>
-    <div id="clip-circle-ctrls" style="display:none">
-      <div class="ctrl">
-        <label>Radius <span class="val" id="v-clip-r">90</span>%</label>
-        <input type="range" id="sl-clip-r" min="5" max="100" value="90" step="1"/>
-      </div>
-      <div class="ctrl">
-        <label>Center X <span class="val" id="v-clip-cx">50</span>%</label>
-        <input type="range" id="sl-clip-cx" min="0" max="100" value="50" step="1"/>
-      </div>
-      <div class="ctrl">
-        <label>Center Y <span class="val" id="v-clip-cy">50</span>%</label>
-        <input type="range" id="sl-clip-cy" min="0" max="100" value="50" step="1"/>
-      </div>
+    <select id="sel-clip"><option value="none">Rectangle (full)</option><option value="circle">Circle</option></select>
+    <div id="clip-circle-ctrls" style="display:none;margin-top:10px">
+      <div class="ctrl"><label>Radius <span class="val" id="v-clip-r">90</span>%</label><input type="range" id="sl-clip-r" min="5" max="100" value="90" step="1"/></div>
+      <div class="ctrl"><label>Center X <span class="val" id="v-clip-cx">50</span>%</label><input type="range" id="sl-clip-cx" min="0" max="100" value="50" step="1"/></div>
+      <div class="ctrl"><label>Center Y <span class="val" id="v-clip-cy">50</span>%</label><input type="range" id="sl-clip-cy" min="0" max="100" value="50" step="1"/></div>
     </div>
   </div>
 
   <!-- ══ EXPORT ══ -->
-  <div class="divider"></div>
   <div class="section">
-    <div class="section-title">Export SVG</div>
-    <div class="ctrl">
-      <label>Canvas size</label>
+    <div class="section-title">Export</div>
+    <div class="ctrl"><label>Canvas size</label>
       <select id="sel-res">
         <option value="1920x1080">1920 × 1080</option>
-        <option value="2560x1440">2560 × 1440</option>
-        <option value="3840x2160">3840 × 2160</option>
         <option value="1080x1080">1080 × 1080 — Square</option>
         <option value="1080x1350">1080 × 1350 — Portrait</option>
         <option value="1080x1920">1080 × 1920 — Story</option>
+        <option value="2480x3508">A4 Poster (300dpi)</option>
         <option value="custom">Custom…</option>
       </select>
-      <div class="custom-res-wrap" id="custom-res-wrap">
-        <div class="custom-res-row">
-          <input type="number" id="inp-cw" value="1920" min="100" max="16000"/>
-          <span class="custom-res-sep">×</span>
-          <input type="number" id="inp-ch" value="1080" min="100" max="16000"/>
-        </div>
-      </div>
+      <div class="custom-res-wrap" id="custom-res-wrap"><div class="custom-res-row">
+        <input type="number" id="inp-cw" value="1920" min="100" max="16000"/><span class="custom-res-sep">×</span><input type="number" id="inp-ch" value="1080" min="100" max="16000"/>
+      </div></div>
     </div>
-    <button class="btn accent" id="btn-export">↓ Export SVG</button>
-    <p class="hint">Click canvas → set L1 center (Rings/Radial).<br>Shift-click → set L2 center.<br>SVG scales to any size without quality loss.</p>
+    <button class="btn accent" id="btn-svg">↓ Export SVG</button>
+    <button class="btn" id="btn-png">↓ Export PNG</button>
+    <button class="btn ghost" id="btn-rand">⚄ Randomize</button>
+    <p class="hint">Lines/Rings/Radial: click canvas to set center.<br>SVG scales to any size losslessly.</p>
   </div>
 </div>
 
-<div id="canvas-wrap">
-  <div id="svg-preview"></div>
-</div>
+<div id="canvas-wrap"><div id="svg-preview"></div></div>
 
 <script>
-(function () {
+(function(){
 'use strict';
+const PI=Math.PI;
+let mode1='lines', mode2='lines', exportW=1920, exportH=1080;
+const fOn={'l1-f1':true,'l1-f2':true,'l2-f1':true,'l2-f2':true};
+const g=id=>parseFloat(document.getElementById(id).value);
+const gv=id=>document.getElementById(id).value;
+const chk=id=>document.getElementById(id).checked;
+const f3=n=>(+n).toFixed(3);
+const fmt2=n=>(+n).toFixed(2);
 
-// ── State ─────────────────────────────────────────────────────────────────────
-let mode1 = 'rings';
-let mode2 = 'radial';
-let exportW = 1920, exportH = 1080;
-const fOn = { 'l1-f1': true, 'l1-f2': true, 'l2-f1': true, 'l2-f2': true };
+// ── panel templates (built per layer) ──
+function panelHTML(L){
+  const p='l'+L;
+  return `
+  <div id="lines-${p}">
+    <div class="section"><div class="section-title">Lines</div>
+      <div class="ctrl"><label>Count <span class="val" id="v-${p}-ls">31</span> <span style="color:var(--dim);font-weight:400">odd</span></label><input type="range" id="sl-${p}-ls" min="3" max="199" value="31" step="2"/></div>
+      <div class="ctrl"><label>Angle <span class="val" id="v-${p}-la">0</span>°</label><input type="range" id="sl-${p}-la" min="0" max="179" value="0" step="1"/></div>
+      <div class="ctrl"><label>Modulation</label>
+        <select id="sel-${p}-lmod"><option value="uniform">Uniform</option><option value="center"${L===1?' selected':''}>Center compress</option><option value="edge">Edge compress</option><option value="linear">Linear ramp</option><option value="sine">Sine</option></select></div>
+      <div class="ctrl"><label>Intensity <span class="val" id="v-${p}-lk">${L===1?11:0}</span></label><input type="range" id="sl-${p}-lk" min="0" max="20" value="${L===1?11:0}" step="0.1"/></div>
+      <div class="ctrl"><label>Focal <span class="val" id="v-${p}-lfocal">50</span>%</label><input type="range" id="sl-${p}-lfocal" min="0" max="100" value="50" step="1"/></div>
+      <div class="ctrl"><label>Spread <span class="val" id="v-${p}-lspread">16</span></label><input type="range" id="sl-${p}-lspread" min="1" max="100" value="16" step="1"/></div>
+    </div>
+  </div>
+  <div id="rings-${p}" style="display:none"><div class="section"><div class="section-title">Rings</div>
+    <div class="ctrl"><label>Count <span class="val" id="v-${p}-rings">20</span></label><input type="range" id="sl-${p}-rings" min="3" max="120" value="20" step="1"/></div>
+    <div class="ctrl"><label>Phase <span class="val" id="v-${p}-rph">0</span>%</label><input type="range" id="sl-${p}-rph" min="0" max="99" value="0" step="1"/></div></div></div>
+  <div id="radial-${p}" style="display:none"><div class="section"><div class="section-title">Radial</div>
+    <div class="ctrl"><label>Sectors <span class="val" id="v-${p}-sectors">24</span></label><input type="range" id="sl-${p}-sectors" min="3" max="160" value="24" step="1"/></div>
+    <div class="ctrl"><label>Rotation <span class="val" id="v-${p}-srot">0</span>°</label><input type="range" id="sl-${p}-srot" min="0" max="360" value="0" step="1"/></div></div></div>
+  <div id="center-${p}" style="display:none"><div class="section"><div class="section-title">Center</div>
+    <div class="ctrl"><label>X <span class="val" id="v-${p}-cx">50</span>%</label><input type="range" id="sl-${p}-cx" min="0" max="100" value="50" step="1"/></div>
+    <div class="ctrl"><label>Y <span class="val" id="v-${p}-cy">50</span>%</label><input type="range" id="sl-${p}-cy" min="0" max="100" value="50" step="1"/></div></div></div>
+  <div id="grid-${p}" style="display:none">
+    <div class="section"><div class="family-header"><span class="section-title">Family 1</span><button class="family-toggle" id="tog-${p}-f1">On</button></div>
+      <div class="family-ctrls" id="ctrls-${p}-f1"><div class="ctrl"><label>Sections <span class="val" id="v-${p}-gf1">20</span></label><input type="range" id="sl-${p}-gf1" min="2" max="120" value="20" step="1"/></div>
+      <div class="ctrl"><label>Angle <span class="val" id="v-${p}-ga1">0</span>°</label><input type="range" id="sl-${p}-ga1" min="0" max="179" value="0" step="1"/></div></div></div>
+    <div class="section"><div class="family-header"><span class="section-title">Family 2</span><button class="family-toggle" id="tog-${p}-f2">On</button></div>
+      <div class="family-ctrls" id="ctrls-${p}-f2"><div class="ctrl"><label>Sections <span class="val" id="v-${p}-gf2">20</span></label><input type="range" id="sl-${p}-gf2" min="2" max="120" value="20" step="1"/></div>
+      <div class="ctrl"><label>Angle <span class="val" id="v-${p}-ga2">90</span>°</label><input type="range" id="sl-${p}-ga2" min="0" max="179" value="90" step="1"/></div></div></div>
+  </div>
+  <div id="cells-${p}" style="display:none"><div class="section"><div class="section-title">Cells</div>
+    <div class="ctrl"><label>Columns <span class="val" id="v-${p}-ccols">16</span></label><input type="range" id="sl-${p}-ccols" min="1" max="120" value="16" step="1"/></div>
+    <div class="ctrl"><label>Rows <span class="val" id="v-${p}-crows">10</span></label><input type="range" id="sl-${p}-crows" min="1" max="120" value="10" step="1"/></div>
+    <div class="ctrl"><label>Gap <span class="val" id="v-${p}-cgap">14</span>%</label><input type="range" id="sl-${p}-cgap" min="0" max="80" value="14" step="1"/></div>
+    <div class="ctrl"><label>Shape</label><select id="sel-${p}-cshape"><option value="pill">Pill</option><option value="rect">Rectangle</option><option value="circle">Circle</option></select></div>
+    <div class="ctrl"><label>Color rule</label><select id="sel-${p}-crule"><option value="cols">By column</option><option value="rows">By row</option><option value="checker">Checker</option></select></div>
+  </div></div>
+  <div class="section"><div class="section-title">Color</div>
+    <div class="ctrl"><label>Foreground</label><div class="swatch-row"><div class="swatch-wrap" id="sw-${p}-ca" style="background:${L===1?'#1f51ff':'#ec2b8f'}"><input type="color" id="inp-${p}-ca" value="${L===1?'#1f51ff':'#ec2b8f'}"></div><span class="swatch-hex" id="v-${p}-ca">${L===1?'#1f51ff':'#ec2b8f'}</span></div></div>
+    <div class="ctrl"><label>Background</label><div class="swatch-row"><div class="swatch-wrap" id="sw-${p}-cb" style="background:${L===1?'#ffffff':'#ffffff'}"><input type="color" id="inp-${p}-cb" value="${L===1?'#ffffff':'#ffffff'}"></div><span class="swatch-hex" id="v-${p}-cb">${L===1?'#ffffff':'#ffffff'}</span></div></div>
+    <button class="btn ghost" id="btn-swap-${p}">⇄ Swap</button>
+  </div>`;
+}
+document.getElementById('layer1-body').innerHTML=panelHTML(1);
+document.getElementById('layer2-body').innerHTML=panelHTML(2);
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const g    = id => parseFloat(document.getElementById(id).value);
-const gv   = id => document.getElementById(id).value;
-const f3   = n  => n.toFixed(3);
-const fmt2 = n  => n.toFixed(2);
+// ── slider value sync (any range with id v-<sliderId without sl-> present) ──
+function syncSliders(){
+  document.querySelectorAll('input[type=range]').forEach(el=>{
+    const vEl=document.getElementById('v-'+el.id.replace(/^sl-/,''));
+    if(!vEl) return;
+    const isFloat=el.step && el.step.indexOf('.')>=0;
+    const fmt=v=>isFloat?(+v).toFixed(1):Math.round(v);
+    vEl.textContent=fmt(el.value);
+    el.addEventListener('input',()=>{vEl.textContent=fmt(el.value);schedRender();});
+  });
+}
+syncSliders();
+document.querySelectorAll('select').forEach(s=>s.addEventListener('change',schedRender));
 
-// ── Slider sync ───────────────────────────────────────────────────────────────
-const SLIDERS = {
-  'sl-l1-rings':   ['v-l1-rings',   v => Math.round(v)],
-  'sl-l1-rph':     ['v-l1-rph',     v => Math.round(v)],
-  'sl-l1-sectors': ['v-l1-sectors', v => Math.round(v)],
-  'sl-l1-srot':    ['v-l1-srot',    v => Math.round(v)],
-  'sl-l1-cx':      ['v-l1-cx',      v => Math.round(v)],
-  'sl-l1-cy':      ['v-l1-cy',      v => Math.round(v)],
-  'sl-l1-ls':      ['v-l1-ls',      v => Math.round(v)],
-  'sl-l1-la':      ['v-l1-la',      v => Math.round(v)],
-  'sl-l1-gf1':     ['v-l1-gf1',     v => Math.round(v)],
-  'sl-l1-ga1':     ['v-l1-ga1',     v => Math.round(v)],
-  'sl-l1-gf2':     ['v-l1-gf2',     v => Math.round(v)],
-  'sl-l1-ga2':     ['v-l1-ga2',     v => Math.round(v)],
-  'sl-l2-rings':   ['v-l2-rings',   v => Math.round(v)],
-  'sl-l2-rph':     ['v-l2-rph',     v => Math.round(v)],
-  'sl-l2-sectors': ['v-l2-sectors', v => Math.round(v)],
-  'sl-l2-srot':    ['v-l2-srot',    v => Math.round(v)],
-  'sl-l2-cx':      ['v-l2-cx',      v => Math.round(v)],
-  'sl-l2-cy':      ['v-l2-cy',      v => Math.round(v)],
-  'sl-l2-ls':      ['v-l2-ls',      v => Math.round(v)],
-  'sl-l2-la':      ['v-l2-la',      v => Math.round(v)],
-  'sl-l2-gf1':     ['v-l2-gf1',     v => Math.round(v)],
-  'sl-l2-ga1':     ['v-l2-ga1',     v => Math.round(v)],
-  'sl-l2-gf2':     ['v-l2-gf2',     v => Math.round(v)],
-  'sl-l2-ga2':     ['v-l2-ga2',     v => Math.round(v)],
-  'sl-clip-r':     ['v-clip-r',     v => Math.round(v)],
-  'sl-clip-cx':    ['v-clip-cx',    v => Math.round(v)],
-  'sl-clip-cy':    ['v-clip-cy',    v => Math.round(v)],
-};
-Object.entries(SLIDERS).forEach(([sid, [vid, fmt]]) => {
-  const el  = document.getElementById(sid);
-  const vEl = document.getElementById(vid);
-  vEl.textContent = fmt(el.value);
-  el.addEventListener('input', () => { vEl.textContent = fmt(el.value); schedRender(); });
-});
-
-// ── Color swatches ────────────────────────────────────────────────────────────
-function setupSwatch(inpId, swId, valId) {
-  const inp = document.getElementById(inpId);
-  inp.addEventListener('input', () => {
-    document.getElementById(swId).style.background = inp.value;
-    document.getElementById(valId).textContent = inp.value;
+// ── colour swatches ──
+function setupSwatch(inp){
+  const i=document.getElementById(inp), sw=document.getElementById(inp.replace('inp','sw')), lab=document.getElementById(inp.replace('inp','v'));
+  i.addEventListener('input',()=>{ sw.style.background=i.value; if(lab)lab.textContent=i.value; schedRender(); });
+}
+['inp-l1-ca','inp-l1-cb','inp-l2-ca','inp-l2-cb','inp-fcolor','inp-dcolor'].forEach(setupSwatch);
+[1,2].forEach(L=>{
+  document.getElementById('btn-swap-l'+L).addEventListener('click',()=>{
+    const a=document.getElementById('inp-l'+L+'-ca'), b=document.getElementById('inp-l'+L+'-cb');
+    const t=a.value;a.value=b.value;b.value=t;
+    ['ca','cb'].forEach(k=>{const el=document.getElementById('inp-l'+L+'-'+k);document.getElementById('sw-l'+L+'-'+k).style.background=el.value;document.getElementById('v-l'+L+'-'+k).textContent=el.value;});
     schedRender();
   });
-}
-setupSwatch('inp-l1-ca', 'sw-l1-ca', 'v-l1-ca');
-setupSwatch('inp-l1-cb', 'sw-l1-cb', 'v-l1-cb');
-setupSwatch('inp-l2-ca', 'sw-l2-ca', 'v-l2-ca');
-
-document.getElementById('btn-swap-l1').addEventListener('click', () => {
-  const a = document.getElementById('inp-l1-ca').value;
-  const b = document.getElementById('inp-l1-cb').value;
-  document.getElementById('inp-l1-ca').value = b;
-  document.getElementById('inp-l1-cb').value = a;
-  document.getElementById('sw-l1-ca').style.background = b;
-  document.getElementById('sw-l1-cb').style.background = a;
-  document.getElementById('v-l1-ca').textContent = b;
-  document.getElementById('v-l1-cb').textContent = a;
-  schedRender();
 });
 
-// ── Mode tabs ─────────────────────────────────────────────────────────────────
-const POLAR_MODES = new Set(['rings', 'radial']);
-
-function applyMode(layer, mode) {
-  const pfx = `l${layer}`;
-  const all = ['rings', 'radial', 'lines', 'grid'];
-  all.forEach(m => {
-    document.getElementById(`${m}-${pfx}`).style.display = m === mode ? '' : 'none';
-  });
-  const centerEl = document.getElementById(`center-${pfx}`);
-  centerEl.style.display = POLAR_MODES.has(mode) ? '' : 'none';
-  if (layer === 1) mode1 = mode; else mode2 = mode;
+// ── mode tabs ──
+const POLAR=new Set(['rings','radial']);
+function applyMode(layer,mode){
+  const p='l'+layer;
+  ['lines','rings','radial','grid','cells'].forEach(m=>{ document.getElementById(`${m}-${p}`).style.display = m===mode?'':'none'; });
+  document.getElementById(`center-${p}`).style.display = POLAR.has(mode)?'':'none';
+  if(layer===1)mode1=mode; else mode2=mode;
 }
-
-document.querySelectorAll('.mode-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    const layer = +tab.dataset.layer;
-    const mode  = tab.dataset.mode;
-    document.querySelectorAll(`.mode-tab[data-layer="${layer}"]`).forEach(t => t.classList.remove('active'));
+document.querySelectorAll('.mode-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    const layer=+tab.dataset.layer;
+    document.querySelectorAll(`.mode-tab[data-layer="${layer}"]`).forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
-    applyMode(layer, mode);
-    schedRender();
+    applyMode(layer,tab.dataset.mode); schedRender();
   });
 });
 
-// ── Family toggles ────────────────────────────────────────────────────────────
-document.querySelectorAll('.family-toggle').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const key = btn.id.replace('tog-', '');
-    fOn[key] = !fOn[key];
-    btn.textContent = fOn[key] ? 'On' : 'Off';
-    btn.classList.toggle('off', !fOn[key]);
-    document.getElementById('ctrls-' + key).classList.toggle('dim', !fOn[key]);
-    schedRender();
+// ── family toggles ──
+document.querySelectorAll('.family-toggle').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const key=btn.id.replace('tog-','');
+    fOn[key]=!fOn[key]; btn.textContent=fOn[key]?'On':'Off'; btn.classList.toggle('off',!fOn[key]);
+    document.getElementById('ctrls-'+key).classList.toggle('dim',!fOn[key]); schedRender();
   });
 });
 
-// ── Combine mode ──────────────────────────────────────────────────────────────
-document.getElementById('sel-combine').addEventListener('change', () => {
-  document.getElementById('l2-color-section').classList.toggle('dim', gv('sel-combine') === 'xor');
+// ── layer 2 enable ──
+document.getElementById('chk-l2').addEventListener('change',function(){ document.getElementById('l2-body').classList.toggle('dim',!this.checked); schedRender(); });
+// frame / dividers toggles
+document.getElementById('chk-frame').addEventListener('change',function(){ document.getElementById('frame-ctrls').classList.toggle('visible',this.checked); schedRender(); });
+document.getElementById('chk-div').addEventListener('change',function(){ document.getElementById('div-ctrls').classList.toggle('visible',this.checked); schedRender(); });
+document.getElementById('sel-clip').addEventListener('change',function(){ document.getElementById('clip-circle-ctrls').style.display=this.value==='circle'?'':'none'; schedRender(); });
+
+// ── resolution ──
+document.getElementById('sel-res').addEventListener('change',function(){ document.getElementById('custom-res-wrap').classList.toggle('visible',this.value==='custom'); updateDims(); });
+document.getElementById('inp-cw').addEventListener('change',updateDims);
+document.getElementById('inp-ch').addEventListener('change',updateDims);
+function updateDims(){ const v=gv('sel-res'); if(v==='custom'){exportW=Math.max(100,Math.min(16000,parseInt(gv('inp-cw'))||1920));exportH=Math.max(100,Math.min(16000,parseInt(gv('inp-ch'))||1080));} else [exportW,exportH]=v.split('x').map(Number); schedRender(); }
+
+// ── click → centre ──
+document.getElementById('canvas-wrap').addEventListener('click',e=>{
+  const svgEl=document.querySelector('#svg-preview svg'); if(!svgEl)return;
+  const r=svgEl.getBoundingClientRect();
+  const cx=Math.max(0,Math.min(100,Math.round((e.clientX-r.left)/r.width*100)));
+  const cy=Math.max(0,Math.min(100,Math.round((e.clientY-r.top)/r.height*100)));
+  const lay=e.shiftKey?'2':'1', m=lay==='1'?mode1:mode2; if(!POLAR.has(m))return;
+  document.getElementById(`sl-${lay==='1'?'l1':'l2'}-cx`).value=cx;
+  document.getElementById(`sl-l${lay}-cx`).value=cx; document.getElementById(`v-l${lay}-cx`).textContent=cx;
+  document.getElementById(`sl-l${lay}-cy`).value=cy; document.getElementById(`v-l${lay}-cy`).textContent=cy;
   schedRender();
 });
 
-// ── Clip shape ────────────────────────────────────────────────────────────────
-document.getElementById('sel-clip').addEventListener('change', function () {
-  document.getElementById('clip-circle-ctrls').style.display = this.value === 'circle' ? '' : 'none';
-  schedRender();
-});
-
-// ── Resolution ────────────────────────────────────────────────────────────────
-document.getElementById('sel-res').addEventListener('change', function () {
-  document.getElementById('custom-res-wrap').classList.toggle('visible', this.value === 'custom');
-  updateExportDims();
-});
-document.getElementById('inp-cw').addEventListener('change', updateExportDims);
-document.getElementById('inp-ch').addEventListener('change', updateExportDims);
-
-function updateExportDims() {
-  const v = gv('sel-res');
-  if (v === 'custom') {
-    exportW = Math.max(100, Math.min(16000, parseInt(gv('inp-cw')) || 1920));
-    exportH = Math.max(100, Math.min(16000, parseInt(gv('inp-ch')) || 1080));
-  } else {
-    [exportW, exportH] = v.split('x').map(Number);
-  }
-  schedRender();
+// ── modulation weight + stripe boundaries ──
+function weightFn(mod,k,focal,spread){
+  const sigma=Math.max(0.01,spread/100*0.5), cycles=Math.max(0.2,spread/100*12);
+  return c=>{ switch(mod){
+    case 'linear': return 1+k*c;
+    case 'center': {const u=c-focal;return 1+k*Math.exp(-(u*u)/(2*sigma*sigma));}
+    case 'edge':   {const u=c-focal;return 1+k*(1-Math.exp(-(u*u)/(2*sigma*sigma)));}
+    case 'sine':   return 1+k*0.5*(1+Math.sin(c*PI*2*cycles));
+    default: return 1; }};
+}
+function computeStripes(count,w){
+  const S=1600,cw=new Float32Array(S+1);let acc=0;
+  for(let i=0;i<S;i++){acc+=Math.max(1e-4,w(i/S));cw[i+1]=acc;}
+  const total=cw[S]||1;for(let i=0;i<=S;i++)cw[i]=count*cw[i]/total;
+  const b=[0];let k=1;
+  for(let i=1;i<=S&&k<count;i++){if(cw[i]>=k){b.push((i-1+(k-cw[i-1])/(cw[i]-cw[i-1]))/S);k++;}}
+  b.push(1);
+  const out=[];for(let i=0;i<b.length-1;i++)out.push({a:b[i],b:b[i+1],ci:i%2});
+  return out;
 }
 
-// ── Canvas click → set center ─────────────────────────────────────────────────
-document.getElementById('canvas-wrap').addEventListener('click', e => {
-  const svgEl = document.querySelector('#svg-preview svg');
-  if (!svgEl) return;
-  const svgR = svgEl.getBoundingClientRect();
-  const cx = Math.max(0, Math.min(100, Math.round((e.clientX - svgR.left) / svgR.width  * 100)));
-  const cy = Math.max(0, Math.min(100, Math.round((e.clientY - svgR.top)  / svgR.height * 100)));
-  const lay = e.shiftKey ? '2' : '1';
-  const m   = lay === '1' ? mode1 : mode2;
-  if (!POLAR_MODES.has(m)) return;
-  document.getElementById(`sl-l${lay}-cx`).value = cx;
-  document.getElementById(`sl-l${lay}-cy`).value = cy;
-  document.getElementById(`v-l${lay}-cx`).textContent = cx;
-  document.getElementById(`v-l${lay}-cy`).textContent = cy;
-  schedRender();
-});
-
-// ── Path data builders ────────────────────────────────────────────────────────
-
-// Rings: returns circle subpaths for each "on" band's boundary radii.
-// With evenodd fill-rule, alternating annular bands are filled.
-function ringsPathData(W, H, rings, phase, cxPct, cyPct) {
-  const cx = W * cxPct, cy = H * cyPct;
-  const maxR     = Math.sqrt(Math.max(cx, W-cx)**2 + Math.max(cy, H-cy)**2) + 1;
-  const ringStep = maxR / rings;
-  const dArr = [];
-
-  function circlePath(r) {
-    // Full circle as two 180° arcs
-    return `M${f3(cx+r)} ${f3(cy)} A${f3(r)} ${f3(r)} 0 1 0 ${f3(cx-r)} ${f3(cy)} A${f3(r)} ${f3(r)} 0 1 0 ${f3(cx+r)} ${f3(cy)} Z`;
-  }
-
-  for (let i = -1; i < rings + 2; i++) {
-    const r1raw = (i + phase) * ringStep;
-    const r2raw = (i + 1 + phase) * ringStep;
-    if (r2raw <= 0) continue;
-    if (r1raw >= maxR) break;
-    if (i % 2 !== 0) continue;
-    const r1 = Math.max(0, r1raw), r2 = r2raw;
-    dArr.push(circlePath(r2));
-    if (r1 > 0.5) dArr.push(circlePath(r1));
-  }
-  return dArr;
+// ── path builders (rings/radial/grid reused; strips now modulated) ──
+function ringsPathData(W,H,rings,phase,cxPct,cyPct){
+  const cx=W*cxPct,cy=H*cyPct,maxR=Math.sqrt(Math.max(cx,W-cx)**2+Math.max(cy,H-cy)**2)+1,step=maxR/rings,d=[];
+  const cp=r=>`M${f3(cx+r)} ${f3(cy)} A${f3(r)} ${f3(r)} 0 1 0 ${f3(cx-r)} ${f3(cy)} A${f3(r)} ${f3(r)} 0 1 0 ${f3(cx+r)} ${f3(cy)} Z`;
+  for(let i=-1;i<rings+2;i++){const r1=(i+phase)*step,r2=(i+1+phase)*step;if(r2<=0)continue;if(r1>=maxR)break;if(i%2!==0)continue;d.push(cp(r2));if(Math.max(0,r1)>0.5)d.push(cp(Math.max(0,r1)));}
+  return d;
 }
-
-// Radial: alternating pie wedges from center to maxR.
-function radialPathData(W, H, sectors, rotDeg, cxPct, cyPct) {
-  const cx = W * cxPct, cy = H * cyPct;
-  const maxR     = Math.sqrt(Math.max(cx, W-cx)**2 + Math.max(cy, H-cy)**2) + 1;
-  const rotRad   = rotDeg * Math.PI / 180;
-  const secAngle = (2 * Math.PI) / sectors;
-  const dArr = [];
-
-  for (let j = 0; j < sectors; j++) {
-    if (j % 2 !== 0) continue;
-    const a1 = rotRad + j * secAngle;
-    const a2 = rotRad + (j + 1) * secAngle;
-    const la = (a2 - a1) > Math.PI ? 1 : 0;
-    const ox1 = cx + maxR * Math.cos(a1), oy1 = cy + maxR * Math.sin(a1);
-    const ox2 = cx + maxR * Math.cos(a2), oy2 = cy + maxR * Math.sin(a2);
-    dArr.push(`M${f3(cx)} ${f3(cy)} L${f3(ox1)} ${f3(oy1)} A${f3(maxR)} ${f3(maxR)} 0 ${la} 1 ${f3(ox2)} ${f3(oy2)} Z`);
-  }
-  return dArr;
+function radialPathData(W,H,sectors,rotDeg,cxPct,cyPct){
+  const cx=W*cxPct,cy=H*cyPct,maxR=Math.sqrt(Math.max(cx,W-cx)**2+Math.max(cy,H-cy)**2)+1,rot=rotDeg*PI/180,sa=2*PI/sectors,d=[];
+  for(let j=0;j<sectors;j++){if(j%2!==0)continue;const a1=rot+j*sa,a2=rot+(j+1)*sa,la=(a2-a1)>PI?1:0;
+    d.push(`M${f3(cx)} ${f3(cy)} L${f3(cx+maxR*Math.cos(a1))} ${f3(cy+maxR*Math.sin(a1))} A${f3(maxR)} ${f3(maxR)} 0 ${la} 1 ${f3(cx+maxR*Math.cos(a2))} ${f3(cy+maxR*Math.sin(a2))} Z`);}
+  return d;
 }
-
-// Lines: alternating parallel strips at any angle.
-function stripPathData(W, H, sections, angleDeg) {
-  const a  = angleDeg * Math.PI / 180;
-  const nx = Math.cos(a), ny = Math.sin(a);
-  const L  = Math.sqrt(W * W + H * H) + 1;
-
-  const corners = [[0, 0], [W, 0], [W, H], [0, H]];
-  const projs   = corners.map(([px, py]) => nx * px + ny * py);
-  const minP = Math.min(...projs), maxP = Math.max(...projs);
-  const d    = (maxP - minP) / sections;
-  const k0   = Math.floor(minP / d) - 1;
-  const k1   = Math.ceil(maxP / d) + 1;
-
-  const dArr = [];
-  for (let k = k0; k <= k1; k++) {
-    if (k % 2 !== 0) continue;
-    const p1x = k * d * nx - L * ny,       p1y = k * d * ny + L * nx;
-    const p2x = (k+1) * d * nx - L * ny,   p2y = (k+1) * d * ny + L * nx;
-    const p3x = (k+1) * d * nx + L * ny,   p3y = (k+1) * d * ny - L * nx;
-    const p4x = k * d * nx + L * ny,       p4y = k * d * ny - L * nx;
-    dArr.push(`M${fmt2(p1x)} ${fmt2(p1y)} L${fmt2(p2x)} ${fmt2(p2y)} L${fmt2(p3x)} ${fmt2(p3y)} L${fmt2(p4x)} ${fmt2(p4y)} Z`);
+function stripPathData(W,H,sections,angleDeg,w){
+  const a=angleDeg*PI/180,nx=Math.cos(a),ny=Math.sin(a),L=Math.sqrt(W*W+H*H)+1;
+  const corners=[[0,0],[W,0],[W,H],[0,H]].map(([px,py])=>nx*px+ny*py);
+  const minP=Math.min(...corners),maxP=Math.max(...corners),span=maxP-minP;
+  const d=[];
+  for(const s of computeStripes(sections,w)){ if(s.ci!==0)continue;
+    const pa=minP+s.a*span,pb=minP+s.b*span;
+    d.push(`M${fmt2(pa*nx-L*ny)} ${fmt2(pa*ny+L*nx)} L${fmt2(pb*nx-L*ny)} ${fmt2(pb*ny+L*nx)} L${fmt2(pb*nx+L*ny)} ${fmt2(pb*ny-L*nx)} L${fmt2(pa*nx+L*ny)} ${fmt2(pa*ny-L*nx)} Z`);
   }
-  return dArr;
+  return d;
 }
-
-// Grid: parallelogram checkerboard from two line families.
-function gridPathData(W, H, freq1, a1Deg, f1On, freq2, a2Deg, f2On) {
-  if (!f1On && !f2On) return [];
-  if (f1On && !f2On)  return stripPathData(W, H, freq1, a1Deg);
-  if (!f1On && f2On)  return stripPathData(W, H, freq2, a2Deg);
-
-  const a1 = a1Deg * Math.PI / 180, a2 = a2Deg * Math.PI / 180;
-  const n1x = Math.cos(a1), n1y = Math.sin(a1);
-  const n2x = Math.cos(a2), n2y = Math.sin(a2);
-  const det = n1x * n2y - n1y * n2x;
-  const _c  = [[0,0],[W,0],[W,H],[0,H]];
-  const _ext = (nxx, nyy) => { const ps = _c.map(([x,y]) => nxx*x+nyy*y); return Math.max(...ps)-Math.min(...ps); };
-  const d1  = _ext(n1x, n1y) / freq1;
-  const d2  = _ext(n2x, n2y) / freq2;
-
-  if (Math.abs(det) < 0.02) return [`M0 0 L${W} 0 L${W} ${H} L0 ${H} Z`];
-
-  function intersect(k, m) {
-    const p = k * d1, q = m * d2;
-    return [(p * n2y - q * n1y) / det, (q * n1x - p * n2x) / det];
-  }
-  function idxRange(nx, ny, d) {
-    const corners = [[0, 0], [W, 0], [W, H], [0, H]];
-    const vals = corners.map(([px, py]) => (px * nx + py * ny) / d);
-    return [Math.floor(Math.min(...vals)) - 1, Math.ceil(Math.max(...vals)) + 2];
-  }
-
-  const [k0, k1] = idxRange(n1x, n1y, d1);
-  const [m0, m1] = idxRange(n2x, n2y, d2);
-  const dArr = [];
-
-  for (let k = k0; k < k1; k++) {
-    for (let m = m0; m < m1; m++) {
-      if ((k + m) % 2 !== 0) continue;
-      const [x0, y0] = intersect(k,   m);
-      const [x1, y1] = intersect(k+1, m);
-      const [x2, y2] = intersect(k+1, m+1);
-      const [x3, y3] = intersect(k,   m+1);
-      dArr.push(`M${fmt2(x0)} ${fmt2(y0)} L${fmt2(x1)} ${fmt2(y1)} L${fmt2(x2)} ${fmt2(y2)} L${fmt2(x3)} ${fmt2(y3)} Z`);
-    }
-  }
-  return dArr;
+function gridPathData(W,H,f1,a1d,f1On,f2,a2d,f2On){
+  const uni=(s,ad)=>stripPathData(W,H,s,ad,()=>1);
+  if(!f1On&&!f2On)return [];
+  if(f1On&&!f2On)return uni(f1,a1d);
+  if(!f1On&&f2On)return uni(f2,a2d);
+  const a1=a1d*PI/180,a2=a2d*PI/180,n1x=Math.cos(a1),n1y=Math.sin(a1),n2x=Math.cos(a2),n2y=Math.sin(a2),det=n1x*n2y-n1y*n2x;
+  const _c=[[0,0],[W,0],[W,H],[0,H]],_ext=(x,y)=>{const ps=_c.map(([a,b])=>x*a+y*b);return Math.max(...ps)-Math.min(...ps);};
+  const d1=_ext(n1x,n1y)/f1,d2=_ext(n2x,n2y)/f2;
+  if(Math.abs(det)<0.02)return [`M0 0 L${W} 0 L${W} ${H} L0 ${H} Z`];
+  const isect=(k,m)=>{const p=k*d1,q=m*d2;return [(p*n2y-q*n1y)/det,(q*n1x-p*n2x)/det];};
+  const range=(x,y,d)=>{const v=_c.map(([a,b])=>(a*x+b*y)/d);return [Math.floor(Math.min(...v))-1,Math.ceil(Math.max(...v))+2];};
+  const [k0,k1]=range(n1x,n1y,d1),[m0,m1]=range(n2x,n2y,d2),d=[];
+  for(let k=k0;k<k1;k++)for(let m=m0;m<m1;m++){if((k+m)%2!==0)continue;
+    const [x0,y0]=isect(k,m),[x1,y1]=isect(k+1,m),[x2,y2]=isect(k+1,m+1),[x3,y3]=isect(k,m+1);
+    d.push(`M${fmt2(x0)} ${fmt2(y0)} L${fmt2(x1)} ${fmt2(y1)} L${fmt2(x2)} ${fmt2(y2)} L${fmt2(x3)} ${fmt2(y3)} Z`);}
+  return d;
 }
-
-function getPathData(mode, W, H, pfx) {
-  switch (mode) {
-    case 'rings':
-      return ringsPathData(W, H,
-        Math.round(g(`sl-${pfx}-rings`)), g(`sl-${pfx}-rph`) / 100,
-        g(`sl-${pfx}-cx`) / 100, g(`sl-${pfx}-cy`) / 100);
-    case 'radial':
-      return radialPathData(W, H,
-        Math.round(g(`sl-${pfx}-sectors`)), g(`sl-${pfx}-srot`),
-        g(`sl-${pfx}-cx`) / 100, g(`sl-${pfx}-cy`) / 100);
-    case 'lines':
-      return stripPathData(W, H,
-        Math.round(g(`sl-${pfx}-ls`)), g(`sl-${pfx}-la`));
-    case 'grid':
-      return gridPathData(W, H,
-        Math.round(g(`sl-${pfx}-gf1`)), g(`sl-${pfx}-ga1`), fOn[`${pfx}-f1`],
-        Math.round(g(`sl-${pfx}-gf2`)), g(`sl-${pfx}-ga2`), fOn[`${pfx}-f2`]);
+function getPathData(mode,W,H,p){
+  switch(mode){
+    case 'lines': return stripPathData(W,H,Math.round(g(`sl-${p}-ls`)),g(`sl-${p}-la`),weightFn(gv(`sel-${p}-lmod`),g(`sl-${p}-lk`),g(`sl-${p}-lfocal`)/100,g(`sl-${p}-lspread`)));
+    case 'rings': return ringsPathData(W,H,Math.round(g(`sl-${p}-rings`)),g(`sl-${p}-rph`)/100,g(`sl-${p}-cx`)/100,g(`sl-${p}-cy`)/100);
+    case 'radial':return radialPathData(W,H,Math.round(g(`sl-${p}-sectors`)),g(`sl-${p}-srot`),g(`sl-${p}-cx`)/100,g(`sl-${p}-cy`)/100);
+    case 'grid':  return gridPathData(W,H,Math.round(g(`sl-${p}-gf1`)),g(`sl-${p}-ga1`),fOn[`${p}-f1`],Math.round(g(`sl-${p}-gf2`)),g(`sl-${p}-ga2`),fOn[`${p}-f2`]);
   }
   return [];
 }
-
-// ── SVG composer ──────────────────────────────────────────────────────────────
-function buildSVG(W, H) {
-  const combine   = gv('sel-combine');
-  const l1Color   = gv('inp-l1-ca');
-  const l1Bg      = gv('inp-l1-cb');
-  const l2Color   = gv('inp-l2-ca');
-  const clipShape = gv('sel-clip');
-
-  const l1Paths = getPathData(mode1, W, H, 'l1');
-  const l2Paths = getPathData(mode2, W, H, 'l2');
-
-  let defs = `<clipPath id="vp"><rect width="${W}" height="${H}"/></clipPath>`;
-  let clipAttr = `clip-path="url(#vp)"`;
-
-  if (clipShape === 'circle') {
-    const ccx = f3(g('sl-clip-cx') / 100 * W);
-    const ccy = f3(g('sl-clip-cy') / 100 * H);
-    const cr  = f3(g('sl-clip-r')  / 100 * Math.min(W, H) / 2);
-    defs += `<clipPath id="circ"><circle cx="${ccx}" cy="${ccy}" r="${cr}"/></clipPath>`;
-    clipAttr = `clip-path="url(#circ)"`;
+function cellsSVG(W,H,p,cA,cB){
+  const cols=Math.round(g(`sl-${p}-ccols`)),rows=Math.round(g(`sl-${p}-crows`)),gap=g(`sl-${p}-cgap`)/100,shape=gv(`sel-${p}-cshape`),rule=gv(`sel-${p}-crule`);
+  const cw=W/cols,ch=H/rows; let s='';
+  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
+    let on; if(rule==='rows')on=j%2===0; else if(rule==='checker')on=(i+j)%2===0; else on=i%2===0;
+    const col=on?cA:cB; if(col===null)continue;
+    const gx=cw*gap/2,gy=ch*gap/2,x=i*cw+gx,y=j*ch+gy,w=cw-2*gx,h=ch-2*gy; if(w<=0||h<=0)continue;
+    let rx=0,ry=0; if(shape==='pill'){rx=ry=Math.min(w,h)/2;} else if(shape==='circle'){rx=w/2;ry=h/2;}
+    s+=`<rect x="${fmt2(x)}" y="${fmt2(y)}" width="${fmt2(w)}" height="${fmt2(h)}"${rx?` rx="${fmt2(rx)}" ry="${fmt2(ry)}"`:''} fill="${col}"/>`;
   }
+  return s;
+}
 
-  const header =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
-    `<defs>${defs}</defs>` +
-    `<rect width="${W}" height="${H}" fill="${l1Bg}"/>`;
+function frameMarkup(W,H){
+  if(!chk('chk-frame'))return '';
+  const fw=g('sl-fw'),col=gv('inp-fcolor');
+  return `<path fill="${col}" fill-rule="evenodd" d="M0 0 H${W} V${H} H0 Z M${fw} ${fw} H${W-fw} V${H-fw} H${fw} Z"/>`;
+}
+function dividersMarkup(W,H){
+  if(!chk('chk-div'))return '';
+  const n=Math.round(g('sl-divn')),t=g('sl-divt'),col=gv('inp-dcolor'),ins=chk('chk-frame')?g('sl-fw'):0;
+  const horiz=gv('sel-dorient')==='horizontal'; let s='<g>';
+  if(horiz){ const inner=H-2*ins; for(let i=1;i<n;i++){const y=ins+i*inner/n-t/2; s+=`<rect x="${ins}" y="${fmt2(y)}" width="${W-2*ins}" height="${t}" fill="${col}"/>`;} }
+  else { const inner=W-2*ins; for(let i=1;i<n;i++){const x=ins+i*inner/n-t/2; s+=`<rect x="${fmt2(x)}" y="${ins}" width="${t}" height="${H-2*ins}" fill="${col}"/>`;} }
+  return s+'</g>';
+}
 
-  if (combine === 'xor') {
-    const allD = [...l1Paths, ...l2Paths].join(' ');
-    return header +
-      `<path ${clipAttr} fill-rule="evenodd" fill="${l1Color}" d="${allD}"/>` +
-      '</svg>';
+// ── SVG composer ──
+function buildSVG(W,H){
+  const combine=gv('sel-combine'),clipShape=gv('sel-clip'),l2on=chk('chk-l2');
+  const l1A=gv('inp-l1-ca'),l1B=gv('inp-l1-cb'),l2A=gv('inp-l2-ca');
+  let defs=`<clipPath id="vp"><rect width="${W}" height="${H}"/></clipPath>`,clipAttr=`clip-path="url(#vp)"`;
+  if(clipShape==='circle'){const ccx=f3(g('sl-clip-cx')/100*W),ccy=f3(g('sl-clip-cy')/100*H),cr=f3(g('sl-clip-r')/100*Math.min(W,H)/2);defs+=`<clipPath id="circ"><circle cx="${ccx}" cy="${ccy}" r="${cr}"/></clipPath>`;clipAttr=`clip-path="url(#circ)"`;}
+  let body=`<rect width="${W}" height="${H}" fill="${l1B}"/>`;
+  const cells1=mode1==='cells',cells2=mode2==='cells';
+
+  if(combine==='xor' && l2on && !cells1 && !cells2){
+    const all=[...getPathData(mode1,W,H,'l1'),...getPathData(mode2,W,H,'l2')].join(' ');
+    body+=`<path ${clipAttr} fill-rule="evenodd" fill="${l1A}" d="${all}"/>`;
+  } else {
+    body += cells1 ? `<g ${clipAttr}>${cellsSVG(W,H,'l1',l1A,l1B)}</g>`
+                   : `<g ${clipAttr}>${getPathData(mode1,W,H,'l1').map(d=>`<path d="${d}" fill="${l1A}"/>`).join('')}</g>`;
+    if(l2on){
+      const blend=combine==='xor'?'normal':combine;
+      body += cells2 ? `<g ${clipAttr} style="mix-blend-mode:${blend}">${cellsSVG(W,H,'l2',l2A,null)}</g>`
+                     : `<g ${clipAttr} style="mix-blend-mode:${blend}">${getPathData(mode2,W,H,'l2').map(d=>`<path d="${d}" fill="${l2A}"/>`).join('')}</g>`;
+    }
   }
-
-  const l1Els = l1Paths.map(d => `<path d="${d}" fill="${l1Color}"/>`).join('');
-  const l2Els = l2Paths.map(d => `<path d="${d}" fill="${l2Color}"/>`).join('');
-  return header +
-    `<g ${clipAttr}>${l1Els}</g>` +
-    `<g ${clipAttr} style="mix-blend-mode:${combine}">${l2Els}</g>` +
-    '</svg>';
+  body+=frameMarkup(W,H)+dividersMarkup(W,H);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${defs}</defs>${body}</svg>`;
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
-let rafId = null;
-
-function schedRender() {
-  if (rafId) return;
-  rafId = requestAnimationFrame(() => { rafId = null; render(); });
+// ── render ──
+let rafId=null;
+function schedRender(){ if(rafId)return; rafId=requestAnimationFrame(()=>{rafId=null;render();}); }
+function render(){
+  const wrap=document.getElementById('canvas-wrap'),pv=document.getElementById('svg-preview'),r=wrap.getBoundingClientRect();
+  const avW=r.width-32,avH=r.height-32,asp=exportW/exportH; let dW=avW,dH=avW/asp; if(dH>avH){dH=avH;dW=avH*asp;}
+  dW=Math.round(dW);dH=Math.round(dH);
+  pv.innerHTML=buildSVG(exportW,exportH).replace(/width="\d+" height="\d+"/,`width="${dW}" height="${dH}"`);
 }
-
-function render() {
-  const wrap    = document.getElementById('canvas-wrap');
-  const preview = document.getElementById('svg-preview');
-  const wRect   = wrap.getBoundingClientRect();
-  const avW = wRect.width - 32, avH = wRect.height - 32;
-  const asp = exportW / exportH;
-  let dW = avW, dH = avW / asp;
-  if (dH > avH) { dH = avH; dW = avH * asp; }
-  dW = Math.round(dW); dH = Math.round(dH);
-
-  const svgStr = buildSVG(exportW, exportH);
-  const display = svgStr.replace(
-    /width="\d+" height="\d+"/,
-    `width="${dW}" height="${dH}"`
-  );
-  preview.innerHTML = display;
-}
-
 new ResizeObserver(schedRender).observe(document.getElementById('canvas-wrap'));
 
-// ── Export ────────────────────────────────────────────────────────────────────
-document.getElementById('btn-export').addEventListener('click', () => {
-  const btn = document.getElementById('btn-export');
-  btn.disabled = true; btn.textContent = 'Building…';
-  requestAnimationFrame(() => {
-    const svgStr = buildSVG(exportW, exportH);
-    const blob = new Blob([svgStr], { type: 'image/svg+xml' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.download = 'moire-svg-studio.svg';
-    a.href = url; a.click();
-    URL.revokeObjectURL(url);
-    btn.disabled = false; btn.textContent = '↓ Export SVG';
-  });
+// ── exports ──
+function dl(name,blob){const a=document.createElement('a');a.download=name;a.href=URL.createObjectURL(blob);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
+document.getElementById('btn-svg').addEventListener('click',()=>dl('pattern.svg',new Blob([buildSVG(exportW,exportH)],{type:'image/svg+xml'})));
+document.getElementById('btn-png').addEventListener('click',()=>{
+  const svg=buildSVG(exportW,exportH),url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'})),img=new Image();
+  img.onload=()=>{const c=document.createElement('canvas');c.width=exportW;c.height=exportH;c.getContext('2d').drawImage(img,0,0,exportW,exportH);URL.revokeObjectURL(url);c.toBlob(b=>dl('pattern.png',b),'image/png');};
+  img.onerror=()=>{URL.revokeObjectURL(url);alert('PNG export failed');};
+  img.src=url;
+});
+document.getElementById('btn-rand').addEventListener('click',()=>{
+  const pick=a=>a[(Math.random()*a.length)|0];
+  const setSl=(id,v)=>{const e=document.getElementById(id);if(!e)return;e.value=v;const vE=document.getElementById('v-'+id.replace('sl-',''));if(vE)vE.textContent=(e.step&&e.step.indexOf('.')>=0)?(+v).toFixed(1):Math.round(v);};
+  setSl('sl-l1-ls',3+2*((Math.random()*40)|0)); setSl('sl-l1-la',pick([0,0,0,90,45,(Math.random()*180)|0]));
+  const m=pick(['uniform','center','edge','linear','sine']); document.getElementById('sel-l1-lmod').value=m;
+  setSl('sl-l1-lk',(Math.random()*16).toFixed(1)); setSl('sl-l1-lfocal',(Math.random()*100)|0); setSl('sl-l1-lspread',2+((Math.random()*50)|0));
+  schedRender();
 });
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
-applyMode(1, mode1);
-applyMode(2, mode2);
-document.getElementById('l2-color-section').classList.add('dim');
+// ── boot ──
+applyMode(1,'lines'); applyMode(2,'lines');
+updateDims();
 schedRender();
-
 })();
 </script>
 </body>

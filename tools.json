@@ -3,7 +3,7 @@
   {"category":"generators","slug":"dot-matrix-studio","name":"Dot Matrix Studio","hasPreview":true},
   {"category":"generators","slug":"geometric-emblem-generator","name":"Geometric Emblem Generator","hasPreview":true},
   {"category":"generators","slug":"moire-studio","name":"Moiré Studio","hasPreview":true},
-  {"category":"generators","slug":"moire-svg-studio","name":"Moiré SVG Studio","hasPreview":true},
+  {"category":"generators","slug":"moire-svg-studio","name":"Pattern Studio","hasPreview":true},
   {"category":"generators","slug":"orb-burst-studio","name":"Orb Burst Studio","hasPreview":true},
   {"category":"generators","slug":"pill-dof-studio","name":"Pill DoF Studio","hasPreview":true},
   {"category":"generators","slug":"platine-studio","name":"PLATINE Brand Identity Tool","hasPreview":true},
