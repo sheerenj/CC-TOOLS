@@ -14,7 +14,7 @@
   {"category":"generators","slug":"lumen-field-studio","name":"Lumen Field Studio","hasPreview":true},
   {"category":"image","slug":"halftone-dot-studio","name":"Halftone Dot Studio","hasPreview":true},
   {"category":"image","slug":"chromatic-bloom","name":"Chromatic Bloom","hasPreview":true},
+  {"category":"image","slug":"drydown","name":"Drydown","hasPreview":false},
   {"category":"typography","slug":"particle-typeface","name":"Particle Typeface","hasPreview":true},
-  {"category":"typography","slug":"experimental-type-tool","name":"Experimental Type Tool","hasPreview":true},
-  {"category":"templates","slug":"ascii-template-tool","name":"ASCII Template Tool","hasPreview":true}
+  {"category":"typography","slug":"experimental-type-tool","name":"Experimental Type Tool","hasPreview":true}
 ]

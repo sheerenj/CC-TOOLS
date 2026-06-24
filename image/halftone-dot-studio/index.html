@@ -158,6 +158,10 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
       <label>Scale <span class="val" id="v-sc">100</span>%</label>
       <input type="range" id="sl-sc" min="10" max="400" value="100" step="1" />
     </div>
+    <div class="toggle" style="margin-top:14px;">
+      <label>Show image under dots</label>
+      <div class="tog-sw" id="tog-img"></div>
+    </div>
   </div>
 
   <!-- Adjust -->
@@ -272,6 +276,10 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
       </div>
       <input type="text" class="color-hex" id="hex-bg" value="#6ec4c0" maxlength="7" />
     </div>
+    <div class="toggle" style="margin-top:12px;">
+      <label>Background</label>
+      <div class="tog-sw" id="tog-bg"></div>
+    </div>
   </div>
 
   <!-- Export -->
@@ -313,8 +321,9 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 <!-- SVG canvas -->
 <div id="canvas-wrap">
-  <svg id="c" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+  <svg id="c" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMidYMid meet">
     <rect id="svg-bg" x="0" y="0" />
+    <image id="svg-img" x="0" y="0" preserveAspectRatio="none" style="display:none" />
     <path id="svg-dots" fill-rule="nonzero" />
   </svg>
   <div id="empty-state">
@@ -337,6 +346,7 @@ const svgBg   = document.getElementById('svg-bg');
 const svgDots = document.getElementById('svg-dots');
 const wrap    = document.getElementById('canvas-wrap');
 const empty   = document.getElementById('empty-state');
+const svgImg  = document.getElementById('svg-img');
 
 // ── Export dimensions (= SVG coordinate space) ────────────────────────────────
 let exportW = 1920, exportH = 1080;
@@ -376,6 +386,9 @@ let bgColor     = '#6ec4c0';
 let organic     = false;
 let invert      = false;
 let uniformMode = false;
+let showImage   = false;
+let showBg      = false;
+let imgDataURL  = null;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function g(id)  { return parseFloat(document.getElementById(id).value); }
@@ -424,6 +437,12 @@ document.getElementById('tog-uni').addEventListener('click', function() {
   document.getElementById('uni-size-ctrls').style.display = uniformMode ? 'block' : 'none';
   render();
 });
+document.getElementById('tog-img').addEventListener('click', function() {
+  showImage = !showImage; this.classList.toggle('on', showImage); render();
+});
+document.getElementById('tog-bg').addEventListener('click', function() {
+  showBg = !showBg; this.classList.toggle('on', showBg); render();
+});
 
 // ── Color pickers ─────────────────────────────────────────────────────────────
 function setupColor(swId, hexId, pickId, onSet) {
@@ -462,23 +481,53 @@ document.getElementById('inp-cw').addEventListener('change', updateExportDimensi
 document.getElementById('inp-ch').addEventListener('change', updateExportDimensions);
 
 // ── Image loading ─────────────────────────────────────────────────────────────
+// Match the canvas/export size to the uploaded image, then center & fit the photo.
+function fitCanvasToImage() {
+  if (!img) return;
+  const MIN = 100, MAX = 8000;
+  let w = imgW, h = imgH;
+  const longest = Math.max(w, h);
+  if (longest > MAX) { const s = MAX / longest; w = Math.round(w * s); h = Math.round(h * s); }
+  exportW = Math.max(MIN, Math.min(MAX, w));
+  exportH = Math.max(MIN, Math.min(MAX, h));
+
+  // Reflect the auto size in the Resolution control (as a custom size, editable)
+  document.getElementById('sel-res').value = 'custom';
+  document.getElementById('custom-res-wrap').classList.add('visible');
+  document.getElementById('inp-cw').value = exportW;
+  document.getElementById('inp-ch').value = exportH;
+
+  // Reset framing so the photo fills the canvas exactly
+  const fitScale = Math.round((exportW / imgW) * 100);
+  const slpx = document.getElementById('sl-px'); slpx.value = 0;        document.getElementById('v-px').textContent = '0';
+  const slpy = document.getElementById('sl-py'); slpy.value = 0;        document.getElementById('v-py').textContent = '0';
+  const slsc = document.getElementById('sl-sc'); slsc.value = fitScale; document.getElementById('v-sc').textContent = fitScale;
+
+  updateViewBox();
+  resizeDisplay();
+}
+
 function loadFile(file) {
   if (!file || !file.type.startsWith('image/')) return;
-  const url = URL.createObjectURL(file);
-  const im  = new Image();
-  im.onload = () => {
-    img = im; imgW = im.naturalWidth; imgH = im.naturalHeight;
-    URL.revokeObjectURL(url);
-    document.getElementById('img-name').textContent = file.name;
-    empty.classList.add('hidden');
-    document.getElementById('btn-svg').disabled = false;
-    document.getElementById('btn-png').disabled = false;
-    document.getElementById('btn-png-alpha').disabled = false;
-    document.getElementById('btn-seq-alpha').disabled = false;
-    processImage();
-    render();
+  const reader = new FileReader();
+  reader.onload = () => {
+    imgDataURL = reader.result;            // portable data URL — used for the underlay + export
+    const im = new Image();
+    im.onload = () => {
+      img = im; imgW = im.naturalWidth; imgH = im.naturalHeight;
+      fitCanvasToImage();
+      document.getElementById('img-name').textContent = file.name;
+      empty.classList.add('hidden');
+      document.getElementById('btn-svg').disabled = false;
+      document.getElementById('btn-png').disabled = false;
+      document.getElementById('btn-png-alpha').disabled = false;
+      document.getElementById('btn-seq-alpha').disabled = false;
+      processImage();
+      render();
+    };
+    im.src = imgDataURL;
   };
-  im.src = url;
+  reader.readAsDataURL(file);
 }
 document.getElementById('file-input').addEventListener('change', e => {
   if (e.target.files[0]) loadFile(e.target.files[0]);
@@ -559,7 +608,7 @@ function halftone() {
   const diag = Math.hypot(W, H) / 2 + spacing * 3;
   const half = Math.ceil(diag / spacing) + 2;
 
-  svgBg.setAttribute('fill', bgColor);
+  svgBg.setAttribute('fill', showBg ? bgColor : 'none');
   svgDots.setAttribute('fill', dotColor);
 
   if (!img) { svgDots.setAttribute('d', ''); return; }
@@ -624,9 +673,29 @@ function halftone() {
   svgDots.setAttribute('d', parts.join(''));
 }
 
+// ── Image underlay (photo behind the dots) ────────────────────────────────────
+function updateUnderlay() {
+  if (showImage && img && imgDataURL) {
+    const scale = g('sl-sc') / 100;
+    const panX  = exportW/2 + g('sl-px');
+    const panY  = exportH/2 + g('sl-py');
+    const dw = imgW * scale, dh = imgH * scale;
+    svgImg.setAttribute('href', imgDataURL);
+    svgImg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', imgDataURL);
+    svgImg.setAttribute('x', n(panX - dw/2));
+    svgImg.setAttribute('y', n(panY - dh/2));
+    svgImg.setAttribute('width',  n(dw));
+    svgImg.setAttribute('height', n(dh));
+    svgImg.style.display = '';
+  } else {
+    svgImg.style.display = 'none';
+  }
+}
+
 // ── Render ────────────────────────────────────────────────────────────────────
 function render() {
   _seed = _renderSeed;
+  updateUnderlay();
   halftone();
 }
 
@@ -721,6 +790,8 @@ function svgToAlphaPNG() {
   clone.setAttribute('height', exportH);
   const bgRect = clone.querySelector('#svg-bg');
   if (bgRect) bgRect.setAttribute('fill', 'none');
+  const imgEl = clone.querySelector('#svg-img');
+  if (imgEl) imgEl.style.display = 'none';     // alpha exports = dots only
   const str  = new XMLSerializer().serializeToString(clone);
   const blob = new Blob([str], { type: 'image/svg+xml;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
