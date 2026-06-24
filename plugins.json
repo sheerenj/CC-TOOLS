@@ -24,6 +24,14 @@
     "repoUrl": "https://github.com/sheerenj/CC-TOOLS/tree/main/plugins/platine-dot-pattern"
   },
   {
+    "slug": "platine-figma-plugin",
+    "name": "PLATINE Crystal",
+    "type": "plugin",
+    "app": "Figma",
+    "hasPreview": false,
+    "repoUrl": "https://github.com/sheerenj/CC-TOOLS/tree/main/plugins/platine-figma-plugin"
+  },
+  {
     "slug": "squircles-for-illustrator",
     "name": "Squircle Corners",
     "type": "script",
