@@ -221,14 +221,44 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
       <button data-style="outline" class="active">Outline</button>
       <button data-style="fill">Fill</button>
     </div>
+    <div id="align-wrap">
+      <div class="ctrl" style="margin-bottom:6px;"><label>Stroke align</label></div>
+      <div class="seg" id="seg-align" style="margin-bottom:12px;">
+        <button data-align="center" class="active">Center</button>
+        <button data-align="inside">Inside</button>
+        <button data-align="outside">Outside</button>
+      </div>
+    </div>
     <div class="ctrl"><label>Stroke weight <span class="val" id="v-sw">0.45</span></label>
       <input type="range" id="sl-sw" min="0.06" max="1.6" step="0.02" value="0.45" /></div>
     <div class="toggle"><label>Round joins</label><div class="tog-sw on" id="tog-round"></div></div>
-    <div class="toggle" style="margin-top:6px;"><label>Show dot grid</label><div class="tog-sw on" id="tog-dots"></div></div>
-    <div class="ctrl" style="margin-top:10px;"><label>Dot spacing <span class="val" id="v-de">1</span>×</label>
-      <input type="range" id="sl-de" min="1" max="6" value="1" /></div>
-    <div class="ctrl"><label>Dot size <span class="val" id="v-ds">1.4</span></label>
+  </div>
+
+  <!-- Backdrop -->
+  <div class="section">
+    <div class="section-title">Backdrop</div>
+    <div class="ctrl"><label>Grid style</label>
+      <select id="sel-grid">
+        <option value="dots">Dots</option>
+        <option value="rings">Rings</option>
+        <option value="plus">Plus (+)</option>
+        <option value="cross">Cross (×)</option>
+        <option value="lines">Lines</option>
+        <option value="none">None</option>
+      </select></div>
+    <div id="anchor-wrap">
+      <div class="ctrl" style="margin-bottom:6px;"><label>Anchor</label></div>
+      <div class="seg" id="seg-anchor" style="margin-bottom:12px;">
+        <button data-anchor="cells" class="active">Cell centers</button>
+        <button data-anchor="nodes">Nodes</button>
+      </div>
+    </div>
+    <div class="ctrl"><label>Spacing <span class="val" id="v-de">1</span>×</label>
+      <input type="range" id="sl-de" min="1" max="8" value="1" /></div>
+    <div class="ctrl"><label>Point size <span class="val" id="v-ds">1.4</span></label>
       <input type="range" id="sl-ds" min="0.4" max="4" step="0.1" value="1.4" /></div>
+    <div class="toggle"><label>Emphasize every 5th</label><div class="tog-sw" id="tog-major"></div></div>
+    <p class="hint">Points sit exactly on the snapping grid — every plot corner lands on one.</p>
   </div>
 
   <!-- Accents -->
@@ -286,7 +316,8 @@ const S = {
   fontSize: 0.6, thicken: 0, letterSpacing: 0, textY: 0,
   abstraction: 56, aspect: '0.78', fillCov: 0.5, smoothing: 1, minSpeck: 8,
   diagonalize: 35, cutCorners: 0, simplify: 2,
-  strokeW: 0.45, round: true, showDots: true, dotEvery: 1, dotSize: 1.4,
+  strokeW: 0.45, round: true, strokeAlign: 'center',
+  gridStyle: 'dots', gridAnchor: 'cells', dotEvery: 1, dotSize: 1.4, gridMajor: false,
   accentAst: false, accentGlb: false, accentSize: 5,
   colStroke: '#ff3b2f', colBg: '#f4f1ea', colDot: '#c9c4b8',
   pngScale: 2,
@@ -668,42 +699,69 @@ function fitCellPx(cols, rows) {
   return Math.max(1, Math.min(availW / cols, availH / rows));
 }
 
+// Unified backdrop emitter — markers/lines land exactly on lattice nodes.
+// prim.dot(cx,cy,r,filled,strokeW) and prim.seg(x1,y1,x2,y2,w).
+function emitGrid(unit, cols, rows, prim) {
+  const st = S.gridStyle; if (st === 'none') return;
+  const step = S.dotEvery;
+  const r   = Math.max(0.4, S.dotSize * unit / 6);
+  const arm = Math.max(1,   S.dotSize * unit / 4.5);
+  const lw  = Math.max(0.3, S.dotSize * unit / 16);
+  if (st === 'lines') {
+    for (let x = 0; x <= cols; x += step) { const mj = S.gridMajor && (x/step)%5===0; prim.seg(x*unit, 0, x*unit, rows*unit, mj?lw*2.2:lw); }
+    for (let y = 0; y <= rows; y += step) { const mj = S.gridMajor && (y/step)%5===0; prim.seg(0, y*unit, cols*unit, y*unit, mj?lw*2.2:lw); }
+    return;
+  }
+  const cells = S.gridAnchor === 'cells';   // markers at cell centres vs lattice nodes
+  const off = cells ? 0.5 : 0;
+  const xmax = cells ? cols - 1 : cols, ymax = cells ? rows - 1 : rows;
+  for (let y = 0; y <= ymax; y += step) for (let x = 0; x <= xmax; x += step) {
+    const mj = S.gridMajor && (x/step)%5===0 && (y/step)%5===0;
+    const X = (x+off)*unit, Y = (y+off)*unit;
+    if (st === 'dots')       prim.dot(X, Y, mj?r*1.9:r, true);
+    else if (st === 'rings') prim.dot(X, Y, mj?r*1.9:r, false, Math.max(0.4, lw*1.3));
+    else if (st === 'plus')  { const a = mj?arm*1.4:arm; prim.seg(X-a,Y,X+a,Y,lw); prim.seg(X,Y-a,X,Y+a,lw); }
+    else if (st === 'cross') { const a = (mj?arm*1.4:arm)*0.72; prim.seg(X-a,Y-a,X+a,Y+a,lw); prim.seg(X-a,Y+a,X+a,Y-a,lw); }
+  }
+}
+
+function appendLoops(path, cellPx) {
+  for (const lp of geom.loops) { lp.forEach((p,i)=>{ const X=p[0]*cellPx, Y=p[1]*cellPx; i?path.lineTo(X,Y):path.moveTo(X,Y); }); path.closePath(); }
+  return path;
+}
+
+function drawPlot(g2, cellPx, cols, rows) {
+  if (!geom.loops.length) return;
+  const path = appendLoops(new Path2D(), cellPx);
+  g2.lineJoin = S.round ? 'round' : 'miter';
+  g2.lineCap  = S.round ? 'round' : 'butt';
+  g2.miterLimit = 2;
+  if (S.style === 'fill') { g2.fillStyle = S.colStroke; g2.fill(path, 'evenodd'); return; }
+  const lw = Math.max(0.5, S.strokeW * cellPx);
+  g2.strokeStyle = S.colStroke;
+  if (S.strokeAlign === 'center') { g2.lineWidth = lw; g2.stroke(path); return; }
+  // inside/outside: draw a 2× band and clip to half (Figma/Illustrator style)
+  g2.save();
+  if (S.strokeAlign === 'inside') { g2.clip(path, 'evenodd'); }
+  else { const inv = new Path2D(); inv.rect(0, 0, cols*cellPx, rows*cellPx); appendLoops(inv, cellPx); g2.clip(inv, 'evenodd'); }
+  g2.lineWidth = lw * 2; g2.stroke(path);
+  g2.restore();
+}
+
 function drawScene(g2, cellPx, cols, rows, forExport) {
-  // background
   g2.fillStyle = S.colBg;
   g2.fillRect(0, 0, cols * cellPx, rows * cellPx);
 
-  // dot grid
-  if (S.showDots) {
-    g2.fillStyle = S.colDot;
-    const step = S.dotEvery;
-    const rad = S.dotSize * cellPx / 6;
-    for (let y = 0; y <= rows; y += step) for (let x = 0; x <= cols; x += step) {
-      g2.beginPath(); g2.arc(x * cellPx, y * cellPx, Math.max(0.4, rad), 0, 7); g2.fill();
-    }
-  }
+  // backdrop grid
+  emitGrid(cellPx, cols, rows, {
+    dot: (cx, cy, r, filled, sw) => { g2.beginPath(); g2.arc(cx, cy, Math.max(0.4, r), 0, 7);
+      if (filled) { g2.fillStyle = S.colDot; g2.fill(); }
+      else { g2.strokeStyle = S.colDot; g2.lineWidth = sw || 1; g2.stroke(); } },
+    seg: (x1, y1, x2, y2, w) => { g2.strokeStyle = S.colDot; g2.lineWidth = Math.max(0.3, w);
+      g2.beginPath(); g2.moveTo(x1, y1); g2.lineTo(x2, y2); g2.stroke(); }
+  });
 
-  const lw = Math.max(0.5, S.strokeW * cellPx);
-  g2.lineJoin = S.round ? 'round' : 'miter';
-  g2.lineCap = S.round ? 'round' : 'butt';
-  g2.miterLimit = 2;
-
-  if (S.style === 'fill') {
-    g2.fillStyle = S.colStroke;
-    g2.beginPath();
-    for (const lp of geom.loops) {
-      lp.forEach((p, i) => { const X = p[0]*cellPx, Y = p[1]*cellPx; i ? g2.lineTo(X, Y) : g2.moveTo(X, Y); });
-      g2.closePath();
-    }
-    g2.fill('evenodd');
-  } else {
-    g2.strokeStyle = S.colStroke; g2.lineWidth = lw;
-    for (const lp of geom.loops) {
-      g2.beginPath();
-      lp.forEach((p, i) => { const X = p[0]*cellPx, Y = p[1]*cellPx; i ? g2.lineTo(X, Y) : g2.moveTo(X, Y); });
-      g2.closePath(); g2.stroke();
-    }
-  }
+  drawPlot(g2, cellPx, cols, rows);
 
   // accents
   const acc = accentShapes(cols, rows);
@@ -754,19 +812,28 @@ function buildSVG(scale) {
   const esc = s => s;
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
   svg += `<rect width="${W}" height="${H}" fill="${S.colBg}"/>`;
-  if (S.showDots) {
-    const rad = Math.max(0.4, S.dotSize * scale / 6);
-    svg += `<g fill="${S.colDot}">`;
-    for (let y = 0; y <= rows; y += S.dotEvery) for (let x = 0; x <= cols; x += S.dotEvery)
-      svg += `<circle cx="${x*scale}" cy="${y*scale}" r="${rad.toFixed(2)}"/>`;
-    svg += `</g>`;
-  }
+  const gparts = [];
+  emitGrid(scale, cols, rows, {
+    dot: (cx, cy, r, filled, sw) => gparts.push(filled
+      ? `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(2)}"/>`
+      : `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(2)}" fill="none" stroke="${S.colDot}" stroke-width="${(sw||1).toFixed(2)}"/>`),
+    seg: (x1, y1, x2, y2, w) => gparts.push(`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${S.colDot}" stroke-width="${Math.max(0.3,w).toFixed(2)}"/>`)
+  });
+  if (gparts.length) svg += `<g fill="${S.colDot}">` + gparts.join('') + `</g>`;
+
   const d = loops.map(lp => 'M' + lp.map(p => `${(p[0]*scale).toFixed(1)},${(p[1]*scale).toFixed(1)}`).join(' L') + ' Z').join(' ');
   if (S.style === 'fill') {
     svg += `<path d="${d}" fill="${S.colStroke}" fill-rule="evenodd"/>`;
   } else {
     const lw = Math.max(0.5, S.strokeW * scale);
-    svg += `<path d="${d}" fill="none" stroke="${S.colStroke}" stroke-width="${lw.toFixed(2)}" stroke-linejoin="${S.round?'round':'miter'}" stroke-linecap="${S.round?'round':'butt'}"/>`;
+    const lj = S.round ? 'round' : 'miter', lc = S.round ? 'round' : 'butt';
+    if (S.strokeAlign === 'center') {
+      svg += `<path d="${d}" fill="none" stroke="${S.colStroke}" stroke-width="${lw.toFixed(2)}" stroke-linejoin="${lj}" stroke-linecap="${lc}"/>`;
+    } else {
+      const clipD = S.strokeAlign === 'inside' ? d : `M0 0 H${W} V${H} H0 Z ${d}`;
+      svg += `<clipPath id="ocl"><path d="${clipD}" clip-rule="evenodd"/></clipPath>`;
+      svg += `<path d="${d}" clip-path="url(#ocl)" fill="none" stroke="${S.colStroke}" stroke-width="${(lw*2).toFixed(2)}" stroke-linejoin="${lj}" stroke-linecap="${lc}"/>`;
+    }
   }
   // accents
   const acc = accentShapes(cols, rows);
@@ -833,9 +900,19 @@ document.querySelectorAll('#seg-mode button').forEach(b => b.addEventListener('c
   document.getElementById('grp-text').classList.toggle('hide', S.mode !== 'text');
   update();
 }));
+function refreshAlignUI() {
+  const w = document.getElementById('align-wrap');
+  const off = S.style === 'fill';
+  w.style.opacity = off ? '0.4' : '1';
+  w.style.pointerEvents = off ? 'none' : 'auto';
+}
 document.querySelectorAll('#seg-style button').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('#seg-style button').forEach(x => x.classList.remove('active'));
-  b.classList.add('active'); S.style = b.dataset.style; update();
+  b.classList.add('active'); S.style = b.dataset.style; refreshAlignUI(); update();
+}));
+document.querySelectorAll('#seg-align button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#seg-align button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); S.strokeAlign = b.dataset.align; update();
 }));
 
 // image
@@ -866,9 +943,21 @@ bindSlider('sl-sp', 'v-sp', 'simplify');
 // render
 bindSlider('sl-sw', 'v-sw', 'strokeW', v => v.toFixed(2));
 bindToggle('tog-round', 'round');
-bindToggle('tog-dots', 'showDots');
+// backdrop
+function refreshAnchorUI() {
+  const w = document.getElementById('anchor-wrap');
+  const off = S.gridStyle === 'lines' || S.gridStyle === 'none';
+  w.style.opacity = off ? '0.4' : '1';
+  w.style.pointerEvents = off ? 'none' : 'auto';
+}
+document.getElementById('sel-grid').addEventListener('change', e => { S.gridStyle = e.target.value; refreshAnchorUI(); update(); });
+document.querySelectorAll('#seg-anchor button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#seg-anchor button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); S.gridAnchor = b.dataset.anchor; update();
+}));
 bindSlider('sl-de', 'v-de', 'dotEvery');
 bindSlider('sl-ds', 'v-ds', 'dotSize', v => v.toFixed(1));
+bindToggle('tog-major', 'gridMajor');
 // accents
 bindToggle('tog-ast', 'accentAst');
 bindToggle('tog-glb', 'accentGlb');
@@ -910,6 +999,7 @@ uz.addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
 window.addEventListener('resize', () => render());
 
 // boot in text mode so there is something on screen immediately
+refreshAlignUI(); refreshAnchorUI();
 update();
 </script>
 </body>
