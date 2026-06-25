@@ -52,9 +52,10 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
   transition: transform 0.1s; }
 input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
 
-select, textarea, input[type=text] { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+select, textarea, input[type=text], input[type=number] { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
   color: var(--text); padding: 9px 12px; border-radius: var(--radius-md);
   font-size: 12px; outline: none; font-family: inherit; font-weight: 500; }
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
 select { border-radius: var(--radius-pill); cursor: pointer;
   appearance: none; -webkit-appearance: none;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
@@ -187,14 +188,22 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
     <div class="section-title">Grid</div>
     <div class="ctrl"><label>Abstraction <span class="val" id="v-ab">56</span> cols</label>
       <input type="range" id="sl-ab" min="10" max="160" value="56" /></div>
-    <div class="ctrl"><label>Board aspect</label>
+    <div class="ctrl"><label>Canvas size</label>
       <select id="sel-aspect">
         <option value="0.78">Portrait 4:5</option>
         <option value="1">Square 1:1</option>
         <option value="0.5625">Story 9:16</option>
         <option value="1.33">Landscape 4:3</option>
         <option value="match">Match source</option>
-      </select></div>
+        <option value="custom">Custom…</option>
+      </select>
+      <div id="custom-aspect" class="hide" style="margin-top:8px;">
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="number" id="inp-aw" value="4" min="1" max="9999" style="flex:1;min-width:0;" />
+          <span style="font-size:11px;color:var(--dim);">×</span>
+          <input type="number" id="inp-ah" value="5" min="1" max="9999" style="flex:1;min-width:0;" />
+        </div>
+      </div></div>
     <div class="ctrl"><label>Fill coverage <span class="val" id="v-fc">50</span>%</label>
       <input type="range" id="sl-fc" min="10" max="90" value="50" /></div>
     <div class="ctrl"><label>Smoothing <span class="val" id="v-sm">1</span></label>
@@ -206,11 +215,20 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
   <!-- Angles -->
   <div class="section">
     <div class="section-title">Angles</div>
-    <div class="ctrl"><label>Diagonalize (45°) <span class="val" id="v-dg">35</span></label>
+    <div class="ctrl"><label>Angle system</label>
+      <select id="sel-angle">
+        <option value="octilinear">Octilinear · 45/90°</option>
+        <option value="orthogonal">Orthogonal · 90°</option>
+        <option value="isometric">Isometric · 30/90°</option>
+        <option value="hex">Hexagonal · 60°</option>
+        <option value="deg30">Polar · every 30°</option>
+        <option value="free">Free · any angle</option>
+      </select></div>
+    <div class="ctrl"><label>Angle snap <span class="val" id="v-dg">35</span></label>
       <input type="range" id="sl-dg" min="0" max="100" value="35" /></div>
-    <div class="ctrl"><label>Cut corners <span class="val" id="v-cc">0</span></label>
+    <div class="ctrl" id="cut-wrap"><label>Cut corners <span class="val" id="v-cc">0</span></label>
       <input type="range" id="sl-cc" min="0" max="100" value="0" /></div>
-    <div class="ctrl"><label>Simplify <span class="val" id="v-sp">2</span></label>
+    <div class="ctrl"><label>Pre-clean <span class="val" id="v-sp">2</span></label>
       <input type="range" id="sl-sp" min="0" max="8" value="2" /></div>
   </div>
 
@@ -243,6 +261,7 @@ button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
         <option value="rings">Rings</option>
         <option value="plus">Plus (+)</option>
         <option value="cross">Cross (×)</option>
+        <option value="iso">Iso dots (triangular)</option>
         <option value="lines">Lines</option>
         <option value="none">None</option>
       </select></div>
@@ -314,8 +333,8 @@ const S = {
   threshold: 0.5, scale: 1, px: 0, py: 0, invert: false, useAlpha: false,
   text: 'LETO', font: 'Arial Black, Helvetica, sans-serif', weight: 800,
   fontSize: 0.6, thicken: 0, letterSpacing: 0, textY: 0,
-  abstraction: 56, aspect: '0.78', fillCov: 0.5, smoothing: 1, minSpeck: 8,
-  diagonalize: 35, cutCorners: 0, simplify: 2,
+  abstraction: 56, aspect: '0.78', aspectW: 4, aspectH: 5, fillCov: 0.5, smoothing: 1, minSpeck: 8,
+  angleSet: 'octilinear', diagonalize: 35, cutCorners: 0, simplify: 2,
   strokeW: 0.45, round: true, strokeAlign: 'center',
   gridStyle: 'dots', gridAnchor: 'cells', dotEvery: 1, dotSize: 1.4, gridMajor: false,
   accentAst: false, accentGlb: false, accentSize: 5,
@@ -335,6 +354,7 @@ function boardDims() {
   let aspect; // width / height
   if (S.aspect === 'match' && S.mode === 'image' && img) aspect = img.width / img.height;
   else if (S.aspect === 'match') aspect = 0.78;
+  else if (S.aspect === 'custom') aspect = Math.max(0.05, S.aspectW / Math.max(0.01, S.aspectH));
   else aspect = parseFloat(S.aspect);
   let rows = Math.max(4, Math.round(cols / aspect));
   return { cols, rows };
@@ -652,6 +672,74 @@ function cutCorners(pts, amount) {
   return dedupe(res);
 }
 
+/* ───────────────────────── Angle systems ───────────────────────── */
+// Allowed edge directions (degrees) per angle system. Octilinear keeps its
+// dedicated grid-exact path (diagonalize); the rest use RDP + 2-dir snapping.
+const ANGLE_DEG = {
+  orthogonal: [0, 90, 180, 270],
+  isometric:  [30, 90, 150, 210, 270, 330],
+  hex:        [0, 60, 120, 180, 240, 300],
+  deg30:      [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330],
+  free:       null,
+};
+
+// Douglas–Peucker on an open polyline.
+function rdpOpen(pts, eps) {
+  if (pts.length < 3) return pts.slice();
+  const a = pts[0], b = pts[pts.length - 1];
+  let dmax = 0, idx = -1;
+  const dx = b[0]-a[0], dy = b[1]-a[1], len = Math.hypot(dx, dy) || 1;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const d = Math.abs((pts[i][0]-a[0])*dy - (pts[i][1]-a[1])*dx) / len;
+    if (d > dmax) { dmax = d; idx = i; }
+  }
+  if (dmax > eps && idx > 0) {
+    const left = rdpOpen(pts.slice(0, idx + 1), eps);
+    const right = rdpOpen(pts.slice(idx), eps);
+    return left.slice(0, -1).concat(right);
+  }
+  return [a, b];
+}
+// RDP for a closed loop: anchor on two far-apart points so it can't collapse.
+function rdpClosed(pts, eps) {
+  const n = pts.length;
+  if (n < 5 || eps <= 0) return pts;
+  let a0 = 0;
+  for (let i = 1; i < n; i++) if (pts[i][0] < pts[a0][0] || (pts[i][0] === pts[a0][0] && pts[i][1] < pts[a0][1])) a0 = i;
+  let a1 = a0, best = -1;
+  for (let i = 0; i < n; i++) { const dx = pts[i][0]-pts[a0][0], dy = pts[i][1]-pts[a0][1], d = dx*dx+dy*dy; if (d > best) { best = d; a1 = i; } }
+  const arc = (s, e) => { const r = []; for (let i = s; ; i = (i+1)%n) { r.push(pts[i]); if (i === e) break; } return r; };
+  const s1 = rdpOpen(arc(a0, a1), eps), s2 = rdpOpen(arc(a1, a0), eps);
+  return dedupe(s1.concat(s2.slice(1, -1)));
+}
+// Rewrite each edge using only the allowed directions (two-direction split).
+function snapToDirs(pts, degs) {
+  const dirs = degs.map(d => [Math.cos(d*Math.PI/180), Math.sin(d*Math.PI/180)]);
+  const res = [];
+  const n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const A = pts[i], B = pts[(i+1)%n];
+    const vx = B[0]-A[0], vy = B[1]-A[1];
+    res.push(A);
+    if (Math.hypot(vx, vy) < 1e-6) continue;
+    // pick the tightest pair of dirs that reconstructs v with non-negative coeffs
+    let bestM = null, bestSpan = Infinity;
+    for (let p = 0; p < dirs.length; p++) for (let q = 0; q < dirs.length; q++) {
+      if (p === q) continue;
+      const d1 = dirs[p], d2 = dirs[q];
+      const det = d1[0]*d2[1] - d1[1]*d2[0];
+      if (Math.abs(det) < 1e-6) continue;
+      const a = (vx*d2[1] - vy*d2[0]) / det;
+      const b = (d1[0]*vy - d1[1]*vx) / det;
+      if (a < -1e-6 || b < -1e-6) continue;
+      const span = Math.abs(Math.atan2(det, d1[0]*d2[0]+d1[1]*d2[1])); // angle between d1,d2
+      if (span < bestSpan) { bestSpan = span; bestM = [A[0]+a*d1[0], A[1]+a*d1[1]]; }
+    }
+    if (bestM) res.push(bestM);
+  }
+  return dedupe(res);
+}
+
 /* ───────────────────────── Compute geometry ───────────────────────── */
 function compute() {
   const { cols, rows } = boardDims();
@@ -660,12 +748,22 @@ function compute() {
   if (S.smoothing > 0) grid = smooth(grid, cols, rows, S.smoothing);
   grid = despeckle(grid, cols, rows, S.minSpeck);
   let loops = traceLoops(grid, cols, rows);
+  const set = S.angleSet;
+  const eps = 0.4 + (S.diagonalize / 100) * (Math.max(cols, rows) * 0.13); // schematize strength
   loops = loops.map(lp => {
     let p = mergeCollinear(lp);
     p = simplifyLoop(p, S.simplify);
-    p = diagonalize(p, S.diagonalize);
-    p = cutCorners(p, S.cutCorners);
-    return p;
+    if (set === 'octilinear') {
+      p = diagonalize(p, S.diagonalize);   // grid-exact 0/45/90
+      p = cutCorners(p, S.cutCorners);
+    } else if (set === 'orthogonal') {
+      if (S.diagonalize > 0) { p = rdpClosed(p, eps); p = snapToDirs(p, ANGLE_DEG.orthogonal); }
+      p = cutCorners(p, S.cutCorners);
+    } else {                                // isometric / hex / 30° / free
+      p = rdpClosed(p, eps);
+      if (set !== 'free') p = snapToDirs(p, ANGLE_DEG[set]);
+    }
+    return dedupe(p);
   }).filter(p => p.length >= 3);
   geom = { loops, cols, rows };
 }
@@ -710,6 +808,18 @@ function emitGrid(unit, cols, rows, prim) {
   if (st === 'lines') {
     for (let x = 0; x <= cols; x += step) { const mj = S.gridMajor && (x/step)%5===0; prim.seg(x*unit, 0, x*unit, rows*unit, mj?lw*2.2:lw); }
     for (let y = 0; y <= rows; y += step) { const mj = S.gridMajor && (y/step)%5===0; prim.seg(0, y*unit, cols*unit, y*unit, mj?lw*2.2:lw); }
+    return;
+  }
+  if (st === 'iso') {                         // triangular dot lattice
+    const dx = step * unit, dy = step * unit * Math.sqrt(3) / 2;
+    let row = 0;
+    for (let y = 0; y <= rows*unit + 0.5; y += dy, row++) {
+      const xoff = (row % 2) ? dx/2 : 0;
+      for (let x = 0; x <= cols*unit + 0.5; x += dx) {
+        const X = x + xoff; if (X > cols*unit + 0.5) continue;
+        prim.dot(X, y, r, true);
+      }
+    }
     return;
   }
   const cells = S.gridAnchor === 'cells';   // markers at cell centres vs lattice nodes
@@ -932,7 +1042,21 @@ bindSlider('sl-ls', 'v-ls', 'letterSpacing');
 bindSlider('sl-tpy', 'v-tpy', 'textY');
 // grid
 bindSlider('sl-ab', 'v-ab', 'abstraction');
-document.getElementById('sel-aspect').addEventListener('change', e => { S.aspect = e.target.value; update(); });
+document.getElementById('sel-aspect').addEventListener('change', e => {
+  S.aspect = e.target.value;
+  document.getElementById('custom-aspect').classList.toggle('hide', S.aspect !== 'custom');
+  update();
+});
+document.getElementById('inp-aw').addEventListener('input', e => { S.aspectW = Math.max(1, +e.target.value || 1); update(); });
+document.getElementById('inp-ah').addEventListener('input', e => { S.aspectH = Math.max(1, +e.target.value || 1); update(); });
+function refreshAngleUI() {
+  // Cut corners only meaningful for the rectilinear systems
+  const cw = document.getElementById('cut-wrap');
+  const off = !(S.angleSet === 'octilinear' || S.angleSet === 'orthogonal');
+  cw.style.opacity = off ? '0.4' : '1';
+  cw.style.pointerEvents = off ? 'none' : 'auto';
+}
+document.getElementById('sel-angle').addEventListener('change', e => { S.angleSet = e.target.value; refreshAngleUI(); update(); });
 bindSlider('sl-fc', 'v-fc', 'fillCov', v => v, v => v / 100);
 bindSlider('sl-sm', 'v-sm', 'smoothing');
 bindSlider('sl-mn', 'v-mn', 'minSpeck');
@@ -946,7 +1070,7 @@ bindToggle('tog-round', 'round');
 // backdrop
 function refreshAnchorUI() {
   const w = document.getElementById('anchor-wrap');
-  const off = S.gridStyle === 'lines' || S.gridStyle === 'none';
+  const off = S.gridStyle === 'lines' || S.gridStyle === 'none' || S.gridStyle === 'iso';
   w.style.opacity = off ? '0.4' : '1';
   w.style.pointerEvents = off ? 'none' : 'auto';
 }
@@ -999,7 +1123,7 @@ uz.addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
 window.addEventListener('resize', () => render());
 
 // boot in text mode so there is something on screen immediately
-refreshAlignUI(); refreshAnchorUI();
+refreshAlignUI(); refreshAnchorUI(); refreshAngleUI();
 update();
 </script>
 </body>
