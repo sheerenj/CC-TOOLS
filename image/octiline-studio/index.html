@@ -776,18 +776,22 @@ function splitTouches(loop) {
 // needle artifact; removing the tip keeps the surviving edge on its original axis.
 function removeSpikes(pts) {
   let cur = pts;
-  for (let pass = 0; pass < 5; pass++) {
+  for (let pass = 0; pass < 8; pass++) {
     const n = cur.length;
     if (n < 4) break;
-    const res = []; let removed = false;
+    const res = []; let removed = false, just = false, firstRemoved = false;
     for (let i = 0; i < n; i++) {
       const a = cur[(i-1+n)%n], b = cur[i], c = cur[(i+1)%n];
       const ix = b[0]-a[0], iy = b[1]-a[1], ox = c[0]-b[0], oy = c[1]-b[1];
       const li = Math.hypot(ix, iy), lo = Math.hypot(ox, oy);
-      if (li < 1e-9 || lo < 1e-9) { removed = true; continue; }
-      const dot = (ix*ox + iy*oy) / (li*lo);
-      if (dot < -0.95) { removed = true; continue; }   // ~>162° reversal → spike tip
-      res.push(b);
+      const spike = (li < 1e-9 || lo < 1e-9) || ((ix*ox + iy*oy) / (li*lo) < -0.95);
+      // never drop two adjacent vertices in one pass — that would connect their
+      // outer neighbours with an arbitrary (off-angle) segment. A lone reversal
+      // collapses collinearly, so the surviving edge keeps its allowed angle.
+      // `just` blocks consecutive removals; `firstRemoved` blocks the loop-seam case.
+      const blockWrap = (i === n - 1 && firstRemoved);
+      if (spike && !just && !blockWrap) { removed = true; just = true; if (i === 0) firstRemoved = true; continue; }
+      res.push(b); just = false;
     }
     cur = res;
     if (!removed) break;
