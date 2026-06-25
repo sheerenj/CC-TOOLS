@@ -12,7 +12,7 @@
                 "cells":       ["Cells",        "Number of unit cells per axis (1–8)."],
                 "latticeSize": ["Lattice Size",  "Overall scale of the lattice in pixels."],
                 "atomSize":    ["Atom Size",     "Atom radius as a fraction of the lattice unit."],
-                "outputMode":  ["Output",        "What to draw: atoms only, bonds only, or both."],
+                "outputMode":  ["Output",        "What to draw: atoms, bonds, both, or Points — one vertex per atom (back-to-front) to drive a Duplicator for per-crystal shader control."],
                 "mergeAtoms":  ["Single Path",   "Output all atoms merged into one seamless closed path. Fill and glow effects apply to the entire shape as a whole."],
                 "crosshairs":    ["Crosshairs",     "Draw a small crosshair at each atom centre. Crosshairs are line strokes — give the layer a stroke colour/width to see them."],
                 "crosshairSize": ["Crosshair Size", "Crosshair arm length as a fraction of the atom radius."],
@@ -43,7 +43,8 @@
                 "outputMode": {
                     "0": "Atoms",
                     "1": "Bonds",
-                    "2": "Atoms + Bonds"
+                    "2": "Atoms + Bonds",
+                    "3": "Points (Duplicator)"
                 },
                 "animMode": {
                     "0": "Keyframe",

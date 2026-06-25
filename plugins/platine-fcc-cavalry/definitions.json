@@ -3,7 +3,7 @@
     "type": "platineFCC",
     "superType": "thirdPartyJavaScriptShape",
     "jsFile": "layer.js",
-    "version": "1.4",
+    "version": "1.7",
     "attributes": {
         "time": {
             "type": "double",
@@ -37,7 +37,7 @@
         "outputMode": {
             "type": "enum",
             "default": 0,
-            "enumValues": [0, 1, 2]
+            "enumValues": [0, 1, 2, 3]
         },
         "mergeAtoms": {
             "type": "bool",

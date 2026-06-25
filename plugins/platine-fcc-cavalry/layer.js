@@ -161,47 +161,51 @@
         projected.push({ sx: rot[0] * bsc, sy: -rot[1] * bsc, sz: rot[2] });
     }
 
-    var sorted = projected.slice().sort(function (a, b) { return a.sz - b.sz; });
-
     // ─── Build path ───────────────────────────────────────────────────
-    var outMode = clampInt(outputMode, 0, 2);
-    var doAtoms = (outMode === 0 || outMode === 2);
-    var doBonds = (outMode === 1 || outMode === 2);
+    var outMode  = clampInt(outputMode, 0, 3);
+    var doAtoms  = (outMode === 0 || outMode === 2);
+    var doBonds  = (outMode === 1 || outMode === 2);
+    var doPoints = (outMode === 3);
 
     var path = new cavalry.Path();
 
-    if (doAtoms) {
-        if (mergeAtoms && sorted.length > 1) {
-            for (var ai = 0; ai < sorted.length; ai++) {
-                path.addEllipse(sorted[ai].sx, sorted[ai].sy, ar, ar);
+    if (doPoints) {
+        // One point per atom, each its own subpath (single anchor, no connecting
+        // segments). Emitted in FIXED lattice order — the generation order, which
+        // does NOT depend on rotation/time — so a Shape Points duplicator/array
+        // keeps a stable index per crystal: array values stick to each crystal as
+        // it moves, with no reshuffling/flicker. (For near/far cues use a spatial
+        // falloff rather than index, since index no longer encodes depth.)
+        for (var qi = 0; qi < projected.length; qi++) {
+            path.moveTo(projected[qi].sx, projected[qi].sy);
+        }
+    } else {
+        if (doAtoms) {
+            for (var ai = 0; ai < projected.length; ai++) {
+                path.addEllipse(projected[ai].sx, projected[ai].sy, ar, ar);
             }
-            path.mergeOverlaps();
-            path.smooth(2, 0.5);
-        } else {
-            for (var ai = 0; ai < sorted.length; ai++) {
-                path.addEllipse(sorted[ai].sx, sorted[ai].sy, ar, ar);
+            if (mergeAtoms && projected.length > 1) {
+                path.mergeOverlaps();
+                path.smooth(2, 0.5);
             }
         }
-    }
 
-    if (doBonds) {
-        var bonds = genBonds(pts3D);
-        for (var bi = 0; bi < bonds.length; bi++) {
-            var b0 = projected[bonds[bi][0]];
-            var b1 = projected[bonds[bi][1]];
-            path.moveTo(b0.sx, b0.sy);
-            path.lineTo(b1.sx, b1.sy);
+        if (doBonds) {
+            var bonds = genBonds(pts3D);
+            for (var bi = 0; bi < bonds.length; bi++) {
+                var b0 = projected[bonds[bi][0]], b1 = projected[bonds[bi][1]];
+                path.moveTo(b0.sx, b0.sy);
+                path.lineTo(b1.sx, b1.sy);
+            }
         }
-    }
 
-    if (crosshairs) {
-        var chLen = ar * clampF(crosshairSize, 0.05, 1.0);
-        for (var ci = 0; ci < sorted.length; ci++) {
-            var chX = sorted[ci].sx, chY = sorted[ci].sy;
-            path.moveTo(chX - chLen, chY);
-            path.lineTo(chX + chLen, chY);
-            path.moveTo(chX, chY - chLen);
-            path.lineTo(chX, chY + chLen);
+        if (crosshairs) {
+            var chLen = ar * clampF(crosshairSize, 0.05, 1.0);
+            for (var ci = 0; ci < projected.length; ci++) {
+                var chX = projected[ci].sx, chY = projected[ci].sy;
+                path.moveTo(chX - chLen, chY); path.lineTo(chX + chLen, chY);
+                path.moveTo(chX, chY - chLen); path.lineTo(chX, chY + chLen);
+            }
         }
     }
 
