@@ -740,6 +740,61 @@ function snapToDirs(pts, degs) {
   return dedupe(res);
 }
 
+/* ───────────────────────── Degenerate-geometry cleanup ───────────────────────── */
+// Marching-squares saddle fix: a 2×2 checkerboard means two cells touch only at
+// a single corner, which traces to a self-touching point (bowtie when stroked).
+// Fill one empty cell so the contact becomes a solid corner instead of a point.
+function resolveSaddles(grid, cols, rows) {
+  const g = grid.slice();
+  for (let pass = 0; pass < 4; pass++) {
+    let changed = false;
+    for (let y = 0; y < rows - 1; y++) for (let x = 0; x < cols - 1; x++) {
+      const i = y*cols + x, tl = g[i], tr = g[i+1], bl = g[i+cols], br = g[i+cols+1];
+      if (tl && br && !tr && !bl) { g[i+1] = 1; changed = true; }
+      else if (tr && bl && !tl && !br) { g[i] = 1; changed = true; }
+    }
+    if (!changed) break;
+  }
+  return g;
+}
+// Split a loop that revisits a node into separate loops (figure-eight → two loops).
+function splitTouches(loop) {
+  let pts = loop.slice();
+  if (pts.length > 1 && pts[0][0] === pts[pts.length-1][0] && pts[0][1] === pts[pts.length-1][1]) pts = pts.slice(0, -1);
+  const seen = new Map();
+  for (let i = 0; i < pts.length; i++) {
+    const k = pts[i][0] + ',' + pts[i][1];
+    if (seen.has(k)) {
+      const j = seen.get(k);
+      return splitTouches(pts.slice(j, i)).concat(splitTouches(pts.slice(0, j).concat(pts.slice(i))));
+    }
+    seen.set(k, i);
+  }
+  return pts.length >= 3 ? [pts] : [];
+}
+// Drop spike vertices: where the path nearly reverses (in-dir ≈ −out-dir) it's a
+// needle artifact; removing the tip keeps the surviving edge on its original axis.
+function removeSpikes(pts) {
+  let cur = pts;
+  for (let pass = 0; pass < 5; pass++) {
+    const n = cur.length;
+    if (n < 4) break;
+    const res = []; let removed = false;
+    for (let i = 0; i < n; i++) {
+      const a = cur[(i-1+n)%n], b = cur[i], c = cur[(i+1)%n];
+      const ix = b[0]-a[0], iy = b[1]-a[1], ox = c[0]-b[0], oy = c[1]-b[1];
+      const li = Math.hypot(ix, iy), lo = Math.hypot(ox, oy);
+      if (li < 1e-9 || lo < 1e-9) { removed = true; continue; }
+      const dot = (ix*ox + iy*oy) / (li*lo);
+      if (dot < -0.95) { removed = true; continue; }   // ~>162° reversal → spike tip
+      res.push(b);
+    }
+    cur = res;
+    if (!removed) break;
+  }
+  return cur;
+}
+
 /* ───────────────────────── Compute geometry ───────────────────────── */
 function compute() {
   const { cols, rows } = boardDims();
@@ -747,7 +802,8 @@ function compute() {
   if (!grid) { geom = { loops: [], cols, rows }; return; }
   if (S.smoothing > 0) grid = smooth(grid, cols, rows, S.smoothing);
   grid = despeckle(grid, cols, rows, S.minSpeck);
-  let loops = traceLoops(grid, cols, rows);
+  grid = resolveSaddles(grid, cols, rows);
+  let loops = traceLoops(grid, cols, rows).flatMap(splitTouches);
   const set = S.angleSet;
   const eps = 0.4 + (S.diagonalize / 100) * (Math.max(cols, rows) * 0.13); // schematize strength
   loops = loops.map(lp => {
@@ -763,7 +819,7 @@ function compute() {
       p = rdpClosed(p, eps);
       if (set !== 'free') p = snapToDirs(p, ANGLE_DEG[set]);
     }
-    return dedupe(p);
+    return removeSpikes(dedupe(p));
   }).filter(p => p.length >= 3);
   geom = { loops, cols, rows };
 }
