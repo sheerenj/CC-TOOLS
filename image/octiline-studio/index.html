@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Octiline</title>
+<style>
+:root {
+  --bg: #ececec; --card: #ffffff; --text: #000000; --dim: #6b6b6b;
+  --line: #e4e4e4; --line2: #d4d4d4; --accent: #ff3b2f;
+  --radius-lg: 20px; --radius-md: 14px; --radius-pill: 999px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, "Inter", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased; }
+body { display: flex; }
+
+/* ── Sidebar ── */
+#sidebar {
+  width: 300px; flex-shrink: 0; background: var(--bg);
+  padding: 16px; overflow-y: auto; height: 100vh;
+  border-right: 1px solid var(--line2);
+}
+#sidebar::-webkit-scrollbar { width: 6px; }
+#sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 3px; }
+
+.brand-row { display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 16px; padding: 0 2px; }
+.brand { font-size: 16px; font-weight: 900; letter-spacing: -0.02em; }
+.brand-sub { font-size: 11px; color: var(--dim); text-transform: uppercase;
+  letter-spacing: 0.1em; font-weight: 600; }
+
+.section { background: var(--card); border-radius: var(--radius-lg);
+  padding: 14px 14px 16px; margin-bottom: 10px; }
+.section-title { display: inline-block; background: var(--accent); color: #fff;
+  padding: 3px 7px; font-family: ui-monospace, monospace; font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px; border-radius: 3px; }
+
+.ctrl { margin-bottom: 12px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl > label { display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+.ctrl > label .val { color: var(--dim); font-size: 11px; font-family: ui-monospace, monospace; }
+
+input[type=range] { -webkit-appearance: none; width: 100%; height: 4px;
+  background: var(--line2); border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
+  width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer;
+  transition: transform 0.1s; }
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+select, textarea, input[type=text] { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
+  color: var(--text); padding: 9px 12px; border-radius: var(--radius-md);
+  font-size: 12px; outline: none; font-family: inherit; font-weight: 500; }
+select { border-radius: var(--radius-pill); cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
+textarea { resize: vertical; min-height: 56px; line-height: 1.4; font-family: ui-monospace, monospace; }
+
+.color-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.color-row:last-child { margin-bottom: 0; }
+.color-label { font-size: 12px; font-weight: 500; flex: 1; }
+.color-swatch { width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid var(--line2); flex-shrink: 0; cursor: pointer;
+  position: relative; overflow: hidden; }
+.native-picker { position: absolute; inset: -4px; width: calc(100% + 8px);
+  height: calc(100% + 8px); opacity: 0; cursor: pointer; border: none; padding: 0; }
+.color-hex { flex: 1; background: #f4f4f4; border: 1px solid var(--line); color: #000;
+  padding: 7px 9px; border-radius: var(--radius-md); font-size: 12px; outline: none;
+  font-family: ui-monospace, monospace; min-width: 0; }
+
+.toggle { display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; }
+.toggle:last-child { margin-bottom: 0; }
+.toggle > label { font-size: 12px; font-weight: 500; }
+.tog-sw { position: relative; width: 38px; height: 22px; background: var(--line2);
+  border-radius: 11px; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
+.tog-sw::after { content: ''; position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; background: #fff; border-radius: 50%;
+  transition: left 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.tog-sw.on { background: #000; }
+.tog-sw.on::after { left: 18px; }
+
+.seg { display: flex; background: #f0f0f0; border-radius: var(--radius-pill); padding: 3px; gap: 2px; }
+.seg button { flex: 1; border: none; background: transparent; padding: 7px 4px;
+  border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; cursor: pointer;
+  font-family: inherit; color: var(--dim); transition: all 0.12s; }
+.seg button.active { background: #000; color: #fff; }
+
+button.btn { width: 100%; background: #000; color: #fff; border: none;
+  padding: 10px 14px; border-radius: var(--radius-pill); font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit;
+  margin-bottom: 8px; }
+button.btn:last-of-type { margin-bottom: 0; }
+button.btn:hover:not(:disabled) { background: #222; }
+button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line2); }
+button.btn.ghost:hover:not(:disabled) { background: #f5f5f5; }
+button.btn.accent { background: var(--accent); color: #fff; }
+button.btn.accent:hover:not(:disabled) { filter: brightness(1.08); }
+button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.upload-zone { border: 1.5px dashed var(--line2); border-radius: var(--radius-md);
+  padding: 20px 16px; text-align: center; cursor: pointer; transition: all 0.15s;
+  color: var(--dim); font-size: 12px; line-height: 1.8; margin-bottom: 10px; display: block; }
+.upload-zone:hover, .upload-zone.drag { border-color: #000; color: #000; }
+.upload-zone input { display: none; }
+#img-name { font-size: 11px; color: var(--dim); font-family: ui-monospace, monospace;
+  text-align: center; min-height: 14px; margin-bottom: 4px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+.hide { display: none !important; }
+.hint { font-size: 11px; color: var(--dim); line-height: 1.6; margin-top: 8px; }
+
+/* ── Canvas area ── */
+#canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center;
+  background: var(--bg); overflow: hidden; position: relative; padding: 24px; }
+#c { display: block; box-shadow: 0 8px 40px rgba(0,0,0,0.10); border-radius: 2px; }
+#stat { position: absolute; bottom: 12px; left: 16px; font-size: 11px; color: var(--dim);
+  font-family: ui-monospace, monospace; background: rgba(255,255,255,0.7);
+  padding: 4px 8px; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="brand-row">
+    <span class="brand">Octiline</span>
+    <span class="brand-sub">Grid Plotter</span>
+  </div>
+
+  <!-- Source -->
+  <div class="section">
+    <div class="section-title">Source</div>
+    <div class="seg" id="seg-mode" style="margin-bottom:12px;">
+      <button data-mode="image">Image</button>
+      <button data-mode="text" class="active">Text</button>
+    </div>
+
+    <div id="grp-image" class="hide">
+      <label class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept="image/*" />
+        Drop image here<br>or click to upload
+      </label>
+      <div id="img-name"></div>
+      <div class="ctrl"><label>Threshold <span class="val" id="v-th">50</span>%</label>
+        <input type="range" id="sl-th" min="1" max="99" value="50" /></div>
+      <div class="ctrl"><label>Scale <span class="val" id="v-sc">100</span>%</label>
+        <input type="range" id="sl-sc" min="20" max="300" value="100" /></div>
+      <div class="ctrl"><label>Offset X <span class="val" id="v-px">0</span></label>
+        <input type="range" id="sl-px" min="-100" max="100" value="0" /></div>
+      <div class="ctrl"><label>Offset Y <span class="val" id="v-py">0</span></label>
+        <input type="range" id="sl-py" min="-100" max="100" value="0" /></div>
+      <div class="toggle"><label>Invert</label><div class="tog-sw" id="tog-inv"></div></div>
+      <div class="toggle"><label>Use alpha channel</label><div class="tog-sw" id="tog-alpha"></div></div>
+    </div>
+
+    <div id="grp-text">
+      <div class="ctrl"><textarea id="txt-input" placeholder="Type here…">LETO</textarea></div>
+      <div class="ctrl"><label>Font</label>
+        <select id="sel-font">
+          <option value="Arial Black, Helvetica, sans-serif">Arial Black</option>
+          <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+          <option value="Impact, sans-serif">Impact</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="'Times New Roman', serif">Times</option>
+          <option value="'Courier New', monospace">Courier</option>
+          <option value="Futura, 'Century Gothic', sans-serif">Futura</option>
+        </select></div>
+      <div class="ctrl"><label>Weight <span class="val" id="v-wt">800</span></label>
+        <input type="range" id="sl-wt" min="100" max="900" step="100" value="800" /></div>
+      <div class="ctrl"><label>Size <span class="val" id="v-fs">60</span>%</label>
+        <input type="range" id="sl-fs" min="10" max="100" value="60" /></div>
+      <div class="ctrl"><label>Thicken stroke <span class="val" id="v-tk">0</span></label>
+        <input type="range" id="sl-tk" min="0" max="40" value="0" /></div>
+      <div class="ctrl"><label>Letter spacing <span class="val" id="v-ls">0</span></label>
+        <input type="range" id="sl-ls" min="-10" max="40" value="0" /></div>
+      <div class="ctrl"><label>Offset Y <span class="val" id="v-tpy">0</span></label>
+        <input type="range" id="sl-tpy" min="-100" max="100" value="0" /></div>
+    </div>
+  </div>
+
+  <!-- Grid / Abstraction -->
+  <div class="section">
+    <div class="section-title">Grid</div>
+    <div class="ctrl"><label>Abstraction <span class="val" id="v-ab">56</span> cols</label>
+      <input type="range" id="sl-ab" min="10" max="160" value="56" /></div>
+    <div class="ctrl"><label>Board aspect</label>
+      <select id="sel-aspect">
+        <option value="0.78">Portrait 4:5</option>
+        <option value="1">Square 1:1</option>
+        <option value="0.5625">Story 9:16</option>
+        <option value="1.33">Landscape 4:3</option>
+        <option value="match">Match source</option>
+      </select></div>
+    <div class="ctrl"><label>Fill coverage <span class="val" id="v-fc">50</span>%</label>
+      <input type="range" id="sl-fc" min="10" max="90" value="50" /></div>
+    <div class="ctrl"><label>Smoothing <span class="val" id="v-sm">1</span></label>
+      <input type="range" id="sl-sm" min="0" max="4" value="1" /></div>
+    <div class="ctrl"><label>Drop specks &lt; <span class="val" id="v-mn">8</span> cells</label>
+      <input type="range" id="sl-mn" min="0" max="60" value="8" /></div>
+  </div>
+
+  <!-- Angles -->
+  <div class="section">
+    <div class="section-title">Angles</div>
+    <div class="ctrl"><label>Diagonalize (45°) <span class="val" id="v-dg">35</span></label>
+      <input type="range" id="sl-dg" min="0" max="100" value="35" /></div>
+    <div class="ctrl"><label>Cut corners <span class="val" id="v-cc">0</span></label>
+      <input type="range" id="sl-cc" min="0" max="100" value="0" /></div>
+    <div class="ctrl"><label>Simplify <span class="val" id="v-sp">2</span></label>
+      <input type="range" id="sl-sp" min="0" max="8" value="2" /></div>
+  </div>
+
+  <!-- Stroke -->
+  <div class="section">
+    <div class="section-title">Render</div>
+    <div class="seg" id="seg-style" style="margin-bottom:12px;">
+      <button data-style="outline" class="active">Outline</button>
+      <button data-style="fill">Fill</button>
+    </div>
+    <div class="ctrl"><label>Stroke weight <span class="val" id="v-sw">0.45</span></label>
+      <input type="range" id="sl-sw" min="0.06" max="1.6" step="0.02" value="0.45" /></div>
+    <div class="toggle"><label>Round joins</label><div class="tog-sw on" id="tog-round"></div></div>
+    <div class="toggle" style="margin-top:6px;"><label>Show dot grid</label><div class="tog-sw on" id="tog-dots"></div></div>
+    <div class="ctrl" style="margin-top:10px;"><label>Dot spacing <span class="val" id="v-de">1</span>×</label>
+      <input type="range" id="sl-de" min="1" max="6" value="1" /></div>
+    <div class="ctrl"><label>Dot size <span class="val" id="v-ds">1.4</span></label>
+      <input type="range" id="sl-ds" min="0.4" max="4" step="0.1" value="1.4" /></div>
+  </div>
+
+  <!-- Accents -->
+  <div class="section">
+    <div class="section-title">Accents</div>
+    <div class="toggle"><label>Asterisks ✳</label><div class="tog-sw" id="tog-ast"></div></div>
+    <div class="toggle" style="margin-top:6px;"><label>Globes ◉</label><div class="tog-sw" id="tog-glb"></div></div>
+    <div class="ctrl" style="margin-top:10px;"><label>Accent size <span class="val" id="v-as">5</span></label>
+      <input type="range" id="sl-as" min="2" max="12" value="5" /></div>
+  </div>
+
+  <!-- Colors -->
+  <div class="section">
+    <div class="section-title">Colors</div>
+    <div class="color-row">
+      <div class="color-swatch" id="sw-stroke" style="background:#ff3b2f"><input type="color" class="native-picker" id="pk-stroke" value="#ff3b2f"></div>
+      <span class="color-label">Plot</span>
+      <input type="text" class="color-hex" id="hx-stroke" value="#ff3b2f">
+    </div>
+    <div class="color-row">
+      <div class="color-swatch" id="sw-bg" style="background:#f4f1ea"><input type="color" class="native-picker" id="pk-bg" value="#f4f1ea"></div>
+      <span class="color-label">Background</span>
+      <input type="text" class="color-hex" id="hx-bg" value="#f4f1ea">
+    </div>
+    <div class="color-row">
+      <div class="color-swatch" id="sw-dot" style="background:#c9c4b8"><input type="color" class="native-picker" id="pk-dot" value="#c9c4b8"></div>
+      <span class="color-label">Dots</span>
+      <input type="text" class="color-hex" id="hx-dot" value="#c9c4b8">
+    </div>
+  </div>
+
+  <!-- Export -->
+  <div class="section">
+    <div class="section-title">Export</div>
+    <div class="ctrl"><label>PNG scale <span class="val" id="v-ex">2</span>×</label>
+      <input type="range" id="sl-ex" min="1" max="6" value="2" /></div>
+    <button class="btn accent" id="btn-svg">↓ Export SVG</button>
+    <button class="btn ghost" id="btn-png">↓ Export PNG</button>
+    <p class="hint">SVG paths land exactly on grid nodes — clean to edit in Cavalry / Figma / Illustrator.</p>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <canvas id="c"></canvas>
+  <div id="stat"></div>
+</div>
+
+<script>
+"use strict";
+/* ───────────────────────── State ───────────────────────── */
+const S = {
+  mode: 'text', style: 'outline',
+  threshold: 0.5, scale: 1, px: 0, py: 0, invert: false, useAlpha: false,
+  text: 'LETO', font: 'Arial Black, Helvetica, sans-serif', weight: 800,
+  fontSize: 0.6, thicken: 0, letterSpacing: 0, textY: 0,
+  abstraction: 56, aspect: '0.78', fillCov: 0.5, smoothing: 1, minSpeck: 8,
+  diagonalize: 35, cutCorners: 0, simplify: 2,
+  strokeW: 0.45, round: true, showDots: true, dotEvery: 1, dotSize: 1.4,
+  accentAst: false, accentGlb: false, accentSize: 5,
+  colStroke: '#ff3b2f', colBg: '#f4f1ea', colDot: '#c9c4b8',
+  pngScale: 2,
+};
+let img = null;             // loaded HTMLImageElement (image mode)
+let geom = { loops: [], cols: 0, rows: 0 };  // computed geometry (node coords)
+
+/* ───────────────────────── Mask building ───────────────────────── */
+// Render the source into an offscreen canvas of (cols*SS) x (rows*SS) and
+// return a binary grid [cols][rows] using per-cell coverage.
+const SS = 4; // supersample per cell for coverage
+
+function boardDims() {
+  let cols = S.abstraction;
+  let aspect; // width / height
+  if (S.aspect === 'match' && S.mode === 'image' && img) aspect = img.width / img.height;
+  else if (S.aspect === 'match') aspect = 0.78;
+  else aspect = parseFloat(S.aspect);
+  let rows = Math.max(4, Math.round(cols / aspect));
+  return { cols, rows };
+}
+
+function buildGrid(cols, rows) {
+  const W = cols * SS, H = rows * SS;
+  const off = document.createElement('canvas');
+  off.width = W; off.height = H;
+  const o = off.getContext('2d', { willReadFrequently: true });
+  o.clearRect(0, 0, W, H);
+
+  if (S.mode === 'image') {
+    if (!img) return null;
+    const ia = img.width / img.height, ba = W / H;
+    let dw, dh;
+    if (ia > ba) { dw = W; dh = W / ia; } else { dh = H; dw = H * ia; }
+    dw *= S.scale; dh *= S.scale;
+    const dx = (W - dw) / 2 + S.px / 100 * W;
+    const dy = (H - dh) / 2 + S.py / 100 * H;
+    o.drawImage(img, dx, dy, dw, dh);
+  } else {
+    const lines = (S.text || '').split('\n');
+    o.fillStyle = '#000'; o.strokeStyle = '#000';
+    o.textAlign = 'center'; o.textBaseline = 'middle';
+    let fs = Math.round(H * S.fontSize / Math.max(1, lines.length));
+    fs = Math.max(4, fs);
+    o.font = `${S.weight} ${fs}px ${S.font}`;
+    if ('letterSpacing' in o) { try { o.letterSpacing = (S.letterSpacing) + 'px'; } catch (e) {} }
+    // auto-fit to board width so nothing clips off the grid
+    const maxW = W * 0.88;
+    let widest = 0;
+    for (const ln of lines) { const m = o.measureText(ln).width; if (m > widest) widest = m; }
+    if (widest > maxW && widest > 0) {
+      fs = Math.max(4, Math.floor(fs * maxW / widest));
+      o.font = `${S.weight} ${fs}px ${S.font}`;
+    }
+    const lh = fs * 1.04;
+    const total = lh * lines.length;
+    const cx = W / 2;
+    let y0 = H / 2 - total / 2 + lh / 2 + S.textY / 100 * H;
+    o.lineJoin = 'round'; o.lineCap = 'round';
+    const tw = S.thicken;
+    lines.forEach((ln, i) => {
+      const y = y0 + i * lh;
+      if (tw > 0) { o.lineWidth = tw; o.strokeText(ln, cx, y); }
+      o.fillText(ln, cx, y);
+    });
+    if ('letterSpacing' in o) { try { o.letterSpacing = '0px'; } catch (e) {} }
+  }
+
+  const data = o.getImageData(0, 0, W, H).data;
+  const grid = new Uint8Array(cols * rows);
+  for (let cy = 0; cy < rows; cy++) {
+    for (let cx = 0; cx < cols; cx++) {
+      let acc = 0;
+      for (let sy = 0; sy < SS; sy++) {
+        const py = cy * SS + sy;
+        for (let sx = 0; sx < SS; sx++) {
+          const px = cx * SS + sx;
+          const idx = (py * W + px) * 4;
+          const a = data[idx + 3] / 255;
+          let ink;
+          if (S.mode === 'image' && !S.useAlpha) {
+            const lum = (0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2]) / 255;
+            ink = a * (S.threshold > 0 && lum <= S.threshold ? 1 : 0);
+          } else {
+            ink = a >= 0.5 ? 1 : 0;
+          }
+          acc += ink;
+        }
+      }
+      const cov = acc / (SS * SS);
+      let filled = cov >= S.fillCov ? 1 : 0;
+      if (S.invert) filled = filled ? 0 : 1;
+      grid[cy * cols + cx] = filled;
+    }
+  }
+  return grid;
+}
+
+/* ───────────────────────── Morphology ───────────────────────── */
+function at(grid, cols, rows, x, y) {
+  if (x < 0 || y < 0 || x >= cols || y >= rows) return 0;
+  return grid[y * cols + x];
+}
+// majority smoothing (median-ish): cell becomes on if >=5 of 9 neighbours on
+function smooth(grid, cols, rows, iters) {
+  let g = grid;
+  for (let it = 0; it < iters; it++) {
+    const n = new Uint8Array(cols * rows);
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      let s = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) s += at(g, cols, rows, x + dx, y + dy);
+      n[y * cols + x] = s >= 5 ? 1 : 0;
+    }
+    g = n;
+  }
+  return g;
+}
+// remove connected components smaller than minSize (4-connectivity), both ink and holes
+function despeckle(grid, cols, rows, minSize) {
+  if (minSize <= 0) return grid;
+  const g = grid.slice();
+  const removeSmall = (target) => {
+    const seen = new Uint8Array(cols * rows);
+    for (let i = 0; i < g.length; i++) {
+      if (seen[i] || g[i] !== target) continue;
+      // BFS
+      const stack = [i]; seen[i] = 1; const comp = [i];
+      while (stack.length) {
+        const c = stack.pop(); const cx = c % cols, cy = (c / cols) | 0;
+        const nb = [[cx-1,cy],[cx+1,cy],[cx,cy-1],[cx,cy+1]];
+        for (const [nx, ny] of nb) {
+          if (nx<0||ny<0||nx>=cols||ny>=rows) continue;
+          const ni = ny*cols+nx;
+          if (!seen[ni] && g[ni] === target) { seen[ni]=1; stack.push(ni); comp.push(ni); }
+        }
+      }
+      if (comp.length < minSize) for (const k of comp) g[k] = target ? 0 : 1;
+    }
+  };
+  removeSmall(1); // drop tiny ink islands
+  removeSmall(0); // fill tiny holes
+  return g;
+}
+
+/* ───────────────────────── Boundary tracing ───────────────────────── */
+// Returns array of loops; each loop = array of [nx,ny] node coords (integers).
+// Directed boundary edges with filled region on the left.
+function traceLoops(grid, cols, rows) {
+  const key = (x, y) => x + ',' + y;
+  const out = new Map(); // nodeKey -> [{x,y,used}]
+  const addEdge = (ax, ay, bx, by) => {
+    if (!out.has(key(ax, ay))) out.set(key(ax, ay), []);
+    out.get(key(ax, ay)).push({ x: bx, y: by, used: false });
+  };
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+    if (!grid[y * cols + x]) continue;
+    if (!at(grid, cols, rows, x, y - 1)) addEdge(x, y, x + 1, y);         // top
+    if (!at(grid, cols, rows, x, y + 1)) addEdge(x + 1, y + 1, x, y + 1); // bottom
+    if (!at(grid, cols, rows, x - 1, y)) addEdge(x, y + 1, x, y);         // left
+    if (!at(grid, cols, rows, x + 1, y)) addEdge(x + 1, y, x + 1, y + 1); // right
+  }
+
+  const loops = [];
+  for (const [, edges] of out) {
+    for (const e of edges) {
+      if (e.used) continue;
+      // start a loop
+      const startKey = (() => { for (const [k, arr] of out) if (arr.includes(e)) return k; })();
+      let [sx, sy] = startKey.split(',').map(Number);
+      let cur = e; cur.used = true;
+      let px = sx, py = sy;             // previous node
+      let cx = cur.x, cy = cur.y;       // current node
+      const loop = [[sx, sy], [cx, cy]];
+      let guard = 0;
+      while (!(cx === sx && cy === sy) && guard++ < 1e6) {
+        const cand = out.get(key(cx, cy)) || [];
+        // incoming dir
+        const ivx = cx - px, ivy = cy - py;
+        let best = null, bestScore = Infinity;
+        for (const c of cand) {
+          if (c.used) continue;
+          const ovx = c.x - cx, ovy = c.y - cy;
+          // signed CCW angle from incoming to outgoing; prefer sharpest right (most clockwise)
+          const dot = ivx * ovx + ivy * ovy;
+          const cross = ivx * ovy - ivy * ovx; // >0 = left turn (CCW)
+          let ang = Math.atan2(cross, dot);     // (-pi, pi]; >0 left, <0 right
+          if (ang <= -Math.PI + 1e-9) ang = Math.PI + 1; // reversal: worst
+          if (ang < bestScore) { bestScore = ang; best = c; }
+        }
+        if (!best) break;
+        best.used = true;
+        px = cx; py = cy; cx = best.x; cy = best.y;
+        loop.push([cx, cy]);
+      }
+      if (loop.length > 2) loops.push(loop);
+    }
+  }
+  return loops;
+}
+
+/* ───────────────────────── Simplify (collinear + RDP-ish) ───────────────────────── */
+function mergeCollinear(loop) {
+  // loop is closed (last == first). Work on points without dup last.
+  const pts = loop.slice(0, loop.length - (loop[0][0] === loop[loop.length-1][0] && loop[0][1] === loop[loop.length-1][1] ? 1 : 0));
+  const n = pts.length;
+  const res = [];
+  for (let i = 0; i < n; i++) {
+    const a = pts[(i - 1 + n) % n], b = pts[i], c = pts[(i + 1) % n];
+    const d1x = b[0]-a[0], d1y = b[1]-a[1];
+    const d2x = c[0]-b[0], d2y = c[1]-b[1];
+    // keep b only if direction changes (cross != 0)
+    if (d1x * d2y - d1y * d2x !== 0 || (Math.sign(d1x)!==Math.sign(d2x)||Math.sign(d1y)!==Math.sign(d2y))) res.push(b);
+  }
+  return res.length >= 3 ? res : pts;
+}
+
+// grid-aware simplify: drop staircase noise below `tol` cells while staying on grid.
+function simplifyLoop(pts, tol) {
+  if (tol <= 0 || pts.length < 5) return pts;
+  let cur = pts.slice();
+  for (let pass = 0; pass < tol; pass++) {
+    const n = cur.length;
+    if (n < 5) break;
+    const res = [];
+    let i = 0;
+    while (i < n) {
+      const a = cur[i % n], b = cur[(i+1)%n], c = cur[(i+2)%n];
+      // remove a 1-cell jog: |a->b| or |b->c| == 1 and it's a notch
+      const lab = Math.abs(b[0]-a[0]) + Math.abs(b[1]-a[1]);
+      const lbc = Math.abs(c[0]-b[0]) + Math.abs(c[1]-b[1]);
+      if (Math.min(lab, lbc) <= pass + 1 && (a[0]===c[0] || a[1]===c[1]) && (a[0]!==b[0] || a[1]!==b[1])) {
+        // collapse b onto the line a-c (drop the notch)
+        res.push(a); i += 2; continue;
+      }
+      res.push(a); i += 1;
+    }
+    if (res.length === cur.length) break;
+    cur = mergeCollinear([...res, res[0]]);
+  }
+  return cur;
+}
+
+/* ───────────────────────── Diagonalize (45°) ───────────────────────── */
+function diagonalize(pts, strength) {
+  if (strength <= 0 || pts.length < 4) return pts;
+  const maxStep = 1 + Math.round(strength / 100 * 6); // collapse staircases of steps up to this (cells)
+  const n = pts.length;
+  // build direction list
+  const dir = (a, b) => [Math.sign(b[0]-a[0]), Math.sign(b[1]-a[1])];
+  const res = [];
+  let i = 0;
+  let used = 0;
+  while (used < n) {
+    const a = pts[i % n];
+    // detect a monotonic staircase run starting at i: alternating axes, consistent signs, small steps
+    let j = i;
+    let sgnx = 0, sgny = 0, ok = true, steps = 0;
+    const probe = [];
+    while (steps < n) {
+      const p = pts[j % n], q = pts[(j + 1) % n];
+      const dx = q[0]-p[0], dy = q[1]-p[1];
+      const len = Math.abs(dx) + Math.abs(dy);
+      const isH = dy === 0, isV = dx === 0;
+      if (!isH && !isV) break;             // already diagonal, stop
+      if (len === 0) break;
+      if (len > maxStep) break;            // long segment -> not part of staircase
+      const sx = Math.sign(dx), sy = Math.sign(dy);
+      if (isH) { if (sgnx === 0) sgnx = sx; else if (sgnx !== sx) break; }
+      if (isV) { if (sgny === 0) sgny = sy; else if (sgny !== sy) break; }
+      probe.push([p, q]);
+      steps++; j++;
+      if (steps >= 2 && sgnx !== 0 && sgny !== 0) {
+        // continue while alternating; peek next to decide break handled at top
+      }
+    }
+    // valid staircase needs both axes present and >=3 segments (>=2 turns)
+    if (sgnx !== 0 && sgny !== 0 && steps >= 3) {
+      const start = pts[i % n];
+      const end = pts[(i + steps) % n];
+      const dx = end[0]-start[0], dy = end[1]-start[1];
+      const adx = Math.abs(dx), ady = Math.abs(dy);
+      const d = Math.min(adx, ady);            // diagonal length
+      const remX = dx - sgnx * d, remY = dy - sgny * d; // axis remainder (one is 0)
+      // center the diagonal: half remainder, diagonal, half remainder
+      const h1x = Math.round((remX) / 2), h1y = Math.round((remY) / 2);
+      const p1 = [start[0] + h1x, start[1] + h1y];
+      const p2 = [p1[0] + sgnx * d, p1[1] + sgny * d];
+      res.push(start);
+      if (h1x !== 0 || h1y !== 0) res.push(p1);
+      res.push(p2);
+      // p2 -> end is the remaining axis part; end pushed next iteration
+      i += steps; used += steps;
+    } else {
+      res.push(a);
+      i += 1; used += 1;
+    }
+  }
+  return dedupe(res);
+}
+
+function dedupe(pts) {
+  const r = [];
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i], q = r[r.length - 1];
+    if (!q || q[0] !== p[0] || q[1] !== p[1]) r.push(p);
+  }
+  if (r.length > 1 && r[0][0] === r[r.length-1][0] && r[0][1] === r[r.length-1][1]) r.pop();
+  return r;
+}
+
+/* ───────────────────────── Cut corners (chamfer) ───────────────────────── */
+function cutCorners(pts, amount) {
+  if (amount <= 0 || pts.length < 3) return pts;
+  const n = pts.length;
+  const res = [];
+  for (let i = 0; i < n; i++) {
+    const a = pts[(i-1+n)%n], b = pts[i], c = pts[(i+1)%n];
+    const d1x = b[0]-a[0], d1y = b[1]-a[1];
+    const d2x = c[0]-b[0], d2y = c[1]-b[1];
+    const cross = d1x*d2y - d1y*d2x;
+    const isCorner = cross !== 0; // turning point
+    const l1 = Math.hypot(d1x, d1y), l2 = Math.hypot(d2x, d2y);
+    if (!isCorner) { res.push(b); continue; }
+    const cut = Math.min(l1/2, l2/2) * (amount/100);
+    const cutI = Math.max(1, Math.round(cut));
+    if (cutI < 1 || l1 < 2 || l2 < 2) { res.push(b); continue; }
+    const u1x = d1x/l1, u1y = d1y/l1, u2x = d2x/l2, u2y = d2y/l2;
+    const p1 = [Math.round(b[0]-u1x*cutI), Math.round(b[1]-u1y*cutI)];
+    const p2 = [Math.round(b[0]+u2x*cutI), Math.round(b[1]+u2y*cutI)];
+    res.push(p1, p2);
+  }
+  return dedupe(res);
+}
+
+/* ───────────────────────── Compute geometry ───────────────────────── */
+function compute() {
+  const { cols, rows } = boardDims();
+  let grid = buildGrid(cols, rows);
+  if (!grid) { geom = { loops: [], cols, rows }; return; }
+  if (S.smoothing > 0) grid = smooth(grid, cols, rows, S.smoothing);
+  grid = despeckle(grid, cols, rows, S.minSpeck);
+  let loops = traceLoops(grid, cols, rows);
+  loops = loops.map(lp => {
+    let p = mergeCollinear(lp);
+    p = simplifyLoop(p, S.simplify);
+    p = diagonalize(p, S.diagonalize);
+    p = cutCorners(p, S.cutCorners);
+    return p;
+  }).filter(p => p.length >= 3);
+  geom = { loops, cols, rows };
+}
+
+/* ───────────────────────── Accents ───────────────────────── */
+function accentShapes(cols, rows) {
+  const shapes = [];
+  const r = S.accentSize;
+  const star = (cx, cy) => {
+    const segs = [];
+    const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+    for (const [dx,dy] of dirs) {
+      const m = (Math.abs(dx)&&Math.abs(dy)) ? r*0.7 : r;
+      segs.push([[cx-dx*m, cy-dy*m],[cx+dx*m, cy+dy*m]]);
+    }
+    return { type:'lines', segs };
+  };
+  const globe = (cx, cy) => ({ type:'globe', cx, cy, r });
+  if (S.accentAst) { shapes.push(star(cols*0.16, rows*0.62)); shapes.push(star(cols*0.86, rows*0.32)); }
+  if (S.accentGlb) { shapes.push(globe(cols*0.3, rows*0.07)); shapes.push(globe(cols*0.7, rows*0.93)); }
+  return shapes;
+}
+
+/* ───────────────────────── Render ───────────────────────── */
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+function fitCellPx(cols, rows) {
+  const wrap = document.getElementById('canvas-wrap');
+  const availW = wrap.clientWidth - 48, availH = wrap.clientHeight - 48;
+  return Math.max(1, Math.min(availW / cols, availH / rows));
+}
+
+function drawScene(g2, cellPx, cols, rows, forExport) {
+  // background
+  g2.fillStyle = S.colBg;
+  g2.fillRect(0, 0, cols * cellPx, rows * cellPx);
+
+  // dot grid
+  if (S.showDots) {
+    g2.fillStyle = S.colDot;
+    const step = S.dotEvery;
+    const rad = S.dotSize * cellPx / 6;
+    for (let y = 0; y <= rows; y += step) for (let x = 0; x <= cols; x += step) {
+      g2.beginPath(); g2.arc(x * cellPx, y * cellPx, Math.max(0.4, rad), 0, 7); g2.fill();
+    }
+  }
+
+  const lw = Math.max(0.5, S.strokeW * cellPx);
+  g2.lineJoin = S.round ? 'round' : 'miter';
+  g2.lineCap = S.round ? 'round' : 'butt';
+  g2.miterLimit = 2;
+
+  if (S.style === 'fill') {
+    g2.fillStyle = S.colStroke;
+    g2.beginPath();
+    for (const lp of geom.loops) {
+      lp.forEach((p, i) => { const X = p[0]*cellPx, Y = p[1]*cellPx; i ? g2.lineTo(X, Y) : g2.moveTo(X, Y); });
+      g2.closePath();
+    }
+    g2.fill('evenodd');
+  } else {
+    g2.strokeStyle = S.colStroke; g2.lineWidth = lw;
+    for (const lp of geom.loops) {
+      g2.beginPath();
+      lp.forEach((p, i) => { const X = p[0]*cellPx, Y = p[1]*cellPx; i ? g2.lineTo(X, Y) : g2.moveTo(X, Y); });
+      g2.closePath(); g2.stroke();
+    }
+  }
+
+  // accents
+  const acc = accentShapes(cols, rows);
+  g2.strokeStyle = S.colStroke === S.colBg ? '#000' : '#1a1a1a';
+  g2.lineWidth = Math.max(0.5, cellPx * 0.18);
+  g2.fillStyle = 'transparent';
+  for (const sh of acc) {
+    if (sh.type === 'lines') {
+      for (const [a, b] of sh.segs) {
+        g2.beginPath(); g2.moveTo(a[0]*cellPx, a[1]*cellPx); g2.lineTo(b[0]*cellPx, b[1]*cellPx); g2.stroke();
+      }
+    } else if (sh.type === 'globe') {
+      const X = sh.cx*cellPx, Y = sh.cy*cellPx, R = sh.r*cellPx;
+      g2.beginPath(); g2.arc(X, Y, R, 0, 7); g2.stroke();
+      g2.beginPath(); g2.moveTo(X-R, Y); g2.lineTo(X+R, Y); g2.stroke();
+      g2.beginPath(); g2.ellipse(X, Y, R*0.45, R, 0, 0, 7); g2.stroke();
+    }
+  }
+}
+
+function render() {
+  const { cols, rows } = geom;
+  if (!cols) return;
+  const cellPx = fitCellPx(cols, rows);
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = cols * cellPx * dpr;
+  canvas.height = rows * cellPx * dpr;
+  canvas.style.width = (cols * cellPx) + 'px';
+  canvas.style.height = (rows * cellPx) + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawScene(ctx, cellPx, cols, rows, false);
+
+  let pts = 0; geom.loops.forEach(l => pts += l.length);
+  document.getElementById('stat').textContent =
+    `${cols}×${rows} grid · ${geom.loops.length} loop${geom.loops.length===1?'':'s'} · ${pts} nodes`;
+}
+
+let raf = 0;
+function update() {
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(() => { compute(); render(); });
+}
+
+/* ───────────────────────── SVG export ───────────────────────── */
+function buildSVG(scale) {
+  const { cols, rows, loops } = geom;
+  const W = cols * scale, H = rows * scale;
+  const esc = s => s;
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  svg += `<rect width="${W}" height="${H}" fill="${S.colBg}"/>`;
+  if (S.showDots) {
+    const rad = Math.max(0.4, S.dotSize * scale / 6);
+    svg += `<g fill="${S.colDot}">`;
+    for (let y = 0; y <= rows; y += S.dotEvery) for (let x = 0; x <= cols; x += S.dotEvery)
+      svg += `<circle cx="${x*scale}" cy="${y*scale}" r="${rad.toFixed(2)}"/>`;
+    svg += `</g>`;
+  }
+  const d = loops.map(lp => 'M' + lp.map(p => `${(p[0]*scale).toFixed(1)},${(p[1]*scale).toFixed(1)}`).join(' L') + ' Z').join(' ');
+  if (S.style === 'fill') {
+    svg += `<path d="${d}" fill="${S.colStroke}" fill-rule="evenodd"/>`;
+  } else {
+    const lw = Math.max(0.5, S.strokeW * scale);
+    svg += `<path d="${d}" fill="none" stroke="${S.colStroke}" stroke-width="${lw.toFixed(2)}" stroke-linejoin="${S.round?'round':'miter'}" stroke-linecap="${S.round?'round':'butt'}"/>`;
+  }
+  // accents
+  const acc = accentShapes(cols, rows);
+  if (acc.length) {
+    const alw = Math.max(0.5, scale * 0.18);
+    svg += `<g fill="none" stroke="#1a1a1a" stroke-width="${alw.toFixed(2)}" stroke-linecap="round">`;
+    for (const sh of acc) {
+      if (sh.type === 'lines') for (const [a,b] of sh.segs)
+        svg += `<line x1="${(a[0]*scale).toFixed(1)}" y1="${(a[1]*scale).toFixed(1)}" x2="${(b[0]*scale).toFixed(1)}" y2="${(b[1]*scale).toFixed(1)}"/>`;
+      else if (sh.type === 'globe') {
+        const X=sh.cx*scale, Y=sh.cy*scale, R=sh.r*scale;
+        svg += `<circle cx="${X.toFixed(1)}" cy="${Y.toFixed(1)}" r="${R.toFixed(1)}"/>`;
+        svg += `<line x1="${(X-R).toFixed(1)}" y1="${Y.toFixed(1)}" x2="${(X+R).toFixed(1)}" y2="${Y.toFixed(1)}"/>`;
+        svg += `<ellipse cx="${X.toFixed(1)}" cy="${Y.toFixed(1)}" rx="${(R*0.45).toFixed(1)}" ry="${R.toFixed(1)}"/>`;
+      }
+    }
+    svg += `</g>`;
+  }
+  svg += `</svg>`;
+  return svg;
+}
+function download(name, blob) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+document.getElementById('btn-svg').addEventListener('click', () => {
+  if (!geom.cols) return;
+  download('octiline.svg', new Blob([buildSVG(20)], { type: 'image/svg+xml' }));
+});
+document.getElementById('btn-png').addEventListener('click', () => {
+  if (!geom.cols) return;
+  const { cols, rows } = geom;
+  const cellPx = 14 * S.pngScale;
+  const cv = document.createElement('canvas');
+  cv.width = cols * cellPx; cv.height = rows * cellPx;
+  const g2 = cv.getContext('2d');
+  drawScene(g2, cellPx, cols, rows, true);
+  cv.toBlob(b => download('octiline.png', b), 'image/png');
+});
+
+/* ───────────────────────── UI wiring ───────────────────────── */
+function bindSlider(id, valId, key, fmt, transform) {
+  const el = document.getElementById(id), v = valId && document.getElementById(valId);
+  const apply = () => {
+    let raw = parseFloat(el.value);
+    S[key] = transform ? transform(raw) : raw;
+    if (v) v.textContent = fmt ? fmt(raw) : raw;
+    update();
+  };
+  el.addEventListener('input', apply); apply();
+}
+function bindToggle(id, key) {
+  const el = document.getElementById(id);
+  if (S[key]) el.classList.add('on');
+  el.addEventListener('click', () => { S[key] = !S[key]; el.classList.toggle('on', S[key]); update(); });
+}
+
+// Source mode
+document.querySelectorAll('#seg-mode button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#seg-mode button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); S.mode = b.dataset.mode;
+  document.getElementById('grp-image').classList.toggle('hide', S.mode !== 'image');
+  document.getElementById('grp-text').classList.toggle('hide', S.mode !== 'text');
+  update();
+}));
+document.querySelectorAll('#seg-style button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#seg-style button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); S.style = b.dataset.style; update();
+}));
+
+// image
+bindSlider('sl-th', 'v-th', 'threshold', v => v, v => v / 100);
+bindSlider('sl-sc', 'v-sc', 'scale', v => v, v => v / 100);
+bindSlider('sl-px', 'v-px', 'px');
+bindSlider('sl-py', 'v-py', 'py');
+bindToggle('tog-inv', 'invert');
+bindToggle('tog-alpha', 'useAlpha');
+// text
+document.getElementById('txt-input').addEventListener('input', e => { S.text = e.target.value; update(); });
+document.getElementById('sel-font').addEventListener('change', e => { S.font = e.target.value; update(); });
+bindSlider('sl-wt', 'v-wt', 'weight');
+bindSlider('sl-fs', 'v-fs', 'fontSize', v => v, v => v / 100);
+bindSlider('sl-tk', 'v-tk', 'thicken');
+bindSlider('sl-ls', 'v-ls', 'letterSpacing');
+bindSlider('sl-tpy', 'v-tpy', 'textY');
+// grid
+bindSlider('sl-ab', 'v-ab', 'abstraction');
+document.getElementById('sel-aspect').addEventListener('change', e => { S.aspect = e.target.value; update(); });
+bindSlider('sl-fc', 'v-fc', 'fillCov', v => v, v => v / 100);
+bindSlider('sl-sm', 'v-sm', 'smoothing');
+bindSlider('sl-mn', 'v-mn', 'minSpeck');
+// angles
+bindSlider('sl-dg', 'v-dg', 'diagonalize');
+bindSlider('sl-cc', 'v-cc', 'cutCorners');
+bindSlider('sl-sp', 'v-sp', 'simplify');
+// render
+bindSlider('sl-sw', 'v-sw', 'strokeW', v => v.toFixed(2));
+bindToggle('tog-round', 'round');
+bindToggle('tog-dots', 'showDots');
+bindSlider('sl-de', 'v-de', 'dotEvery');
+bindSlider('sl-ds', 'v-ds', 'dotSize', v => v.toFixed(1));
+// accents
+bindToggle('tog-ast', 'accentAst');
+bindToggle('tog-glb', 'accentGlb');
+bindSlider('sl-as', 'v-as', 'accentSize');
+// export
+bindSlider('sl-ex', 'v-ex', 'pngScale');
+
+// colors
+function bindColor(swId, pkId, hxId, key) {
+  const sw = document.getElementById(swId), pk = document.getElementById(pkId), hx = document.getElementById(hxId);
+  const set = (val) => {
+    S[key] = val; sw.style.background = val; hx.value = val; pk.value = val; update();
+  };
+  pk.addEventListener('input', () => set(pk.value));
+  hx.addEventListener('change', () => { if (/^#[0-9a-f]{6}$/i.test(hx.value)) set(hx.value); });
+}
+bindColor('sw-stroke', 'pk-stroke', 'hx-stroke', 'colStroke');
+bindColor('sw-bg', 'pk-bg', 'hx-bg', 'colBg');
+bindColor('sw-dot', 'pk-dot', 'hx-dot', 'colDot');
+
+// upload
+const fileInput = document.getElementById('file-input');
+const uz = document.getElementById('upload-zone');
+function loadFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const r = new FileReader();
+  r.onload = () => {
+    const im = new Image();
+    im.onload = () => { img = im; document.getElementById('img-name').textContent = file.name; update(); };
+    im.src = r.result;
+  };
+  r.readAsDataURL(file);
+}
+fileInput.addEventListener('change', e => loadFile(e.target.files[0]));
+['dragover','dragenter'].forEach(ev => uz.addEventListener(ev, e => { e.preventDefault(); uz.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => uz.addEventListener(ev, e => { e.preventDefault(); uz.classList.remove('drag'); }));
+uz.addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
+
+window.addEventListener('resize', () => render());
+
+// boot in text mode so there is something on screen immediately
+update();
+</script>
+</body>
+</html>

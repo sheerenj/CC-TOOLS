@@ -12,6 +12,7 @@
   {"category":"generators","slug":"reaction-diffusion","name":"Reaction–Diffusion","hasPreview":true},
   {"category":"generators","slug":"structural-color-studio","name":"Iridis · Structural Colour","hasPreview":true},
   {"category":"generators","slug":"lumen-field-studio","name":"Lumen Field Studio","hasPreview":true},
+  {"category":"image","slug":"octiline-studio","name":"Octiline · Grid Plotter","hasPreview":true},
   {"category":"image","slug":"halftone-dot-studio","name":"Halftone Dot Studio","hasPreview":true},
   {"category":"image","slug":"chromatic-bloom","name":"Chromatic Bloom","hasPreview":true},
   {"category":"image","slug":"drydown","name":"Drydown","hasPreview":false},
