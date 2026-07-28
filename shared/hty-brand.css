@@ -1,0 +1,257 @@
+/* ════════════════════════════════════════════════════════════════════════
+   HEAR THE YOUTH · TOOL UI DESIGN SYSTEM  —  hty-brand.css
+   ────────────────────────────────────────────────────────────────────────
+   CSS port of the official HTY tool component library
+   (github.com/HearTheYouth/dev-hty-tool-components · styles/global.css).
+   Brand tokens are the source of truth — Bron: brand-book.heartheyouth.com.
+
+   Dark, black rounded "islands" on a #191919 page, WHITE accent, Suisse Intl
+   + Suisse Intl Mono fonts, mono-caps labels, 24px/12px radii, thin sliders.
+
+   Exposes the same class API as the personal hty-ui.css so it is a drop-in
+   stylesheet swap; component wiring (hty-ui.js) is unchanged. Scoped to `.hty`.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── Brand fonts (Suisse) ── */
+@font-face { font-family:'Suisse Intl'; src:url('fonts/Suisse/SuisseIntl-Regular-WebXL.woff2') format('woff2'); font-weight:300; font-style:normal; font-display:swap; }
+@font-face { font-family:'Suisse Intl'; src:url('fonts/Suisse/SuisseIntl-Book-WebXL.woff2') format('woff2'); font-weight:400; font-style:normal; font-display:swap; }
+@font-face { font-family:'Suisse Intl'; src:url('fonts/Suisse/SuisseIntl-Medium-WebXL.woff2') format('woff2'); font-weight:500; font-style:normal; font-display:swap; }
+@font-face { font-family:'Suisse Intl'; src:url('fonts/Suisse/SuisseIntl-SemiBold-WebXL.woff2') format('woff2'); font-weight:600; font-style:normal; font-display:swap; }
+@font-face { font-family:'Suisse Intl Mono'; src:url('fonts/Suisse/SuisseIntlMono-Regular-WebXL.woff2') format('woff2'); font-weight:400; font-style:normal; font-display:swap; }
+
+.hty {
+  /* — brand tokens — */
+  --page-bg: #191919;
+  --island-bg: #000000;
+  --surface: #262626;
+  --surface-input: #333333;
+  --text: #ffffff;
+  --text-muted: rgba(255,255,255,.55);
+  --text-subtle: rgba(255,255,255,.45);
+  --border: rgba(255,255,255,.12);
+  --accent: #ffffff;
+  --accent-fg: #0f0f12;
+  --error: #ffb4b4;
+  --control-track: rgba(255,255,255,.35);
+  --control-thumb: #ffffff;
+  --radius: 24px; --radius-sm: 12px;
+  --font-sans: 'Suisse Intl','Helvetica Neue',Helvetica,Arial,sans-serif;
+  --font-mono: 'Suisse Intl Mono','Courier New',Courier,monospace;
+
+  /* — legacy .hty aliases (so existing markup/inline styles resolve) — */
+  --bg: var(--page-bg);
+  --bg-2: var(--surface);
+  --dock: var(--island-bg);
+  --field: var(--surface-input);
+  --ink: var(--text);
+  --ink-2: var(--text-muted);
+  --ink-3: var(--text-subtle);
+  --accent-ink: var(--accent-fg);
+  --accent-soft: rgba(255,255,255,.14);
+  --line: var(--border);
+  --line-2: rgba(255,255,255,.22);
+  --track: var(--control-track);
+  --soft: rgba(255,255,255,.06);
+  --soft-2: rgba(255,255,255,.10);
+  --r-lg: var(--radius); --r-md: var(--radius-sm); --r-sm: var(--radius-sm); --r-pill: 999px;
+  --m: 12px;
+  --sans: var(--font-sans); --mono: var(--font-mono);
+  --ease: cubic-bezier(.22,1,.36,1);
+
+  margin: 0; height: 100vh; overflow: hidden;
+  display: flex; flex-direction: row;
+  background: var(--page-bg);
+  color: var(--text);
+  font-family: var(--font-sans); font-weight: 300;
+  font-feature-settings: 'ss01' 1;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;
+  color-scheme: dark;
+}
+.hty *, .hty *::before, .hty *::after { box-sizing: border-box; }
+
+/* mono-caps label utility used throughout the brand */
+.hty .lbl  { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: -.02em; font-size: .75rem; font-weight: 400; color: var(--text-muted); }
+.hty .num  { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.hty .name { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: -.02em; font-size: .6875rem; font-weight: 400; color: var(--text-muted); }
+
+/* ── STAGE ──────────────────────────────────────────────────────────────── */
+.hty-stage { flex: 1; min-height: 0; min-width: 0; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; background: transparent; }
+.hty-canvas { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; transform-origin: 0 0; will-change: transform; }
+.hty-frame { position: relative; flex-shrink: 0; width: 1080px; height: 1440px; background: var(--island-bg); border-radius: var(--radius-sm); }
+.hty-stage.grab { cursor: grab; } .hty-stage.grabbing { cursor: grabbing; }
+.hty [data-draggable] { cursor: grab; }
+.hty-brand { position: absolute; top: 22px; left: 26px; display: flex; flex-direction: column; gap: 3px; pointer-events: none; }
+.hty-brand .mark { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: -.02em; font-size: .75rem; color: var(--text-muted); }
+
+/* ── DOCK → black rounded island sidebar ────────────────────────────────── */
+.hty-dock { position: relative; order: -1; flex-shrink: 0; width: var(--side-w, 340px); margin: var(--m); background: var(--island-bg); border-radius: var(--radius); clip-path: inset(0 round var(--radius)); overflow: hidden; display: flex; flex-direction: column; transition: margin-left .32s var(--ease); }
+.hty.collapsed .hty-dock { margin-left: calc(-1 * (var(--side-w, 340px) + var(--m))); }
+.hty-resize { position: absolute; top: 0; bottom: 0; right: 0; width: 10px; cursor: col-resize; z-index: 20; }
+.hty-resize::after { content: ''; position: absolute; top: 50%; right: 4px; width: 3px; height: 34px; transform: translateY(-50%); border-radius: 2px; background: var(--line-2); opacity: 0; transition: opacity .15s; }
+.hty-resize:hover::after, .hty-dock.resizing .hty-resize::after { opacity: 1; }
+.hty-collapse { position: absolute; top: 12px; right: 13px; z-index: 6; width: 28px; height: 28px; border-radius: 99px; border: none; background: transparent; color: var(--text-subtle); display: grid; place-items: center; cursor: pointer; transition: background .15s, color .15s; }
+.hty-collapse:hover { background: var(--soft); color: var(--text); }
+.hty-collapse svg { width: 15px; height: 15px; }
+.hty-reveal { position: fixed; top: 16px; left: 16px; z-index: 30; width: 40px; height: 40px; border-radius: 99px; border: 1px solid var(--border); background: var(--island-bg); color: var(--text); display: none; place-items: center; cursor: pointer; }
+.hty.collapsed .hty-reveal { display: grid; }
+.hty-reveal svg { width: 16px; height: 16px; }
+
+/* top rail : section tabs */
+.hty-rail { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-height: 52px; padding: 16px 46px 12px 20px; }
+.hty .tab { display: flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 1px solid transparent; border-radius: 99px; clip-path: inset(0 round 99px); background: transparent; cursor: pointer; font-family: var(--font-mono); font-size: .6875rem; text-transform: uppercase; letter-spacing: -.02em; color: var(--text-muted); transition: color .2s, background .2s; }
+.hty .tab svg { width: 14px; height: 14px; }
+.hty .tab:hover { color: var(--text); }
+.hty .tab.active { background: var(--accent); color: var(--accent-fg); }
+.hty-rail .sp { flex: 1; }
+.hty-rail-sep { width: 1px; height: 18px; background: var(--border); margin: 0 6px; }
+.hty .vbtn { width: 30px; height: 30px; border-radius: 99px; border: none; background: transparent; cursor: pointer; color: var(--text-muted); display: grid; place-items: center; transition: color .15s, background .15s; }
+.hty .vbtn:hover { background: var(--soft); color: var(--text); }
+.hty .kbd { font-family: var(--font-mono); font-size: 9px; color: var(--text-subtle); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+
+/* panel */
+.hty-panel { flex: 1; min-height: 0; overflow-y: auto; }
+.hty-panel-inner { padding: 8px 20px 20px; }
+.hty .panel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--tool-section-gap, 28px) 20px; align-content: start; }
+.hty [data-case] { display: contents; }
+.hty .group { display: flex; flex-direction: column; gap: var(--tool-control-gap, 10px); }
+.hty .group-h { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+.hty .group-h svg { width: 12px; height: 12px; color: var(--text-subtle); }
+.hty .group-h .lbl { font-size: .75rem; color: var(--text-muted); }
+.hty .field { display: flex; flex-direction: column; gap: 8px; }
+.hty .field-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+/* value chip (brand pill) */
+.hty .field-head .val { font-family: var(--font-mono); font-size: .6875rem; color: var(--text); background: var(--surface-input); border-radius: 99px; clip-path: inset(0 round 99px); padding: 4px 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hty .field-head .val.num { background: var(--surface-input); border-radius: 99px; padding: 4px 10px; }
+
+/* main row : brand + presets */
+.hty-main { display: flex; flex-direction: column; align-items: stretch; gap: 12px; padding: 16px 20px 20px; border-top: 1px solid var(--border); }
+.hty-main .sp, .hty-main-sep, .hty [data-expand] { display: none; }
+.hty-chip { display: flex; flex-direction: column; gap: 3px; }
+.hty-chip .nm { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: -.02em; font-size: .8125rem; color: var(--text); }
+.hty-chip .lbl { font-size: .625rem; color: var(--text-subtle); }
+
+/* ════════════════════════════ COMPONENTS ════════════════════════════════ */
+
+/* range slider — thin 1px line + white round thumb (no fill) */
+.hty input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; margin: 0; padding: 0; background: linear-gradient(var(--control-track),var(--control-track)) no-repeat center / 100% 1px; border-radius: 0; outline: none; cursor: pointer; touch-action: none; }
+.hty input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--control-thumb); border: none; cursor: pointer; }
+.hty input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--control-thumb); border: none; cursor: pointer; }
+.hty input[type=range]:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--text-subtle); outline-offset: 3px; }
+
+/* segmented control */
+.hty .seg { display: inline-flex; background: var(--surface); border-radius: 99px; clip-path: inset(0 round 99px); padding: 3px; gap: 2px; }
+.hty .seg button { border: none; background: transparent; cursor: pointer; font-family: var(--font-mono); font-size: .6875rem; text-transform: uppercase; letter-spacing: -.02em; color: var(--text-muted); padding: 7px 13px; border-radius: 99px; transition: color .2s, background .2s; }
+.hty .seg button.active { background: var(--accent); color: var(--accent-fg); }
+.hty .seg.fill { display: flex; width: 100%; }
+.hty .seg.fill button { flex: 1; text-align: center; padding-left: 4px; padding-right: 4px; }
+
+/* option chips */
+.hty .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.hty .chip { border: 1px solid var(--border); background: transparent; cursor: pointer; font-family: var(--font-mono); font-size: .625rem; text-transform: uppercase; letter-spacing: -.02em; color: var(--text-muted); padding: 6px 11px; border-radius: 99px; clip-path: inset(0 round 99px); transition: all .2s; }
+.hty .chip:hover { color: var(--text); border-color: var(--text-subtle); }
+.hty .chip.active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+
+/* text / number inputs */
+.hty input[type=text], .hty input[type=number] {
+  width: 100%; font-family: var(--font-mono); font-size: .6875rem; text-transform: uppercase; letter-spacing: -.02em; color: var(--text);
+  background: var(--surface-input); border: none; border-radius: var(--radius-sm); clip-path: inset(0 round var(--radius-sm));
+  padding: 11px 12px; outline: none; -moz-appearance: textfield; transition: background .15s;
+}
+.hty input[type=text]:focus, .hty input[type=number]:focus { background: var(--surface); }
+.hty input::-webkit-inner-spin-button, .hty input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.hty .stepper { display: flex; background: var(--surface-input); border-radius: var(--radius-sm); overflow: hidden; }
+.hty .stepper button { width: 34px; border: none; background: transparent; cursor: pointer; font-size: 15px; color: var(--text-muted); transition: color .15s, background .15s; }
+.hty .stepper button:hover { background: var(--soft); color: var(--text); }
+.hty .stepper input { flex: 1; border: none; text-align: center; border-radius: 0; background: transparent; }
+.hty input[data-scrub] { cursor: ew-resize; -webkit-user-select: none; user-select: none; }
+.hty input[data-scrub]:not([readonly]) { cursor: text; -webkit-user-select: text; user-select: text; }
+.hty .note { font-family: var(--font-sans); font-size: .6875rem; color: var(--text-subtle); line-height: 1.55; }
+.hty [data-draggable].hty-selected { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* native select */
+.hty select {
+  width: 100%; min-height: 42px; font-family: var(--font-mono); font-size: .6875rem; text-transform: uppercase; letter-spacing: -.02em; color: var(--text);
+  background: var(--surface-input); border: none; border-radius: var(--radius-sm); clip-path: inset(0 round var(--radius-sm));
+  padding: 10px 32px 10px 14px; cursor: pointer; outline: none; appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ffffff' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+}
+.hty select:focus { background-color: var(--surface); }
+
+/* custom dropdown (hty-select) */
+.hty .hty-select { position: relative; }
+.hty .hty-select-btn {
+  width: 100%; min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-family: var(--font-mono); font-size: .6875rem; text-transform: uppercase; letter-spacing: -.02em; color: var(--text);
+  background: var(--surface-input); border: none; border-radius: var(--radius-sm); clip-path: inset(0 round var(--radius-sm));
+  padding: 10px 14px; cursor: pointer; outline: none; text-align: left; transition: background .15s;
+}
+.hty .hty-select.open .hty-select-btn { background: var(--surface); }
+.hty .hty-select-chev { width: 11px; height: 11px; flex-shrink: 0; color: var(--text-muted); transition: transform .25s var(--ease); }
+.hty .hty-select.open .hty-select-chev { transform: rotate(180deg); }
+.hty .hty-select-menu {
+  position: fixed; z-index: 1000; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); clip-path: inset(0 round var(--radius-sm));
+  padding: 6px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto;
+  opacity: 0; transform: translateY(6px) scale(.98); transform-origin: bottom center; pointer-events: none;
+  transition: opacity .18s var(--ease), transform .22s var(--ease);
+}
+.hty .hty-select.open .hty-select-menu { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.hty .hty-opt { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: none; background: transparent; cursor: pointer; text-align: left; font-family: var(--font-mono); font-size: .6875rem; text-transform: uppercase; letter-spacing: -.02em; color: var(--text); padding: 9px 10px; border-radius: 8px; transition: background .12s; }
+.hty .hty-opt:hover { background: var(--soft); }
+.hty .hty-opt.is-selected { color: var(--text); background: var(--surface-input); }
+.hty .hty-opt .ck { width: 13px; height: 13px; opacity: 0; flex-shrink: 0; }
+.hty .hty-opt.is-selected .ck { opacity: 1; }
+
+/* buttons — mono-caps, radius-sm; primary = white bg / dark text */
+.hty .btn { width: auto; min-height: 42px; font-family: var(--font-mono); font-size: .75rem; text-transform: uppercase; letter-spacing: -.02em; line-height: 1; cursor: pointer; border: 1px solid transparent; border-radius: var(--radius-sm); clip-path: inset(0 round var(--radius-sm)); padding: 8px 16px; background: var(--accent); color: var(--accent-fg); display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: filter .3s ease-in-out, opacity .3s; }
+.hty .btn svg { width: 15px; height: 15px; }
+.hty .btn:not(:disabled):hover { filter: brightness(.9); }
+.hty .btn.ghost { background: var(--island-bg); border: 1px solid var(--border); color: var(--text); }
+.hty .btn.ghost:not(:disabled):hover { filter: brightness(1.4); }
+.hty .btn.sm { min-height: 34px; padding: 7px 13px; font-size: .6875rem; }
+.hty .btn-row { display: flex; gap: 8px; }
+.hty .btn-row .btn { flex: 1; }
+.hty .icon-btn { width: 42px; height: 42px; flex-shrink: 0; border-radius: var(--radius-sm); clip-path: inset(0 round var(--radius-sm)); border: 1px solid var(--border); background: var(--island-bg); cursor: pointer; display: grid; place-items: center; color: var(--text); transition: filter .3s; }
+.hty .icon-btn:hover { filter: brightness(1.4); }
+.hty .icon-btn svg { width: 17px; height: 17px; }
+
+/* toggle switch — pill; on = white bg + dark knob */
+.hty .switch { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.hty .track-sw { position: relative; width: 38px; height: 22px; border-radius: 99px; clip-path: inset(0 round 99px); background: var(--surface-input); cursor: pointer; transition: background .2s; flex-shrink: 0; }
+.hty .track-sw::after { content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:var(--text-subtle); transition:transform .2s, background .2s; }
+.hty .track-sw.on { background: var(--accent); }
+.hty .track-sw.on::after { transform: translateX(16px); background: var(--accent-fg); }
+
+/* checkbox */
+.hty .check { display: flex; align-items: center; gap: 9px; cursor: pointer; font-family: var(--font-mono); font-size: .6875rem; text-transform: uppercase; letter-spacing: -.02em; color: var(--text-muted); }
+.hty .check .box { width: 18px; height: 18px; border-radius: 6px; border: 1px solid var(--line-2); display: grid; place-items: center; transition: all .15s; }
+.hty .check.on .box { background: var(--accent); border-color: var(--accent); }
+.hty .check .box svg { width: 11px; height: 11px; stroke: var(--accent-fg); stroke-width: 2.6; fill: none; opacity: 0; }
+.hty .check.on .box svg { opacity: 1; }
+
+/* colour + palette */
+.hty input[type=color] { -webkit-appearance: none; appearance: none; border: none; padding: 0; width: 100%; height: 32px; border-radius: var(--radius-sm); cursor: pointer; background: transparent; }
+.hty input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+.hty input[type=color]::-webkit-color-swatch { border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.hty .palette { display: flex; flex-wrap: wrap; gap: 6px; }
+.hty .swatch { position: relative; width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; }
+.hty .swatch .x { position:absolute; top:-5px; right:-5px; width:15px; height:15px; background:var(--accent); color:var(--accent-fg); border-radius:50%; font-size:9px; line-height:15px; text-align:center; opacity:0; transition:opacity .15s; }
+.hty .swatch:hover .x { opacity: 1; }
+.hty .add-swatch { width: 30px; height: 30px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: var(--text-subtle); font-size: 16px; cursor: pointer; display: grid; place-items: center; transition: all .15s; }
+.hty .add-swatch:hover { border-color: var(--text); color: var(--text); }
+
+/* status pill + meter */
+.hty .pill { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: .625rem; text-transform: uppercase; letter-spacing: -.02em; padding: 5px 10px; border-radius: 99px; background: var(--surface-input); color: var(--text-muted); }
+.hty .pill .d { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); }
+.hty .pill.ok { background: var(--accent); color: var(--accent-fg); } .hty .pill.ok .d { background: var(--accent-fg); }
+.hty .meter { height: 3px; border-radius: 99px; background: var(--control-track); overflow: hidden; }
+.hty .meter > i { display: block; height: 100%; background: var(--accent); }
+
+/* scrollbars */
+.hty ::-webkit-scrollbar { width: 0; height: 0; }
+.hty-panel, .hty-body, .hty-select-menu { scrollbar-width: none; -ms-overflow-style: none; }
+
+@media (max-width: 760px) {
+  .hty { flex-direction: column; }
+  .hty-dock { order: 1; width: auto; margin: 0 12px 12px; }
+}

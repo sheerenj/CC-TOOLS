@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Handpicked Identity Tool 2.0 · Pebbles</title>
+<link rel="stylesheet" href="../../shared/hty-brand.css" />
+<style>
+/* tool-specific bits not covered by the design system (scoped under .hty) */
+.hty #canvas-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 18px; }
+.hty #c { display: block; max-width: 100%; max-height: 100%; }
+.hty #empty-state { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; pointer-events: none; }
+.hty #empty-state.hidden { display: none; }
+.hty .empty-scatter { position: relative; width: 150px; height: 74px; opacity: .16; margin-bottom: 10px; }
+.hty .empty-peb { position: absolute; background: var(--ink); border-radius: 50%; }
+.hty .empty-text { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+.hty .upload-zone { border: 1.5px dashed var(--line-2); border-radius: var(--r-md); padding: 18px 14px; text-align: center; cursor: pointer; transition: all .15s; color: var(--ink-2); font-size: 12px; line-height: 1.7; display: block; }
+.hty .upload-zone:hover, .hty .upload-zone.drag { border-color: var(--accent); color: var(--accent); }
+.hty .upload-zone input { display: none; }
+.hty #img-name { font-size: 11px; color: var(--ink-2); font-family: var(--mono); text-align: center; min-height: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hty .color-row { display: flex; align-items: center; gap: 8px; }
+.hty .color-label { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: -.02em; font-size: .6875rem; color: var(--text-muted); flex: 1; }
+.hty .color-swatch { width: 30px; height: 30px; border-radius: var(--r-sm); border: 1px solid var(--line-2); flex-shrink: 0; cursor: pointer; position: relative; overflow: hidden; }
+.hty .native-picker { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); opacity: 0; cursor: pointer; border: none; padding: 0; }
+.hty .color-row .color-hex { flex: 1; min-width: 0; }
+.hty .tog-sw { position: relative; width: 38px; height: 22px; background: var(--surface-input); border-radius: 99px; clip-path: inset(0 round 99px); cursor: pointer; transition: background .2s; flex-shrink: 0; }
+.hty .tog-sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: var(--text-subtle); border-radius: 50%; transition: transform .2s, background .2s; }
+.hty .tog-sw.on { background: var(--accent); }
+.hty .tog-sw.on::after { transform: translateX(16px); background: var(--accent-fg); }
+.hty .btn.full { width: 100%; justify-content: center; }
+.hty .btn:disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
+.hty .custom-res-wrap { margin-top: 8px; display: none; }
+.hty .custom-res-wrap.visible { display: block; }
+.hty .custom-res-row { display: flex; gap: 6px; align-items: center; }
+.hty .custom-res-row input { flex: 1; min-width: 0; }
+.hty .custom-res-sep { font-size: 11px; color: var(--ink-3); flex-shrink: 0; }
+.hty .pal-row { display: flex; align-items: center; gap: 7px; }
+.hty .pal-row .color-swatch { width: 26px; height: 26px; }
+.hty .pal-row .color-hex { flex: 1; min-width: 0; }
+.hty .pal-row .rowbtn { width: 26px; height: 26px; flex-shrink: 0; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: transparent; color: var(--ink-3); cursor: pointer; display: grid; place-items: center; font-size: 12px; transition: all .15s; }
+.hty .pal-row .rowbtn:hover { border-color: var(--accent); color: var(--accent); }
+.hty .add-pal { width: 100%; border: 1px dashed var(--line-2); background: transparent; color: var(--ink-2); font-size: 11.5px; font-weight: 500; padding: 8px; border-radius: var(--r-md); cursor: pointer; transition: all .15s; }
+.hty .add-pal:hover { border-color: var(--accent); color: var(--accent); }
+.hty .note { font-size: 10.5px; color: var(--ink-2); line-height: 1.5; }
+.hty .preset-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.hty .seed-row { display: flex; gap: 6px; align-items: center; }
+.hty .seed-row input { flex: 1; min-width: 0; font-family: var(--font-mono); }
+.hty .seed-row .btn { flex-shrink: 0; }
+.hty #btn-dice { display: inline-flex; align-items: center; gap: 6px; }
+.hty #btn-dice svg { width: 13px; height: 13px; }
+</style>
+</head>
+<body class="hty">
+
+  <!-- ═══ STAGE ═══ -->
+  <div class="hty-stage">
+    <div id="canvas-wrap">
+      <canvas id="c"></canvas>
+      <div id="empty-state">
+        <div class="empty-scatter">
+          <span class="empty-peb" style="left:6px;top:22px;width:34px;height:26px;transform:rotate(-14deg)"></span>
+          <span class="empty-peb" style="left:38px;top:8px;width:22px;height:18px;transform:rotate(22deg)"></span>
+          <span class="empty-peb" style="left:52px;top:34px;width:44px;height:30px;transform:rotate(8deg)"></span>
+          <span class="empty-peb" style="left:92px;top:14px;width:28px;height:22px;transform:rotate(-30deg)"></span>
+          <span class="empty-peb" style="left:112px;top:40px;width:18px;height:15px;transform:rotate(12deg)"></span>
+          <span class="empty-peb" style="left:28px;top:52px;width:16px;height:13px;transform:rotate(40deg)"></span>
+        </div>
+        <div class="empty-text">Drop an image to begin</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DOCK ═══ -->
+  <div class="hty-dock">
+
+    <div class="hty-rail">
+      <button class="tab active" data-tab="source"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5L5 20"/></svg>Source</button>
+      <button class="tab" data-tab="style"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="9" cy="10" rx="6" ry="4.5" transform="rotate(-18 9 10)"/><ellipse cx="16" cy="16" rx="4.5" ry="3.4" transform="rotate(14 16 16)"/></svg>Style</button>
+      <button class="tab" data-tab="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Export</button>
+    </div>
+
+    <div class="hty-panel">
+      <div class="hty-panel-inner">
+
+        <!-- ── SOURCE ── -->
+        <div class="panel-grid" data-tab-panel="source">
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5L5 20"/></svg><span class="lbl">Image</span></div>
+            <label class="upload-zone" id="upload-zone"><input type="file" id="file-input" accept="image/*" />Drop image here<br>or click to upload</label>
+            <div id="img-name"></div>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg><span class="lbl">Canvas</span></div>
+            <div class="field"><span class="name">Artboard size</span>
+              <select id="sel-res" style="display:none">
+                <option value="auto">Match image</option>
+                <option value="1080x1080">1080 × 1080 · Square</option>
+                <option value="1080x1350">1080 × 1350 · Portrait</option>
+                <option value="1080x1920">1080 × 1920 · Story</option>
+                <option value="1920x1080">1920 × 1080 · Landscape</option>
+                <option value="1440x1440">1440 × 1440</option>
+                <option value="custom">Custom…</option>
+              </select>
+              <div class="hty-select" data-native="sel-res">
+                <button class="hty-select-btn"><span class="hty-select-val">Match image</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+                <div class="hty-select-menu" role="listbox">
+                  <button class="hty-opt" data-value="auto">Match image</button>
+                  <button class="hty-opt" data-value="1080x1080">1080 × 1080 · Square</button>
+                  <button class="hty-opt" data-value="1080x1350">1080 × 1350 · Portrait</button>
+                  <button class="hty-opt" data-value="1080x1920">1080 × 1920 · Story</button>
+                  <button class="hty-opt" data-value="1920x1080">1920 × 1080 · Landscape</button>
+                  <button class="hty-opt" data-value="1440x1440">1440 × 1440</button>
+                  <button class="hty-opt" data-value="custom">Custom…</button>
+                </div>
+              </div>
+              <div class="custom-res-wrap" id="custom-res-wrap">
+                <div class="custom-res-row">
+                  <input type="number" id="inp-cw" value="1080" min="64" max="8000" placeholder="Width" />
+                  <span class="custom-res-sep">×</span>
+                  <input type="number" id="inp-ch" value="1350" min="64" max="8000" placeholder="Height" />
+                </div>
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn ghost sm" id="btn-fit">Fit</button>
+              <button class="btn ghost sm" id="btn-fill">Fill</button>
+              <button class="btn ghost sm" id="btn-center">Center</button>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Position X</span><span class="val"><span class="num" id="v-px">0</span> px</span></div><input type="range" id="sl-px" min="-3000" max="3000" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Position Y</span><span class="val"><span class="num" id="v-py">0</span> px</span></div><input type="range" id="sl-py" min="-3000" max="3000" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Scale</span><span class="val"><span class="num" id="v-sc">100</span>%</span></div><input type="range" id="sl-sc" min="5" max="600" value="100" step="1" /></div>
+            <p class="note">Drag on the canvas to move · scroll to zoom the image.</p>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg><span class="lbl">Adjust</span></div>
+            <div class="field"><div class="field-head"><span class="name">Brightness</span><span class="val num" id="v-br">0</span></div><input type="range" id="sl-br" min="-100" max="100" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Contrast</span><span class="val"><span class="num" id="v-co">1.00</span>×</span></div><input type="range" id="sl-co" min="0.1" max="3" value="1" step="0.05" /></div>
+            <div class="field"><div class="field-head"><span class="name">Gamma</span><span class="val num" id="v-ga">1.00</span></div><input type="range" id="sl-ga" min="0.2" max="3" value="1" step="0.05" /></div>
+            <div class="field"><div class="field-head"><span class="name">Saturation</span><span class="val"><span class="num" id="v-sa">1.00</span>×</span></div><input type="range" id="sl-sa" min="0" max="2" value="1" step="0.05" /></div>
+            <div class="field"><div class="field-head"><span class="name">Pre-blur</span><span class="val"><span class="num" id="v-bl">0</span> px</span></div><input type="range" id="sl-bl" min="0" max="12" value="0" step="0.5" /></div>
+          </div>
+        </div><!-- /source -->
+
+        <!-- ── STYLE ── -->
+        <div class="panel-grid" data-tab-panel="style" style="display:none">
+
+          <div class="group" style="grid-column:1/-1">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="8" cy="9" rx="5" ry="3.6" transform="rotate(-20 8 9)"/><ellipse cx="16" cy="15" rx="4" ry="3" transform="rotate(16 16 15)"/></svg><span class="lbl">Behaviour</span></div>
+            <div class="seg fill" data-switch>
+              <button data-case-btn="scatter" class="active">Scatter</button>
+              <button data-case-btn="stack">Stack</button>
+              <button data-case-btn="skim">Skim</button>
+              <button data-case-btn="cluster">Cluster</button>
+            </div>
+            <div class="field" style="margin-top:8px"><span class="name">Seed — every render is a new throw</span>
+              <div class="seed-row">
+                <input type="number" id="inp-seed" value="1847" min="1" max="999999" />
+                <button class="btn sm" id="btn-reroll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M4 9a8 8 0 0 1 13-3l3 3M20 15a8 8 0 0 1-13 3l-3-3"/><path d="M20 4v5h-5M4 20v-5h5"/></svg>Reroll</button>
+              </div>
+            </div>
+            <p class="note">Same seed = same stones. Reroll re-throws every pebble; the composition changes, the system doesn't.</p>
+          </div>
+
+          <!-- ============ SCATTER ============ -->
+          <div data-case="scatter">
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="7" cy="7" rx="3" ry="2.2"/><ellipse cx="16" cy="9" rx="2.4" ry="1.8"/><ellipse cx="11" cy="16" rx="3.4" ry="2.4"/><ellipse cx="18" cy="17" rx="2" ry="1.5"/></svg><span class="lbl">Handful</span></div>
+              <div class="field"><div class="field-head"><span class="name">Density</span><span class="val num" id="v-scat-dens">1.00</span></div><input type="range" id="sl-scat-dens" min="0.1" max="4" value="1" step="0.05" /></div>
+              <div class="field"><div class="field-head"><span class="name">Coverage</span><span class="val num" id="v-scat-cov">0.85</span></div><input type="range" id="sl-scat-cov" min="0.05" max="1" value="0.85" step="0.01" /></div>
+              <div class="field"><div class="field-head"><span class="name">Min Ø</span><span class="val"><span class="num" id="v-scat-min">4</span> px</span></div><input type="range" id="sl-scat-min" min="1" max="40" value="4" step="0.5" /></div>
+              <div class="field"><div class="field-head"><span class="name">Max Ø</span><span class="val"><span class="num" id="v-scat-max">26</span> px</span></div><input type="range" id="sl-scat-max" min="4" max="140" value="26" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Allowed overlap</span><span class="val num" id="v-scat-over">0.10</span></div><input type="range" id="sl-scat-over" min="0" max="0.9" value="0.1" step="0.01" /></div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20L20 4M14 4h6v6"/></svg><span class="lbl">Tone drives</span></div>
+              <div class="field"><span class="name">Image tone controls</span>
+                <div class="seg fill" id="seg-scat-tone">
+                  <button data-val="both" class="active">Both</button>
+                  <button data-val="size">Size</button>
+                  <button data-val="dens">Density</button>
+                </div>
+              </div>
+              <div class="field"><span class="name">Stacking order</span>
+                <div class="seg fill" id="seg-scat-order">
+                  <button data-val="big" class="active">Big first</button>
+                  <button data-val="small">Small first</button>
+                  <button data-val="thrown">As thrown</button>
+                </div>
+              </div>
+              <p class="note">Big-first lets the small stones nestle on top — the pile reads as one surface, not a grid.</p>
+            </div>
+          </div><!-- /scatter -->
+
+          <!-- ============ STACK ============ -->
+          <div data-case="stack" style="display:none">
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="18" rx="7" ry="3"/><ellipse cx="12" cy="12" rx="5" ry="2.6"/><ellipse cx="12" cy="7" rx="3.4" ry="2"/></svg><span class="lbl">Dry stone</span></div>
+              <div class="field"><span class="name">Build</span>
+                <div class="seg fill" id="seg-st-style">
+                  <button data-val="wall" class="active">Wall</button>
+                  <button data-val="cairn">Cairn</button>
+                </div>
+              </div>
+              <div class="field"><div class="field-head"><span class="name">Stone width</span><span class="val"><span class="num" id="v-st-col">44</span> px</span></div><input type="range" id="sl-st-col" min="8" max="200" value="44" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Min course height</span><span class="val"><span class="num" id="v-st-hmin">10</span> px</span></div><input type="range" id="sl-st-hmin" min="3" max="80" value="10" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Max course height</span><span class="val"><span class="num" id="v-st-hmax">34</span> px</span></div><input type="range" id="sl-st-hmax" min="6" max="220" value="34" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Joint</span><span class="val"><span class="num" id="v-st-gap">3</span> px</span></div><input type="range" id="sl-st-gap" min="-10" max="24" value="3" step="0.5" /></div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 18h16M6 18l2-5M18 18l-2-5"/><ellipse cx="12" cy="9" rx="5" ry="3"/></svg><span class="lbl">Settling</span></div>
+              <div class="field"><div class="field-head"><span class="name">Nesting</span><span class="val num" id="v-st-nest">0.16</span></div><input type="range" id="sl-st-nest" min="0" max="0.6" value="0.16" step="0.01" /></div>
+              <div class="field"><div class="field-head"><span class="name">Tilt</span><span class="val"><span class="num" id="v-st-tilt">7</span>°</span></div><input type="range" id="sl-st-tilt" min="0" max="45" value="7" step="0.5" /></div>
+              <div class="field"><div class="field-head"><span class="name">Sideways drift</span><span class="val"><span class="num" id="v-st-jit">4</span> px</span></div><input type="range" id="sl-st-jit" min="0" max="40" value="4" step="0.5" /></div>
+              <div class="field"><div class="field-head"><span class="name">Width variation</span><span class="val num" id="v-st-wvar">0.22</span></div><input type="range" id="sl-st-wvar" min="0" max="0.8" value="0.22" step="0.01" /></div>
+              <p class="note">Wall lays horizontal courses left to right — stone width follows the tone, joints stagger on their own. Cairn stacks one pile per column, only as high as the tone allows.</p>
+            </div>
+          </div><!-- /stack -->
+
+          <!-- ============ SKIM ============ -->
+          <div data-case="skim" style="display:none">
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 16c3-6 5 2 8-3s5 2 8-4"/><ellipse cx="5" cy="17" rx="2" ry="1.3"/><ellipse cx="13" cy="14" rx="1.7" ry="1.1"/><ellipse cx="20" cy="10" rx="1.4" ry="1"/></svg><span class="lbl">The throw</span></div>
+              <div class="field"><div class="field-head"><span class="name">Throws</span><span class="val num" id="v-sk-throws">140</span></div><input type="range" id="sl-sk-throws" min="4" max="900" value="140" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Skips per throw</span><span class="val num" id="v-sk-bounce">14</span></div><input type="range" id="sl-sk-bounce" min="2" max="80" value="14" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">First hop</span><span class="val"><span class="num" id="v-sk-step">42</span> px</span></div><input type="range" id="sl-sk-step" min="6" max="220" value="42" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Damping</span><span class="val num" id="v-sk-damp">0.94</span></div><input type="range" id="sl-sk-damp" min="0.7" max="1.05" value="0.94" step="0.005" /></div>
+              <div class="field"><div class="field-head"><span class="name">Wander</span><span class="val num" id="v-sk-curve">0.22</span></div><input type="range" id="sl-sk-curve" min="0" max="1.6" value="0.22" step="0.01" /></div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="12" rx="9" ry="6"/><ellipse cx="12" cy="12" rx="5" ry="3.3"/><ellipse cx="12" cy="12" rx="1.6" ry="1"/></svg><span class="lbl">Water</span></div>
+              <div class="field"><div class="field-head"><span class="name">Follow the image</span><span class="val num" id="v-sk-follow">0.55</span></div><input type="range" id="sl-sk-follow" min="0" max="1" value="0.55" step="0.01" /></div>
+              <div class="field"><div class="field-head"><span class="name">Min Ø</span><span class="val"><span class="num" id="v-sk-min">3</span> px</span></div><input type="range" id="sl-sk-min" min="1" max="30" value="3" step="0.5" /></div>
+              <div class="field"><div class="field-head"><span class="name">Max Ø</span><span class="val"><span class="num" id="v-sk-max">18</span> px</span></div><input type="range" id="sl-sk-max" min="3" max="110" value="18" step="1" /></div>
+              <div class="switch"><span class="name">Ripples</span><div class="tog-sw on" id="tog-sk-rip"></div></div>
+              <div class="field"><div class="field-head"><span class="name">Rings</span><span class="val num" id="v-sk-ripn">2</span></div><input type="range" id="sl-sk-ripn" min="1" max="6" value="2" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Ring weight</span><span class="val"><span class="num" id="v-sk-ripw">1.5</span> px</span></div><input type="range" id="sl-sk-ripw" min="0.5" max="10" value="1.5" step="0.5" /></div>
+              <div class="switch"><span class="name">Trajectory line</span><div class="tog-sw" id="tog-sk-trail"></div></div>
+              <div class="field"><div class="field-head"><span class="name">Line weight</span><span class="val"><span class="num" id="v-sk-tw">1.5</span> px</span></div><input type="range" id="sl-sk-tw" min="0.5" max="12" value="1.5" step="0.5" /></div>
+              <div class="color-row"><span class="color-label">Line / ripple</span><div class="color-swatch" id="sw-sk-line" style="background:#7a736a"><input type="color" class="native-picker" id="cp-sk-line" value="#7a736a" /></div><input type="text" class="color-hex" id="hex-sk-line" value="#7a736a" maxlength="7" /></div>
+              <p class="note">Follow bends each throw along the image's contours — enough throws and the picture surfaces out of the skipping.</p>
+            </div>
+          </div><!-- /skim -->
+
+          <!-- ============ CLUSTER ============ -->
+          <div data-case="cluster" style="display:none">
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="10" cy="10" rx="3.4" ry="2.6"/><ellipse cx="15.5" cy="12.5" rx="2.6" ry="2"/><ellipse cx="9" cy="15" rx="2.8" ry="2.1"/><ellipse cx="14" cy="7.5" rx="2.2" ry="1.7"/></svg><span class="lbl">Accretion</span></div>
+              <div class="field"><div class="field-head"><span class="name">Seeds</span><span class="val num" id="v-cl-seeds">90</span></div><input type="range" id="sl-cl-seeds" min="2" max="800" value="90" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Stones per cluster</span><span class="val num" id="v-cl-grow">40</span></div><input type="range" id="sl-cl-grow" min="1" max="400" value="40" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Cluster reach</span><span class="val"><span class="num" id="v-cl-spread">90</span> px</span></div><input type="range" id="sl-cl-spread" min="10" max="600" value="90" step="2" /></div>
+              <div class="field"><div class="field-head"><span class="name">Min Ø</span><span class="val"><span class="num" id="v-cl-min">5</span> px</span></div><input type="range" id="sl-cl-min" min="1" max="40" value="5" step="0.5" /></div>
+              <div class="field"><div class="field-head"><span class="name">Max Ø</span><span class="val"><span class="num" id="v-cl-max">16</span> px</span></div><input type="range" id="sl-cl-max" min="3" max="120" value="16" step="1" /></div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v16M4 12h16"/></svg><span class="lbl">1 + 1 = 5</span></div>
+              <div class="field"><div class="field-head"><span class="name">Grow into tone above</span><span class="val num" id="v-cl-thr">0.30</span></div><input type="range" id="sl-cl-thr" min="0" max="0.95" value="0.3" step="0.01" /></div>
+              <div class="field"><div class="field-head"><span class="name">Contact gap</span><span class="val num" id="v-cl-contact">0.04</span></div><input type="range" id="sl-cl-contact" min="-0.15" max="0.6" value="0.04" step="0.01" /></div>
+              <div class="switch"><span class="name">One colour per cluster</span><div class="tog-sw on" id="tog-cl-percol"></div></div>
+              <div class="switch"><span class="name">Size falls off from the seed</span><div class="tog-sw on" id="tog-cl-taper"></div></div>
+              <p class="note">Each cluster is a separate specialism: it grows on its own, but only the whole field makes the picture.</p>
+            </div>
+          </div><!-- /cluster -->
+
+          <!-- shared: palette -->
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg><span class="lbl">Palette</span></div>
+            <div class="field"><div class="field-head"><span class="name">Extract colours</span><span class="val num" id="v-pal-extract">6</span></div><input type="range" id="sl-pal-extract" min="2" max="16" value="6" step="1" /></div>
+            <button class="btn ghost full" id="btn-pal-extract" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6M3 3v6M21 21h-6M21 21v-6M14 10l7-7M10 14l-7 7"/></svg>Extract from image</button>
+            <div id="pal-list"></div>
+            <button class="add-pal" id="add-pal">+ Add colour</button>
+            <div class="field" style="margin-top:6px"><span class="name">Assign colour by</span>
+              <select id="sel-map" style="display:none">
+                <option value="ramp">Luminance ramp</option>
+                <option value="nearest">Nearest colour</option>
+                <option value="random">Random pick</option>
+              </select>
+              <div class="hty-select" data-native="sel-map">
+                <button class="hty-select-btn"><span class="hty-select-val">Luminance ramp</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+                <div class="hty-select-menu" role="listbox">
+                  <button class="hty-opt" data-value="ramp">Luminance ramp</button>
+                  <button class="hty-opt" data-value="nearest">Nearest colour</button>
+                  <button class="hty-opt" data-value="random">Random pick</button>
+                </div>
+              </div>
+            </div>
+            <div class="color-row"><span class="color-label">Odd one out</span><div class="color-swatch" id="sw-accent" style="background:#e8743b"><input type="color" class="native-picker" id="cp-accent" value="#e8743b" /></div><input type="text" class="color-hex" id="hex-accent" value="#e8743b" maxlength="7" /></div>
+            <div class="field"><div class="field-head"><span class="name">Odd-one-out chance</span><span class="val num" id="v-accent">0.05</span></div><input type="range" id="sl-accent" min="0" max="0.6" value="0.05" step="0.005" /></div>
+            <div class="color-row"><span class="color-label">Background</span><div class="color-swatch" id="sw-bg" style="background:#efe9dd"><input type="color" class="native-picker" id="cp-bg" value="#efe9dd" /></div><input type="text" class="color-hex" id="hex-bg" value="#efe9dd" maxlength="7" /></div>
+          </div>
+
+          <!-- shared: tone response -->
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 20c6 0 12-16 18-16"/></svg><span class="lbl">Tone response</span></div>
+            <div class="field"><div class="field-head"><span class="name">Curve (γ)</span><span class="val num" id="v-tgam">1.00</span></div><input type="range" id="sl-tgam" min="0.25" max="3.5" value="1" step="0.05" /></div>
+            <div class="switch"><span class="name">Invert (dark = big)</span><div class="tog-sw" id="tog-tinv"></div></div>
+          </div>
+
+          <!-- shared: pebble DNA -->
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="12" rx="9" ry="6.2" transform="rotate(-16 12 12)"/></svg><span class="lbl">Pebble DNA</span></div>
+            <div class="field"><div class="field-head"><span class="name">Ovalness</span><span class="val num" id="v-asp">0.74</span></div><input type="range" id="sl-asp" min="0.25" max="1.4" value="0.74" step="0.01" /></div>
+            <div class="field"><div class="field-head"><span class="name">Ovalness variation</span><span class="val num" id="v-aspvar">0.28</span></div><input type="range" id="sl-aspvar" min="0" max="0.9" value="0.28" step="0.01" /></div>
+            <div class="field"><div class="field-head"><span class="name">Rotation spread</span><span class="val num" id="v-rotsp">1.00</span></div><input type="range" id="sl-rotsp" min="0" max="1" value="1" step="0.01" /></div>
+            <div class="field"><div class="field-head"><span class="name">Size variation</span><span class="val num" id="v-sizevar">0.30</span></div><input type="range" id="sl-sizevar" min="0" max="1" value="0.3" step="0.01" /></div>
+            <div class="field"><div class="field-head"><span class="name">Lumpiness</span><span class="val num" id="v-wob">0.16</span></div><input type="range" id="sl-wob" min="0" max="0.5" value="0.16" step="0.01" /></div>
+            <div class="field"><div class="field-head"><span class="name">Facets</span><span class="val num" id="v-pts">22</span></div><input type="range" id="sl-pts" min="5" max="40" value="22" step="1" /></div>
+            <div class="field"><div class="field-head"><span class="name">Hand-drawn wobble</span><span class="val"><span class="num" id="v-rough">0.8</span> px</span></div><input type="range" id="sl-rough" min="0" max="8" value="0.8" step="0.1" /></div>
+            <div class="field"><div class="field-head"><span class="name">Chaos</span><span class="val num" id="v-chaos">1.00</span></div><input type="range" id="sl-chaos" min="0" max="1.6" value="1" step="0.01" /></div>
+            <p class="note">Facets low = split boulders. Facets high + lumpiness low = river-smoothed pebbles. Chaos scales rotation, size and drift together.</p>
+          </div>
+
+          <!-- shared: finish -->
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 8a5 5 0 0 1 4-2" stroke-linecap="round"/></svg><span class="lbl">Finish</span></div>
+            <div class="field"><div class="field-head"><span class="name">Rim</span><span class="val num" id="v-rim">0.22</span></div><input type="range" id="sl-rim" min="0" max="1" value="0.22" step="0.01" /></div>
+            <div class="field"><div class="field-head"><span class="name">Relief</span><span class="val num" id="v-relief">0.45</span></div><input type="range" id="sl-relief" min="0" max="1" value="0.45" step="0.01" /></div>
+            <div class="field"><div class="field-head"><span class="name">Light angle</span><span class="val"><span class="num" id="v-light">-135</span>°</span></div><input type="range" id="sl-light" min="-180" max="180" value="-135" step="1" /></div>
+            <div class="switch"><span class="name">Speckle (granite fleck)</span><div class="tog-sw" id="tog-speck"></div></div>
+            <div class="field"><div class="field-head"><span class="name">Speckle density</span><span class="val num" id="v-speck">0.35</span></div><input type="range" id="sl-speck" min="0.05" max="1.5" value="0.35" step="0.05" /></div>
+            <div class="switch"><span class="name">Contour</span><div class="tog-sw" id="tog-contour"></div></div>
+            <div class="field"><div class="field-head"><span class="name">Contour weight</span><span class="val"><span class="num" id="v-contw">1.5</span> px</span></div><input type="range" id="sl-contw" min="0.3" max="10" value="1.5" step="0.1" /></div>
+            <div class="color-row"><span class="color-label">Contour</span><div class="color-swatch" id="sw-contour" style="background:#231f1c"><input type="color" class="native-picker" id="cp-contour" value="#231f1c" /></div><input type="text" class="color-hex" id="hex-contour" value="#231f1c" maxlength="7" /></div>
+            <div class="field"><div class="field-head"><span class="name">Grain</span><span class="val num" id="v-grain">0.10</span></div><input type="range" id="sl-grain" min="0" max="0.5" value="0.1" step="0.01" /></div>
+            <p class="note">Grain is raster only — it is skipped in the SVG export.</p>
+          </div>
+
+        </div><!-- /style -->
+
+        <!-- ── EXPORT ── -->
+        <div class="panel-grid" data-tab-panel="export" style="display:none">
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg><span class="lbl">Files</span></div>
+            <button class="btn full" id="btn-png" disabled>↓ Export PNG</button>
+            <button class="btn ghost full" id="btn-png-alpha" disabled>↓ PNG + α (no background)</button>
+            <button class="btn ghost full" id="btn-svg" disabled>↓ Export SVG (vector stones)</button>
+            <p class="note">Every pebble is a real path — the SVG drops straight into Figma or Illustrator, editable stone by stone.</p>
+          </div>
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v5" stroke-linecap="round"/><circle cx="12" cy="16" r=".6" fill="currentColor"/></svg><span class="lbl">Stone count</span></div>
+            <div class="field"><div class="field-head"><span class="name">Last render</span><span class="val"><span class="num" id="v-count">0</span> stones</span></div></div>
+            <p class="note">Above roughly 25 000 stones the SVG gets heavy. Raise the minimum Ø or lower the density if a hand-off has to stay light.</p>
+          </div>
+        </div><!-- /export -->
+
+      </div>
+    </div>
+
+    <div class="hty-main">
+      <div class="hty-chip"><div class="nm">Handpicked Identity</div><div class="lbl">Pebbles · 2.0</div></div>
+      <div class="preset-row">
+        <button class="chip active" data-preset="beach">Beach</button>
+        <button class="chip" data-preset="wall">Dry wall</button>
+        <button class="chip" data-preset="water">Skimmed water</button>
+        <button class="chip" data-preset="collective">1+1=5</button>
+        <button class="chip" data-preset="hyper">Hyperdigital</button>
+        <button class="btn ghost sm" id="btn-dice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9a8 8 0 0 1 13-3l3 3M20 15a8 8 0 0 1-13 3l-3-3"/><path d="M20 4v5h-5M4 20v-5h5"/></svg>Reroll</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="../../shared/hty-ui.js"></script>
+  <script>
+(function () {
+'use strict';
+
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const wrap   = document.getElementById('canvas-wrap');
+const empty  = document.getElementById('empty-state');
+
+const TAU = Math.PI * 2;
+
+let exportW = 1600, exportH = 1200;
+let img = null, imgW = 0, imgH = 0, imgDataURL = null;
+let adjustedData = null;
+let exportBg = true;
+let lastScene = null;
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const g  = id => parseFloat($(id).value);
+const gv = id => $(id).value;
+const on = id => $(id).classList.contains('on');
+const isHex = h => /^#[0-9a-fA-F]{6}$/.test(h);
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+const segVal = (id, fb) => { const a = $(id).querySelector('button.active'); return a ? a.dataset.val : fb; };
+
+function hexToRgb(h){ h=h.replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+function rgbToHex(r,g,b){ const c=v=>Math.round(clamp(v,0,255)).toString(16).padStart(2,'0'); return '#'+c(r)+c(g)+c(b); }
+function relLum(r,g,b){ return (0.299*r+0.587*g+0.114*b)/255; }
+function shade(hex, amt){ // amt: -1 dark .. +1 light
+  let [r,g,b]=hexToRgb(hex);
+  if(amt>=0){ r+=(255-r)*amt; g+=(255-g)*amt; b+=(255-b)*amt; }
+  else { const k=1+amt; r*=k; g*=k; b*=k; }
+  return rgbToHex(r,g,b);
+}
+
+// ── seeded PRNG ──────────────────────────────────────────────────────────────
+function makeRnd(seed){ let s=(seed>>>0)||1; return ()=>{ s^=s<<13; s^=s>>>17; s^=s<<5; return (s>>>0)/0x100000000; }; }
+function currentSeed(){ const v=parseInt($('inp-seed').value,10); return (isFinite(v)&&v>0)?v:1; }
+
+// ── display sizing ───────────────────────────────────────────────────────────
+function resizeDisplay(){
+  const r = wrap.getBoundingClientRect();
+  const availW = r.width - 32, availH = r.height - 32;
+  const aspect = exportW / exportH;
+  let cw = availW, ch = availW / aspect;
+  if (ch > availH){ ch = availH; cw = availH * aspect; }
+  canvas.style.width  = Math.round(cw) + 'px';
+  canvas.style.height = Math.round(ch) + 'px';
+}
+new ResizeObserver(resizeDisplay).observe(wrap);
+
+// ── image processing ─────────────────────────────────────────────────────────
+function processImage(){
+  if(!img) return;
+  const brightness=g('sl-br')/100, contrast=g('sl-co'), gamma=g('sl-ga'), sat=g('sl-sa'), blur=g('sl-bl');
+  const oc=document.createElement('canvas'); oc.width=imgW; oc.height=imgH;
+  const ox=oc.getContext('2d');
+  if(blur>0) ox.filter=`blur(${blur}px)`;
+  ox.drawImage(img,0,0,imgW,imgH);
+  const id=ox.getImageData(0,0,imgW,imgH), d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    let r=d[i]/255, gr=d[i+1]/255, b=d[i+2]/255;
+    if(gamma!==1){ r=r**(1/gamma); gr=gr**(1/gamma); b=b**(1/gamma); }
+    r+=brightness; gr+=brightness; b+=brightness;
+    r=(r-.5)*contrast+.5; gr=(gr-.5)*contrast+.5; b=(b-.5)*contrast+.5;
+    if(sat!==1){ const l=0.299*r+0.587*gr+0.114*b; r=l+(r-l)*sat; gr=l+(gr-l)*sat; b=l+(b-l)*sat; }
+    d[i]=clamp(r*255,0,255); d[i+1]=clamp(gr*255,0,255); d[i+2]=clamp(b*255,0,255);
+  }
+  adjustedData=id;
+}
+
+// ── sampler ──────────────────────────────────────────────────────────────────
+function makeSampler(){
+  const panX=exportW/2+g('sl-px'), panY=exportH/2+g('sl-py'), scale=g('sl-sc')/100;
+  const D=adjustedData?adjustedData.data:null;
+  return function(sx,sy){
+    if(!D) return {lum:1,r:255,g:255,b:255};
+    const ix=Math.round((sx-panX)/scale+imgW/2), iy=Math.round((sy-panY)/scale+imgH/2);
+    if(ix<0||iy<0||ix>=imgW||iy>=imgH) return {lum:0,r:0,g:0,b:0,out:true};
+    const k=(iy*imgW+ix)*4;
+    return { lum: relLum(D[k],D[k+1],D[k+2]), r:D[k], g:D[k+1], b:D[k+2] };
+  };
+}
+// local luminance gradient (for the skim flow field)
+function gradAt(sample,x,y,d){
+  const a=sample(x-d,y), b=sample(x+d,y), c=sample(x,y-d), e=sample(x,y+d);
+  if(a.out||b.out||c.out||e.out) return null;
+  return { gx:(b.lum-a.lum)/(2*d), gy:(e.lum-c.lum)/(2*d) };
+}
+
+// ── spatial hash for overlap rejection ───────────────────────────────────────
+function makeGridHash(cell){
+  cell = Math.max(4, cell);
+  const m = new Map();
+  return {
+    insert(x,y,r){
+      const i0=Math.floor((x-r)/cell), i1=Math.floor((x+r)/cell);
+      const j0=Math.floor((y-r)/cell), j1=Math.floor((y+r)/cell);
+      for(let i=i0;i<=i1;i++) for(let j=j0;j<=j1;j++){
+        const k=i+','+j; let a=m.get(k); if(!a){ a=[]; m.set(k,a); } a.push(x,y,r);
+      }
+    },
+    hits(x,y,r,allow){
+      const i0=Math.floor((x-r)/cell), i1=Math.floor((x+r)/cell);
+      const j0=Math.floor((y-r)/cell), j1=Math.floor((y+r)/cell);
+      for(let i=i0;i<=i1;i++) for(let j=j0;j<=j1;j++){
+        const a=m.get(i+','+j); if(!a) continue;
+        for(let n=0;n<a.length;n+=3){
+          const dx=x-a[n], dy=y-a[n+1], min=(r+a[n+2])*(1-allow);
+          if(dx*dx+dy*dy < min*min) return true;
+        }
+      }
+      return false;
+    }
+  };
+}
+
+// ── the pebble ───────────────────────────────────────────────────────────────
+// one closed, organic oval: two low harmonics on the radius + optional per-vertex
+// hand wobble. never a perfect ellipse, never a rectangle.
+function pebblePts(cx,cy,rx,ry,rot,wobble,nPts,rough,rnd){
+  const a1=(0.45+rnd()*0.55)*wobble;
+  const a2=(0.25+rnd()*0.55)*wobble*0.55;
+  const k1=2+Math.floor(rnd()*2);            // 2..3
+  const k2=3+Math.floor(rnd()*3);            // 3..5
+  const p1=rnd()*TAU, p2=rnd()*TAU;
+  const cs=Math.cos(rot), sn=Math.sin(rot);
+  const pts=new Array(nPts);
+  for(let i=0;i<nPts;i++){
+    const th=i/nPts*TAU;
+    const m=1+a1*Math.sin(k1*th+p1)+a2*Math.sin(k2*th+p2);
+    let x=Math.cos(th)*rx*m, y=Math.sin(th)*ry*m;
+    if(rough>0){ x+=(rnd()-0.5)*rough*2; y+=(rnd()-0.5)*rough*2; }
+    pts[i]=[cx+x*cs-y*sn, cy+x*sn+y*cs];
+  }
+  return pts;
+}
+
+// ── scene model (one description, two backends: canvas + svg) ────────────────
+function newScene(){ return { bg:gv('hex-bg'), items:[], stones:0 }; }
+
+// gather the shared "DNA" once per render
+function readDNA(){
+  const chaos=g('sl-chaos');
+  return {
+    chaos,
+    asp:g('sl-asp'), aspVar:g('sl-aspvar')*chaos,
+    rotSp:g('sl-rotsp'), sizeVar:g('sl-sizevar')*chaos,
+    wob:g('sl-wob'), pts:Math.round(g('sl-pts')), rough:g('sl-rough'),
+    rim:g('sl-rim'), relief:g('sl-relief'), light:g('sl-light')*Math.PI/180,
+    speck:on('tog-speck'), speckD:g('sl-speck'),
+    contour:on('tog-contour'), contourW:g('sl-contw'), contourC:gv('hex-contour'),
+    tgam:g('sl-tgam'), tinv:on('tog-tinv')
+  };
+}
+
+// emit one pebble (plus its relief + speckle) into an item list
+function emitPebble(out,dna,x,y,rx,ry,rot,col,rnd){
+  if(rx<0.4||ry<0.4) return;
+  const pts=pebblePts(x,y,rx,ry,rot,dna.wob,dna.pts,dna.rough,rnd);
+  let stroke=null, sw=0;
+  if(dna.contour){ stroke=dna.contourC; sw=dna.contourW; }
+  else if(dna.rim>0){ stroke=shade(col,-0.35*dna.rim); sw=Math.max(0.6,Math.min(rx,ry)*0.10); }
+  out.push({ t:'poly', pts, fill:col, stroke, sw, a:1 });
+
+  // relief — two nested, offset copies toward the light. flat, screen-print volume.
+  if(dna.relief>0){
+    const lx=Math.cos(dna.light), ly=Math.sin(dna.light);
+    for(let k=0;k<2;k++){
+      const f=0.60-0.24*k;
+      const ox=x+lx*rx*(1-f)*0.55, oy=y+ly*ry*(1-f)*0.55;
+      const inner=pts.map(p=>[ox+(p[0]-x)*f, oy+(p[1]-y)*f]);
+      out.push({ t:'poly', pts:inner, fill:shade(col,0.55), stroke:null, sw:0, a:dna.relief*0.16 });
+    }
+  }
+
+  // speckle — grit inside the stone
+  if(dna.speck){
+    const n=Math.min(90,Math.round(rx*ry*0.012*dna.speckD));
+    const cs=Math.cos(rot), sn=Math.sin(rot);
+    for(let i=0;i<n;i++){
+      const a=rnd()*TAU, rr=Math.sqrt(rnd())*0.82;
+      const px=Math.cos(a)*rx*rr, py=Math.sin(a)*ry*rr;
+      out.push({ t:'dot', x:x+px*cs-py*sn, y:y+px*sn+py*cs,
+                 r:Math.max(0.5,Math.min(rx,ry)*0.055*(0.5+rnd())),
+                 fill:shade(col, rnd()<0.5?-0.42:0.42), a:0.55 });
+    }
+  }
+}
+
+// ── palette ──────────────────────────────────────────────────────────────────
+const palWrap=$('pal-list');
+function makePalRow(hex){
+  const row=document.createElement('div'); row.className='pal-row';
+  row.innerHTML=
+    `<div class="color-swatch" style="background:${hex}"><input type="color" class="native-picker" value="${hex}" /></div>`+
+    `<input type="text" class="color-hex" value="${hex}" maxlength="7" />`+
+    `<button class="rowbtn del" title="Remove">×</button>`;
+  const sw=row.querySelector('.color-swatch'), cp=row.querySelector('.native-picker'), hx=row.querySelector('.color-hex');
+  cp.addEventListener('input', ()=>{ hx.value=cp.value; sw.style.background=cp.value; scheduleRender(); });
+  hx.addEventListener('input', ()=>{ let v=hx.value.trim(); if(!v.startsWith('#'))v='#'+v; if(isHex(v)){ sw.style.background=v; cp.value=v; scheduleRender(); } });
+  row.querySelector('.del').addEventListener('click', ()=>{
+    if(palWrap.querySelectorAll('.pal-row').length>1){ row.remove(); scheduleRender(); }
+  });
+  return row;
+}
+function setPalette(list){ palWrap.innerHTML=''; list.forEach(h=>palWrap.appendChild(makePalRow(h))); }
+function readPalette(){
+  const l=[...palWrap.querySelectorAll('.color-hex')].map(i=>i.value.trim()).filter(isHex);
+  return l.length?l:['#888888'];
+}
+$('add-pal').addEventListener('click', ()=>{ palWrap.appendChild(makePalRow('#888888')); scheduleRender(); });
+
+// median-cut quantiser over the adjusted image
+function quantizeImage(n){
+  if(!adjustedData) return [];
+  const D=adjustedData.data, total=D.length/4, stride=Math.max(1,Math.floor(total/16000));
+  let box=[];
+  for(let i=0;i<total;i+=stride){ const k=i*4; box.push([D[k],D[k+1],D[k+2]]); }
+  let boxes=[box];
+  while(boxes.length<n){
+    let bi=-1, brange=-1, bch=0;
+    for(let i=0;i<boxes.length;i++){ const b=boxes[i]; if(b.length<2) continue;
+      const mn=[255,255,255], mx=[0,0,0];
+      for(const p of b) for(let c=0;c<3;c++){ if(p[c]<mn[c])mn[c]=p[c]; if(p[c]>mx[c])mx[c]=p[c]; }
+      for(let c=0;c<3;c++){ const r=mx[c]-mn[c]; if(r>brange){ brange=r; bi=i; bch=c; } }
+    }
+    if(bi<0) break;
+    const b=boxes[bi]; b.sort((p,q)=>p[bch]-q[bch]); const mid=b.length>>1;
+    boxes.splice(bi,1,b.slice(0,mid),b.slice(mid));
+  }
+  const cols=boxes.filter(b=>b.length).map(b=>{ let r=0,g=0,bl=0; for(const p of b){ r+=p[0]; g+=p[1]; bl+=p[2]; } const L=b.length; return rgbToHex(r/L,g/L,bl/L); });
+  cols.sort((a,b)=>relLum(...hexToRgb(a))-relLum(...hexToRgb(b)));
+  return cols;
+}
+$('btn-pal-extract').addEventListener('click', ()=>{
+  const cols=quantizeImage(Math.round(g('sl-pal-extract')));
+  if(cols.length){ setPalette(cols); scheduleRender(); }
+});
+
+// colour picker for one stone
+function makeColourer(rnd){
+  const pal=readPalette(), n=pal.length;
+  const rgb=pal.map(hexToRgb);
+  const mode=gv('sel-map');
+  const acc=gv('hex-accent'), accChance=g('sl-accent');
+  return (s,t)=>{
+    if(accChance>0 && rnd()<accChance) return acc;
+    if(mode==='random') return pal[Math.floor(rnd()*n)];
+    if(mode==='nearest'){
+      let bi=0,bd=Infinity;
+      for(let i=0;i<n;i++){ const p=rgb[i], dr=s.r-p[0],dg=s.g-p[1],db=s.b-p[2], d=dr*dr+dg*dg+db*db; if(d<bd){bd=d;bi=i;} }
+      return pal[bi];
+    }
+    return pal[clamp(Math.floor(t*n),0,n-1)];
+  };
+}
+
+// ── single colour pickers ────────────────────────────────────────────────────
+function setupColor(swId,hexId,cpId){
+  const sw=$(swId),hx=$(hexId),cp=$(cpId);
+  cp.addEventListener('input', ()=>{ hx.value=cp.value; sw.style.background=cp.value; scheduleRender(); });
+  hx.addEventListener('input', ()=>{ let v=hx.value.trim(); if(!v.startsWith('#'))v='#'+v; if(isHex(v)){ sw.style.background=v; cp.value=v; scheduleRender(); } });
+}
+['bg','accent','contour','sk-line'].forEach(k=>setupColor('sw-'+k,'hex-'+k,'cp-'+k));
+
+function currentMode(){ const a=document.querySelector('[data-switch] [data-case-btn].active'); return a?a.dataset.caseBtn:'scatter'; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BEHAVIOUR 1 · SCATTER — a handful thrown down. no grid anywhere.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function buildScatter(scene,sample,dna,rnd,resp){
+  const dens=g('sl-scat-dens'), rmin=g('sl-scat-min')/2, rmax=g('sl-scat-max')/2;
+  const over=g('sl-scat-over'), cov=g('sl-scat-cov');
+  const drives=segVal('seg-scat-tone','both'), order=segVal('seg-scat-order','big');
+  const sizeOn = drives!=='dens', densOn = drives!=='size';
+  const colour=makeColourer(rnd);
+  const hash=makeGridHash(rmax*1.6);
+  const attempts=Math.min(240000, Math.round(exportW*exportH/Math.max(9,rmin*rmin*10)*dens));
+  const list=[];
+  for(let i=0;i<attempts && list.length<32000;i++){
+    const x=rnd()*exportW, y=rnd()*exportH;
+    const s=sample(x,y); if(s.out) continue;
+    const t=resp(s.lum);
+    const p = densOn ? cov*(0.06+0.94*t) : cov;
+    if(rnd()>p) continue;
+    const base = sizeOn ? (rmin+(rmax-rmin)*t) : (rmin+rmax)/2;
+    const r = base*(1+(rnd()-0.5)*2*dna.sizeVar);
+    if(r<0.6) continue;
+    if(hash.hits(x,y,r,over)) continue;
+    hash.insert(x,y,r);
+    list.push({x,y,r,s,t});
+  }
+  if(order==='big') list.sort((a,b)=>b.r-a.r);
+  else if(order==='small') list.sort((a,b)=>a.r-b.r);
+  for(const p of list){
+    const asp=dna.asp*(1+(rnd()-0.5)*2*dna.aspVar);
+    const rot=rnd()*TAU*dna.rotSp;
+    emitPebble(scene.items,dna,p.x,p.y,p.r,p.r*asp,rot,colour(p.s,p.t),rnd);
+  }
+  scene.stones=list.length;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BEHAVIOUR 2 · STACK — dry-stone building. gravity, nesting, tilt.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function buildStack(scene,sample,dna,rnd,resp){
+  const unit=g('sl-st-col'), gap=g('sl-st-gap');
+  const hmin=g('sl-st-hmin'), hmax=g('sl-st-hmax');
+  const nest=g('sl-st-nest'), tilt=g('sl-st-tilt')*Math.PI/180;
+  const jit=g('sl-st-jit')*dna.chaos, wvar=g('sl-st-wvar')*dna.chaos;
+  const style=segVal('seg-st-style','wall');
+  const colour=makeColourer(rnd);
+  let count=0;
+
+  if(style==='wall'){
+    // horizontal courses, laid left to right. each course starts at a random
+    // offset, so the joints stagger by themselves — masonry, not strung beads.
+    let y=exportH, guard=0;
+    while(y>-hmax && guard++<3000 && count<32000){
+      const hRow=Math.max(2,(hmin+(hmax-hmin)*(0.3+0.7*rnd())));
+      const cy=y-hRow/2;
+      let x=-unit*(0.2+rnd()), g2=0;
+      while(x<exportW && g2++<6000 && count<32000){
+        const s=sample(clamp(x+unit*0.5,0,exportW-1), clamp(cy,0,exportH-1));
+        const t=s.out?0.5:resp(s.lum);
+        const w=Math.max(3,(unit*0.3+unit*1.1*t)*(1+(rnd()-0.5)*2*wvar));
+        if(!s.out){
+          const px=x+w/2+(rnd()-0.5)*jit, py=cy+(rnd()-0.5)*jit*0.5;
+          emitPebble(scene.items,dna,px,py,w/2,hRow/2*(1-0.14*rnd()),(rnd()-0.5)*2*tilt,colour(s,t),rnd);
+          count++;
+        }
+        x += w + gap;
+      }
+      y -= hRow*(1-nest) + gap;
+    }
+  } else {
+    // cairns: one pile per column, stacked only as high as the tone allows
+    const nCols=Math.max(1,Math.ceil(exportW/unit));
+    for(let ci=0;ci<nCols && count<32000;ci++){
+      const cx=ci*unit+unit/2;
+      let acc=0,cnt=0;
+      for(let k=0;k<12;k++){ const s=sample(cx,exportH*(k+0.5)/12); if(!s.out){ acc+=s.lum; cnt++; } }
+      if(!cnt) continue;
+      const tt=resp(acc/cnt);
+      const top=exportH*(1-tt);
+      let y=exportH, guard=0;
+      while(y>top && guard++<700 && count<32000){
+        const s=sample(cx, clamp(y-hmin,0,exportH-1));
+        const t=s.out?tt:resp(s.lum);
+        const h=Math.max(2,(hmin+(hmax-hmin)*(0.4+0.6*rnd()))*(1+(rnd()-0.5)*2*dna.sizeVar*0.5));
+        const w=unit*(1-wvar*rnd());
+        const px=cx+(rnd()-0.5)*jit*2, py=y-h/2;
+        emitPebble(scene.items,dna,px,py,w/2,h/2,(rnd()-0.5)*2*tilt,colour(s,t),rnd);
+        count++;
+        y -= h*(1-nest) + gap;
+      }
+    }
+  }
+  scene.stones=count;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BEHAVIOUR 3 · SKIM — stones skipped across water. bounce, damp, ripple.
+   flow bends along the image contours, so the picture surfaces from the throws.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function angDelta(a,b){ let d=(b-a)%TAU; if(d>Math.PI)d-=TAU; if(d<-Math.PI)d+=TAU; return d; }
+
+function buildSkim(scene,sample,dna,rnd,resp){
+  const throws=Math.round(g('sl-sk-throws')), bounces=Math.round(g('sl-sk-bounce'));
+  const step0=g('sl-sk-step'), damp=g('sl-sk-damp'), curve=g('sl-sk-curve')*dna.chaos;
+  const rmin=g('sl-sk-min')/2, rmax=g('sl-sk-max')/2, follow=g('sl-sk-follow');
+  const ripOn=on('tog-sk-rip'), ripN=Math.round(g('sl-sk-ripn')), ripW=g('sl-sk-ripw');
+  const trailOn=on('tog-sk-trail'), tw=g('sl-sk-tw'), lineC=gv('hex-sk-line');
+  const colour=makeColourer(rnd);
+  const trails=[], rings=[], stones=[];
+  let count=0;
+
+  for(let k=0;k<throws;k++){
+    let x=rnd()*exportW, y=rnd()*exportH;
+    let ang=rnd()*TAU;
+    let step=step0*(0.55+0.9*rnd());
+    let scale=1;
+    const path=[];
+    for(let b=0;b<bounces;b++){
+      if(x<-120||y<-120||x>exportW+120||y>exportH+120) break;
+      const s=sample(x,y);
+      path.push([x,y]);
+      if(!s.out){
+        const t=resp(s.lum);
+        const r=Math.max(0.6,(rmin+(rmax-rmin)*t)*scale*(1+(rnd()-0.5)*2*dna.sizeVar));
+        const asp=dna.asp*(1+(rnd()-0.5)*2*dna.aspVar);
+        // the stone lies along its direction of travel
+        const rot=ang+(rnd()-0.5)*TAU*0.12*dna.rotSp;
+        if(ripOn){
+          for(let q=1;q<=ripN;q++){
+            const rr=r*(1.7+q*0.85);
+            rings.push({ t:'poly', pts:pebblePts(x,y,rr,rr*asp,rot,dna.wob*0.7,Math.max(10,dna.pts),dna.rough*0.5,rnd),
+                         fill:null, stroke:lineC, sw:ripW, a:0.5/q });
+          }
+        }
+        emitPebble(stones,dna,x,y,r,r*asp,rot,colour(s,t),rnd);
+        count++;
+      }
+      if(follow>0){
+        const gd=gradAt(sample,x,y,Math.max(3,step*0.35));
+        if(gd && (Math.abs(gd.gx)+Math.abs(gd.gy))>1e-5){
+          let target=Math.atan2(gd.gx,-gd.gy);            // along the iso-luminance contour
+          if(Math.abs(angDelta(ang,target))>Math.PI/2) target+=Math.PI;
+          ang += angDelta(ang,target)*follow;
+        }
+      }
+      ang += (rnd()-0.5)*curve;
+      x += Math.cos(ang)*step;
+      y += Math.sin(ang)*step;
+      step*=damp; scale*=Math.pow(damp,0.5);
+      if(step<1.5) break;
+    }
+    if(trailOn && path.length>1) trails.push({ t:'path', pts:path, stroke:lineC, sw:tw, a:0.55 });
+    if(count>32000) break;
+  }
+  scene.items.push(...trails,...rings,...stones);
+  scene.stones=count;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BEHAVIOUR 4 · CLUSTER — nucleation + accretion. loose stones that only
+   become a shape together. 1 + 1 = 5.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function buildCluster(scene,sample,dna,rnd,resp){
+  const seeds=Math.round(g('sl-cl-seeds')), grow=Math.round(g('sl-cl-grow'));
+  const rmin=g('sl-cl-min')/2, rmax=g('sl-cl-max')/2;
+  const thr=g('sl-cl-thr'), contact=g('sl-cl-contact'), reach=g('sl-cl-spread');
+  const perCol=on('tog-cl-percol'), taper=on('tog-cl-taper');
+  const pal=readPalette();
+  const colour=makeColourer(rnd);
+  const hash=makeGridHash(rmax*2.2);
+  const stones=[];
+
+  // seeds land preferentially where the tone responds
+  const seedPts=[];
+  let guard=0;
+  while(seedPts.length<seeds && guard++<seeds*300+2000){
+    const x=rnd()*exportW, y=rnd()*exportH;
+    const s=sample(x,y); if(s.out) continue;
+    const t=resp(s.lum);
+    if(t<thr || rnd()>t) continue;
+    seedPts.push({x,y,s,t});
+  }
+
+  for(const sd of seedPts){
+    const clusterCol = perCol ? pal[Math.floor(rnd()*pal.length)] : null;
+    const members=[];
+    const r0=(rmin+(rmax-rmin)*(0.6+0.4*rnd()));
+    if(hash.hits(sd.x,sd.y,r0,0.02)) continue;
+    hash.insert(sd.x,sd.y,r0);
+    members.push({x:sd.x,y:sd.y,r:r0});
+    stones.push({x:sd.x,y:sd.y,r:r0,s:sd.s,t:sd.t,col:clusterCol});
+
+    for(let n=1;n<grow && stones.length<32000;n++){
+      let placed=false;
+      for(let a=0;a<16 && !placed;a++){
+        const base=members[Math.floor(rnd()*members.length)];
+        const dist=Math.hypot(base.x-sd.x,base.y-sd.y);
+        const falloff = taper ? clamp(1-dist/Math.max(1,reach),0.25,1) : 1;
+        const r=(rmin+(rmax-rmin)*rnd())*falloff;
+        if(r<0.6) continue;
+        const th=rnd()*TAU, d=(base.r+r)*(1+contact);
+        const x=base.x+Math.cos(th)*d, y=base.y+Math.sin(th)*d;
+        if(x<-rmax||y<-rmax||x>exportW+rmax||y>exportH+rmax) continue;
+        if(Math.hypot(x-sd.x,y-sd.y)>reach) continue;
+        const s=sample(x,y); if(s.out) continue;
+        const t=resp(s.lum); if(t<thr) continue;
+        if(hash.hits(x,y,r,0.02)) continue;
+        hash.insert(x,y,r);
+        members.push({x,y,r});
+        stones.push({x,y,r,s,t,col:clusterCol});
+        placed=true;
+      }
+      if(!placed) break;
+    }
+  }
+
+  for(const p of stones){
+    const asp=dna.asp*(1+(rnd()-0.5)*2*dna.aspVar);
+    const rot=rnd()*TAU*dna.rotSp;
+    emitPebble(scene.items,dna,p.x,p.y,p.r,p.r*asp,rot,p.col||colour(p.s,p.t),rnd);
+  }
+  scene.stones=stones.length;
+}
+
+/* ── backends ─────────────────────────────────────────────────────────────── */
+// closed smooth outline: quadratic curves through the midpoints of the hull
+function traceClosed(pts){
+  const n=pts.length;
+  ctx.beginPath();
+  ctx.moveTo((pts[n-1][0]+pts[0][0])/2,(pts[n-1][1]+pts[0][1])/2);
+  for(let i=0;i<n;i++){
+    const p=pts[i], q=pts[(i+1)%n];
+    ctx.quadraticCurveTo(p[0],p[1],(p[0]+q[0])/2,(p[1]+q[1])/2);
+  }
+  ctx.closePath();
+}
+function traceOpen(pts){
+  const n=pts.length;
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<n-1;i++){ const p=pts[i], q=pts[i+1]; ctx.quadraticCurveTo(p[0],p[1],(p[0]+q[0])/2,(p[1]+q[1])/2); }
+  ctx.lineTo(pts[n-1][0],pts[n-1][1]);
+}
+
+let grainTile=null;
+function makeGrainTile(){
+  const n=140,c=document.createElement('canvas'); c.width=c.height=n; const x=c.getContext('2d');
+  const id=x.createImageData(n,n),d=id.data;
+  for(let i=0;i<d.length;i+=4){ const v=128+(Math.random()-0.5)*190; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255; }
+  x.putImageData(id,0,0); return c;
+}
+function applyGrain(amt){
+  if(amt<=0) return;
+  grainTile=grainTile||makeGrainTile();
+  ctx.save(); ctx.globalAlpha=clamp(amt,0,1); ctx.globalCompositeOperation='overlay';
+  ctx.fillStyle=ctx.createPattern(grainTile,'repeat'); ctx.fillRect(0,0,exportW,exportH); ctx.restore();
+}
+
+function paintCanvas(scene){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,exportW,exportH);
+  if(exportBg){ ctx.fillStyle=scene.bg; ctx.fillRect(0,0,exportW,exportH); }
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  for(const it of scene.items){
+    ctx.globalAlpha=it.a==null?1:it.a;
+    if(it.t==='poly'){
+      traceClosed(it.pts);
+      if(it.fill){ ctx.fillStyle=it.fill; ctx.fill(); }
+      if(it.stroke&&it.sw>0){ ctx.strokeStyle=it.stroke; ctx.lineWidth=it.sw; ctx.stroke(); }
+    } else if(it.t==='path'){
+      traceOpen(it.pts);
+      ctx.strokeStyle=it.stroke; ctx.lineWidth=it.sw; ctx.stroke();
+    } else if(it.t==='dot'){
+      ctx.beginPath(); ctx.arc(it.x,it.y,it.r,0,TAU);
+      ctx.fillStyle=it.fill; ctx.fill();
+    }
+  }
+  ctx.globalAlpha=1;
+  applyGrain(g('sl-grain'));
+}
+
+const f2 = v => Math.round(v*100)/100;
+function closedD(pts){
+  const n=pts.length;
+  let d=`M${f2((pts[n-1][0]+pts[0][0])/2)},${f2((pts[n-1][1]+pts[0][1])/2)}`;
+  for(let i=0;i<n;i++){ const p=pts[i], q=pts[(i+1)%n]; d+=`Q${f2(p[0])},${f2(p[1])} ${f2((p[0]+q[0])/2)},${f2((p[1]+q[1])/2)}`; }
+  return d+'Z';
+}
+function openD(pts){
+  const n=pts.length;
+  let d=`M${f2(pts[0][0])},${f2(pts[0][1])}`;
+  for(let i=1;i<n-1;i++){ const p=pts[i], q=pts[i+1]; d+=`Q${f2(p[0])},${f2(p[1])} ${f2((p[0]+q[0])/2)},${f2((p[1]+q[1])/2)}`; }
+  return d+`L${f2(pts[n-1][0])},${f2(pts[n-1][1])}`;
+}
+function sceneToSVG(scene,withBg){
+  const out=[`<svg xmlns="http://www.w3.org/2000/svg" width="${exportW}" height="${exportH}" viewBox="0 0 ${exportW} ${exportH}">`];
+  if(withBg) out.push(`<rect width="${exportW}" height="${exportH}" fill="${scene.bg}"/>`);
+  out.push('<g stroke-linejoin="round" stroke-linecap="round">');
+  for(const it of scene.items){
+    const op = (it.a==null||it.a>=1) ? '' : ` opacity="${f2(it.a)}"`;
+    if(it.t==='poly'){
+      const fill=it.fill?`fill="${it.fill}"`:'fill="none"';
+      const st=(it.stroke&&it.sw>0)?` stroke="${it.stroke}" stroke-width="${f2(it.sw)}"`:'';
+      out.push(`<path ${fill}${st}${op} d="${closedD(it.pts)}"/>`);
+    } else if(it.t==='path'){
+      out.push(`<path fill="none" stroke="${it.stroke}" stroke-width="${f2(it.sw)}"${op} d="${openD(it.pts)}"/>`);
+    } else if(it.t==='dot'){
+      out.push(`<circle cx="${f2(it.x)}" cy="${f2(it.y)}" r="${f2(it.r)}" fill="${it.fill}"${op}/>`);
+    }
+  }
+  out.push('</g></svg>');
+  return out.join('\n');
+}
+
+/* ── render ───────────────────────────────────────────────────────────────── */
+function buildScene(){
+  const scene=newScene();
+  const dna=readDNA();
+  const sample=makeSampler();
+  const resp=v=>Math.pow(clamp(dna.tinv?1-v:v,0,1),dna.tgam);
+  const mode=currentMode();
+  const salt={scatter:0x9e37,stack:0x51ed,skim:0x27d4,cluster:0x6a09}[mode]||1;
+  const rnd=makeRnd((currentSeed()*2654435761)^salt);
+  if(mode==='scatter')      buildScatter(scene,sample,dna,rnd,resp);
+  else if(mode==='stack')   buildStack(scene,sample,dna,rnd,resp);
+  else if(mode==='skim')    buildSkim(scene,sample,dna,rnd,resp);
+  else                      buildCluster(scene,sample,dna,rnd,resp);
+  return scene;
+}
+function render(){
+  lastScene=buildScene();
+  paintCanvas(lastScene);
+  $('v-count').textContent=lastScene.stones.toLocaleString('en-US');
+}
+let raf=0;
+function scheduleRender(){ if(raf) return; raf=requestAnimationFrame(()=>{ raf=0; render(); }); }
+
+/* ── slider readouts ──────────────────────────────────────────────────────── */
+const i0=v=>Math.round(v), f1=v=>(+v).toFixed(1), fx2=v=>(+v).toFixed(2), f3=v=>(+v).toFixed(3);
+const SL={
+  'sl-px':['v-px',i0],'sl-py':['v-py',i0],'sl-sc':['v-sc',i0],
+  'sl-br':['v-br',i0],'sl-co':['v-co',fx2],'sl-ga':['v-ga',fx2],'sl-sa':['v-sa',fx2],'sl-bl':['v-bl',f1],
+  'sl-scat-dens':['v-scat-dens',fx2],'sl-scat-cov':['v-scat-cov',fx2],'sl-scat-min':['v-scat-min',f1],
+  'sl-scat-max':['v-scat-max',i0],'sl-scat-over':['v-scat-over',fx2],
+  'sl-st-col':['v-st-col',i0],'sl-st-hmin':['v-st-hmin',i0],'sl-st-hmax':['v-st-hmax',i0],
+  'sl-st-gap':['v-st-gap',f1],'sl-st-nest':['v-st-nest',fx2],'sl-st-tilt':['v-st-tilt',f1],
+  'sl-st-jit':['v-st-jit',f1],'sl-st-wvar':['v-st-wvar',fx2],
+  'sl-sk-throws':['v-sk-throws',i0],'sl-sk-bounce':['v-sk-bounce',i0],'sl-sk-step':['v-sk-step',i0],
+  'sl-sk-damp':['v-sk-damp',f3],'sl-sk-curve':['v-sk-curve',fx2],'sl-sk-follow':['v-sk-follow',fx2],
+  'sl-sk-min':['v-sk-min',f1],'sl-sk-max':['v-sk-max',i0],'sl-sk-ripn':['v-sk-ripn',i0],
+  'sl-sk-ripw':['v-sk-ripw',f1],'sl-sk-tw':['v-sk-tw',f1],
+  'sl-cl-seeds':['v-cl-seeds',i0],'sl-cl-grow':['v-cl-grow',i0],'sl-cl-spread':['v-cl-spread',i0],
+  'sl-cl-min':['v-cl-min',f1],'sl-cl-max':['v-cl-max',i0],'sl-cl-thr':['v-cl-thr',fx2],'sl-cl-contact':['v-cl-contact',fx2],
+  'sl-pal-extract':['v-pal-extract',i0],'sl-accent':['v-accent',f3],
+  'sl-tgam':['v-tgam',fx2],
+  'sl-asp':['v-asp',fx2],'sl-aspvar':['v-aspvar',fx2],'sl-rotsp':['v-rotsp',fx2],'sl-sizevar':['v-sizevar',fx2],
+  'sl-wob':['v-wob',fx2],'sl-pts':['v-pts',i0],'sl-rough':['v-rough',f1],'sl-chaos':['v-chaos',fx2],
+  'sl-rim':['v-rim',fx2],'sl-relief':['v-relief',fx2],'sl-light':['v-light',i0],
+  'sl-speck':['v-speck',fx2],'sl-contw':['v-contw',f1],'sl-grain':['v-grain',fx2]
+};
+const NEEDS_REPROCESS=new Set(['sl-br','sl-co','sl-ga','sl-sa','sl-bl']);
+Object.entries(SL).forEach(([sid,[vid,fmt]])=>{
+  const el=$(sid), vEl=$(vid); if(!el||!vEl) return; vEl.textContent=fmt(el.value);
+  el.addEventListener('input', ()=>{ vEl.textContent=fmt(el.value); if(NEEDS_REPROCESS.has(sid)&&img) processImage(); scheduleRender(); });
+});
+['tog-tinv','tog-speck','tog-contour','tog-sk-rip','tog-sk-trail','tog-cl-percol','tog-cl-taper'].forEach(id=>{
+  $(id).addEventListener('click', function(){ this.classList.toggle('on'); scheduleRender(); });
+});
+['seg-scat-tone','seg-scat-order','seg-st-style'].forEach(id=>{
+  $(id).addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return;
+    [...$(id).children].forEach(x=>x.classList.toggle('active', x===b)); scheduleRender(); });
+});
+document.querySelector('[data-switch]').addEventListener('click', e=>{ if(e.target.closest('[data-case-btn]')) scheduleRender(); });
+$('sel-map').addEventListener('change', scheduleRender);
+
+// seed
+$('inp-seed').addEventListener('input', scheduleRender);
+function reroll(){ $('inp-seed').value=1+Math.floor(Math.random()*999999); scheduleRender(); }
+$('btn-reroll').addEventListener('click', reroll);
+$('btn-dice').addEventListener('click', reroll);
+
+/* ── artboard ─────────────────────────────────────────────────────────────── */
+function applyRes(){
+  const v=gv('sel-res');
+  $('custom-res-wrap').classList.toggle('visible', v==='custom');
+  if(v==='auto'){ if(img) fitToImage(); return; }
+  if(v==='custom'){
+    exportW=clamp(parseInt($('inp-cw').value,10)||1080,64,8000);
+    exportH=clamp(parseInt($('inp-ch').value,10)||1350,64,8000);
+  } else { const [w,h]=v.split('x').map(Number); exportW=w; exportH=h; }
+  canvas.width=exportW; canvas.height=exportH; resizeDisplay();
+  if(img) placeImage('fit'); else scheduleRender();
+}
+$('sel-res').addEventListener('change', applyRes);
+$('inp-cw').addEventListener('input', ()=>{ if(gv('sel-res')==='custom') applyRes(); });
+$('inp-ch').addEventListener('input', ()=>{ if(gv('sel-res')==='custom') applyRes(); });
+
+function fitToImage(){
+  const MAX=4000; let w=imgW,h=imgH; const L=Math.max(w,h);
+  if(L>MAX){ const s=MAX/L; w=Math.round(w*s); h=Math.round(h*s); }
+  exportW=w; exportH=h;
+  setSlider('sl-px',0); setSlider('sl-py',0); setSlider('sl-sc',100);
+  canvas.width=exportW; canvas.height=exportH; resizeDisplay();
+}
+function setSlider(id,v){
+  const el=$(id); if(!el) return; el.value=v;
+  const m=SL[id]; if(m){ const vEl=$(m[0]); if(vEl) vEl.textContent=m[1](v); }
+  if(window.HTY&&HTY.paintRange) HTY.paintRange(el);
+}
+function placeImage(mode){
+  if(!img) return;
+  if(mode!=='center'){
+    const s = mode==='fill' ? Math.max(exportW/imgW,exportH/imgH) : Math.min(exportW/imgW,exportH/imgH);
+    setSlider('sl-sc', Math.round(clamp(s*100, +$('sl-sc').min, +$('sl-sc').max)));
+  }
+  setSlider('sl-px',0); setSlider('sl-py',0);
+  scheduleRender();
+}
+$('btn-fit').addEventListener('click', ()=>placeImage('fit'));
+$('btn-fill').addEventListener('click', ()=>placeImage('fill'));
+$('btn-center').addEventListener('click', ()=>placeImage('center'));
+
+/* ── image loading ────────────────────────────────────────────────────────── */
+function loadFile(file){
+  if(!file||!file.type.startsWith('image/')) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ imgDataURL=rd.result; const im=new Image();
+    im.onload=()=>{
+      img=im; imgW=im.naturalWidth; imgH=im.naturalHeight;
+      if(gv('sel-res')==='auto') fitToImage(); else placeImage('fit');
+      $('img-name').textContent=file.name; empty.classList.add('hidden');
+      ['btn-png','btn-png-alpha','btn-svg','btn-pal-extract'].forEach(id=>{ $(id).disabled=false; });
+      processImage();
+      scheduleRender();
+    };
+    im.src=imgDataURL;
+  };
+  rd.readAsDataURL(file);
+}
+$('file-input').addEventListener('change', e=>{ if(e.target.files[0]) loadFile(e.target.files[0]); });
+$('upload-zone').addEventListener('click', e=>{ if(e.target!==$('file-input')) $('file-input').click(); });
+document.addEventListener('dragover', e=>e.preventDefault());
+document.addEventListener('drop', e=>{ e.preventDefault(); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+
+/* ── place the image on the canvas: drag to move, scroll to zoom ──────────── */
+(function(){
+  const slpx=$('sl-px'), slpy=$('sl-py'), slsc=$('sl-sc');
+  const clampSl=(sl,v)=>Math.max(+sl.min, Math.min(+sl.max, v));
+  let dragging=false, sx=0, sy=0, startPX=0, startPY=0;
+  canvas.addEventListener('pointermove', e=>{
+    if(!dragging){ canvas.style.cursor = img?'grab':'default'; return; }
+    const rect=canvas.getBoundingClientRect(), sc=exportW/rect.width;
+    setSlider('sl-px', Math.round(clampSl(slpx, startPX+(e.clientX-sx)*sc)));
+    setSlider('sl-py', Math.round(clampSl(slpy, startPY+(e.clientY-sy)*sc)));
+    scheduleRender();
+  });
+  canvas.addEventListener('pointerdown', e=>{
+    if(!img) return; dragging=true; sx=e.clientX; sy=e.clientY; startPX=+slpx.value; startPY=+slpy.value;
+    canvas.style.cursor='grabbing'; canvas.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  const end=()=>{ dragging=false; canvas.style.cursor=img?'grab':'default'; };
+  canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
+  canvas.addEventListener('wheel', e=>{
+    if(!img) return; e.preventDefault();
+    const rect=canvas.getBoundingClientRect();
+    const ex=(e.clientX-rect.left)*(exportW/rect.width), ey=(e.clientY-rect.top)*(exportH/rect.height);
+    const s0=(+slsc.value)/100, s1=Math.max(+slsc.min/100, Math.min(+slsc.max/100, s0*Math.exp(-e.deltaY*0.0015)));
+    if(s1===s0) return;
+    const panX=exportW/2+(+slpx.value), panY=exportH/2+(+slpy.value);
+    const nPanX=ex-(ex-panX)*(s1/s0), nPanY=ey-(ey-panY)*(s1/s0);
+    setSlider('sl-sc', Math.round(s1*100));
+    setSlider('sl-px', Math.round(clampSl(slpx, nPanX-exportW/2)));
+    setSlider('sl-py', Math.round(clampSl(slpy, nPanY-exportH/2)));
+    scheduleRender();
+  }, { passive:false });
+})();
+
+/* ── export ───────────────────────────────────────────────────────────────── */
+function download(name,href){ const a=document.createElement('a'); a.download=name; a.href=href; a.click(); }
+$('btn-png').addEventListener('click', ()=>{
+  exportBg=true; render(); download('pebbles.png', canvas.toDataURL('image/png'));
+});
+$('btn-png-alpha').addEventListener('click', ()=>{
+  exportBg=false; render(); download('pebbles-alpha.png', canvas.toDataURL('image/png'));
+  exportBg=true; render();
+});
+$('btn-svg').addEventListener('click', ()=>{
+  // always rebuild: a pending rAF would otherwise export the previous state
+  const scene=buildScene();
+  const svg=sceneToSVG(scene,true);
+  const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'}));
+  download('pebbles.svg', url);
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+});
+
+/* ── presets ──────────────────────────────────────────────────────────────── */
+function setVal(id,v){ const el=$(id); if(el) el.value=v; }
+function setTog(id,s){ $(id).classList.toggle('on',s); }
+function setColor(k,hex){ $('sw-'+k).style.background=hex; $('cp-'+k).value=hex; $('hex-'+k).value=hex; }
+function setNative(id,val){ const s=$(id); s.value=val; s.dispatchEvent(new Event('change',{bubbles:true})); }
+function setSeg(id,val){ [...$(id).children].forEach(b=>b.classList.toggle('active', b.dataset.val===val)); }
+function setActiveCase(key){
+  document.querySelectorAll('[data-switch] [data-case-btn]').forEach(b=>b.classList.toggle('active', b.dataset.caseBtn===key));
+  document.querySelectorAll('[data-tab-panel="style"] [data-case]').forEach(c=>c.style.display=c.dataset.case===key?'':'none');
+}
+
+const PRESETS={
+  // sea-worn stones on wet sand — the most analog end of the system
+  beach:()=>{
+    setActiveCase('scatter');
+    setVal('sl-scat-dens',1.8); setVal('sl-scat-cov',0.9); setVal('sl-scat-min',4); setVal('sl-scat-max',44); setVal('sl-scat-over',0.08);
+    setSeg('seg-scat-tone','both'); setSeg('seg-scat-order','big');
+    setPalette(['#2f2a26','#6b5f52','#9c8f7d','#c4b7a1','#e4dac6']);
+    setColor('accent','#c8552f'); setVal('sl-accent',0.04); setColor('bg','#efe9dd');
+    setNative('sel-map','ramp'); setVal('sl-tgam',1); setTog('tog-tinv',false);
+    setVal('sl-asp',0.72); setVal('sl-aspvar',0.3); setVal('sl-rotsp',1); setVal('sl-sizevar',0.42);
+    setVal('sl-wob',0.16); setVal('sl-pts',24); setVal('sl-rough',0.6); setVal('sl-chaos',1);
+    setVal('sl-rim',0.2); setVal('sl-relief',0.5); setVal('sl-light',-135);
+    setTog('tog-speck',true); setVal('sl-speck',0.3); setTog('tog-contour',false); setVal('sl-grain',0.12);
+  },
+  // dry-stone wall: the image read as courses of stacked rubble
+  wall:()=>{
+    setActiveCase('stack');
+    setSeg('seg-st-style','wall');
+    setVal('sl-st-col',46); setVal('sl-st-hmin',9); setVal('sl-st-hmax',32); setVal('sl-st-gap',2);
+    setVal('sl-st-nest',0.12); setVal('sl-st-tilt',5); setVal('sl-st-jit',3); setVal('sl-st-wvar',0.3);
+    setPalette(['#1d2b24','#3f5a48','#7d8f6f','#b9b489','#e8e0c8']);
+    setColor('accent','#d8f24f'); setVal('sl-accent',0.03); setColor('bg','#14100d');
+    setNative('sel-map','ramp'); setVal('sl-tgam',0.9); setTog('tog-tinv',false);
+    setVal('sl-asp',0.9); setVal('sl-aspvar',0.15); setVal('sl-rotsp',0.2); setVal('sl-sizevar',0.25);
+    setVal('sl-wob',0.13); setVal('sl-pts',16); setVal('sl-rough',0.9); setVal('sl-chaos',1);
+    setVal('sl-rim',0.3); setVal('sl-relief',0.4); setVal('sl-light',-120);
+    setTog('tog-speck',false); setTog('tog-contour',false); setVal('sl-grain',0.14);
+  },
+  // stones skipped across water — flow lines and rings
+  water:()=>{
+    setActiveCase('skim');
+    setVal('sl-sk-throws',220); setVal('sl-sk-bounce',18); setVal('sl-sk-step',36); setVal('sl-sk-damp',0.95);
+    setVal('sl-sk-curve',0.18); setVal('sl-sk-follow',0.62); setVal('sl-sk-min',3); setVal('sl-sk-max',17);
+    setTog('tog-sk-rip',true); setVal('sl-sk-ripn',2); setVal('sl-sk-ripw',1.2);
+    setTog('tog-sk-trail',true); setVal('sl-sk-tw',1); setColor('sk-line','#5d7f8c');
+    setPalette(['#12303d','#1f5b6b','#3f9aa6','#8fd0cf','#e8f2ec']);
+    setColor('accent','#f2b134'); setVal('sl-accent',0.05); setColor('bg','#0b1a22');
+    setNative('sel-map','ramp'); setVal('sl-tgam',1.1); setTog('tog-tinv',false);
+    setVal('sl-asp',0.55); setVal('sl-aspvar',0.25); setVal('sl-rotsp',1); setVal('sl-sizevar',0.28);
+    setVal('sl-wob',0.14); setVal('sl-pts',22); setVal('sl-rough',0.5); setVal('sl-chaos',1);
+    setVal('sl-rim',0.18); setVal('sl-relief',0.55); setVal('sl-light',-140);
+    setTog('tog-speck',false); setTog('tog-contour',false); setVal('sl-grain',0.1);
+  },
+  // twelve specialisms: each cluster its own colour, the field makes the picture
+  collective:()=>{
+    setActiveCase('cluster');
+    setVal('sl-cl-seeds',160); setVal('sl-cl-grow',55); setVal('sl-cl-spread',80);
+    setVal('sl-cl-min',5); setVal('sl-cl-max',15); setVal('sl-cl-thr',0.28); setVal('sl-cl-contact',0.03);
+    setTog('tog-cl-percol',true); setTog('tog-cl-taper',true);
+    setPalette(['#e5342a','#e8743b','#f2c14e','#3f8f5b','#2f6f9e','#6f4fa8','#f3b8c2','#1c1a18']);
+    setColor('accent','#d8f24f'); setVal('sl-accent',0.02); setColor('bg','#f2ede0');
+    setNative('sel-map','random'); setVal('sl-tgam',1); setTog('tog-tinv',false);
+    setVal('sl-asp',0.78); setVal('sl-aspvar',0.3); setVal('sl-rotsp',1); setVal('sl-sizevar',0.3);
+    setVal('sl-wob',0.18); setVal('sl-pts',20); setVal('sl-rough',0.7); setVal('sl-chaos',1);
+    setVal('sl-rim',0.25); setVal('sl-relief',0.35); setVal('sl-light',-135);
+    setTog('tog-speck',false); setTog('tog-contour',true); setVal('sl-contw',1.4); setColor('contour','#1c1a18');
+    setVal('sl-grain',0.08);
+  },
+  // the other end of the bridge: machine-tight packing, screen colour, no grit
+  hyper:()=>{
+    setActiveCase('scatter');
+    setVal('sl-scat-dens',3.2); setVal('sl-scat-cov',1); setVal('sl-scat-min',2.5); setVal('sl-scat-max',16); setVal('sl-scat-over',0.02);
+    setSeg('seg-scat-tone','both'); setSeg('seg-scat-order','big');
+    setPalette(['#100e1a','#2d1b7a','#4b46d6','#3aa0ff','#3fe0c0','#a6f23a']);
+    setColor('accent','#ff3ea5'); setVal('sl-accent',0.07); setColor('bg','#07060c');
+    setNative('sel-map','nearest'); setVal('sl-tgam',1.15); setTog('tog-tinv',false);
+    setVal('sl-asp',0.85); setVal('sl-aspvar',0.12); setVal('sl-rotsp',1); setVal('sl-sizevar',0.18);
+    setVal('sl-wob',0.09); setVal('sl-pts',30); setVal('sl-rough',0.1); setVal('sl-chaos',0.8);
+    setVal('sl-rim',0.45); setVal('sl-relief',0.7); setVal('sl-light',-125);
+    setTog('tog-speck',false); setTog('tog-contour',false); setVal('sl-grain',0.04);
+  }
+};
+function refreshReadouts(){
+  Object.entries(SL).forEach(([sid,[vid,fmt]])=>{
+    const el=$(sid), vEl=$(vid);
+    if(el&&vEl){ vEl.textContent=fmt(el.value); if(window.HTY&&HTY.paintRange) HTY.paintRange(el); }
+  });
+}
+document.querySelectorAll('[data-preset]').forEach(btn=>btn.addEventListener('click', function(){
+  document.querySelectorAll('[data-preset]').forEach(b=>b.classList.remove('active'));
+  this.classList.add('active');
+  (PRESETS[this.dataset.preset]||(()=>{}))();
+  refreshReadouts(); if(img) processImage(); scheduleRender();
+}));
+
+/* ── boot ─────────────────────────────────────────────────────────────────── */
+setPalette(['#2f2a26','#6b5f52','#9c8f7d','#c4b7a1','#e4dac6']);
+canvas.width=exportW; canvas.height=exportH;
+refreshReadouts();
+resizeDisplay(); render();
+
+})();
+  </script>
+</body>
+</html>

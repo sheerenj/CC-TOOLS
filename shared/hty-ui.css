@@ -1,0 +1,318 @@
+/* ════════════════════════════════════════════════════════════════════════
+   HEAR THE YOUTH · TOOLS UI SYSTEM  —  hty-ui.css   (master, v2 "Bottom Dock")
+   ────────────────────────────────────────────────────────────────────────
+   A grayscale, Apple-grade, high-tech control surface. Canvas on top,
+   docked control section at the bottom (never overlaps the canvas).
+
+   USAGE
+     <head>
+       <link rel="stylesheet" href="../../shared/hty-ui.css">
+     </head>
+     <body>
+       <div class="hty">                       ← root scope (flex column)
+         <div class="hty-stage"> … canvas … </div>
+         <div class="hty-dock">  … controls … </div>
+       </div>
+       <script src="../../shared/hty-ui.js"></script>
+     </body>
+
+   Everything is scoped under `.hty`, so it will not touch a tool's existing
+   styles until that tool is migrated. Components auto-wire via hty-ui.js.
+   No drop-shadows anywhere — depth comes from hairlines and tone only.
+   ════════════════════════════════════════════════════════════════════════ */
+
+.hty {
+  /* — Surface — */
+  --bg:     #e6e6e3;          /* stage */
+  --bg-2:   #dcdcd8;
+  --dock:   #f4f4f2;          /* dock — one uniform tone */
+  --field:  #ffffff;          /* input wells */
+  --ink:    #0c0c0c;          /* primary text / fills / accent */
+  --ink-2:  #6c6c69;          /* secondary */
+  --ink-3:  #a6a6a1;          /* micro-labels */
+  --line:   rgba(0,0,0,0.07); /* hairline */
+  --line-2: rgba(0,0,0,0.12);
+  --track:  rgba(0,0,0,0.12);
+  --soft:   rgba(0,0,0,0.04); /* tonal fill / hover */
+  --soft-2: rgba(0,0,0,0.065);
+  /* — Geometry — */
+  --r-lg: 16px; --r-md: 11px; --r-sm: 8px; --r-pill: 999px;
+  --m: 14px;   /* floating-dock margin */
+  /* — Type — */
+  --sans: -apple-system,"SF Pro Display","Inter","Helvetica Neue",BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono: "SF Mono",ui-monospace,"JetBrains Mono","Menlo",monospace;
+  /* — Motion — */
+  --ease: cubic-bezier(.22,1,.36,1);
+
+  margin: 0; height: 100vh; overflow: hidden;
+  display: flex; flex-direction: row;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,.045) 1px, transparent 0) 0 0/24px 24px,
+    linear-gradient(180deg, var(--bg), var(--bg-2));
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01","cv11","tnum";
+}
+.hty *, .hty *::before, .hty *::after { box-sizing: border-box; }
+
+/* primitives ─────────────────────────────────────────────────────────────── */
+.hty .lbl  { font-family: var(--mono); font-size: 9px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+.hty .num  { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.hty .name { font-size: 11.5px; font-weight: 500; color: var(--ink); }
+
+/* ── STAGE ──────────────────────────────────────────────────────────────── */
+.hty-stage {
+  flex: 1; min-height: 0; min-width: 0; position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent;   /* unified dot-grid backdrop lives on .hty */
+}
+/* pannable / zoomable canvas layer — wrap tool content in .hty-canvas to get
+   native pan (Pan tool / Space-drag / middle-drag), wheel-zoom, and the zoom HUD.
+   Mark movable objects inside it with [data-draggable] (moved by the Select tool). */
+.hty-canvas { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; transform-origin: 0 0; will-change: transform; }
+/* the sized artboard (output dimensions). JS sets width/height from the size control. */
+.hty-frame { position: relative; flex-shrink: 0; width: 1080px; height: 1440px; background: #fff; border: 1px solid var(--line-2); }
+.hty-stage.grab { cursor: grab; }
+.hty-stage.grabbing { cursor: grabbing; }
+.hty [data-draggable] { cursor: grab; }
+.hty-stage.grab [data-draggable], .hty-stage.grabbing [data-draggable] { cursor: inherit; }
+.hty-brand { position: absolute; top: 22px; left: 26px; display: flex; flex-direction: column; gap: 3px; pointer-events: none; }
+.hty-brand .mark { font-size: 12px; font-weight: 500; letter-spacing: -.01em; color: var(--ink-2); }
+.hty-tele { position: absolute; top: 22px; right: 26px; display: flex; gap: 20px; align-items: center; pointer-events: none; }
+.hty-tele .read { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.hty-tele .read b { font-family: var(--mono); font-size: 11.5px; font-weight: 600; }
+.hty-live { width: 6px; height: 6px; border-radius: 50%; background: var(--ink); position: relative; }
+.hty-live::after { content:''; position:absolute; inset:-4px; border-radius:50%; border:1px solid var(--ink); opacity:.35; animation: hty-ping 2.4s ease-out infinite; }
+@keyframes hty-ping { 0%{transform:scale(.6);opacity:.5} 100%{transform:scale(1.6);opacity:0} }
+
+/* ── DOCK ───────────────────────────────────────────────────────────────── */
+/* ── DOCK → left vertical sidebar ────────────────────────────────────────── */
+.hty-dock { position: relative; order: -1; flex-shrink: 0; width: var(--side-w, 312px); margin: var(--m); background: var(--dock); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; display: flex; flex-direction: column; transition: margin-left .32s var(--ease); }
+.hty.collapsed .hty-dock { margin-left: calc(-1 * (var(--side-w, 312px) + var(--m))); }
+/* drag-to-resize grip on the sidebar's right edge (auto-injected by hty-ui.js) */
+.hty-resize { position: absolute; top: 0; bottom: 0; right: 0; width: 10px; cursor: col-resize; z-index: 20; }
+.hty-resize::after { content: ''; position: absolute; top: 50%; right: 3px; width: 3px; height: 34px; transform: translateY(-50%); border-radius: 2px; background: var(--line-2); opacity: 0; transition: opacity .15s; }
+.hty-resize:hover::after, .hty-dock.resizing .hty-resize::after { opacity: 1; }
+/* collapse (in-panel) + reveal (floating, when collapsed) — both auto-injected */
+.hty-collapse { position: absolute; top: 8px; right: 9px; z-index: 6; width: 28px; height: 28px; border-radius: var(--r-sm); border: none; background: transparent; color: var(--ink-3); display: grid; place-items: center; cursor: pointer; transition: background .15s, color .15s; }
+.hty-collapse:hover { background: var(--soft); color: var(--ink); }
+.hty-collapse svg { width: 15px; height: 15px; }
+.hty-reveal { position: fixed; top: 14px; left: 14px; z-index: 30; width: 36px; height: 36px; border-radius: var(--r-md); border: 1px solid var(--line-2); background: var(--dock); color: var(--ink); display: none; place-items: center; cursor: pointer; }
+.hty-reveal:hover { background: var(--soft); }
+.hty.collapsed .hty-reveal { display: grid; }
+.hty-reveal svg { width: 16px; height: 16px; }
+
+/* top rail : section tabs + view controls */
+.hty-rail { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; min-height: 46px; padding: 9px 44px 9px 10px; border-bottom: 1px solid var(--line); }
+.hty .tab { display: flex; align-items: center; gap: 7px; height: 28px; padding: 0 12px; border: none; background: transparent; cursor: pointer; border-radius: var(--r-sm); font-family: var(--sans); font-size: 12px; font-weight: 600; color: var(--ink-2); transition: color .15s, background .15s; }
+.hty .tab svg { width: 14px; height: 14px; }
+.hty .tab:hover { background: var(--soft); color: var(--ink); }
+.hty .tab.active { background: var(--ink); color: #fff; }
+.hty-rail .sp { flex: 1; }
+.hty-rail-sep { width: 1px; height: 18px; background: var(--line-2); margin: 0 7px; }
+
+.hty .vbtn { width: 28px; height: 28px; border-radius: var(--r-sm); border: none; background: transparent; cursor: pointer; color: var(--ink-2); display: grid; place-items: center; transition: color .15s, background .15s; }
+.hty .vbtn:hover { background: var(--soft); color: var(--ink); }
+.hty .vbtn svg { width: 15px; height: 15px; }
+.hty-zoom { display: flex; align-items: center; gap: 6px; }
+.hty-zoom b { font-family: var(--mono); font-size: 11px; font-weight: 600; min-width: 34px; text-align: center; }
+.hty .kbd { font-family: var(--mono); font-size: 9px; color: var(--ink-3); border: 1px solid var(--line-2); border-radius: 4px; padding: 1px 5px; }
+
+/* expandable panel — in flow: grows dock, shrinks stage (never overlaps) */
+.hty-panel { flex: 1; min-height: 0; overflow-y: auto; }   /* always-open, scrolls */
+.hty-panel-inner { padding: 16px 14px; }
+/* 1 column when narrow; flows to 2+ as the sidebar is dragged wider */
+.hty .panel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(216px, 1fr)); gap: 26px 20px; align-content: start; }
+.hty [data-case] { display: contents; }   /* groups inside a case flow straight into the grid */
+.hty .group { display: flex; flex-direction: column; gap: 11px; }
+.hty .group-h { display: flex; align-items: center; gap: 6px; margin-bottom: 1px; }
+.hty .group-h svg { width: 12px; height: 12px; color: var(--ink-3); }
+.hty .field { display: flex; flex-direction: column; gap: 7px; }
+.hty .field-head { display: flex; justify-content: space-between; align-items: baseline; }
+.hty .field-head .val { font-size: 10.5px; color: var(--ink-2); }
+
+/* main row : brand + tool rail + key controls + actions */
+.hty-main { display: flex; flex-direction: column; align-items: stretch; gap: 11px; padding: 12px; border-top: 1px solid var(--line); }
+.hty-main .sp { display: none; }
+.hty-main-sep { display: none; }
+.hty [data-expand] { display: none; }   /* expand chevron is irrelevant in the sidebar */
+.hty-chip { display: flex; flex-direction: column; gap: 2px; }
+.hty-chip .nm { font-size: 13px; font-weight: 500; letter-spacing: -.01em; }
+.hty-tools { display: flex; gap: 3px; }
+.hty .tbtn { width: 38px; height: 38px; border-radius: var(--r-md); border: none; background: transparent; cursor: pointer; color: var(--ink-2); display: grid; place-items: center; transition: color .14s, background .14s; }
+.hty .tbtn svg { width: 18px; height: 18px; }
+.hty .tbtn:hover { background: var(--soft); color: var(--ink); }
+.hty .tbtn.active { background: var(--ink); color: #fff; }
+.hty-quicks { display: flex; flex-direction: column; gap: 11px; }
+.hty .quick { display: flex; flex-direction: column; gap: 6px; width: auto; }
+.hty .quick .qh { display: flex; justify-content: space-between; align-items: baseline; }
+.hty .quick .qh .qn { font-size: 11px; font-weight: 500; }
+.hty .quick .qh .qv { font-size: 10px; color: var(--ink-2); }
+
+/* ════════════════════════════ COMPONENTS ════════════════════════════════ */
+
+/* ── range slider : thin precise fader (no bubble, no shadow) ───────────── */
+.hty input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; cursor: pointer; outline: none; }
+.hty input[type=range]::-webkit-slider-runnable-track { height: 2px; border-radius: 1px; background: linear-gradient(var(--ink),var(--ink)) 0/var(--fill,40%) 100% no-repeat, var(--track); }
+.hty input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; margin-top: -8px; width: 3px; height: 18px; border-radius: 1.5px; background: var(--ink); border: none; transition: height .12s, margin-top .12s; }
+.hty input[type=range]:hover::-webkit-slider-thumb { height: 20px; margin-top: -9px; }
+.hty input[type=range]::-moz-range-track { height: 2px; border-radius: 1px; background: var(--track); }
+.hty input[type=range]::-moz-range-progress { height: 2px; border-radius: 1px; background: var(--ink); }
+.hty input[type=range]::-moz-range-thumb { width: 3px; height: 18px; border: none; border-radius: 1.5px; background: var(--ink); }
+
+/* ── segmented control ──────────────────────────────────────────────────── */
+.hty .seg { display: inline-flex; background: var(--soft); border-radius: var(--r-pill); padding: 3px; gap: 2px; }
+.hty .seg button { border: none; background: transparent; cursor: pointer; font-family: var(--sans); font-size: 11.5px; font-weight: 600; color: var(--ink-2); padding: 6px 13px; border-radius: var(--r-pill); transition: color .18s, background .18s; }
+.hty .seg button.active { background: var(--ink); color: #fff; }
+/* full-width segmented — buttons share the column evenly (avoids overflow) */
+.hty .seg.fill { display: flex; width: 100%; }
+.hty .seg.fill button { flex: 1; text-align: center; padding-left: 4px; padding-right: 4px; }
+
+/* ── option chips (radio) ───────────────────────────────────────────────── */
+.hty .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.hty .chip { border: 1px solid var(--line-2); background: transparent; cursor: pointer; font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--ink-2); padding: 5px 11px; border-radius: var(--r-pill); transition: all .15s; }
+.hty .chip:hover { border-color: var(--ink); color: var(--ink); }
+.hty .chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+/* ── inputs : borderless tonal wells, hairline only on focus ────────────── */
+.hty input[type=text], .hty input[type=number] {
+  width: 100%; font-family: var(--mono); font-size: 12px; color: var(--ink);
+  background: var(--field); border: 1px solid transparent; border-radius: var(--r-md);
+  padding: 9px 11px; outline: none; -moz-appearance: textfield; transition: border-color .15s;
+}
+.hty input[type=text]:focus, .hty input[type=number]:focus { border-color: var(--ink); }
+.hty input::-webkit-inner-spin-button, .hty input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.hty .stepper { display: flex; background: var(--field); border-radius: var(--r-md); overflow: hidden; }
+.hty .stepper button { width: 34px; border: none; background: transparent; cursor: pointer; font-size: 15px; color: var(--ink-2); transition: color .15s, background .15s; }
+.hty .stepper button:hover { background: var(--soft); color: var(--ink); }
+.hty .stepper input { flex: 1; border: none; text-align: center; border-radius: 0; background: transparent; }
+.hty .stepper .vs { width: 1px; background: var(--line); }
+
+/* ── transform fields (X / Y / Scale / Rotate) ──────────────────────────── */
+/*  bind to the selected canvas object via [data-transform] + [data-tf="…"]  */
+.hty .tf-row { display: flex; gap: 8px; }
+.hty .tf { flex: 1; display: flex; align-items: center; gap: 7px; background: var(--field); border: 1px solid transparent; border-radius: var(--r-md); padding: 0 10px; transition: border-color .15s; }
+.hty .tf:focus-within { border-color: var(--ink); }
+.hty .tf > .g { font-family: var(--mono); font-size: 10px; color: var(--ink-3); width: 9px; text-align: center; flex-shrink: 0; }
+.hty .tf > i { font-family: var(--mono); font-size: 10px; color: var(--ink-3); font-style: normal; flex-shrink: 0; }
+.hty .tf input, .hty .tf input:focus { flex: 1; width: 100%; border: none; background: transparent; padding: 8px 0; border-radius: 0; }
+/* scrub field : drag left/right to adjust, double-click to type (Figma/AE-style) */
+.hty input[data-scrub] { cursor: ew-resize; -webkit-user-select: none; user-select: none; }
+.hty input[data-scrub]:not([readonly]) { cursor: text; -webkit-user-select: text; user-select: text; }
+.hty .note { font-size: 10.5px; color: var(--ink-2); line-height: 1.5; }
+.hty [data-draggable].hty-selected { outline: 1.5px solid var(--ink); outline-offset: 3px; }
+
+/* ── native <select> : styled to match (keeps a tool's existing JS wiring) ── */
+.hty select {
+  width: 100%; font-family: var(--sans); font-size: 12.5px; font-weight: 500; color: var(--ink);
+  background: var(--field); border: 1px solid transparent; border-radius: var(--r-md);
+  padding: 9px 30px 9px 11px; cursor: pointer; outline: none; appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.4' fill='none'/></svg>");
+  background-repeat: no-repeat; background-position: right 11px center; transition: border-color .15s;
+}
+.hty select:focus { border-color: var(--ink); }
+
+/* ── custom dropdown : Apple-style popover (opens upward out of the dock) ── */
+.hty .hty-select { position: relative; }
+.hty .hty-select-btn {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-family: var(--sans); font-size: 12px; font-weight: 500; color: var(--ink);
+  background: var(--field); border: 1px solid transparent; border-radius: var(--r-md);
+  padding: 9px 11px; cursor: pointer; outline: none; text-align: left; transition: border-color .15s;
+}
+.hty .hty-select.open .hty-select-btn { border-color: var(--ink); }
+.hty .hty-select-chev { width: 11px; height: 11px; flex-shrink: 0; color: var(--ink-2); transition: transform .25s var(--ease); }
+.hty .hty-select.open .hty-select-chev { transform: rotate(180deg); }
+/* position:fixed so the popover escapes the panel's overflow clip; JS sets coords */
+.hty .hty-select-menu {
+  position: fixed; z-index: 1000;
+  background: var(--field); border: 1px solid var(--line-2); border-radius: var(--r-md);
+  padding: 5px; display: flex; flex-direction: column; gap: 1px; overflow-y: auto;
+  opacity: 0; transform: translateY(6px) scale(.98); transform-origin: bottom center;
+  pointer-events: none; transition: opacity .18s var(--ease), transform .22s var(--ease);
+}
+.hty .hty-select.open .hty-select-menu { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.hty .hty-opt {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  border: none; background: transparent; cursor: pointer; text-align: left;
+  font-family: var(--sans); font-size: 12px; font-weight: 500; color: var(--ink);
+  padding: 8px 9px; border-radius: var(--r-sm); transition: background .12s;
+}
+.hty .hty-opt:hover { background: var(--soft); }
+.hty .hty-opt.is-selected { font-weight: 600; }
+.hty .hty-opt .ck { width: 13px; height: 13px; opacity: 0; flex-shrink: 0; }
+.hty .hty-opt.is-selected .ck { opacity: 1; }
+
+/* ── buttons ────────────────────────────────────────────────────────────── */
+.hty .btn { font-family: var(--sans); font-size: 12.5px; font-weight: 600; cursor: pointer; border: none; border-radius: var(--r-pill); padding: 9px 17px; transition: background .15s, color .15s, border-color .15s; background: var(--ink); color: #fff; white-space: nowrap; display: inline-flex; align-items: center; gap: 7px; }
+.hty .btn svg { width: 15px; height: 15px; }
+.hty .btn:hover { background: #2a2a2a; }
+.hty .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line-2); }
+.hty .btn.ghost:hover { background: var(--soft); border-color: var(--ink); }
+.hty .btn.sm { padding: 7px 13px; font-size: 11.5px; }
+.hty .btn-row { display: flex; gap: 8px; }
+.hty .btn-row .btn { flex: 1; justify-content: center; }
+.hty .icon-btn { width: 38px; height: 38px; flex-shrink: 0; border-radius: var(--r-md); border: 1px solid var(--line-2); background: transparent; cursor: pointer; display: grid; place-items: center; color: var(--ink); transition: background .15s, color .15s, border-color .15s; }
+.hty .icon-btn:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+.hty .icon-btn svg { width: 17px; height: 17px; }
+
+/* ── toggle switch ──────────────────────────────────────────────────────── */
+.hty .switch { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.hty .track-sw { position: relative; width: 36px; height: 20px; border-radius: var(--r-pill); background: var(--track); cursor: pointer; transition: background .2s; flex-shrink: 0; }
+.hty .track-sw::after { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:transform .22s var(--ease); }
+.hty .track-sw.on { background: var(--ink); }
+.hty .track-sw.on::after { transform: translateX(16px); }
+
+/* ── checkbox ───────────────────────────────────────────────────────────── */
+.hty .check { display: flex; align-items: center; gap: 9px; cursor: pointer; font-size: 11.5px; }
+.hty .check .box { width: 17px; height: 17px; border-radius: 5px; border: 1.5px solid var(--line-2); display: grid; place-items: center; transition: all .15s; }
+.hty .check.on .box { background: var(--ink); border-color: var(--ink); }
+.hty .check .box svg { width: 11px; height: 11px; stroke: #fff; stroke-width: 2.6; fill: none; opacity: 0; }
+.hty .check.on .box svg { opacity: 1; }
+
+/* ── colour + palette ───────────────────────────────────────────────────── */
+.hty input[type=color] { -webkit-appearance: none; appearance: none; border: none; padding: 0; width: 100%; height: 32px; border-radius: var(--r-md); cursor: pointer; background: transparent; }
+.hty input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+.hty input[type=color]::-webkit-color-swatch { border: 1px solid var(--line-2); border-radius: var(--r-md); }
+.hty .palette { display: flex; flex-wrap: wrap; gap: 6px; }
+.hty .swatch { position: relative; width: 30px; height: 30px; border-radius: var(--r-sm); border: 1px solid var(--line-2); cursor: pointer; }
+.hty .swatch .x { position:absolute; top:-5px; right:-5px; width:15px; height:15px; background:var(--ink); color:#fff; border-radius:50%; font-size:9px; line-height:15px; text-align:center; opacity:0; transition:opacity .15s; }
+.hty .swatch:hover .x { opacity: 1; }
+.hty .add-swatch { width: 30px; height: 30px; border-radius: var(--r-sm); border: 1px dashed var(--line-2); background: transparent; color: var(--ink-3); font-size: 16px; cursor: pointer; display: grid; place-items: center; transition: all .15s; }
+.hty .add-swatch:hover { border-color: var(--ink); color: var(--ink); }
+
+/* ── status pill ────────────────────────────────────────────────────────── */
+.hty .pill { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .04em; padding: 4px 9px; border-radius: var(--r-pill); background: var(--soft); color: var(--ink-2); }
+.hty .pill .d { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-2); }
+.hty .pill.ok { background: var(--ink); color: #fff; } .hty .pill.ok .d { background: #fff; }
+.hty .pill.warn .d { background: #000; opacity: .4; }
+
+/* ── meter ──────────────────────────────────────────────────────────────── */
+.hty .meter { height: 4px; border-radius: var(--r-pill); background: var(--track); overflow: hidden; }
+.hty .meter > i { display: block; height: 100%; background: var(--ink); }
+
+/* ── XY pad ─────────────────────────────────────────────────────────────── */
+.hty .xypad { position: relative; width: 100%; aspect-ratio: 1; max-width: 140px; border: 1px solid var(--line-2); border-radius: var(--r-md); cursor: crosshair; touch-action: none; background: linear-gradient(var(--line) 1px,transparent 1px) 0 0/100% 25%, linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/25% 100%, var(--field); }
+.hty .xypad .pt { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: var(--ink); transform: translate(-50%,-50%); pointer-events: none; }
+.hty .xypad .ch-h, .hty .xypad .ch-v { position: absolute; background: var(--line-2); pointer-events: none; }
+.hty .xypad .ch-h { left: 0; right: 0; height: 1px; transform: translateY(-50%); }
+.hty .xypad .ch-v { top: 0; bottom: 0; width: 1px; transform: translateX(-50%); }
+
+/* ── EQ bands ───────────────────────────────────────────────────────────── */
+.hty .eq { display: flex; gap: 11px; height: 138px; }
+.hty .eq .band { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.hty .eq .cap { position: relative; flex: 1; width: 24px; border-radius: var(--r-pill); border: 1px solid var(--line-2); background: var(--field); cursor: ns-resize; touch-action: none; }
+.hty .eq .cap .dot { position: absolute; left: 50%; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); transform: translate(-50%,-50%); }
+.hty .eq .band .hz { font-family: var(--mono); font-size: 8.5px; color: var(--ink-3); }
+
+/* ── scrollbars ─────────────────────────────────────────────────────────── */
+/* hidden scrollbars — still scrollable */
+.hty ::-webkit-scrollbar { width: 0; height: 0; }
+.hty-panel, .hty-body, .hty-select-menu { scrollbar-width: none; -ms-overflow-style: none; }
+
+@media (max-width: 760px) {
+  .hty-quicks { display: none; }
+  .hty-tele .read:first-child { display: none; }
+}
