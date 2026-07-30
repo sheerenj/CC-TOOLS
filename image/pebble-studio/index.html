@@ -153,6 +153,7 @@
               <button data-case-btn="stack">Stack</button>
               <button data-case-btn="skim">Skim</button>
               <button data-case-btn="cluster">Cluster</button>
+              <button data-case-btn="strand">Strand</button>
             </div>
             <div class="field" style="margin-top:8px"><span class="name">Seed — every render is a new throw</span>
               <div class="seed-row">
@@ -266,6 +267,40 @@
               <p class="note">Each cluster is a separate specialism: it grows on its own, but only the whole field makes the picture.</p>
             </div>
           </div><!-- /cluster -->
+
+          <!-- ============ STRAND ============ -->
+          <div data-case="strand" style="display:none">
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 2v20M17 2v20"/><ellipse cx="7" cy="7" rx="3" ry="2.2"/><ellipse cx="7" cy="16" rx="2.2" ry="1.6"/><ellipse cx="17" cy="11" rx="2.8" ry="2"/></svg><span class="lbl">Strung</span></div>
+              <div class="field"><div class="field-head"><span class="name">Strand spacing</span><span class="val"><span class="num" id="v-sr-col">40</span> px</span></div><input type="range" id="sl-sr-col" min="6" max="200" value="40" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Pitch</span><span class="val"><span class="num" id="v-sr-pit">30</span> px</span></div><input type="range" id="sl-sr-pit" min="4" max="160" value="30" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Drift</span><span class="val"><span class="num" id="v-sr-jit">1.5</span> px</span></div><input type="range" id="sl-sr-jit" min="0" max="30" value="1.5" step="0.5" /></div>
+              <div class="field"><div class="field-head"><span class="name">Stagger</span><span class="val num" id="v-sr-stag">0.00</span></div><input type="range" id="sl-sr-stag" min="0" max="1" value="0" step="0.01" /></div>
+              <p class="note">The only behaviour with a grid in it — but the stones still land off-centre, so the strand reads strung by hand, not printed.</p>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20L20 4M14 4h6v6"/></svg><span class="lbl">Tone drives the bead</span></div>
+              <div class="field"><div class="field-head"><span class="name">Stone threshold</span><span class="val num" id="v-sr-thr">0.52</span></div><input type="range" id="sl-sr-thr" min="0" max="0.95" value="0.52" step="0.01" /></div>
+              <div class="field"><div class="field-head"><span class="name">Min Ø</span><span class="val"><span class="num" id="v-sr-min">10</span> px</span></div><input type="range" id="sl-sr-min" min="1" max="60" value="10" step="0.5" /></div>
+              <div class="field"><div class="field-head"><span class="name">Max Ø</span><span class="val"><span class="num" id="v-sr-max">60</span> px</span></div><input type="range" id="sl-sr-max" min="4" max="200" value="60" step="1" /></div>
+              <div class="switch"><span class="name">Long stones in the mid-tones</span><div class="tog-sw on" id="tog-sr-long"></div></div>
+              <div class="field"><div class="field-head"><span class="name">Long stone squeeze</span><span class="val num" id="v-sr-sq">0.34</span></div><input type="range" id="sl-sr-sq" min="0.08" max="1" value="0.34" step="0.01" /></div>
+              <div class="switch"><span class="name">Grit in the shadows</span><div class="tog-sw on" id="tog-sr-grit"></div></div>
+              <p class="note">Bright tone strings a full stone; mid-tone stretches it along the strand; shadow leaves only grit.</p>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2v20"/><ellipse cx="12" cy="12" rx="4" ry="3"/></svg><span class="lbl">Accents &amp; thread</span></div>
+              <div class="switch"><span class="name">Accent stone</span><div class="tog-sw on" id="tog-sr-acc"></div></div>
+              <div class="field"><div class="field-head"><span class="name">Every nth slot</span><span class="val num" id="v-sr-accn">5</span></div><input type="range" id="sl-sr-accn" min="2" max="40" value="5" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Accent Ø</span><span class="val"><span class="num" id="v-sr-accsz">16</span> px</span></div><input type="range" id="sl-sr-accsz" min="2" max="120" value="16" step="1" /></div>
+              <p class="note">The accent takes the Accent colour from the palette group. It is a different stone, not a marked one.</p>
+              <div class="switch"><span class="name">Thread</span><div class="tog-sw" id="tog-sr-thread"></div></div>
+              <div class="field"><div class="field-head"><span class="name">Thread weight</span><span class="val"><span class="num" id="v-sr-tw">3</span> px</span></div><input type="range" id="sl-sr-tw" min="0.5" max="20" value="3" step="0.5" /></div>
+              <div class="color-row"><span class="color-label">Thread</span><div class="color-swatch" id="sw-sr-line" style="background:#7a736a"><input type="color" class="native-picker" id="cp-sr-line" value="#7a736a" /></div><input type="text" class="color-hex" id="hex-sr-line" value="#7a736a" maxlength="7" /></div>
+            </div>
+          </div><!-- /strand -->
 
           <!-- shared: palette -->
           <div class="group">
@@ -631,7 +666,7 @@ function setupColor(swId,hexId,cpId){
   cp.addEventListener('input', ()=>{ hx.value=cp.value; sw.style.background=cp.value; scheduleRender(); });
   hx.addEventListener('input', ()=>{ let v=hx.value.trim(); if(!v.startsWith('#'))v='#'+v; if(isHex(v)){ sw.style.background=v; cp.value=v; scheduleRender(); } });
 }
-['bg','accent','contour','sk-line'].forEach(k=>setupColor('sw-'+k,'hex-'+k,'cp-'+k));
+['bg','accent','contour','sk-line','sr-line'].forEach(k=>setupColor('sw-'+k,'hex-'+k,'cp-'+k));
 
 function currentMode(){ const a=document.querySelector('[data-switch] [data-case-btn].active'); return a?a.dataset.caseBtn:'scatter'; }
 
@@ -858,6 +893,69 @@ function buildCluster(scene,sample,dna,rnd,resp){
   scene.stones=stones.length;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   BEHAVIOUR 5 · STRAND — stones strung down parallel lines. the one ordered
+   behaviour: tone decides whether a slot gets a whole stone, a stretched one,
+   an accent, or only grit. the thread itself is optional.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function buildStrand(scene,sample,dna,rnd,resp){
+  const colW=g('sl-sr-col'), pitch=g('sl-sr-pit');
+  const jit=g('sl-sr-jit')*dna.chaos, stag=g('sl-sr-stag');
+  const thr=g('sl-sr-thr'), rmin=g('sl-sr-min')/2, rmax=g('sl-sr-max')/2;
+  const longOn=on('tog-sr-long'), squeeze=g('sl-sr-sq'), gritOn=on('tog-sr-grit');
+  const accOn=on('tog-sr-acc'), accEvery=Math.round(g('sl-sr-accn')), accR=g('sl-sr-accsz')/2;
+  const threadOn=on('tog-sr-thread'), tw=g('sl-sr-tw'), threadC=gv('hex-sr-line');
+  const accC=gv('hex-accent');
+  const colour=makeColourer(rnd);
+  const threads=[], stones=[];
+  const nCols=Math.max(1,Math.ceil(exportW/colW));
+  // stones lie across the strand, tilted a little — never a rank of clones
+  const tilt=()=>(rnd()-0.5)*Math.PI*0.30*dna.rotSp;
+  let count=0;
+
+  for(let ci=0;ci<nCols;ci++){
+    const cx=ci*colW+colW/2;
+    if(threadOn && tw>0) threads.push({ t:'path', pts:[[cx,0],[cx,exportH]], stroke:threadC, sw:tw, a:1 });
+
+    const off=stag>0 ? (rnd()-0.5)*pitch*stag : 0;
+    let i=0;
+    for(let y=pitch/2+off; y<exportH; y+=pitch, i++){
+      const s=sample(cx,y); if(s.out) continue;
+      const t=resp(s.lum);
+      const x=cx+(rnd()-0.5)*jit*2, py=y+(rnd()-0.5)*jit*2;
+      const isAcc = accOn && accEvery>0 && ((i+ci)%accEvery===0);
+      const asp=dna.asp*(1+(rnd()-0.5)*2*dna.aspVar);
+      const before=stones.length;
+
+      if(t>=thr){
+        // whole stone — size climbs with tone
+        const r=(rmin+((t-thr)/Math.max(1e-3,1-thr))*(rmax-rmin))*(1+(rnd()-0.5)*2*dna.sizeVar);
+        if(r<0.6) continue;
+        emitPebble(stones,dna,x,py,r,r*asp,tilt(),colour(s,t),rnd);
+      } else if(isAcc){
+        const r=accR*(0.6+0.4*t)*(1+(rnd()-0.5)*2*dna.sizeVar);
+        if(r<0.6) continue;
+        emitPebble(stones,dna,x,py,r,r*asp,tilt(),accC,rnd);
+      } else if(longOn && t>=thr*0.42){
+        // stretched along the strand — same pebble, squeezed, standing upright
+        const h=Math.max(rmin*0.5, pitch*0.5*(0.35+0.6*t));
+        const w=Math.max(0.6, h*squeeze);
+        emitPebble(stones,dna,x,py,w,h,tilt()*0.5,colour(s,t),rnd);
+      } else if(gritOn && t>0.05){
+        const r=Math.max(0.8, rmin*0.30+t*3);
+        emitPebble(stones,dna,x,py,r,r*asp,tilt(),colour(s,t),rnd);
+      } else continue;
+
+      // emitPebble drops anything too small to be a stone — only count what landed
+      if(stones.length>before) count++;
+      if(count>32000) break;
+    }
+    if(count>32000) break;
+  }
+  scene.items.push(...threads,...stones);
+  scene.stones=count;
+}
+
 /* ── backends ─────────────────────────────────────────────────────────────── */
 // closed smooth outline: quadratic curves through the midpoints of the hull
 function traceClosed(pts){
@@ -955,11 +1053,12 @@ function buildScene(){
   const sample=makeSampler();
   const resp=v=>Math.pow(clamp(dna.tinv?1-v:v,0,1),dna.tgam);
   const mode=currentMode();
-  const salt={scatter:0x9e37,stack:0x51ed,skim:0x27d4,cluster:0x6a09}[mode]||1;
+  const salt={scatter:0x9e37,stack:0x51ed,skim:0x27d4,cluster:0x6a09,strand:0x3c6e}[mode]||1;
   const rnd=makeRnd((currentSeed()*2654435761)^salt);
   if(mode==='scatter')      buildScatter(scene,sample,dna,rnd,resp);
   else if(mode==='stack')   buildStack(scene,sample,dna,rnd,resp);
   else if(mode==='skim')    buildSkim(scene,sample,dna,rnd,resp);
+  else if(mode==='strand')  buildStrand(scene,sample,dna,rnd,resp);
   else                      buildCluster(scene,sample,dna,rnd,resp);
   return scene;
 }
@@ -987,6 +1086,9 @@ const SL={
   'sl-sk-ripw':['v-sk-ripw',f1],'sl-sk-tw':['v-sk-tw',f1],
   'sl-cl-seeds':['v-cl-seeds',i0],'sl-cl-grow':['v-cl-grow',i0],'sl-cl-spread':['v-cl-spread',i0],
   'sl-cl-min':['v-cl-min',f1],'sl-cl-max':['v-cl-max',i0],'sl-cl-thr':['v-cl-thr',fx2],'sl-cl-contact':['v-cl-contact',fx2],
+  'sl-sr-col':['v-sr-col',i0],'sl-sr-pit':['v-sr-pit',i0],'sl-sr-jit':['v-sr-jit',f1],'sl-sr-stag':['v-sr-stag',fx2],
+  'sl-sr-thr':['v-sr-thr',fx2],'sl-sr-min':['v-sr-min',f1],'sl-sr-max':['v-sr-max',i0],'sl-sr-sq':['v-sr-sq',fx2],
+  'sl-sr-accn':['v-sr-accn',i0],'sl-sr-accsz':['v-sr-accsz',i0],'sl-sr-tw':['v-sr-tw',f1],
   'sl-pal-extract':['v-pal-extract',i0],'sl-accent':['v-accent',f3],
   'sl-tgam':['v-tgam',fx2],
   'sl-asp':['v-asp',fx2],'sl-aspvar':['v-aspvar',fx2],'sl-rotsp':['v-rotsp',fx2],'sl-sizevar':['v-sizevar',fx2],
@@ -999,7 +1101,8 @@ Object.entries(SL).forEach(([sid,[vid,fmt]])=>{
   const el=$(sid), vEl=$(vid); if(!el||!vEl) return; vEl.textContent=fmt(el.value);
   el.addEventListener('input', ()=>{ vEl.textContent=fmt(el.value); if(NEEDS_REPROCESS.has(sid)&&img) processImage(); scheduleRender(); });
 });
-['tog-tinv','tog-speck','tog-contour','tog-sk-rip','tog-sk-trail','tog-cl-percol','tog-cl-taper'].forEach(id=>{
+['tog-tinv','tog-speck','tog-contour','tog-sk-rip','tog-sk-trail','tog-cl-percol','tog-cl-taper',
+ 'tog-sr-long','tog-sr-grit','tog-sr-acc','tog-sr-thread'].forEach(id=>{
   $(id).addEventListener('click', function(){ this.classList.toggle('on'); scheduleRender(); });
 });
 ['seg-scat-tone','seg-scat-order','seg-st-style'].forEach(id=>{
