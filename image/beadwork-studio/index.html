@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Handpicked Identity Exploration Tool 1.0</title>
+<link rel="stylesheet" href="../../shared/hty-brand.css" />
+<style>
+/* tool-specific bits not covered by the design system (scoped under .hty) */
+.hty #canvas-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 18px; }
+.hty #c { display: block; max-width: 100%; max-height: 100%; }
+.hty #empty-state { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; pointer-events: none; }
+.hty #empty-state.hidden { display: none; }
+.hty .empty-strand { display: flex; gap: 14px; margin-bottom: 12px; opacity: .16; }
+.hty .empty-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.hty .empty-bead { width: 14px; height: 14px; border-radius: 50%; background: var(--ink); }
+.hty .empty-bead.sm { width: 7px; height: 7px; }
+.hty .empty-text { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+.hty .upload-zone { border: 1.5px dashed var(--line-2); border-radius: var(--r-md); padding: 18px 14px; text-align: center; cursor: pointer; transition: all .15s; color: var(--ink-2); font-size: 12px; line-height: 1.7; display: block; }
+.hty .upload-zone:hover, .hty .upload-zone.drag { border-color: var(--accent); color: var(--accent); }
+.hty .upload-zone input { display: none; }
+.hty #img-name { font-size: 11px; color: var(--ink-2); font-family: var(--mono); text-align: center; min-height: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hty .color-row { display: flex; align-items: center; gap: 8px; }
+.hty .color-label { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: -.02em; font-size: .6875rem; color: var(--text-muted); flex: 1; }
+.hty .color-swatch { width: 30px; height: 30px; border-radius: var(--r-sm); border: 1px solid var(--line-2); flex-shrink: 0; cursor: pointer; position: relative; overflow: hidden; }
+.hty .native-picker { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); opacity: 0; cursor: pointer; border: none; padding: 0; }
+.hty .color-row .color-hex { flex: 1; min-width: 0; }
+.hty .tog-sw { position: relative; width: 38px; height: 22px; background: var(--surface-input); border-radius: 99px; clip-path: inset(0 round 99px); cursor: pointer; transition: background .2s; flex-shrink: 0; }
+.hty .tog-sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: var(--text-subtle); border-radius: 50%; transition: transform .2s, background .2s; }
+.hty .tog-sw.on { background: var(--accent); }
+.hty .tog-sw.on::after { transform: translateX(16px); background: var(--accent-fg); }
+.hty .btn.full { width: 100%; justify-content: center; }
+.hty .btn:disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
+.hty .custom-res-wrap { margin-top: 8px; display: none; }
+.hty .custom-res-wrap.visible { display: block; }
+.hty .custom-res-row { display: flex; gap: 6px; align-items: center; }
+.hty .custom-res-row input { flex: 1; min-width: 0; }
+.hty .custom-res-sep { font-size: 11px; color: var(--ink-3); flex-shrink: 0; }
+.hty .pal-row { display: flex; align-items: center; gap: 7px; }
+.hty .pal-row .color-swatch { width: 26px; height: 26px; }
+.hty .pal-row .color-hex { flex: 1; min-width: 0; }
+.hty .pal-row .rowbtn { width: 26px; height: 26px; flex-shrink: 0; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: transparent; color: var(--ink-3); cursor: pointer; display: grid; place-items: center; font-size: 12px; transition: all .15s; }
+.hty .pal-row .rowbtn:hover { border-color: var(--accent); color: var(--accent); }
+.hty .pal-row .rowbtn.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.hty .pal-row .rowbtn svg { width: 13px; height: 13px; }
+.hty .add-pal { width: 100%; border: 1px dashed var(--line-2); background: transparent; color: var(--ink-2); font-size: 11.5px; font-weight: 500; padding: 8px; border-radius: var(--r-md); cursor: pointer; transition: all .15s; }
+.hty .add-pal:hover { border-color: var(--accent); color: var(--accent); }
+.hty .note { font-size: 10.5px; color: var(--ink-2); line-height: 1.5; }
+.hty .preset-row { display: flex; gap: 6px; flex-wrap: wrap; }
+</style>
+</head>
+<body class="hty">
+
+  <!-- ═══ STAGE ═══ -->
+  <div class="hty-stage">
+    <div id="canvas-wrap">
+      <canvas id="c"></canvas>
+      <div id="empty-state">
+        <div class="empty-strand">
+          <div class="empty-col"><span class="empty-bead sm"></span><span class="empty-bead"></span><span class="empty-bead"></span><span class="empty-bead sm"></span></div>
+          <div class="empty-col"><span class="empty-bead"></span><span class="empty-bead sm"></span><span class="empty-bead"></span><span class="empty-bead"></span></div>
+          <div class="empty-col"><span class="empty-bead sm"></span><span class="empty-bead"></span><span class="empty-bead sm"></span><span class="empty-bead"></span></div>
+        </div>
+        <div class="empty-text">Drop an image to begin</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DOCK ═══ -->
+  <div class="hty-dock">
+
+    <div class="hty-rail">
+      <button class="tab active" data-tab="source"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5L5 20"/></svg>Source</button>
+      <button class="tab" data-tab="style"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/></svg>Style</button>
+      <button class="tab" data-tab="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Export</button>
+    </div>
+
+    <div class="hty-panel">
+      <div class="hty-panel-inner">
+
+        <!-- ── SOURCE ── -->
+        <div class="panel-grid" data-tab-panel="source">
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5L5 20"/></svg><span class="lbl">Image</span></div>
+            <label class="upload-zone" id="upload-zone"><input type="file" id="file-input" accept="image/*" />Drop image here<br>or click to upload</label>
+            <div id="img-name"></div>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg><span class="lbl">Canvas</span></div>
+            <div class="field"><span class="name">Artboard size</span>
+              <select id="sel-res" style="display:none">
+                <option value="auto">Match image</option>
+                <option value="1080x1080">1080 × 1080 · Square</option>
+                <option value="1080x1350">1080 × 1350 · Portrait</option>
+                <option value="1080x1920">1080 × 1920 · Story</option>
+                <option value="1920x1080">1920 × 1080 · Landscape</option>
+                <option value="1440x1440">1440 × 1440</option>
+                <option value="custom">Custom…</option>
+              </select>
+              <div class="hty-select" data-native="sel-res">
+                <button class="hty-select-btn"><span class="hty-select-val">Match image</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+                <div class="hty-select-menu" role="listbox">
+                  <button class="hty-opt" data-value="auto">Match image</button>
+                  <button class="hty-opt" data-value="1080x1080">1080 × 1080 · Square</button>
+                  <button class="hty-opt" data-value="1080x1350">1080 × 1350 · Portrait</button>
+                  <button class="hty-opt" data-value="1080x1920">1080 × 1920 · Story</button>
+                  <button class="hty-opt" data-value="1920x1080">1920 × 1080 · Landscape</button>
+                  <button class="hty-opt" data-value="1440x1440">1440 × 1440</button>
+                  <button class="hty-opt" data-value="custom">Custom…</button>
+                </div>
+              </div>
+              <div class="custom-res-wrap" id="custom-res-wrap">
+                <div class="custom-res-row">
+                  <input type="number" id="inp-cw" value="1080" min="64" max="8000" placeholder="Width" />
+                  <span class="custom-res-sep">×</span>
+                  <input type="number" id="inp-ch" value="1350" min="64" max="8000" placeholder="Height" />
+                </div>
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn ghost sm" id="btn-fit">Fit</button>
+              <button class="btn ghost sm" id="btn-fill">Fill</button>
+              <button class="btn ghost sm" id="btn-center">Center</button>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Position X</span><span class="val"><span class="num" id="v-px">0</span> px</span></div><input type="range" id="sl-px" min="-3000" max="3000" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Position Y</span><span class="val"><span class="num" id="v-py">0</span> px</span></div><input type="range" id="sl-py" min="-3000" max="3000" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Scale</span><span class="val"><span class="num" id="v-sc">100</span>%</span></div><input type="range" id="sl-sc" min="5" max="600" value="100" step="1" /></div>
+            <p class="note">Drag on the canvas to move · scroll to zoom the image.</p>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg><span class="lbl">Adjust</span></div>
+            <div class="field"><div class="field-head"><span class="name">Brightness</span><span class="val num" id="v-br">0</span></div><input type="range" id="sl-br" min="-100" max="100" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Contrast</span><span class="val"><span class="num" id="v-co">1.00</span>×</span></div><input type="range" id="sl-co" min="0.1" max="3" value="1" step="0.05" /></div>
+            <div class="field"><div class="field-head"><span class="name">Gamma</span><span class="val num" id="v-ga">1.00</span></div><input type="range" id="sl-ga" min="0.2" max="3" value="1" step="0.05" /></div>
+            <div class="field"><div class="field-head"><span class="name">Saturation</span><span class="val"><span class="num" id="v-sa">1.00</span>×</span></div><input type="range" id="sl-sa" min="0" max="2" value="1" step="0.05" /></div>
+            <div class="field"><div class="field-head"><span class="name">Pre-blur</span><span class="val"><span class="num" id="v-bl">0</span> px</span></div><input type="range" id="sl-bl" min="0" max="12" value="0" step="0.5" /></div>
+          </div>
+        </div><!-- /source -->
+
+        <!-- ── STYLE ── -->
+        <div class="panel-grid" data-tab-panel="style" style="display:none">
+
+          <div class="group" style="grid-column:1/-1">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/></svg><span class="lbl">Mode</span></div>
+            <div class="seg fill" data-switch>
+              <button data-case-btn="beads" class="active">Strung Beads</button>
+              <button data-case-btn="blocks">Loom Mosaic</button>
+              <button data-case-btn="sampler">Sampler</button>
+              <button data-case-btn="warp">Warp Weave</button>
+            </div>
+          </div>
+
+          <!-- ============ BEADS CASE ============ -->
+          <div data-case="beads">
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 3v18M15 3v18"/></svg><span class="lbl">Strand grid</span></div>
+              <div class="field"><div class="field-head"><span class="name">Column spacing</span><span class="val"><span class="num" id="v-bd-col">40</span> px</span></div><input type="range" id="sl-bd-col" min="12" max="140" value="40" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Bead pitch</span><span class="val"><span class="num" id="v-bd-pit">30</span> px</span></div><input type="range" id="sl-bd-pit" min="10" max="120" value="30" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Position jitter</span><span class="val"><span class="num" id="v-bd-jit">1.5</span> px</span></div><input type="range" id="sl-bd-jit" min="0" max="16" value="1.5" step="0.5" /></div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/></svg><span class="lbl">Big beads</span></div>
+              <div class="field"><div class="field-head"><span class="name">Threshold</span><span class="val num" id="v-bd-thr">0.52</span></div><input type="range" id="sl-bd-thr" min="0" max="0.95" value="0.52" step="0.01" /></div>
+              <div class="field"><div class="field-head"><span class="name">Max Ø</span><span class="val"><span class="num" id="v-bd-max">30</span> px</span></div><input type="range" id="sl-bd-max" min="4" max="110" value="30" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Min Ø</span><span class="val"><span class="num" id="v-bd-min">5</span> px</span></div><input type="range" id="sl-bd-min" min="1" max="40" value="5" step="0.5" /></div>
+              <div class="field"><div class="field-head"><span class="name">Size curve (γ)</span><span class="val num" id="v-bd-gam">1.00</span></div><input type="range" id="sl-bd-gam" min="0.3" max="3" value="1" step="0.05" /></div>
+              <div class="switch"><span class="name">Invert (dark = big)</span><div class="tog-sw" id="tog-bd-inv"></div></div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><rect x="9" y="8" width="6" height="8" rx="3"/></svg><span class="lbl">Thread &amp; capsules</span></div>
+              <div class="switch"><span class="name">Draw thread</span><div class="tog-sw on" id="tog-bd-thread"></div></div>
+              <div class="field"><div class="field-head"><span class="name">Thread width</span><span class="val"><span class="num" id="v-bd-tw">3</span> px</span></div><input type="range" id="sl-bd-tw" min="0.5" max="16" value="3" step="0.5" /></div>
+              <div class="switch"><span class="name">Capsule beads (mid-tone)</span><div class="tog-sw on" id="tog-bd-cap"></div></div>
+              <div class="field"><div class="field-head"><span class="name">Capsule width</span><span class="val"><span class="num" id="v-bd-capw">12</span> px</span></div><input type="range" id="sl-bd-capw" min="3" max="40" value="12" step="0.5" /></div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="6"/><path d="M6 12h12"/></svg><span class="lbl">Charm beads</span></div>
+              <div class="switch"><span class="name">Enable ⊖ charms</span><div class="tog-sw on" id="tog-bd-acc"></div></div>
+              <div class="field"><div class="field-head"><span class="name">Every</span><span class="val"><span class="num" id="v-bd-accn">5</span> beads</span></div><input type="range" id="sl-bd-accn" min="2" max="24" value="5" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Charm size</span><span class="val"><span class="num" id="v-bd-accsz">8</span> px</span></div><input type="range" id="sl-bd-accsz" min="2" max="30" value="8" step="0.5" /></div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg><span class="lbl">Colour</span></div>
+              <button class="btn ghost full" id="btn-bd-extract" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6M3 3v6M21 21h-6M21 21v-6M14 10l7-7M10 14l-7 7"/></svg>Extract from image</button>
+              <div class="field"><span class="name">Bead colour</span>
+                <div class="seg fill" id="seg-bd-colmode">
+                  <button data-val="solid" class="active">Solid</button>
+                  <button data-val="image">From image</button>
+                </div>
+              </div>
+              <div id="bd-img-pal" style="display:none">
+                <div class="field"><div class="field-head"><span class="name">Posterize</span><span class="val num" id="v-bd-poster">6</span></div><input type="range" id="sl-bd-poster" min="2" max="16" value="6" step="1" /></div>
+                <button class="btn ghost full" id="btn-bdp-extract" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6M3 3v6M21 21h-6M21 21v-6M14 10l7-7M10 14l-7 7"/></svg>Re-extract from image</button>
+                <div id="bd-palette"></div>
+                <button class="add-pal" id="add-bd-pal">+ Add colour</button>
+                <p class="note">Extracted from the image — edit, add or remove swatches; beads snap to the nearest.</p>
+              </div>
+              <div class="color-row" id="bd-bead-row"><span class="color-label">Bead</span><div class="color-swatch" id="sw-bd-bead" style="background:#d8f24f"><input type="color" class="native-picker" id="cp-bd-bead" value="#d8f24f" /></div><input type="text" class="color-hex" id="hex-bd-bead" value="#d8f24f" maxlength="7" /></div>
+              <div class="color-row"><span class="color-label">Thread / capsule</span><div class="color-swatch" id="sw-bd-thread" style="background:#f3ecd9"><input type="color" class="native-picker" id="cp-bd-thread" value="#f3ecd9" /></div><input type="text" class="color-hex" id="hex-bd-thread" value="#f3ecd9" maxlength="7" /></div>
+              <div class="color-row"><span class="color-label">Charm</span><div class="color-swatch" id="sw-bd-acc" style="background:#e8743b"><input type="color" class="native-picker" id="cp-bd-acc" value="#e8743b" /></div><input type="text" class="color-hex" id="hex-bd-acc" value="#e8743b" maxlength="7" /></div>
+              <div class="color-row"><span class="color-label">Background</span><div class="color-swatch" id="sw-bd-bg" style="background:#2b2622"><input type="color" class="native-picker" id="cp-bd-bg" value="#2b2622" /></div><input type="text" class="color-hex" id="hex-bd-bg" value="#2b2622" maxlength="7" /></div>
+            </div>
+          </div><!-- /beads case -->
+
+          <!-- ============ BLOCKS CASE ============ -->
+          <div data-case="blocks" style="display:none">
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg><span class="lbl">Grid</span></div>
+              <div class="field"><div class="field-head"><span class="name">Column width</span><span class="val"><span class="num" id="v-bk-col">15</span> px</span></div><input type="range" id="sl-bk-col" min="4" max="70" value="15" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Cell height</span><span class="val"><span class="num" id="v-bk-row">15</span> px</span></div><input type="range" id="sl-bk-row" min="4" max="70" value="15" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Gap</span><span class="val"><span class="num" id="v-bk-gap">2</span> px</span></div><input type="range" id="sl-bk-gap" min="0" max="16" value="2" step="0.5" /></div>
+              <div class="field"><div class="field-head"><span class="name">Corner radius</span><span class="val"><span class="num" id="v-bk-rad">4</span> px</span></div><input type="range" id="sl-bk-rad" min="0" max="24" value="4" step="0.5" /></div>
+              <div class="field"><div class="field-head"><span class="name">Shadow floor</span><span class="val num" id="v-bk-floor">0.12</span></div><input type="range" id="sl-bk-floor" min="0" max="0.6" value="0.12" step="0.01" /></div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20L20 4M14 4h6v6"/></svg><span class="lbl">Colour mapping</span></div>
+              <div class="field"><span class="name">Match</span>
+                <select id="sel-bk-map" style="display:none">
+                  <option value="ramp">Luminance ramp</option>
+                  <option value="nearest">Nearest colour</option>
+                </select>
+                <div class="hty-select" data-native="sel-bk-map">
+                  <button class="hty-select-btn"><span class="hty-select-val">Luminance ramp</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+                  <div class="hty-select-menu" role="listbox">
+                    <button class="hty-opt" data-value="ramp">Luminance ramp</button>
+                    <button class="hty-opt" data-value="nearest">Nearest colour</button>
+                  </div>
+                </div>
+              </div>
+              <p class="note">Ramp maps dark→light onto the palette by list order (top = shadows, bottom = highlights) — editing a swatch just repaints its band. Nearest picks the closest palette colour to each cell.</p>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg><span class="lbl">Palette</span></div>
+              <div class="field"><div class="field-head"><span class="name">Extract colours</span><span class="val num" id="v-bk-extract">6</span></div><input type="range" id="sl-bk-extract" min="2" max="16" value="6" step="1" /></div>
+              <button class="btn ghost full" id="btn-extract" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6M3 3v6M21 21h-6M21 21v-6M14 10l7-7M10 14l-7 7"/></svg>Extract from image</button>
+              <div id="blk-palette"></div>
+              <button class="add-pal" id="add-pal">+ Add colour</button>
+              <div class="color-row" style="margin-top:4px"><span class="color-label">Background</span><div class="color-swatch" id="sw-bk-bg" style="background:#000000"><input type="color" class="native-picker" id="cp-bk-bg" value="#000000" /></div><input type="text" class="color-hex" id="hex-bk-bg" value="#000000" maxlength="7" /></div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="1"/><circle cx="12" cy="7" r="1"/><circle cx="17" cy="7" r="1"/><circle cx="7" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="17" cy="12" r="1"/><circle cx="7" cy="17" r="1"/><circle cx="12" cy="17" r="1"/><circle cx="17" cy="17" r="1"/></svg><span class="lbl">Halftone accent</span></div>
+              <div class="switch"><span class="name">Halftone on flagged colours</span><div class="tog-sw on" id="tog-bk-tex"></div></div>
+              <div class="field"><div class="field-head"><span class="name">Dot scale</span><span class="val"><span class="num" id="v-bk-dot">4</span> px</span></div><input type="range" id="sl-bk-dot" min="2" max="16" value="4" step="0.5" /></div>
+              <p class="note">Toggle the ▦ on any palette colour to give it a halftone dot fill (the cream squares).</p>
+            </div>
+          </div><!-- /blocks case -->
+
+          <!-- ============ SAMPLER CASE ============ -->
+          <div data-case="sampler" style="display:none">
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg><span class="lbl">Grid</span></div>
+              <div class="field"><div class="field-head"><span class="name">Cell size</span><span class="val"><span class="num" id="v-sm-cell">18</span> px</span></div><input type="range" id="sl-sm-cell" min="5" max="60" value="18" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Gap</span><span class="val"><span class="num" id="v-sm-gap">1</span> px</span></div><input type="range" id="sl-sm-gap" min="0" max="12" value="1" step="0.5" /></div>
+              <div class="field"><div class="field-head"><span class="name">Shadow floor</span><span class="val num" id="v-sm-floor">0.1</span></div><input type="range" id="sl-sm-floor" min="0" max="0.6" value="0.1" step="0.01" /></div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2 5h5l-4 3 1.5 5.5L12 18l-4.5 3.5L9 11 5 8h5z"/></svg><span class="lbl">Stitches</span></div>
+              <div class="chips" id="sm-shapes">
+                <button class="chip active" data-shape="solid">Solid</button>
+                <button class="chip active" data-shape="dot">Dots</button>
+                <button class="chip active" data-shape="ring">Rings</button>
+                <button class="chip active" data-shape="cross">Plus</button>
+                <button class="chip active" data-shape="ex">X</button>
+                <button class="chip active" data-shape="mesh">Mesh</button>
+                <button class="chip active" data-shape="vline">V-lines</button>
+                <button class="chip active" data-shape="hline">H-lines</button>
+                <button class="chip active" data-shape="halftone">Halftone</button>
+                <button class="chip" data-shape="outline">Outline</button>
+                <button class="chip" data-shape="square">Sm. square</button>
+              </div>
+              <div class="field" style="margin-top:4px"><div class="field-head"><span class="name">Detail scale</span><span class="val"><span class="num" id="v-sm-scale">1.00</span>×</span></div><input type="range" id="sl-sm-scale" min="0.4" max="2.2" value="1" step="0.05" /></div>
+              <div class="field"><span class="name">Assign stitch by</span>
+                <div class="seg fill" id="seg-sm-assign">
+                  <button data-val="random" class="active">Random</button>
+                  <button data-val="lum">Luminance</button>
+                </div>
+              </div>
+              <button class="btn ghost full" id="btn-sm-shuffle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>Shuffle stitches</button>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20L20 4M14 4h6v6"/></svg><span class="lbl">Colour mapping</span></div>
+              <div class="field"><span class="name">Match</span>
+                <select id="sel-sm-map" style="display:none">
+                  <option value="ramp">Luminance ramp</option>
+                  <option value="nearest">Nearest colour</option>
+                </select>
+                <div class="hty-select" data-native="sel-sm-map">
+                  <button class="hty-select-btn"><span class="hty-select-val">Luminance ramp</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+                  <div class="hty-select-menu" role="listbox">
+                    <button class="hty-opt" data-value="ramp">Luminance ramp</button>
+                    <button class="hty-opt" data-value="nearest">Nearest colour</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg><span class="lbl">Palette</span></div>
+              <div class="field"><div class="field-head"><span class="name">Extract colours</span><span class="val num" id="v-sm-extract">8</span></div><input type="range" id="sl-sm-extract" min="2" max="16" value="8" step="1" /></div>
+              <button class="btn ghost full" id="btn-sm-extract" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6M3 3v6M21 21h-6M21 21v-6M14 10l7-7M10 14l-7 7"/></svg>Extract from image</button>
+              <div id="sm-palette"></div>
+              <button class="add-pal" id="add-sm-pal">+ Add colour</button>
+              <div class="color-row" style="margin-top:4px"><span class="color-label">Background</span><div class="color-swatch" id="sw-sm-bg" style="background:#101010"><input type="color" class="native-picker" id="cp-sm-bg" value="#101010" /></div><input type="text" class="color-hex" id="hex-sm-bg" value="#101010" maxlength="7" /></div>
+            </div>
+          </div><!-- /sampler case -->
+
+          <!-- ============ WARP WEAVE CASE ============ -->
+          <div data-case="warp" style="display:none">
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 3v18M12 3v18M18 3v18"/></svg><span class="lbl">Ribs</span></div>
+              <div class="field"><div class="field-head"><span class="name">Rib width</span><span class="val"><span class="num" id="v-ww-col">22</span> px</span></div><input type="range" id="sl-ww-col" min="4" max="80" value="22" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Warp gap</span><span class="val"><span class="num" id="v-ww-wgap">3</span> px</span></div><input type="range" id="sl-ww-wgap" min="0" max="16" value="3" step="0.5" /></div>
+              <div class="field"><div class="field-head"><span class="name">Segment height</span><span class="val"><span class="num" id="v-ww-row">20</span> px</span></div><input type="range" id="sl-ww-row" min="4" max="80" value="20" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Segment gap</span><span class="val"><span class="num" id="v-ww-sgap">2</span> px</span></div><input type="range" id="sl-ww-sgap" min="0" max="16" value="2" step="0.5" /></div>
+              <div class="field"><div class="field-head"><span class="name">Shadow floor</span><span class="val num" id="v-ww-floor">0.1</span></div><input type="range" id="sl-ww-floor" min="0" max="0.6" value="0.1" step="0.01" /></div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="3" width="8" height="18" rx="4"/></svg><span class="lbl">Shape</span></div>
+              <div class="field"><div class="field-head"><span class="name">Roundness</span><span class="val num" id="v-ww-round">0.45</span></div><input type="range" id="sl-ww-round" min="0" max="1" value="0.45" step="0.01" /></div>
+              <div class="field"><div class="field-head"><span class="name">Blend / bleed</span><span class="val num" id="v-ww-blend">0.30</span></div><input type="range" id="sl-ww-blend" min="0" max="1" value="0.3" step="0.01" /></div>
+              <div class="field"><div class="field-head"><span class="name">Stagger</span><span class="val num" id="v-ww-stagger">0.35</span></div><input type="range" id="sl-ww-stagger" min="0" max="1" value="0.35" step="0.01" /></div>
+              <p class="note">Roundness morphs ribs → pills → ovals. Blend softens colour boundaries. Stagger offsets each rib so segments don't align in a grid.</p>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h20M2 16h20M6 3v18M12 3v18M18 3v18"/></svg><span class="lbl">Analog · glow &amp; weave</span></div>
+              <div class="field"><div class="field-head"><span class="name">Bloom / glow</span><span class="val"><span class="num" id="v-ww-glow">6</span> px</span></div><input type="range" id="sl-ww-glow" min="0" max="30" value="6" step="0.5" /></div>
+              <div class="switch"><span class="name">Weft threads (horizontal)</span><div class="tog-sw on" id="tog-ww-weft"></div></div>
+              <div class="field"><div class="field-head"><span class="name">Weft every</span><span class="val"><span class="num" id="v-ww-weftev">4</span> rows</span></div><input type="range" id="sl-ww-weftev" min="2" max="20" value="4" step="1" /></div>
+              <div class="field"><div class="field-head"><span class="name">Weft thickness</span><span class="val"><span class="num" id="v-ww-weftw">7</span> px</span></div><input type="range" id="sl-ww-weftw" min="1" max="24" value="7" step="0.5" /></div>
+              <div class="color-row"><span class="color-label">Weft</span><div class="color-swatch" id="sw-ww-weft" style="background:#ff3ea5"><input type="color" class="native-picker" id="cp-ww-weft" value="#ff3ea5" /></div><input type="text" class="color-hex" id="hex-ww-weft" value="#ff3ea5" maxlength="7" /></div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20L20 4M14 4h6v6"/></svg><span class="lbl">Colour mapping</span></div>
+              <div class="field"><span class="name">Match</span>
+                <select id="sel-ww-map" style="display:none">
+                  <option value="ramp">Luminance ramp</option>
+                  <option value="nearest">Nearest colour</option>
+                </select>
+                <div class="hty-select" data-native="sel-ww-map">
+                  <button class="hty-select-btn"><span class="hty-select-val">Nearest colour</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+                  <div class="hty-select-menu" role="listbox">
+                    <button class="hty-opt" data-value="ramp">Luminance ramp</button>
+                    <button class="hty-opt" data-value="nearest">Nearest colour</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="group">
+              <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg><span class="lbl">Palette</span></div>
+              <div class="field"><div class="field-head"><span class="name">Extract colours</span><span class="val num" id="v-ww-extract">7</span></div><input type="range" id="sl-ww-extract" min="2" max="16" value="7" step="1" /></div>
+              <button class="btn ghost full" id="btn-ww-extract" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6M3 3v6M21 21h-6M21 21v-6M14 10l7-7M10 14l-7 7"/></svg>Extract from image</button>
+              <div id="ww-palette"></div>
+              <button class="add-pal" id="add-ww-pal">+ Add colour</button>
+              <div class="color-row" style="margin-top:4px"><span class="color-label">Background</span><div class="color-swatch" id="sw-ww-bg" style="background:#d8d8d8"><input type="color" class="native-picker" id="cp-ww-bg" value="#d8d8d8" /></div><input type="text" class="color-hex" id="hex-ww-bg" value="#d8d8d8" maxlength="7" /></div>
+            </div>
+          </div><!-- /warp case -->
+
+          <!-- shared: finish + analog (apply to both modes) -->
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 8a5 5 0 0 1 4-2" stroke-linecap="round"/></svg><span class="lbl">Finish</span></div>
+            <div class="field"><div class="field-head"><span class="name">Rim highlight</span><span class="val num" id="v-rim">0.35</span></div><input type="range" id="sl-rim" min="0" max="1" value="0.35" step="0.01" /></div>
+          </div>
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7c3-3 5 3 8 0s5 3 8 0M4 12c3-3 5 3 8 0s5 3 8 0M4 17c3-3 5 3 8 0s5 3 8 0"/></svg><span class="lbl">Analog texture</span></div>
+            <div class="field"><div class="field-head"><span class="name">Edge roughness</span><span class="val"><span class="num" id="v-rough">1.8</span> px</span></div><input type="range" id="sl-rough" min="0" max="8" value="1.8" step="0.1" /></div>
+            <div class="field"><div class="field-head"><span class="name">Grain</span><span class="val num" id="v-grain">0.14</span></div><input type="range" id="sl-grain" min="0" max="0.5" value="0.14" step="0.01" /></div>
+          </div>
+
+        </div><!-- /style -->
+
+        <!-- ── EXPORT ── -->
+        <div class="panel-grid" data-tab-panel="export" style="display:none">
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg><span class="lbl">Files</span></div>
+            <button class="btn full" id="btn-png" disabled>↓ Export PNG</button>
+            <button class="btn ghost full" id="btn-png-alpha" disabled>↓ PNG + α (no background)</button>
+          </div>
+        </div><!-- /export -->
+
+      </div>
+    </div>
+
+    <div class="hty-main">
+      <div class="hty-chip"><div class="nm">Handpicked Identity</div><div class="lbl">Exploration Tool · 1.0</div></div>
+      <div class="preset-row">
+        <button class="chip active" data-preset="figma-beads">Figma · Green</button>
+        <button class="chip" data-preset="figma-mosaic">Figma · Warm</button>
+        <button class="chip" data-preset="figma-sampler">Sampler</button>
+        <button class="chip" data-preset="warp-neon">Warp · Neon</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="../../shared/hty-ui.js"></script>
+  <script>
+(function () {
+'use strict';
+
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const wrap   = document.getElementById('canvas-wrap');
+const empty  = document.getElementById('empty-state');
+
+let exportW = 1600, exportH = 1200;
+let img = null, imgW = 0, imgH = 0, imgDataURL = null;
+let adjustedData = null;
+let exportBg = true;
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const g  = id => parseFloat($(id).value);
+const gv = id => $(id).value;
+const on = id => $(id).classList.contains('on');
+const isHex = h => /^#[0-9a-fA-F]{6}$/.test(h);
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+
+function hexToRgb(h){ h=h.replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+function rgbToHex(r,g,b){ const c=v=>Math.round(clamp(v,0,255)).toString(16).padStart(2,'0'); return '#'+c(r)+c(g)+c(b); }
+function relLum(r,g,b){ return (0.299*r+0.587*g+0.114*b)/255; }
+function shade(hex, amt){ // amt: -1 dark .. +1 light
+  let [r,g,b]=hexToRgb(hex);
+  if(amt>=0){ r+=(255-r)*amt; g+=(255-g)*amt; b+=(255-b)*amt; }
+  else { const k=1+amt; r*=k; g*=k; b*=k; }
+  return rgbToHex(r,g,b);
+}
+
+// ── display sizing ─────────────────────────────────────────────────────────────
+function resizeDisplay(){
+  const r = wrap.getBoundingClientRect();
+  const availW = r.width - 32, availH = r.height - 32;
+  const aspect = exportW / exportH;
+  let cw = availW, ch = availW / aspect;
+  if (ch > availH){ ch = availH; cw = availH * aspect; }
+  canvas.style.width  = Math.round(cw) + 'px';
+  canvas.style.height = Math.round(ch) + 'px';
+}
+new ResizeObserver(resizeDisplay).observe(wrap);
+
+// ── image processing ───────────────────────────────────────────────────────────
+function processImage(){
+  if(!img) return;
+  const brightness=g('sl-br')/100, contrast=g('sl-co'), gamma=g('sl-ga'), sat=g('sl-sa'), blur=g('sl-bl');
+  const oc=document.createElement('canvas'); oc.width=imgW; oc.height=imgH;
+  const ox=oc.getContext('2d');
+  if(blur>0) ox.filter=`blur(${blur}px)`;
+  ox.drawImage(img,0,0,imgW,imgH);
+  const id=ox.getImageData(0,0,imgW,imgH), d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    let r=d[i]/255, gr=d[i+1]/255, b=d[i+2]/255;
+    if(gamma!==1){ r=r**(1/gamma); gr=gr**(1/gamma); b=b**(1/gamma); }
+    r+=brightness; gr+=brightness; b+=brightness;
+    r=(r-.5)*contrast+.5; gr=(gr-.5)*contrast+.5; b=(b-.5)*contrast+.5;
+    if(sat!==1){ const l=0.299*r+0.587*gr+0.114*b; r=l+(r-l)*sat; gr=l+(gr-l)*sat; b=l+(b-l)*sat; }
+    d[i]=clamp(r*255,0,255); d[i+1]=clamp(gr*255,0,255); d[i+2]=clamp(b*255,0,255);
+  }
+  adjustedData=id;
+}
+
+// ── sampler ────────────────────────────────────────────────────────────────────
+function makeSampler(){
+  const panX=exportW/2+g('sl-px'), panY=exportH/2+g('sl-py'), scale=g('sl-sc')/100;
+  const D=adjustedData?adjustedData.data:null;
+  return function(sx,sy){
+    if(!D) return {lum:1,r:255,g:255,b:255};
+    const ix=Math.round((sx-panX)/scale+imgW/2), iy=Math.round((sy-panY)/scale+imgH/2);
+    if(ix<0||iy<0||ix>=imgW||iy>=imgH) return {lum:0,r:0,g:0,b:0,out:true};
+    const k=(iy*imgW+ix)*4;
+    return { lum: relLum(D[k],D[k+1],D[k+2]), r:D[k], g:D[k+1], b:D[k+2] };
+  };
+}
+
+// ── seeded PRNG (deterministic per render) ─────────────────────────────────────
+function makeRnd(seed){ let s=seed>>>0||1; return ()=>{ s^=s<<13; s^=s>>>17; s^=s<<5; return (s>>>0)/0xffffffff; }; }
+
+// ── palette (blocks) ────────────────────────────────────────────────────────────
+const palWrap=$('blk-palette');       // mosaic palette (with halftone flags)
+const bdPalWrap=$('bd-palette');      // bead "from image" palette (editable, no flags)
+const TEX_ICON='<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="6" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="12" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>';
+// a palette remembers when you've hand-edited it, so no slider silently re-extracts over your picks
+function palEdited(c){ return !!(c && c.dataset.edited); }
+function updatePalLock(c){
+  let n=c.querySelector(':scope > .pal-lock');
+  if(palEdited(c)){ if(!n){ n=document.createElement('p'); n.className='note pal-lock'; n.textContent='Hand-edited — the count slider no longer rebuilds this. Hit extract to start over from the image.'; } c.appendChild(n); }  // re-append keeps the note under the rows
+  else if(n) n.remove();
+}
+function markPalEdited(c){ if(!c) return; c.dataset.edited='1'; updatePalLock(c); }
+function makePalRow(hex,tex,opts){
+  opts=opts||{};
+  const row=document.createElement('div'); row.className='pal-row';
+  row.innerHTML=
+    `<div class="color-swatch" style="background:${hex}"><input type="color" class="native-picker" value="${hex}" /></div>`+
+    `<input type="text" class="color-hex" value="${hex}" maxlength="7" />`+
+    (opts.noTex?'':`<button class="rowbtn tex${tex?' on':''}" title="Halftone texture">${TEX_ICON}</button>`)+
+    `<button class="rowbtn del" title="Remove">×</button>`;
+  const sw=row.querySelector('.color-swatch'), cp=row.querySelector('.native-picker'), hx=row.querySelector('.color-hex');
+  const touch=()=>markPalEdited(row.parentElement);
+  cp.addEventListener('input', ()=>{ hx.value=cp.value; sw.style.background=cp.value; touch(); scheduleRender(); });
+  hx.addEventListener('input', ()=>{ let v=hx.value.trim(); if(!v.startsWith('#'))v='#'+v; if(isHex(v)){ sw.style.background=v; cp.value=v; touch(); scheduleRender(); } });
+  const tb=row.querySelector('.tex'); if(tb) tb.addEventListener('click', function(){ this.classList.toggle('on'); touch(); scheduleRender(); });
+  row.querySelector('.del').addEventListener('click', ()=>{ const par=row.parentElement; if(par && par.querySelectorAll('.pal-row').length>1){ markPalEdited(par); row.remove(); scheduleRender(); } });
+  return row;
+}
+// rebuilding from the image always clears the hand-edited flag
+function fillPalette(container,list,noTex){ container.innerHTML=''; list.forEach(c=>container.appendChild(makePalRow(c.hex,c.tex,{noTex}))); delete container.dataset.edited; }
+function readPaletteFrom(container){
+  return [...container.querySelectorAll('.pal-row')].map(r=>({
+    hex:r.querySelector('.color-hex').value.trim(),
+    tex:(r.querySelector('.tex')||{classList:{contains:()=>false}}).classList.contains('on')
+  })).filter(c=>isHex(c.hex));
+}
+function setPalette(list){ fillPalette(palWrap,list,false); }
+function readPalette(){ return readPaletteFrom(palWrap); }
+$('add-pal').addEventListener('click', ()=>{ palWrap.appendChild(makePalRow('#888888',false)); markPalEdited(palWrap); scheduleRender(); });
+$('add-bd-pal').addEventListener('click', ()=>{ bdPalWrap.appendChild(makePalRow('#888888',false,{noTex:true})); markPalEdited(bdPalWrap); scheduleRender(); });
+
+// ── posterize: extract dominant colours from the (adjusted) image (median cut) ─
+function quantizeImage(n){
+  if(!adjustedData) return [];
+  const D=adjustedData.data, total=D.length/4, stride=Math.max(1,Math.floor(total/16000));
+  let box=[];
+  for(let i=0;i<total;i+=stride){ const k=i*4; box.push([D[k],D[k+1],D[k+2]]); }
+  let boxes=[box];
+  while(boxes.length<n){
+    let bi=-1, brange=-1, bch=0;
+    for(let i=0;i<boxes.length;i++){ const b=boxes[i]; if(b.length<2) continue;
+      const mn=[255,255,255], mx=[0,0,0];
+      for(const p of b) for(let c=0;c<3;c++){ if(p[c]<mn[c])mn[c]=p[c]; if(p[c]>mx[c])mx[c]=p[c]; }
+      for(let c=0;c<3;c++){ const r=mx[c]-mn[c]; if(r>brange){ brange=r; bi=i; bch=c; } }
+    }
+    if(bi<0) break;
+    const b=boxes[bi]; b.sort((p,q)=>p[bch]-q[bch]); const mid=b.length>>1;
+    boxes.splice(bi,1,b.slice(0,mid),b.slice(mid));
+  }
+  const cols=boxes.filter(b=>b.length).map(b=>{ let r=0,g=0,bl=0; for(const p of b){ r+=p[0]; g+=p[1]; bl+=p[2]; } const L=b.length; return rgbToHex(r/L,g/L,bl/L); });
+  cols.sort((a,b)=>relLum(...hexToRgb(a))-relLum(...hexToRgb(b)));
+  return cols;
+}
+$('btn-extract').addEventListener('click', ()=>{
+  if(!adjustedData) return;
+  const cols=quantizeImage(Math.round(g('sl-bk-extract')));
+  if(cols.length){ setPalette(cols.map(h=>({hex:h,tex:false}))); scheduleRender(); }
+});
+// ── sampler palette (self-contained, editable) ────────────────────────────────
+const smPalWrap=$('sm-palette');
+function readSamplerPalette(){ return readPaletteFrom(smPalWrap); }
+function extractSamplerPalette(){
+  if(!adjustedData) return;
+  const cols=quantizeImage(Math.round(g('sl-sm-extract')));
+  if(cols.length) fillPalette(smPalWrap, cols.map(h=>({hex:h})), true);
+}
+$('add-sm-pal').addEventListener('click', ()=>{ smPalWrap.appendChild(makePalRow('#888888',false,{noTex:true})); markPalEdited(smPalWrap); scheduleRender(); });
+$('btn-sm-extract').addEventListener('click', ()=>{ extractSamplerPalette(); scheduleRender(); });
+$('sl-sm-extract').addEventListener('input', ()=>{ if(currentMode()==='sampler' && !palEdited(smPalWrap)){ extractSamplerPalette(); scheduleRender(); } });
+// ── warp-weave palette (self-contained, editable) ─────────────────────────────
+const wwPalWrap=$('ww-palette');
+function readWarpPalette(){ return readPaletteFrom(wwPalWrap); }
+function extractWarpPalette(){ if(!adjustedData) return; const cols=quantizeImage(Math.round(g('sl-ww-extract'))); if(cols.length) fillPalette(wwPalWrap, cols.map(h=>({hex:h})), true); }
+$('add-ww-pal').addEventListener('click', ()=>{ wwPalWrap.appendChild(makePalRow('#888888',false,{noTex:true})); markPalEdited(wwPalWrap); scheduleRender(); });
+$('btn-ww-extract').addEventListener('click', ()=>{ extractWarpPalette(); scheduleRender(); });
+$('sl-ww-extract').addEventListener('input', ()=>{ if(currentMode()==='warp' && !palEdited(wwPalWrap)){ extractWarpPalette(); scheduleRender(); } });
+// extract & assign bead-mode roles: darkest→bg, lightest→thread, most saturated→bead, next→charm
+function satOf(hex){ const [r,g,b]=hexToRgb(hex); const mx=Math.max(r,g,b),mn=Math.min(r,g,b); return mx?(mx-mn)/mx:0; }
+$('btn-bd-extract').addEventListener('click', ()=>{
+  if(!adjustedData) return;
+  const cols=quantizeImage(6); if(!cols.length) return;
+  const byLum=[...cols].sort((a,b)=>relLum(...hexToRgb(a))-relLum(...hexToRgb(b)));
+  const bg=byLum[0], thread=byLum[byLum.length-1];
+  const rest=cols.filter(c=>c!==bg&&c!==thread);
+  const bySat=(rest.length?rest:cols).slice().sort((a,b)=>satOf(b)-satOf(a));
+  const bead=bySat[0]||thread, charm=bySat[1]||bead;
+  setColor('bd-bead',bead); setColor('bd-thread',thread); setColor('bd-acc',charm); setColor('bd-bg',bg);
+  scheduleRender();
+});
+
+// ── single colour pickers ────────────────────────────────────────────────────
+function setupColor(swId,hexId,cpId){
+  const sw=$(swId),hx=$(hexId),cp=$(cpId);
+  cp.addEventListener('input', ()=>{ hx.value=cp.value; sw.style.background=cp.value; scheduleRender(); });
+  hx.addEventListener('input', ()=>{ let v=hx.value.trim(); if(!v.startsWith('#'))v='#'+v; if(isHex(v)){ sw.style.background=v; cp.value=v; scheduleRender(); } });
+}
+['bd-bead','bd-thread','bd-acc','bd-bg','bk-bg','sm-bg','ww-bg','ww-weft'].forEach(k=>setupColor('sw-'+k,'hex-'+k,'cp-'+k));
+
+// ── mode ────────────────────────────────────────────────────────────────────
+function currentMode(){ const a=document.querySelector('[data-switch] [data-case-btn].active'); return a?a.dataset.caseBtn:'beads'; }
+function beadColMode(){ const a=document.querySelector('#seg-bd-colmode button.active'); return a?a.dataset.val:'solid'; }
+// nearest-colour lookup over the EDITABLE bead palette (so extracted colours stay tweakable)
+function beadImgPalette(){
+  const list=readPaletteFrom(bdPalWrap); if(!list.length) return null;
+  const rgb=list.map(c=>hexToRgb(c.hex));
+  return { ok:true, nearest:(r,g,b)=>{ let bi=0,bd=Infinity; for(let i=0;i<rgb.length;i++){ const p=rgb[i], dr=r-p[0],dg=g-p[1],db=b-p[2], d=dr*dr+dg*dg+db*db; if(d<bd){bd=d;bi=i;} } return list[bi].hex; } };
+}
+function extractBeadImgPalette(){
+  if(!adjustedData) return;
+  const cols=quantizeImage(Math.round(g('sl-bd-poster')));
+  if(cols.length) fillPalette(bdPalWrap, cols.map(h=>({hex:h})), true);
+}
+$('btn-bdp-extract').addEventListener('click', ()=>{ extractBeadImgPalette(); scheduleRender(); });
+$('sl-bd-poster').addEventListener('input', ()=>{ if(beadColMode()==='image' && !palEdited(bdPalWrap)){ extractBeadImgPalette(); scheduleRender(); } });
+
+// ── shape helpers ───────────────────────────────────────────────────────────
+function roundRectPath(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+// torn / eroded vertical edges (analog feel)
+function roughRectPath(x,y,w,h,r,rough,rnd){
+  if(rough<=0){ roundRectPath(x,y,w,h,r); return; }
+  r=Math.min(r,w/2,h/2);
+  const inner=Math.max(1,h-2*r), seg=Math.max(2,Math.round(inner/6));
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  for(let i=1;i<seg;i++){ ctx.lineTo(x+w+(rnd()-0.5)*rough*2, y+r+inner*i/seg); }
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  for(let i=1;i<seg;i++){ ctx.lineTo(x+(rnd()-0.5)*rough*2, y+h-r-inner*i/seg); }
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+// ── flat bead primitives (no gradient; optional rim + torn edges) ─────────────
+function circlePath(cx,cy,r,rough,rnd){
+  if(!rough||rough<=0){ ctx.beginPath(); ctx.arc(cx,cy,r,0,6.2832); return; }
+  const seg=Math.max(12,Math.round(r*0.8));
+  ctx.beginPath();
+  for(let i=0;i<=seg;i++){ const a=i/seg*6.2832, rr=r+(rnd()-0.5)*rough*2, x=cx+Math.cos(a)*rr, y=cy+Math.sin(a)*rr; if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+  ctx.closePath();
+}
+function drawSphere(cx,cy,rad,color,rim,rough,rnd){
+  if(rad<0.5) return;
+  circlePath(cx,cy,rad,rough,rnd); ctx.fillStyle=color; ctx.fill();
+  if(rim>0){ ctx.lineWidth=Math.max(1,rad*0.13); ctx.strokeStyle=shade(color,0.55*rim); ctx.stroke(); }
+}
+function drawCapsule(cx,cy,w,h,color,rim,rough,rnd){
+  const x=cx-w/2,y=cy-h/2;
+  roughRectPath(x,y,w,h,w/2,rough||0,rnd); ctx.fillStyle=color; ctx.fill();
+  if(rim>0){ ctx.lineWidth=Math.max(1,w*0.11); ctx.strokeStyle=shade(color,0.55*rim); ctx.stroke(); }
+}
+function drawCharm(cx,cy,rad,color,rim,rough,rnd){
+  drawSphere(cx,cy,rad,color,rim,rough,rnd);
+  ctx.strokeStyle=shade(color,-0.55); ctx.lineWidth=Math.max(1.2,rad*0.30); ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(cx-rad*0.55,cy); ctx.lineTo(cx+rad*0.55,cy); ctx.stroke();
+}
+
+// ── grain overlay ─────────────────────────────────────────────────────────────
+let grainTile=null;
+function makeGrainTile(){
+  const n=140,c=document.createElement('canvas'); c.width=c.height=n; const x=c.getContext('2d');
+  const id=x.createImageData(n,n),d=id.data;
+  for(let i=0;i<d.length;i+=4){ const v=128+(Math.random()-0.5)*190; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255; }
+  x.putImageData(id,0,0); return c;
+}
+function applyGrain(amt){
+  if(amt<=0) return;
+  grainTile=grainTile||makeGrainTile();
+  ctx.save(); ctx.globalAlpha=clamp(amt,0,1); ctx.globalCompositeOperation='overlay';
+  ctx.fillStyle=ctx.createPattern(grainTile,'repeat'); ctx.fillRect(0,0,exportW,exportH); ctx.restore();
+}
+
+// ── BEADS renderer ─────────────────────────────────────────────────────────────
+function renderBeads(sample){
+  const W=exportW,H=exportH;
+  const colW=g('sl-bd-col'), pitch=g('sl-bd-pit'), jit=g('sl-bd-jit');
+  const thr=g('sl-bd-thr'), bmax=g('sl-bd-max'), bmin=g('sl-bd-min'), gam=g('sl-bd-gam'), inv=on('tog-bd-inv');
+  const thread=on('tog-bd-thread'), tw=g('sl-bd-tw'), capOn=on('tog-bd-cap'), capw=g('sl-bd-capw');
+  const accOn=on('tog-bd-acc'), accEvery=Math.round(g('sl-bd-accn')), accsz=g('sl-bd-accsz');
+  const rim=g('sl-rim'), rough=g('sl-rough'), grain=g('sl-grain');
+  const bead=gv('hex-bd-bead'), thcol=gv('hex-bd-thread'), charm=gv('hex-bd-acc');
+  const bpal = (beadColMode()==='image') ? beadImgPalette() : null;
+  const useImg = !!(bpal && bpal.ok);
+  const resp=v=>Math.pow(clamp(inv?1-v:v,0,1),gam);
+  const rnd=makeRnd(0x51ed270b);
+  const nCols=Math.ceil(W/colW);
+
+  // pass 1 — thin continuous thread behind everything
+  if(thread && tw>0){
+    ctx.strokeStyle=thcol; ctx.lineWidth=tw; ctx.lineCap='round';
+    for(let ci=0;ci<nCols;ci++){ const cx=ci*colW+colW/2; ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,H); ctx.stroke(); }
+  }
+  // pass 2 — strung elements
+  for(let ci=0;ci<nCols;ci++){
+    const cx=ci*colW+colW/2;
+    let i=0;
+    for(let y=pitch/2; y<H; y+=pitch, i++){
+      const s=sample(cx,y); if(s.out) continue;
+      const t=resp(s.lum);
+      const px=cx+(rnd()-0.5)*jit*2, py=y+(rnd()-0.5)*jit*2;
+      const isCharm = accOn && accEvery>0 && ((i+ci)%accEvery===0);
+      const imgC = useImg ? bpal.nearest(s.r,s.g,s.b) : null;
+      if(t>=thr){
+        const r=bmin+((t-thr)/Math.max(1e-3,1-thr))*(bmax-bmin);
+        drawSphere(px,py,r, imgC||bead, rim,rough,rnd);
+      } else if(isCharm){
+        drawCharm(px,py,accsz*(0.6+0.4*t),charm,rim,rough,rnd);
+      } else if(capOn && t>=thr*0.42){
+        const ch=Math.max(capw, pitch*(0.35+0.6*t));
+        drawCapsule(px,py,capw,ch, imgC||thcol, rim,rough,rnd);
+      } else if(t>0.05){
+        drawSphere(px,py,Math.max(1.4, capw*0.26 + t*4), imgC||thcol, 0, rough, rnd);
+      }
+    }
+  }
+  applyGrain(grain);
+}
+
+// ── BLOCKS renderer ───────────────────────────────────────────────────────────
+function renderBlocks(sample){
+  const W=exportW,H=exportH;
+  const colW=g('sl-bk-col'), rowH=g('sl-bk-row'), gap=g('sl-bk-gap'), rad=g('sl-bk-rad'), floor=g('sl-bk-floor');
+  const mapMode=gv('sel-bk-map'), texOn=on('tog-bk-tex'), dotScale=g('sl-bk-dot');
+  const rough=g('sl-rough'), grain=g('sl-grain'), rim=g('sl-rim');
+  const pal=readPalette(); if(!pal.length) return;
+  const palRgb=pal.map(c=>hexToRgb(c.hex));
+  const rnd=makeRnd(0x1f2e3d4c);
+
+  function classify(cx,cy){
+    const s=sample(cx,cy);
+    if(s.out || s.lum<floor) return -1;
+    if(mapMode==='ramp'){
+      const t=clamp((s.lum-floor)/(1-floor+1e-6),0,0.999);
+      return Math.floor(t*pal.length);
+    }
+    let best=0,bd=Infinity;
+    for(let i=0;i<palRgb.length;i++){ const dr=s.r-palRgb[i][0],dg=s.g-palRgb[i][1],db=s.b-palRgb[i][2]; const d=dr*dr+dg*dg+db*db; if(d<bd){bd=d;best=i;} }
+    return best;
+  }
+  const nCols=Math.ceil(W/colW), nRows=Math.ceil(H/rowH);
+  for(let ci=0;ci<nCols;ci++){
+    const cx=ci*colW+colW/2, bx=ci*colW+gap/2, bw=colW-gap;
+    const cells=new Array(nRows);
+    for(let ri=0;ri<nRows;ri++) cells[ri]=classify(cx,ri*rowH+rowH/2);
+    let ri=0;
+    while(ri<nRows){
+      if(cells[ri]<0){ ri++; continue; }
+      let rj=ri; while(rj+1<nRows && cells[rj+1]===cells[ri]) rj++;
+      const y0=ri*rowH+gap/2, y1=(rj+1)*rowH-gap/2;
+      drawBlock(bx,y0,bw,y1-y0,pal[cells[ri]],{rad,rough,rim,texOn,dotScale,rnd});
+      ri=rj+1;
+    }
+  }
+  applyGrain(grain);
+}
+function drawBlock(x,y,w,h,col,o){
+  if(w<=0||h<=0) return;
+  const base=col.hex;
+  roughRectPath(x,y,w,h,o.rad,o.rough,o.rnd); ctx.fillStyle=base; ctx.fill();
+  if(o.rim>0){
+    ctx.save(); ctx.clip();
+    const rg=ctx.createLinearGradient(x,y,x,y+Math.min(h,h*0.5));
+    rg.addColorStop(0,`rgba(255,255,255,${0.45*o.rim})`); rg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=rg; ctx.fillRect(x,y,w,h); ctx.restore();
+  }
+  if(o.texOn && col.tex){
+    ctx.save(); roundRectPath(x,y,w,h,o.rad); ctx.clip();
+    ctx.fillStyle=shade(base,-0.4);
+    const step=o.dotScale*2, r=o.dotScale*0.42;
+    for(let yy=y+step/2; yy<y+h; yy+=step) for(let xx=x+step/2; xx<x+w; xx+=step){ ctx.beginPath(); ctx.arc(xx,yy,r,0,6.2832); ctx.fill(); }
+    ctx.restore();
+  }
+}
+
+// ── SAMPLER renderer — patchwork of stitch fills, one per colour region ────────
+let samplerSeed = 0x6d2b79f5;
+function enabledShapes(){ return [...document.querySelectorAll('#sm-shapes .chip.active')].map(b=>b.dataset.shape); }
+function samplerAssign(){ const a=document.querySelector('#seg-sm-assign button.active'); return a?a.dataset.val:'random'; }
+function renderSampler(sample){
+  const W=exportW,H=exportH;
+  const cell=g('sl-sm-cell'), gap=g('sl-sm-gap'), floor=g('sl-sm-floor');
+  const mapMode=gv('sel-sm-map'), scale=g('sl-sm-scale');
+  const rough=g('sl-rough'), grain=g('sl-grain'), rim=g('sl-rim');
+  const pal=readSamplerPalette(); if(!pal.length) return;
+  const pool=enabledShapes(); if(!pool.length) return;
+  const assign=samplerAssign();
+  const palRgb=pal.map(c=>hexToRgb(c.hex));
+  function classify(cx,cy){
+    const s=sample(cx,cy);
+    if(s.out || s.lum<floor) return -1;
+    if(mapMode==='ramp'){ const t=clamp((s.lum-floor)/(1-floor+1e-6),0,0.999); return Math.floor(t*pal.length); }
+    let best=0,bd=Infinity; for(let i=0;i<palRgb.length;i++){ const dr=s.r-palRgb[i][0],dg=s.g-palRgb[i][1],db=s.b-palRgb[i][2],d=dr*dr+dg*dg+db*db; if(d<bd){bd=d;best=i;} } return best;
+  }
+  const nCols=Math.ceil(W/cell), nRows=Math.ceil(H/cell);
+  // 1 — classify every cell to a palette index
+  const idx=new Int16Array(nCols*nRows);
+  for(let c=0;c<nCols;c++) for(let r=0;r<nRows;r++) idx[c*nRows+r]=classify(c*cell+cell/2, r*cell+cell/2);
+  // 2 — connected components (4-neighbour, equal colour) → one stitch per region
+  const region=new Int32Array(nCols*nRows).fill(-1);
+  const regionShape=[]; let nextRegion=0;
+  const hash=n=>{ let h=(n^samplerSeed)>>>0; h=Math.imul(h^(h>>>15),0x2c1b3c6d); h=Math.imul(h^(h>>>12),0x297a2d39); return (h^(h>>>15))>>>0; };
+  const stack=[];
+  for(let c=0;c<nCols;c++) for(let r=0;r<nRows;r++){
+    const id0=c*nRows+r; if(idx[id0]<0||region[id0]>=0) continue;
+    const col=idx[id0], rg=nextRegion++;
+    let shape;
+    if(assign==='lum'){ const t=clamp(relLum(...hexToRgb(pal[col].hex)),0,0.999); shape=pool[Math.floor(t*pool.length)]; }
+    else shape=pool[hash(rg*2654435761)%pool.length];
+    regionShape[rg]=shape;
+    stack.length=0; stack.push(id0); region[id0]=rg;
+    while(stack.length){ const p=stack.pop(); const pc=(p/nRows)|0, pr=p%nRows;
+      const nb=[[pc-1,pr],[pc+1,pr],[pc,pr-1],[pc,pr+1]];
+      for(const [qc,qr] of nb){ if(qc<0||qr<0||qc>=nCols||qr>=nRows) continue; const q=qc*nRows+qr; if(region[q]<0 && idx[q]===col){ region[q]=rg; stack.push(q); } }
+    }
+  }
+  // 3 — draw each cell with its region's stitch
+  for(let c=0;c<nCols;c++) for(let r=0;r<nRows;r++){
+    const id0=c*nRows+r, ci=idx[id0]; if(ci<0) continue;
+    const x=c*cell+gap/2, y=r*cell+gap/2, s=cell-gap;
+    drawStitch(regionShape[region[id0]], x, y, s, pal[ci].hex, {scale,rim,rough,seed:hash(id0)});
+  }
+  applyGrain(grain);
+}
+function drawStitch(kind,x,y,s,color,o){
+  if(s<=0) return;
+  const cx=x+s/2, cy=y+s/2, sc=o.scale, rnd=makeRnd((o.seed||1)>>>0);
+  ctx.fillStyle=color; ctx.strokeStyle=color; ctx.lineCap='round';
+  switch(kind){
+    case 'dot':      ctx.beginPath(); ctx.arc(cx,cy,s*0.42,0,6.2832); ctx.fill(); break;
+    case 'ring':     ctx.lineWidth=Math.max(1.2,s*0.16*sc); ctx.beginPath(); ctx.arc(cx,cy,s*0.34,0,6.2832); ctx.stroke(); break;
+    case 'cross':    { const t=Math.max(1.5,s*0.24*sc); ctx.lineWidth=t; ctx.beginPath(); ctx.moveTo(cx,y+s*0.12); ctx.lineTo(cx,y+s*0.88); ctx.moveTo(x+s*0.12,cy); ctx.lineTo(x+s*0.88,cy); ctx.stroke(); break; }
+    case 'ex':       { const t=Math.max(1.5,s*0.2*sc); ctx.lineWidth=t; const p=s*0.16; ctx.beginPath(); ctx.moveTo(x+p,y+p); ctx.lineTo(x+s-p,y+s-p); ctx.moveTo(x+s-p,y+p); ctx.lineTo(x+p,y+s-p); ctx.stroke(); break; }
+    case 'mesh':     { const t=Math.max(1,s*0.09*sc); ctx.lineWidth=t; ctx.beginPath(); ctx.moveTo(cx,y); ctx.lineTo(cx,y+s); ctx.moveTo(x,cy); ctx.lineTo(x+s,cy); ctx.stroke(); break; }
+    case 'vline':    { const n=Math.max(2,Math.round(3/sc)); const w=Math.max(1,s*0.14*sc); for(let i=0;i<n;i++){ const px=x+(i+0.5)/n*s; ctx.fillRect(px-w/2,y+s*0.06,w,s*0.88); } break; }
+    case 'hline':    { const n=Math.max(2,Math.round(3/sc)); const h=Math.max(1,s*0.14*sc); for(let i=0;i<n;i++){ const py=y+(i+0.5)/n*s; ctx.fillRect(x+s*0.06,py-h/2,s*0.88,h); } break; }
+    case 'halftone': { const step=Math.max(3,s*0.28/sc), r=step*0.3; for(let yy=y+step*0.5; yy<y+s; yy+=step) for(let xx=x+step*0.5; xx<x+s; xx+=step){ ctx.beginPath(); ctx.arc(xx,yy,r,0,6.2832); ctx.fill(); } break; }
+    case 'outline':  ctx.lineWidth=Math.max(1.2,s*0.12*sc); roundRectPath(x+ctx.lineWidth/2,y+ctx.lineWidth/2,s-ctx.lineWidth,s-ctx.lineWidth,s*0.14); ctx.stroke(); break;
+    case 'square':   { const q=s*0.56; roughRectPath(cx-q/2,cy-q/2,q,q,s*0.1,o.rough||0,rnd); ctx.fill(); break; }
+    default:         roughRectPath(x,y,s,s,s*0.14,o.rough||0,rnd); ctx.fill();   // solid
+  }
+  if(o.rim>0 && (kind==='solid'||kind==='dot'||kind==='square')){
+    ctx.save(); ctx.globalCompositeOperation='source-atop';
+    const rg=ctx.createLinearGradient(x,y,x,y+s*0.5); rg.addColorStop(0,`rgba(255,255,255,${0.4*o.rim})`); rg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=rg; ctx.fillRect(x,y,s,s); ctx.restore();
+  }
+}
+
+// ── WARP WEAVE renderer — vertical ribs of stacked segments (bars → pills → ovals)
+function mix(a,b,t){ const A=hexToRgb(a),B=hexToRgb(b); return rgbToHex(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t); }
+function renderWarp(sample){
+  const W=exportW,H=exportH;
+  const colW=g('sl-ww-col'), wgap=g('sl-ww-wgap'), rowH=g('sl-ww-row'), sgap=g('sl-ww-sgap'), floor=g('sl-ww-floor');
+  const round=g('sl-ww-round'), blend=g('sl-ww-blend'), stagger=g('sl-ww-stagger'), mapMode=gv('sel-ww-map');
+  const glow=g('sl-ww-glow'), rim=g('sl-rim'), rough=g('sl-rough'), grain=g('sl-grain');
+  const weftOn=on('tog-ww-weft'), weftEv=Math.round(g('sl-ww-weftev')), weftW=g('sl-ww-weftw'), weftCol=gv('hex-ww-weft');
+  const pal=readPaletteFrom(wwPalWrap); if(!pal.length) return;
+  const palRgb=pal.map(c=>hexToRgb(c.hex));
+  function classify(cx,cy){
+    const s=sample(cx,cy);
+    if(s.out || s.lum<floor) return -1;
+    if(mapMode==='ramp'){ const t=clamp((s.lum-floor)/(1-floor+1e-6),0,0.999); return Math.floor(t*pal.length); }
+    let best=0,bd=Infinity; for(let i=0;i<palRgb.length;i++){ const dr=s.r-palRgb[i][0],dg=s.g-palRgb[i][1],db=s.b-palRgb[i][2],d=dr*dr+dg*dg+db*db; if(d<bd){bd=d;best=i;} } return best;
+  }
+  const nCols=Math.ceil(W/colW), nRows=Math.ceil(H/rowH)+2;
+  const colRnd=makeRnd(0x3b9a72e1), segRnd=makeRnd(0x51a7c3f9);
+  for(let ci=0;ci<nCols;ci++){
+    const cx=ci*colW+colW/2, bx=ci*colW+wgap/2, bw=colW-wgap;
+    const phase=(colRnd()-0.5)*stagger*rowH*1.6;   // per-rib vertical offset → woven stagger
+    const cells=new Array(nRows);
+    for(let r=0;r<nRows;r++) cells[r]=classify(cx, r*rowH+rowH/2+phase);
+    let r=0;
+    while(r<nRows){
+      if(cells[r]<0){ r++; continue; }
+      let rj=r; while(rj+1<nRows && cells[rj+1]===cells[r]) rj++;
+      const y0=r*rowH+phase+sgap/2, y1=(rj+1)*rowH+phase-sgap/2;
+      const prevC = r>0 && cells[r-1]>=0 ? pal[cells[r-1]].hex : null;
+      const nextC = rj+1<nRows && cells[rj+1]>=0 ? pal[cells[rj+1]].hex : null;
+      drawWarpSeg(bx,y0,bw,y1-y0, pal[cells[r]].hex, prevC, nextC, {round,blend,rim,glow,rough,rnd:segRnd});
+      r=rj+1;
+    }
+  }
+  // weft pass — horizontal threads crossing the warp over content
+  if(weftOn && weftEv>0 && weftW>0){
+    ctx.save(); if(glow>0){ ctx.shadowColor=weftCol; ctx.shadowBlur=glow*0.7; }
+    ctx.fillStyle=weftCol;
+    for(let ry=weftEv; ry<nRows; ry+=weftEv){
+      const yy=ry*rowH;
+      for(let ci=0;ci<nCols;ci++){ const cx=ci*colW+colW/2; if(classify(cx,yy)<0) continue; const bx=ci*colW+wgap/2, bw=colW-wgap; roundRectPath(bx, yy-weftW/2, bw, weftW, Math.min(weftW/2,bw/2)); ctx.fill(); }
+    }
+    ctx.restore();
+  }
+  applyGrain(grain);
+}
+function drawWarpSeg(x,y,w,h,color,prevC,nextC,o){
+  if(w<=0||h<=0) return;
+  const rad=o.round*Math.min(w,h)/2;
+  ctx.save();
+  if(o.glow>0){ ctx.shadowColor=color; ctx.shadowBlur=o.glow; }
+  if(o.rough>0) roughRectPath(x,y,w,h,rad,o.rough,o.rnd); else roundRectPath(x,y,w,h,rad);
+  if(o.blend>0 && (prevC||nextC)){
+    const grd=ctx.createLinearGradient(x,y,x,y+h);
+    grd.addColorStop(0, mix(color, prevC||color, o.blend*0.6));
+    grd.addColorStop(0.5, color);
+    grd.addColorStop(1, mix(color, nextC||color, o.blend*0.6));
+    ctx.fillStyle=grd;
+  } else ctx.fillStyle=color;
+  ctx.fill();
+  ctx.restore();
+  if(o.rim>0){                                   // soft light stripe down the rib (highlight only, no 3D)
+    ctx.save();
+    if(o.rough>0) roughRectPath(x,y,w,h,rad,o.rough,o.rnd); else roundRectPath(x,y,w,h,rad);
+    ctx.clip();
+    const g2=ctx.createLinearGradient(x,y,x+w,y);
+    g2.addColorStop(0,'rgba(255,255,255,0)');
+    g2.addColorStop(0.42,`rgba(255,255,255,${0.42*o.rim})`);
+    g2.addColorStop(0.62,'rgba(255,255,255,0)');
+    ctx.fillStyle=g2; ctx.fillRect(x,y,w,h); ctx.restore();
+  }
+}
+
+// ── main render ────────────────────────────────────────────────────────────────
+let raf=null;
+function scheduleRender(){ if(raf) return; raf=requestAnimationFrame(()=>{ raf=null; render(); }); }
+function render(){
+  if(canvas.width!==exportW||canvas.height!==exportH){ canvas.width=exportW; canvas.height=exportH; resizeDisplay(); }
+  const mode=currentMode();
+  const bg = mode==='beads' ? gv('hex-bd-bg') : mode==='sampler' ? gv('hex-sm-bg') : mode==='warp' ? gv('hex-ww-bg') : gv('hex-bk-bg');
+  ctx.clearRect(0,0,exportW,exportH);
+  if(exportBg){ ctx.fillStyle=bg; ctx.fillRect(0,0,exportW,exportH); }
+  if(!img) return;
+  const sample=makeSampler();
+  if(mode==='beads') renderBeads(sample); else if(mode==='sampler') renderSampler(sample); else if(mode==='warp') renderWarp(sample); else renderBlocks(sample);
+}
+
+// ── slider readouts ────────────────────────────────────────────────────────────
+const SL={
+  'sl-px':['v-px',v=>Math.round(v)],'sl-py':['v-py',v=>Math.round(v)],'sl-sc':['v-sc',v=>Math.round(v)],
+  'sl-br':['v-br',v=>Math.round(v)],'sl-co':['v-co',v=>(+v).toFixed(2)],'sl-ga':['v-ga',v=>(+v).toFixed(2)],
+  'sl-sa':['v-sa',v=>(+v).toFixed(2)],'sl-bl':['v-bl',v=>(+v).toFixed(1)],
+  'sl-bd-col':['v-bd-col',v=>Math.round(v)],'sl-bd-pit':['v-bd-pit',v=>Math.round(v)],'sl-bd-jit':['v-bd-jit',v=>(+v).toFixed(1)],
+  'sl-bd-thr':['v-bd-thr',v=>(+v).toFixed(2)],'sl-bd-max':['v-bd-max',v=>Math.round(v)],'sl-bd-min':['v-bd-min',v=>(+v).toFixed(1)],
+  'sl-bd-gam':['v-bd-gam',v=>(+v).toFixed(2)],'sl-bd-tw':['v-bd-tw',v=>(+v).toFixed(1)],'sl-bd-capw':['v-bd-capw',v=>(+v).toFixed(1)],
+  'sl-bd-accn':['v-bd-accn',v=>Math.round(v)],'sl-bd-accsz':['v-bd-accsz',v=>(+v).toFixed(1)],'sl-bd-poster':['v-bd-poster',v=>Math.round(v)],
+  'sl-bk-col':['v-bk-col',v=>Math.round(v)],'sl-bk-row':['v-bk-row',v=>Math.round(v)],'sl-bk-gap':['v-bk-gap',v=>(+v).toFixed(1)],
+  'sl-bk-rad':['v-bk-rad',v=>(+v).toFixed(1)],'sl-bk-floor':['v-bk-floor',v=>(+v).toFixed(2)],'sl-bk-dot':['v-bk-dot',v=>(+v).toFixed(1)],
+  'sl-bk-extract':['v-bk-extract',v=>Math.round(v)],
+  'sl-sm-cell':['v-sm-cell',v=>Math.round(v)],'sl-sm-gap':['v-sm-gap',v=>(+v).toFixed(1)],'sl-sm-floor':['v-sm-floor',v=>(+v).toFixed(2)],
+  'sl-sm-scale':['v-sm-scale',v=>(+v).toFixed(2)],'sl-sm-extract':['v-sm-extract',v=>Math.round(v)],
+  'sl-ww-col':['v-ww-col',v=>Math.round(v)],'sl-ww-wgap':['v-ww-wgap',v=>(+v).toFixed(1)],'sl-ww-row':['v-ww-row',v=>Math.round(v)],
+  'sl-ww-sgap':['v-ww-sgap',v=>(+v).toFixed(1)],'sl-ww-floor':['v-ww-floor',v=>(+v).toFixed(2)],'sl-ww-round':['v-ww-round',v=>(+v).toFixed(2)],
+  'sl-ww-blend':['v-ww-blend',v=>(+v).toFixed(2)],'sl-ww-extract':['v-ww-extract',v=>Math.round(v)],
+  'sl-ww-stagger':['v-ww-stagger',v=>(+v).toFixed(2)],'sl-ww-glow':['v-ww-glow',v=>(+v).toFixed(1)],
+  'sl-ww-weftev':['v-ww-weftev',v=>Math.round(v)],'sl-ww-weftw':['v-ww-weftw',v=>(+v).toFixed(1)],
+  'sl-rim':['v-rim',v=>(+v).toFixed(2)],
+  'sl-rough':['v-rough',v=>(+v).toFixed(1)],'sl-grain':['v-grain',v=>(+v).toFixed(2)],
+};
+const NEEDS_REPROCESS=new Set(['sl-br','sl-co','sl-ga','sl-sa','sl-bl']);
+Object.entries(SL).forEach(([sid,[vid,fmt]])=>{
+  const el=$(sid), vEl=$(vid); if(!el||!vEl) return; vEl.textContent=fmt(el.value);
+  el.addEventListener('input', ()=>{ vEl.textContent=fmt(el.value); if(NEEDS_REPROCESS.has(sid)&&img){ processImage(); } scheduleRender(); });
+});
+['tog-bd-thread','tog-bd-cap','tog-bd-acc','tog-bd-inv','tog-bk-tex','tog-ww-weft'].forEach(id=>{
+  $(id).addEventListener('click', function(){ this.classList.toggle('on'); scheduleRender(); });
+});
+// bead colour mode (Solid / From image)
+function setBeadColMode(m){
+  const seg=$('seg-bd-colmode'); [...seg.children].forEach(b=>b.classList.toggle('active', b.dataset.val===m));
+  $('bd-img-pal').style.display  = m==='image' ? '' : 'none';
+  $('bd-bead-row').style.display = m==='image' ? 'none' : '';
+  if(m==='image' && adjustedData && !readPaletteFrom(bdPalWrap).length) extractBeadImgPalette();
+}
+$('seg-bd-colmode').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return; setBeadColMode(b.dataset.val); scheduleRender(); });
+setBeadColMode('solid');
+
+// sampler: stitch chips (independent toggles), assignment, shuffle
+$('sm-shapes').addEventListener('click', e=>{ const b=e.target.closest('.chip'); if(!b) return; b.classList.toggle('active'); scheduleRender(); });
+$('seg-sm-assign').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return; [...b.parentElement.children].forEach(x=>x.classList.remove('active')); b.classList.add('active'); scheduleRender(); });
+$('btn-sm-shuffle').addEventListener('click', ()=>{ samplerSeed=(Math.imul(samplerSeed,1664525)+1013904223)>>>0; scheduleRender(); });
+
+// re-render / auto-extract when the mode switch changes
+document.querySelector('[data-switch]').addEventListener('click', e=>{
+  const b=e.target.closest('[data-case-btn]');
+  if(b && b.dataset.caseBtn==='sampler' && adjustedData && !readSamplerPalette().length) extractSamplerPalette();
+  if(b && b.dataset.caseBtn==='warp' && adjustedData && !readWarpPalette().length) extractWarpPalette();
+  scheduleRender();
+});
+document.querySelector('.hty-select[data-native="sel-bk-map"]').addEventListener('hty:change', scheduleRender);
+document.querySelector('.hty-select[data-native="sel-sm-map"]').addEventListener('hty:change', scheduleRender);
+document.querySelector('.hty-select[data-native="sel-ww-map"]').addEventListener('hty:change', scheduleRender);
+
+// ── resolution ────────────────────────────────────────────────────────────────
+function updateExportDimensions(){
+  const v=gv('sel-res');
+  if(v==='auto'){ if(img) fitToImage(); scheduleRender(); return; }
+  if(v==='custom'){ exportW=clamp(parseInt($('inp-cw').value)||1080,64,8000); exportH=clamp(parseInt($('inp-ch').value)||1350,64,8000); }
+  else { const m=v.split('x').map(Number); exportW=m[0]; exportH=m[1]; }
+  canvas.width=exportW; canvas.height=exportH; resizeDisplay();
+  if(img && v!=='custom') placeImage('fit'); else scheduleRender();   // auto-fit into a freshly-picked preset
+}
+document.querySelector('.hty-select[data-native="sel-res"]').addEventListener('hty:change', e=>{
+  $('custom-res-wrap').classList.toggle('visible', e.detail.value==='custom'); updateExportDimensions();
+});
+$('inp-cw').addEventListener('change', ()=>{ if(gv('sel-res')==='custom') updateExportDimensions(); });
+$('inp-ch').addEventListener('change', ()=>{ if(gv('sel-res')==='custom') updateExportDimensions(); });
+function fitToImage(){
+  const MAX=4000; let w=imgW,h=imgH; const L=Math.max(w,h);
+  if(L>MAX){ const s=MAX/L; w=Math.round(w*s); h=Math.round(h*s); }
+  exportW=w; exportH=h;
+  setSlider('sl-px',0); setSlider('sl-py',0); setSlider('sl-sc',100);
+  canvas.width=exportW; canvas.height=exportH; resizeDisplay();
+}
+// set a slider's value + its readout + track fill programmatically
+function setSlider(id,v){ const el=$(id); if(!el) return; el.value=v; const m=SL[id]; if(m){ const vEl=$(m[0]); if(vEl) vEl.textContent=m[1](v); } if(window.HTY&&HTY.paintRange) HTY.paintRange(el); }
+// place the image within the current artboard
+function placeImage(mode){
+  if(!img) return;
+  if(mode!=='center'){
+    const s = mode==='fill' ? Math.max(exportW/imgW,exportH/imgH) : Math.min(exportW/imgW,exportH/imgH);
+    setSlider('sl-sc', Math.round(clamp(s*100, +$('sl-sc').min, +$('sl-sc').max)));
+  }
+  setSlider('sl-px',0); setSlider('sl-py',0);
+  scheduleRender();
+}
+$('btn-fit').addEventListener('click', ()=>placeImage('fit'));
+$('btn-fill').addEventListener('click', ()=>placeImage('fill'));
+$('btn-center').addEventListener('click', ()=>placeImage('center'));
+
+// ── image loading ────────────────────────────────────────────────────────────
+function loadFile(file){
+  if(!file||!file.type.startsWith('image/')) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ imgDataURL=rd.result; const im=new Image();
+    im.onload=()=>{ img=im; imgW=im.naturalWidth; imgH=im.naturalHeight;
+      if(gv('sel-res')==='auto') fitToImage(); else placeImage('fit');
+      $('img-name').textContent=file.name; empty.classList.add('hidden');
+      $('btn-png').disabled=false; $('btn-png-alpha').disabled=false; $('btn-extract').disabled=false; $('btn-bd-extract').disabled=false; $('btn-bdp-extract').disabled=false; $('btn-sm-extract').disabled=false; $('btn-ww-extract').disabled=false;
+      processImage();
+      if(beadColMode()==='image' && !readPaletteFrom(bdPalWrap).length) extractBeadImgPalette();
+      if(currentMode()==='sampler' && !readSamplerPalette().length) extractSamplerPalette();
+      if(currentMode()==='warp' && !readWarpPalette().length) extractWarpPalette();
+      scheduleRender();
+    };
+    im.src=imgDataURL;
+  };
+  rd.readAsDataURL(file);
+}
+$('file-input').addEventListener('change', e=>{ if(e.target.files[0]) loadFile(e.target.files[0]); });
+$('upload-zone').addEventListener('click', e=>{ if(e.target!==$('file-input')) $('file-input').click(); });
+document.addEventListener('dragover', e=>e.preventDefault());
+document.addEventListener('drop', e=>{ e.preventDefault(); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+
+// ── position the image directly on the canvas: drag to move, scroll to zoom ────
+(function(){
+  const slpx=$('sl-px'), slpy=$('sl-py'), slsc=$('sl-sc');
+  const clampSl=(sl,v)=>Math.max(+sl.min, Math.min(+sl.max, v));
+  let dragging=false, sx=0, sy=0, startPX=0, startPY=0;
+  canvas.addEventListener('pointermove', e=>{
+    if(!dragging){ canvas.style.cursor = img?'grab':'default'; return; }
+    const rect=canvas.getBoundingClientRect(), sc=exportW/rect.width;
+    setSlider('sl-px', Math.round(clampSl(slpx, startPX+(e.clientX-sx)*sc)));
+    setSlider('sl-py', Math.round(clampSl(slpy, startPY+(e.clientY-sy)*sc)));
+    scheduleRender();
+  });
+  canvas.addEventListener('pointerdown', e=>{
+    if(!img) return; dragging=true; sx=e.clientX; sy=e.clientY; startPX=+slpx.value; startPY=+slpy.value;
+    canvas.style.cursor='grabbing'; canvas.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  const end=()=>{ dragging=false; canvas.style.cursor=img?'grab':'default'; };
+  canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
+  canvas.addEventListener('wheel', e=>{
+    if(!img) return; e.preventDefault();
+    const rect=canvas.getBoundingClientRect();
+    const ex=(e.clientX-rect.left)*(exportW/rect.width), ey=(e.clientY-rect.top)*(exportH/rect.height);
+    const s0=(+slsc.value)/100, s1=Math.max(+slsc.min/100, Math.min(+slsc.max/100, s0*Math.exp(-e.deltaY*0.0015)));
+    if(s1===s0) return;
+    const panX=exportW/2+(+slpx.value), panY=exportH/2+(+slpy.value);
+    const nPanX=ex-(ex-panX)*(s1/s0), nPanY=ey-(ey-panY)*(s1/s0);
+    setSlider('sl-sc', Math.round(s1*100));
+    setSlider('sl-px', Math.round(clampSl(slpx, nPanX-exportW/2)));
+    setSlider('sl-py', Math.round(clampSl(slpy, nPanY-exportH/2)));
+    scheduleRender();
+  }, { passive:false });
+})();
+
+// ── export ───────────────────────────────────────────────────────────────────
+$('btn-png').addEventListener('click', ()=>{
+  exportBg=true; render();
+  const a=document.createElement('a'); a.download='beadwork.png'; a.href=canvas.toDataURL('image/png'); a.click();
+});
+$('btn-png-alpha').addEventListener('click', ()=>{
+  exportBg=false; render();
+  const a=document.createElement('a'); a.download='beadwork-alpha.png'; a.href=canvas.toDataURL('image/png'); a.click();
+  exportBg=true; render();
+});
+
+// ── presets ──────────────────────────────────────────────────────────────────
+const PRESETS={
+  'figma-beads':()=>{
+    setActiveCase('beads');
+    setVal('sl-bd-col',40); setVal('sl-bd-pit',30); setVal('sl-bd-jit',1.5);
+    setVal('sl-bd-thr',0.52); setVal('sl-bd-max',30); setVal('sl-bd-min',5); setVal('sl-bd-gam',1); setTog('tog-bd-inv',false);
+    setTog('tog-bd-thread',true); setVal('sl-bd-tw',3); setTog('tog-bd-cap',true); setVal('sl-bd-capw',12);
+    setTog('tog-bd-acc',true); setVal('sl-bd-accn',5); setVal('sl-bd-accsz',8);
+    setColor('bd-bead','#d8f24f'); setColor('bd-thread','#f3ecd9'); setColor('bd-acc','#e8743b'); setColor('bd-bg','#2b2622');
+    setVal('sl-rim',0.35); setVal('sl-rough',1.2); setVal('sl-grain',0.08); setBeadColMode('solid');
+  },
+  'figma-mosaic':()=>{
+    setActiveCase('blocks');
+    setVal('sl-bk-col',15); setVal('sl-bk-row',15); setVal('sl-bk-gap',2); setVal('sl-bk-rad',4); setVal('sl-bk-floor',0.12);
+    setNative('sel-bk-map','ramp');
+    setPalette([{hex:'#12362a',tex:false},{hex:'#c0392b',tex:false},{hex:'#e8743b',tex:false},{hex:'#f2ede0',tex:true}]);
+    setColor('bk-bg','#000000'); setTog('tog-bk-tex',true); setVal('sl-bk-dot',4);
+    setVal('sl-rough',1.8); setVal('sl-grain',0.14); setVal('sl-rim',0.25);
+  },
+  'figma-sampler':()=>{
+    setActiveCase('sampler');
+    setVal('sl-sm-cell',18); setVal('sl-sm-gap',1); setVal('sl-sm-floor',0.1); setVal('sl-sm-scale',1);
+    setNative('sel-sm-map','nearest');
+    document.querySelectorAll('#sm-shapes .chip').forEach(c=>c.classList.toggle('active', !['outline','square'].includes(c.dataset.shape)));
+    document.querySelectorAll('#seg-sm-assign button').forEach(b=>b.classList.toggle('active', b.dataset.val==='random'));
+    fillPalette(smPalWrap, [['#e5342a'],['#e8743b'],['#f2c14e'],['#f3b8c2'],['#6f93c9'],['#3f8f5b'],['#f2ede0']].map(c=>({hex:c[0]})), true);
+    setColor('sm-bg','#101010'); setVal('sl-rough',1.4); setVal('sl-grain',0.12); setVal('sl-rim',0.2);
+  },
+  'warp-neon':()=>{
+    setActiveCase('warp');
+    setVal('sl-ww-col',22); setVal('sl-ww-wgap',3); setVal('sl-ww-row',20); setVal('sl-ww-sgap',2); setVal('sl-ww-floor',0.1);
+    setVal('sl-ww-round',0.5); setVal('sl-ww-blend',0.3); setVal('sl-ww-stagger',0.35); setNative('sel-ww-map','nearest');
+    setVal('sl-ww-glow',6); setTog('tog-ww-weft',true); setVal('sl-ww-weftev',4); setVal('sl-ww-weftw',7); setColor('ww-weft','#ff3ea5');
+    fillPalette(wwPalWrap, [['#3d1f9e'],['#5b46d6'],['#3aa0ff'],['#3fe0c0'],['#a6f23a'],['#f2f24a'],['#ff3ea5']].map(c=>({hex:c[0]})), true);
+    setColor('ww-bg','#d8d8d8'); setVal('sl-rough',0.6); setVal('sl-grain',0.1); setVal('sl-rim',0.35);
+  }
+};
+function setVal(id,v){ const el=$(id); if(el){ el.value=v; } }
+function setTog(id,state){ $(id).classList.toggle('on',state); }
+function setColor(k,hex){ $('sw-'+k).style.background=hex; $('cp-'+k).value=hex; $('hex-'+k).value=hex; }
+function setNative(id,val){ const s=$(id); s.value=val; s.dispatchEvent(new Event('change',{bubbles:true})); }
+function setActiveCase(key){
+  document.querySelectorAll('[data-switch] [data-case-btn]').forEach(b=>b.classList.toggle('active', b.dataset.caseBtn===key));
+  document.querySelectorAll('[data-tab-panel="style"] [data-case]').forEach(c=>c.style.display=c.dataset.case===key?'':'none');
+}
+function refreshReadouts(){ Object.entries(SL).forEach(([sid,[vid,fmt]])=>{ const el=$(sid),vEl=$(vid); if(el&&vEl){ vEl.textContent=fmt(el.value); if(window.HTY&&HTY.paintRange)HTY.paintRange(el);} }); }
+document.querySelectorAll('[data-preset]').forEach(btn=>btn.addEventListener('click', function(){
+  document.querySelectorAll('[data-preset]').forEach(b=>b.classList.remove('active')); this.classList.add('active');
+  (PRESETS[this.dataset.preset]||(()=>{}))(); refreshReadouts(); if(img) processImage(); scheduleRender();
+}));
+
+// ── boot ─────────────────────────────────────────────────────────────────────
+setPalette([{hex:'#12362a',tex:false},{hex:'#c0392b',tex:false},{hex:'#e8743b',tex:false},{hex:'#f2ede0',tex:true}]);
+canvas.width=exportW; canvas.height=exportH;
+resizeDisplay(); render();
+
+})();
+  </script>
+</body>
+</html>

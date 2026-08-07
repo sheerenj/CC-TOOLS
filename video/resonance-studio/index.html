@@ -1,0 +1,2261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Resonance · Sound Visual Studio</title>
+<link rel="stylesheet" href="../../shared/hty-brand.css" />
+<style>
+/* tool-specific bits not covered by the design system (scoped under .hty) */
+.hty #canvas-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 22px 22px 104px; }
+.hty #c { display: block; max-width: 100%; max-height: 100%; }
+.hty #empty-state { position: absolute; left: 50%; transform: translateX(-50%); bottom: 118px; display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 13px; background: var(--island-bg); border: 1px solid var(--border); border-radius: 99px; clip-path: inset(0 round 99px); pointer-events: none; z-index: 5; }
+.hty #empty-state.hidden { display: none; }
+.hty .empty-bars { display: flex; align-items: flex-end; gap: 3px; height: 16px; opacity: .5; }
+.hty .empty-bars span { width: 2.5px; background: var(--text); animation: eb 1.1s ease-in-out infinite; }
+@keyframes eb { 0%,100% { height: 18% } 50% { height: 100% } }
+.hty .empty-text { font-size: 12px; color: var(--text); white-space: nowrap; }
+.hty .empty-sub { font-family: var(--font-mono); font-size: 10px; color: var(--text-subtle); text-transform: uppercase; letter-spacing: -.02em; white-space: nowrap; }
+
+/* ── transport (floating, bottom of stage) ── */
+.hty .transport { position: absolute; left: 22px; right: 22px; bottom: 20px; height: 62px; background: var(--island-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); clip-path: inset(0 round var(--radius-sm)); display: flex; align-items: center; gap: 12px; padding: 0 14px; }
+.hty .tbtn-round { width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; display: grid; place-items: center; transition: all .18s; }
+.hty .tbtn-round:hover { border-color: var(--text-subtle); }
+.hty .tbtn-round.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.hty .tbtn-round svg { width: 14px; height: 14px; }
+.hty .tbtn-round:disabled { opacity: .3; cursor: not-allowed; }
+.hty #wave-wrap { position: relative; flex: 1; min-width: 0; height: 40px; cursor: crosshair; }
+.hty #wave { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hty .trim-h { position: absolute; top: 0; bottom: 0; width: 9px; margin-left: -4px; cursor: ew-resize; z-index: 3; }
+.hty .trim-h::after { content: ''; position: absolute; top: 2px; bottom: 2px; left: 3px; width: 2px; background: var(--text); border-radius: 2px; }
+.hty #playhead { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--text); pointer-events: none; z-index: 2; }
+.hty .tcode { font-family: var(--font-mono); font-size: .6875rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+.hty .rec-badge { position: absolute; top: 18px; right: 22px; display: none; align-items: center; gap: 8px; background: var(--island-bg); border: 1px solid var(--border); border-radius: 99px; clip-path: inset(0 round 99px); padding: 7px 14px 7px 11px; font-family: var(--font-mono); font-size: .625rem; text-transform: uppercase; letter-spacing: -.02em; color: var(--text); z-index: 6; }
+.hty .rec-badge.on { display: flex; }
+.hty .rec-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; animation: rd .9s ease-in-out infinite; }
+@keyframes rd { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+.hty .prog-wrap { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(10,10,10,.72); z-index: 7; }
+.hty .prog-wrap.on { display: flex; }
+.hty .prog-bar { width: 190px; height: 2px; background: var(--surface-input); overflow: hidden; }
+.hty .prog-bar i { display: block; height: 100%; width: 0; background: var(--text); }
+.hty .prog-lbl { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: -.02em; color: var(--text-muted); }
+
+/* ── local form bits ── */
+.hty .upload-zone { border: 1.5px dashed var(--border); border-radius: var(--radius-sm); padding: 18px 14px; text-align: center; cursor: pointer; transition: all .15s; color: var(--text-muted); font-size: 12px; line-height: 1.7; display: block; }
+.hty .upload-zone:hover, .hty .upload-zone.drag { border-color: var(--text); color: var(--text); }
+.hty .upload-zone input { display: none; }
+.hty #audio-name { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-subtle); text-align: center; min-height: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hty .tog-sw { position: relative; width: 38px; height: 22px; background: var(--surface-input); border-radius: 99px; clip-path: inset(0 round 99px); cursor: pointer; transition: background .2s; flex-shrink: 0; }
+.hty .tog-sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: var(--text-subtle); border-radius: 50%; transition: transform .2s, background .2s; }
+.hty .tog-sw.on { background: var(--accent); }
+.hty .tog-sw.on::after { transform: translateX(16px); background: var(--accent-fg); }
+.hty .color-row { display: flex; align-items: center; gap: 8px; }
+.hty .color-label { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: -.02em; font-size: .6875rem; color: var(--text-muted); flex: 1; }
+.hty .color-swatch { width: 28px; height: 28px; border-radius: var(--r-sm, 6px); border: 1px solid var(--border); flex-shrink: 0; cursor: pointer; position: relative; overflow: hidden; }
+.hty .native-picker { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); opacity: 0; cursor: pointer; border: none; padding: 0; }
+.hty .color-hex { flex: 1; min-width: 0; font-family: var(--font-mono); }
+.hty .pal-row { display: flex; align-items: center; gap: 7px; }
+.hty .pal-row .rowbtn { width: 26px; height: 26px; flex-shrink: 0; border-radius: var(--r-sm, 6px); border: 1px solid var(--border); background: transparent; color: var(--text-subtle); cursor: pointer; display: grid; place-items: center; font-size: 12px; transition: all .15s; }
+.hty .pal-row .rowbtn:hover { border-color: var(--text); color: var(--text); }
+.hty .add-pal { width: 100%; border: 1px dashed var(--border); background: transparent; color: var(--text-muted); font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: -.02em; padding: 9px; border-radius: var(--radius-sm); cursor: pointer; transition: all .15s; }
+.hty .add-pal:hover { border-color: var(--text); color: var(--text); }
+.hty textarea { width: 100%; background: var(--surface-input); border: 1px solid transparent; border-radius: var(--radius-sm); color: var(--text); font-family: var(--font-sans); font-size: .8125rem; padding: 10px 12px; resize: vertical; min-height: 62px; outline: none; }
+.hty textarea:focus { background: var(--surface); }
+.hty .custom-res-wrap { display: none; }
+.hty .custom-res-wrap.visible { display: block; }
+.hty .custom-res-row { display: flex; gap: 6px; align-items: center; }
+.hty .custom-res-row input { flex: 1; min-width: 0; }
+.hty .custom-res-sep { font-size: 11px; color: var(--text-subtle); flex-shrink: 0; }
+.hty .preset-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.hty .sys-lbl { font-family: var(--font-mono); font-size: .625rem; text-transform: uppercase; letter-spacing: -.02em; color: var(--text-subtle); margin: 2px 0 6px; }
+.hty .sys-lbl + .preset-row { margin-bottom: 10px; }
+.hty .btn.full { width: 100%; justify-content: center; }
+.hty .btn:disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
+.hty .kv { display: flex; justify-content: space-between; gap: 10px; font-family: var(--font-mono); font-size: .6875rem; color: var(--text-muted); }
+.hty .kv b { color: var(--text); font-weight: 400; }
+.hty .dl-link { display: none; }
+</style>
+</head>
+<body class="hty">
+
+  <!-- ═══ STAGE ═══ -->
+  <div class="hty-stage">
+    <div id="canvas-wrap"><canvas id="c"></canvas></div>
+
+    <div id="empty-state">
+      <div class="empty-bars">
+        <span style="animation-delay:0s"></span><span style="animation-delay:.12s"></span><span style="animation-delay:.24s"></span>
+        <span style="animation-delay:.36s"></span><span style="animation-delay:.18s"></span><span style="animation-delay:.06s"></span>
+        <span style="animation-delay:.3s"></span><span style="animation-delay:.42s"></span>
+      </div>
+      <div class="empty-text">Drop an audio file to begin</div>
+      <div class="empty-sub">mp3 · wav · m4a — preview runs on a test signal</div>
+    </div>
+
+    <div class="rec-badge" id="rec-badge"><span class="rec-dot"></span><span id="rec-time">REC 0:00</span></div>
+
+    <div class="prog-wrap" id="prog-wrap">
+      <div class="prog-lbl" id="prog-lbl">Analysing audio</div>
+      <div class="prog-bar"><i id="prog-fill"></i></div>
+    </div>
+
+    <!-- transport -->
+    <div class="transport">
+      <button class="tbtn-round" id="btn-play" title="Play / pause (space)">
+        <svg viewBox="0 0 24 24" fill="currentColor" id="ic-play"><path d="M8 5l12 7-12 7z"/></svg>
+      </button>
+      <button class="tbtn-round" id="btn-loop" title="Loop the trimmed range">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 12V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 12v3a3 3 0 0 1-3 3H3"/></svg>
+      </button>
+      <div id="wave-wrap">
+        <canvas id="wave"></canvas>
+        <div id="playhead" style="left:0"></div>
+        <div class="trim-h" id="h-in" style="left:0"></div>
+        <div class="trim-h" id="h-out" style="left:100%"></div>
+      </div>
+      <div class="tcode" id="tcode">0:00.0 / 0:00.0</div>
+    </div>
+  </div>
+
+  <!-- ═══ DOCK ═══ -->
+  <div class="hty-dock">
+
+    <div class="hty-rail">
+      <button class="tab active" data-tab="sound"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h2l2-6 3 14 3-11 2.5 7 2-4H21"/></svg>Sound</button>
+      <button class="tab" data-tab="look"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>Look</button>
+      <button class="tab" data-tab="art"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.7 0 2-1 2-2s-.6-2 .5-2H18a3 3 0 0 0 3-3 9 9 0 0 0-9-8z"/><circle cx="8" cy="10" r="1.2" fill="currentColor"/><circle cx="12" cy="7.5" r="1.2" fill="currentColor"/></svg>Art</button>
+      <button class="tab" data-tab="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Export</button>
+    </div>
+
+    <div class="hty-panel">
+      <div class="hty-panel-inner">
+
+        <!-- ══════════ SOUND ══════════ -->
+        <div class="panel-grid" data-tab-panel="sound">
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h2l2-5 3 11 3-8 2 4h4"/></svg><span class="lbl">Audio</span></div>
+            <label class="upload-zone" id="upload-zone"><input type="file" id="file-input" accept="audio/*" />Drop audio here<br>or click to upload</label>
+            <div id="audio-name"></div>
+            <div class="kv"><span>Duration</span><b id="kv-dur">—</b></div>
+            <div class="kv"><span>Trimmed clip</span><b id="kv-trim">—</b></div>
+            <div class="btn-row">
+              <button class="btn ghost sm" id="btn-trim-reset">Full length</button>
+              <button class="btn ghost sm" id="btn-trim-15">15 s from here</button>
+            </div>
+            <p class="note">Drag the two markers in the transport bar to trim. Only the trimmed range gets recorded.</p>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17c3-9 6 4 9-4s6 6 9-3"/></svg><span class="lbl">Reaction</span></div>
+            <div class="field"><div class="field-head"><span class="name">Sensitivity</span><span class="val num" data-v="gain" data-fmt="f2">1.20</span></div><input type="range" data-p="gain" min="0.3" max="3" step="0.05" value="1.2" /></div>
+            <div class="field"><div class="field-head"><span class="name">Contrast curve</span><span class="val num" data-v="curve" data-fmt="f2">1.00</span></div><input type="range" data-p="curve" min="0.4" max="3" step="0.05" value="1" /></div>
+            <div class="field"><div class="field-head"><span class="name">Attack</span><span class="val num" data-v="attack" data-fmt="f2">0.55</span></div><input type="range" data-p="attack" min="0.05" max="1" step="0.01" value="0.55" /></div>
+            <div class="field"><div class="field-head"><span class="name">Release</span><span class="val num" data-v="release" data-fmt="f2">0.14</span></div><input type="range" data-p="release" min="0.02" max="1" step="0.01" value="0.14" /></div>
+            <div class="field"><div class="field-head"><span class="name">Tilt · bass ↔ treble</span><span class="val num" data-v="tilt" data-fmt="f2">0.35</span></div><input type="range" data-p="tilt" min="-1" max="1.5" step="0.05" value="0.35" /></div>
+            <div class="field"><div class="field-head"><span class="name">Loudness pump</span><span class="val num" data-v="pump" data-fmt="f2">0.06</span></div><input type="range" data-p="pump" min="0" max="0.4" step="0.01" value="0.06" /></div>
+            <div class="field"><div class="field-head"><span class="name">Quantise steps · 0 = smooth</span><span class="val num" data-v="steps">0</span></div><input type="range" data-p="steps" min="0" max="16" step="1" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Stagger · frames per copy</span><span class="val num" data-v="stagger">0</span></div><input type="range" data-p="stagger" min="0" max="16" step="1" value="0" /></div>
+            <p class="note">Quantise snaps values to discrete steps — motion in increments instead of a smooth slide. Stagger delays each copy in an array so the value travels through it.</p>
+            <p class="note">Levels are auto-normalised per file, so a quiet voice note and a mastered track start out the same — sensitivity pushes from there. Speech has most of its energy low, so a positive tilt keeps the highs visible. Slow release = the visual breathes; fast release = it snaps.</p>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg><span class="lbl">Canvas</span></div>
+            <div class="field"><span class="name">Format</span>
+              <div class="hty-select" data-p="size">
+                <button class="hty-select-btn"><span class="hty-select-val">1080 × 1920 · Reel / Story</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+                <div class="hty-select-menu" role="listbox">
+                  <button class="hty-opt is-selected" data-value="1080x1920">1080 × 1920 · Reel / Story</button>
+                  <button class="hty-opt" data-value="1080x1350">1080 × 1350 · Feed 4:5</button>
+                  <button class="hty-opt" data-value="1080x1080">1080 × 1080 · Square</button>
+                  <button class="hty-opt" data-value="1920x1080">1920 × 1080 · Landscape</button>
+                  <button class="hty-opt" data-value="1080x1440">1080 × 1440 · 3:4</button>
+                  <button class="hty-opt" data-value="1440x1440">1440 × 1440 · Square XL</button>
+                  <button class="hty-opt" data-value="custom">Custom…</button>
+                </div>
+              </div>
+              <div class="custom-res-wrap" id="custom-res-wrap">
+                <div class="custom-res-row">
+                  <input type="number" id="inp-cw" value="1080" min="64" max="4096" />
+                  <span class="custom-res-sep">×</span>
+                  <input type="number" id="inp-ch" value="1920" min="64" max="4096" />
+                </div>
+              </div>
+            </div>
+            <div class="switch"><span class="name">Safe-area guides</span><div class="tog-sw" data-p="guides"></div></div>
+          </div>
+        </div><!-- /sound -->
+
+        <!-- ══════════ LOOK ══════════ -->
+        <div class="panel-grid" data-tab-panel="look" style="display:none">
+
+          <div class="group" style="grid-column:1/-1">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/></svg><span class="lbl">Visual system</span></div>
+            <div id="look-row" data-switch data-radio>
+              <div class="sys-lbl">Geometric</div>
+              <div class="preset-row">
+                <button class="chip active" data-case-btn="stack">Capsules</button>
+                <button class="chip" data-case-btn="mosaic">Mosaic</button>
+                <button class="chip" data-case-btn="dial">Dial</button>
+                <button class="chip" data-case-btn="editorial">Editorial</button>
+                <button class="chip" data-case-btn="grid">Data grid</button>
+                <button class="chip" data-case-btn="bars">Bars</button>
+              </div>
+              <div class="sys-lbl">Expressive</div>
+              <div class="preset-row">
+                <button class="chip" data-case-btn="blob">Liquid</button>
+                <button class="chip" data-case-btn="rings">Contour</button>
+                <button class="chip" data-case-btn="halftone">Halftone</button>
+                <button class="chip" data-case-btn="ridge">Ridgeline</button>
+                <button class="chip" data-case-btn="spikes">Radial</button>
+                <button class="chip" data-case-btn="shear">Slit shear</button>
+                <button class="chip" data-case-btn="type">Type mask</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- CAPSULES -->
+          <div class="group" data-case="stack">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="7" width="3.4" height="10" rx="1.7"/><rect x="10.3" y="4" width="3.4" height="16" rx="1.7"/><rect x="16.6" y="9" width="3.4" height="6" rx="1.7"/></svg><span class="lbl">Capsule array</span></div>
+            <div class="field"><span class="name">Arrangement</span>
+              <div class="seg fill" data-p="stArr" data-radio>
+                <button data-val="row" class="active">Row</button><button data-val="col">Column</button><button data-val="grid">Grid</button><button data-val="ring">Ring</button><button data-val="diag">Diagonal</button>
+              </div>
+            </div>
+            <div class="switch"><span class="name">Travelling wave · one band, delayed</span><div class="tog-sw on" data-p="stWave"></div></div>
+            <div class="field"><div class="field-head"><span class="name">Wave band · bass → treble</span><span class="val num" data-v="stBand" data-fmt="f2">0.18</span></div><input type="range" data-p="stBand" min="0" max="1" step="0.01" value="0.18" /></div>
+            <div class="field"><div class="field-head"><span class="name">Count</span><span class="val num" data-v="stCount">13</span></div><input type="range" data-p="stCount" min="2" max="64" step="1" value="13" /></div>
+            <div class="field"><div class="field-head"><span class="name">Rows · grid only</span><span class="val num" data-v="stRows">6</span></div><input type="range" data-p="stRows" min="1" max="24" step="1" value="6" /></div>
+            <div class="field"><div class="field-head"><span class="name">Thickness</span><span class="val num" data-v="stThick" data-fmt="f3">0.052</span></div><input type="range" data-p="stThick" min="0.004" max="0.16" step="0.002" value="0.052" /></div>
+            <div class="field"><div class="field-head"><span class="name">Length</span><span class="val num" data-v="stLen" data-fmt="f2">0.42</span></div><input type="range" data-p="stLen" min="0.02" max="1" step="0.01" value="0.42" /></div>
+            <div class="field"><div class="field-head"><span class="name">Minimum length</span><span class="val num" data-v="stMin" data-fmt="f3">0.030</span></div><input type="range" data-p="stMin" min="0" max="0.2" step="0.002" value="0.03" /></div>
+            <div class="field"><div class="field-head"><span class="name">Spread</span><span class="val num" data-v="stSpread" data-fmt="f2">0.86</span></div><input type="range" data-p="stSpread" min="0.1" max="1" step="0.01" value="0.86" /></div>
+            <div class="field"><div class="field-head"><span class="name">Spread · vertical</span><span class="val num" data-v="stSpreadV" data-fmt="f2">0.70</span></div><input type="range" data-p="stSpreadV" min="0.1" max="1" step="0.01" value="0.7" /></div>
+            <div class="field"><div class="field-head"><span class="name">Ring radius</span><span class="val num" data-v="stRing" data-fmt="f2">0.16</span></div><input type="range" data-p="stRing" min="0" max="0.45" step="0.01" value="0.16" /></div>
+            <div class="field"><div class="field-head"><span class="name">Roundness</span><span class="val num" data-v="stRadius" data-fmt="f2">1.00</span></div><input type="range" data-p="stRadius" min="0" max="1" step="0.01" value="1" /></div>
+            <div class="field"><span class="name">Grow from</span>
+              <div class="seg fill" data-p="stAlign" data-radio>
+                <button data-val="center" class="active">Centre</button><button data-val="start">Edge</button>
+              </div>
+            </div>
+            <p class="note">Set <b>Stagger</b> in Reaction to make the value travel through the array — the same delay-per-copy move a Cavalry duplicator does.</p>
+          </div>
+
+          <!-- MOSAIC -->
+          <div class="group" data-case="mosaic" style="display:none">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 3h8v8H3z"/><path d="M13 3h8v8a8 8 0 0 1-8-8z"/><path d="M3 13h8v8H3z" /><path d="M21 21h-8v-8z"/></svg><span class="lbl">Modular mosaic</span></div>
+            <div class="field"><span class="name">Tile set</span>
+              <div class="seg fill" data-p="msSet" data-radio>
+                <button data-val="quarter" class="active">Quarters</button><button data-val="geo">Geo</button><button data-val="dots">Dots</button><button data-val="all">All</button>
+              </div>
+            </div>
+            <div class="field"><span class="name">Sound drives</span>
+              <div class="seg fill" data-p="msMode" data-radio>
+                <button data-val="rotate" class="active">Rotation</button><button data-val="scale">Scale</button><button data-val="swap">Tile swap</button><button data-val="reveal">Reveal</button>
+              </div>
+            </div>
+            <div class="field"><span class="name">Delay travels</span>
+              <div class="seg fill" data-p="msDelay" data-radio>
+                <button data-val="diag" class="active">Diagonal</button><button data-val="row">Rows</button><button data-val="col">Columns</button><button data-val="radial">Radial</button>
+              </div>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Columns</span><span class="val num" data-v="msCols">6</span></div><input type="range" data-p="msCols" min="2" max="32" step="1" value="6" /></div>
+            <div class="field"><div class="field-head"><span class="name">Tile gap</span><span class="val num" data-v="msGap" data-fmt="f2">0.12</span></div><input type="range" data-p="msGap" min="0" max="0.7" step="0.01" value="0.12" /></div>
+            <div class="field"><div class="field-head"><span class="name">Outline · 0 = filled</span><span class="val num" data-v="msOutline" data-fmt="f1">0.0</span></div><input type="range" data-p="msOutline" min="0" max="6" step="0.2" value="0" /></div>
+            <div class="field"><span class="name">Ink varies by</span>
+              <div class="seg fill" data-p="msColorBy" data-radio>
+                <button data-val="col" class="active">Column</button><button data-val="row">Row</button><button data-val="cell">Cell</button>
+              </div>
+            </div>
+            <div class="switch"><span class="name">Read spectrum down the rows</span><div class="tog-sw" data-p="msBandRow"></div></div>
+          </div>
+
+          <!-- DIAL -->
+          <div class="group" data-case="dial" style="display:none">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3a9 9 0 0 1 9 9"/><path d="M12 6.5a5.5 5.5 0 0 1 5.5 5.5"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg><span class="lbl">Dial</span></div>
+            <div class="field"><div class="field-head"><span class="name">Arcs</span><span class="val num" data-v="dlArcs">5</span></div><input type="range" data-p="dlArcs" min="1" max="40" step="1" value="5" /></div>
+            <div class="field"><div class="field-head"><span class="name">Inner radius</span><span class="val num" data-v="dlR0" data-fmt="f2">0.12</span></div><input type="range" data-p="dlR0" min="0" max="0.4" step="0.01" value="0.12" /></div>
+            <div class="field"><div class="field-head"><span class="name">Spacing</span><span class="val num" data-v="dlGap" data-fmt="f3">0.045</span></div><input type="range" data-p="dlGap" min="0.006" max="0.12" step="0.001" value="0.045" /></div>
+            <div class="field"><div class="field-head"><span class="name">Weight</span><span class="val num" data-v="dlW" data-fmt="f3">0.014</span></div><input type="range" data-p="dlW" min="0.001" max="0.06" step="0.001" value="0.014" /></div>
+            <div class="field"><div class="field-head"><span class="name">Max sweep</span><span class="val num" data-v="dlSweep" data-fmt="f2">0.85</span></div><input type="range" data-p="dlSweep" min="0.05" max="1" step="0.01" value="0.85" /></div>
+            <div class="field"><div class="field-head"><span class="name">Start angle</span><span class="val num" data-v="dlStart">-90</span></div><input type="range" data-p="dlStart" min="-180" max="180" step="1" value="-90" /></div>
+            <div class="field"><div class="field-head"><span class="name">Offset per arc</span><span class="val num" data-v="dlOffset" data-fmt="f3">0.060</span></div><input type="range" data-p="dlOffset" min="-0.25" max="0.25" step="0.005" value="0.06" /></div>
+            <div class="field"><div class="field-head"><span class="name">Spin</span><span class="val num" data-v="dlSpin" data-fmt="f2">0.00</span></div><input type="range" data-p="dlSpin" min="-0.6" max="0.6" step="0.01" value="0" /></div>
+            <div class="field"><span class="name">Cap</span>
+              <div class="seg fill" data-p="dlCap" data-radio>
+                <button data-val="butt" class="active">Flat</button><button data-val="round">Round</button>
+              </div>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Tick ring · 0 = off</span><span class="val num" data-v="dlTicks">60</span></div><input type="range" data-p="dlTicks" min="0" max="180" step="1" value="60" /></div>
+            <div class="field"><div class="field-head"><span class="name">Tick length</span><span class="val num" data-v="dlTickLen" data-fmt="f3">0.030</span></div><input type="range" data-p="dlTickLen" min="0.004" max="0.14" step="0.002" value="0.03" /></div>
+            <div class="field"><div class="field-head"><span class="name">Centre dot</span><span class="val num" data-v="dlDot" data-fmt="f3">0.000</span></div><input type="range" data-p="dlDot" min="0" max="0.1" step="0.002" value="0" /></div>
+          </div>
+
+          <!-- EDITORIAL -->
+          <div class="group" data-case="editorial" style="display:none">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 4h12M3 8h8"/><rect x="3" y="12" width="16" height="2.4" rx="1.2"/><rect x="3" y="16.5" width="9" height="2.4" rx="1.2"/></svg><span class="lbl">Editorial</span></div>
+            <div class="field"><span class="name">Headline · one line per row</span><textarea data-p="tyText" placeholder="WTFFF!?"></textarea></div>
+            <div class="field"><div class="field-head"><span class="name">Headline size</span><span class="val num" data-v="edSize" data-fmt="f2">0.11</span></div><input type="range" data-p="edSize" min="0.02" max="0.3" step="0.005" value="0.11" /></div>
+            <div class="field"><div class="field-head"><span class="name">Rows</span><span class="val num" data-v="edRows">7</span></div><input type="range" data-p="edRows" min="1" max="32" step="1" value="7" /></div>
+            <div class="field"><div class="field-head"><span class="name">Snap to columns</span><span class="val num" data-v="edCols">12</span></div><input type="range" data-p="edCols" min="2" max="32" step="1" value="12" /></div>
+            <div class="field"><div class="field-head"><span class="name">Row height</span><span class="val num" data-v="edRowH" data-fmt="f3">0.022</span></div><input type="range" data-p="edRowH" min="0.004" max="0.1" step="0.001" value="0.022" /></div>
+            <div class="field"><div class="field-head"><span class="name">Row gap</span><span class="val num" data-v="edRowGap" data-fmt="f2">0.60</span></div><input type="range" data-p="edRowGap" min="0" max="3" step="0.05" value="0.6" /></div>
+            <div class="field"><div class="field-head"><span class="name">Row roundness</span><span class="val num" data-v="edRadius" data-fmt="f2">0.00</span></div><input type="range" data-p="edRadius" min="0" max="1" step="0.01" value="0" /></div>
+            <div class="switch"><span class="name">Rows fill the frame</span><div class="tog-sw on" data-p="edFill"></div></div>
+            <div class="switch"><span class="name">Frequency labels</span><div class="tog-sw on" data-p="edLabels"></div></div>
+            <p class="note">Bar widths snap to the column grid, so every frame stays on the same measure. Works best with anchor <b>top left</b> and metadata on.</p>
+          </div>
+
+          <!-- BARS -->
+          <div class="group" data-case="bars">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v4M8 9v11M12 4v16M16 11v9M20 14v6"/></svg><span class="lbl">Bars</span></div>
+            <div class="field"><span class="name">Arrangement</span>
+              <div class="seg fill" data-p="barMode" data-radio>
+                <button data-val="mirror" class="active">Mirror</button><button data-val="up">Up</button><button data-val="split">Split</button><button data-val="radial">Ring</button>
+              </div>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Count</span><span class="val num" data-v="barCount">56</span></div><input type="range" data-p="barCount" min="8" max="180" step="1" value="56" /></div>
+            <div class="field"><div class="field-head"><span class="name">Gap</span><span class="val num" data-v="barGap" data-fmt="f2">0.34</span></div><input type="range" data-p="barGap" min="0" max="0.85" step="0.01" value="0.34" /></div>
+            <div class="field"><div class="field-head"><span class="name">Amplitude</span><span class="val num" data-v="barAmp" data-fmt="f2">0.40</span></div><input type="range" data-p="barAmp" min="0.05" max="1.1" step="0.01" value="0.4" /></div>
+            <div class="field"><div class="field-head"><span class="name">Spread</span><span class="val num" data-v="barSpread" data-fmt="f2">0.84</span></div><input type="range" data-p="barSpread" min="0.2" max="1" step="0.01" value="0.84" /></div>
+            <div class="field"><div class="field-head"><span class="name">Corner radius</span><span class="val num" data-v="barRadius" data-fmt="f2">0.00</span></div><input type="range" data-p="barRadius" min="0" max="1" step="0.01" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Block steps · 0 = solid</span><span class="val num" data-v="barBlocks">0</span></div><input type="range" data-p="barBlocks" min="0" max="24" step="1" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Baseline offset</span><span class="val num" data-v="barBase" data-fmt="f2">0.00</span></div><input type="range" data-p="barBase" min="-0.4" max="0.4" step="0.01" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Floor height</span><span class="val num" data-v="barFloor" data-fmt="f2">0.01</span></div><input type="range" data-p="barFloor" min="0" max="0.12" step="0.005" value="0.01" /></div>
+          </div>
+
+          <!-- BLOB -->
+          <div class="group" data-case="blob" style="display:none">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3c5 0 9 3.6 9 8s-4.6 10-9 10-9-3-9-8 4-10 9-10z"/></svg><span class="lbl">Liquid</span></div>
+            <div class="field"><div class="field-head"><span class="name">Radius</span><span class="val num" data-v="blobR" data-fmt="f2">0.26</span></div><input type="range" data-p="blobR" min="0.06" max="0.5" step="0.01" value="0.26" /></div>
+            <div class="field"><div class="field-head"><span class="name">Deform</span><span class="val num" data-v="blobAmp" data-fmt="f2">0.55</span></div><input type="range" data-p="blobAmp" min="0" max="1.6" step="0.01" value="0.55" /></div>
+            <div class="field"><div class="field-head"><span class="name">Softness</span><span class="val num" data-v="blobSoft">4</span></div><input type="range" data-p="blobSoft" min="0" max="14" step="1" value="4" /></div>
+            <div class="field"><div class="field-head"><span class="name">Lobes</span><span class="val num" data-v="blobLobes">1</span></div><input type="range" data-p="blobLobes" min="1" max="6" step="1" value="1" /></div>
+            <div class="field"><div class="field-head"><span class="name">Layers</span><span class="val num" data-v="blobLayers">3</span></div><input type="range" data-p="blobLayers" min="1" max="9" step="1" value="3" /></div>
+            <div class="field"><div class="field-head"><span class="name">Layer offset</span><span class="val num" data-v="blobOff" data-fmt="f2">0.02</span></div><input type="range" data-p="blobOff" min="0" max="0.12" step="0.005" value="0.02" /></div>
+            <div class="field"><div class="field-head"><span class="name">Layer echo · frames</span><span class="val num" data-v="blobEcho">4</span></div><input type="range" data-p="blobEcho" min="0" max="20" step="1" value="4" /></div>
+            <div class="field"><div class="field-head"><span class="name">Spin</span><span class="val num" data-v="blobSpin" data-fmt="f2">0.06</span></div><input type="range" data-p="blobSpin" min="-0.6" max="0.6" step="0.01" value="0.06" /></div>
+            <div class="field"><div class="field-head"><span class="name">Outline · 0 = filled</span><span class="val num" data-v="blobStroke" data-fmt="f1">0.0</span></div><input type="range" data-p="blobStroke" min="0" max="12" step="0.5" value="0" /></div>
+          </div>
+
+          <!-- RINGS -->
+          <div class="group" data-case="rings" style="display:none">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="3"/></svg><span class="lbl">Contour echo</span></div>
+            <div class="field"><div class="field-head"><span class="name">Rings</span><span class="val num" data-v="ringCount">16</span></div><input type="range" data-p="ringCount" min="2" max="60" step="1" value="16" /></div>
+            <div class="field"><div class="field-head"><span class="name">Inner radius</span><span class="val num" data-v="ringR0" data-fmt="f2">0.07</span></div><input type="range" data-p="ringR0" min="0" max="0.4" step="0.01" value="0.07" /></div>
+            <div class="field"><div class="field-head"><span class="name">Spacing</span><span class="val num" data-v="ringGap" data-fmt="f3">0.022</span></div><input type="range" data-p="ringGap" min="0.004" max="0.08" step="0.001" value="0.022" /></div>
+            <div class="field"><div class="field-head"><span class="name">Deform</span><span class="val num" data-v="ringAmp" data-fmt="f2">0.36</span></div><input type="range" data-p="ringAmp" min="0" max="1.2" step="0.01" value="0.36" /></div>
+            <div class="field"><div class="field-head"><span class="name">Echo · frames per ring</span><span class="val num" data-v="ringEcho">3</span></div><input type="range" data-p="ringEcho" min="0" max="24" step="1" value="3" /></div>
+            <div class="field"><div class="field-head"><span class="name">Line weight</span><span class="val num" data-v="ringW" data-fmt="f1">2.2</span></div><input type="range" data-p="ringW" min="0.5" max="14" step="0.1" value="2.2" /></div>
+            <div class="field"><div class="field-head"><span class="name">Spin per ring</span><span class="val num" data-v="ringSpin" data-fmt="f2">0.02</span></div><input type="range" data-p="ringSpin" min="-0.3" max="0.3" step="0.01" value="0.02" /></div>
+            <div class="field"><div class="field-head"><span class="name">Fade out</span><span class="val num" data-v="ringFade" data-fmt="f2">0.45</span></div><input type="range" data-p="ringFade" min="0" max="1" step="0.01" value="0.45" /></div>
+          </div>
+
+          <!-- HALFTONE -->
+          <div class="group" data-case="halftone" style="display:none">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="6" r="1"/><circle cx="12" cy="6" r="1.8"/><circle cx="18" cy="6" r="1"/><circle cx="6" cy="12" r="1.8"/><circle cx="12" cy="12" r="3"/><circle cx="18" cy="12" r="1.8"/><circle cx="6" cy="18" r="1"/><circle cx="12" cy="18" r="1.8"/><circle cx="18" cy="18" r="1"/></svg><span class="lbl">Halftone field</span></div>
+            <div class="field"><span class="name">Mark</span>
+              <div class="seg fill" data-p="htShape" data-radio>
+                <button data-val="dot" class="active">Dot</button><button data-val="square">Square</button><button data-val="plus">Plus</button><button data-val="line">Line</button><button data-val="stalk">Stalk</button>
+              </div>
+            </div>
+            <div class="field"><span class="name">Spectrum mapping</span>
+              <div class="seg fill" data-p="htMap" data-radio>
+                <button data-val="field" class="active">Field</button><button data-val="radial">Radial</button><button data-val="columns">Columns</button><button data-val="rows">Rows</button><button data-val="diag">Diagonal</button>
+              </div>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Columns</span><span class="val num" data-v="htCols">34</span></div><input type="range" data-p="htCols" min="6" max="90" step="1" value="34" /></div>
+            <div class="field"><div class="field-head"><span class="name">Mark size</span><span class="val num" data-v="htMax" data-fmt="f2">1.05</span></div><input type="range" data-p="htMax" min="0.2" max="2" step="0.01" value="1.05" /></div>
+            <div class="field"><div class="field-head"><span class="name">Vignette mask</span><span class="val num" data-v="htMask" data-fmt="f2">0.30</span></div><input type="range" data-p="htMask" min="0" max="1" step="0.01" value="0.3" /></div>
+            <div class="field"><div class="field-head"><span class="name">Grid jitter</span><span class="val num" data-v="htJit" data-fmt="f2">0.00</span></div><input type="range" data-p="htJit" min="0" max="1" step="0.01" value="0" /></div>
+          </div>
+
+          <div class="group" data-case="halftone" style="display:none">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 8c4-3 7 3 11 0s5-2 7-1"/><path d="M3 14c4-3 7 3 11 0s5-2 7-1"/><path d="M3 20c4-3 7 3 11 0s5-2 7-1"/></svg><span class="lbl">Wind</span></div>
+            <div class="field"><span class="name">How the reaction travels</span>
+              <div class="seg fill" data-p="htField" data-radio>
+                <button data-val="wind" class="active">Wind</button><button data-val="sweep">Sweep</button><button data-val="swirl">Swirl</button><button data-val="turb">Turbulent</button><button data-val="radial">Ripple</button>
+              </div>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Delay across the field</span><span class="val num" data-v="htFlow" data-fmt="f2">0.45</span></div><input type="range" data-p="htFlow" min="0" max="1" step="0.01" value="0.45" /></div>
+            <div class="field"><div class="field-head"><span class="name">Direction</span><span class="val num" data-v="htWindAng">0</span></div><input type="range" data-p="htWindAng" min="-180" max="180" step="1" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Gust scale</span><span class="val num" data-v="htScale" data-fmt="f2">1.10</span></div><input type="range" data-p="htScale" min="0.2" max="4" step="0.05" value="1.1" /></div>
+            <div class="field"><div class="field-head"><span class="name">Gust speed</span><span class="val num" data-v="htSpeed" data-fmt="f2">0.30</span></div><input type="range" data-p="htSpeed" min="0" max="1.5" step="0.01" value="0.3" /></div>
+            <div class="field"><div class="field-head"><span class="name">Turbulence</span><span class="val num" data-v="htTurb" data-fmt="f2">0.30</span></div><input type="range" data-p="htTurb" min="0" max="1" step="0.01" value="0.3" /></div>
+            <div class="field"><div class="field-head"><span class="name">Sway · marks drift</span><span class="val num" data-v="htSway" data-fmt="f2">0.12</span></div><input type="range" data-p="htSway" min="0" max="0.6" step="0.01" value="0.12" /></div>
+            <div class="field"><div class="field-head"><span class="name">Bend · marks lean</span><span class="val num" data-v="htBend" data-fmt="f2">0.50</span></div><input type="range" data-p="htBend" min="0" max="1" step="0.01" value="0.5" /></div>
+            <div class="field"><div class="field-head"><span class="name">Breath · density undulates</span><span class="val num" data-v="htBreath" data-fmt="f2">0.25</span></div><input type="range" data-p="htBreath" min="0" max="1" step="0.01" value="0.25" /></div>
+            <p class="note">One noise field drives everything: the delay travels with it, marks lean into it, colour rides on it. <b>Stalk</b> + wind + bend is a hay field; dots + swirl is smoke.</p>
+          </div>
+
+          <div class="group" data-case="halftone" style="display:none">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="9" r="5"/><circle cx="15" cy="15" r="5"/></svg><span class="lbl">Ink motion</span></div>
+            <div class="field"><span class="name">Colour follows</span>
+              <div class="seg fill" data-p="htInk" data-radio>
+                <button data-val="drift" class="active">Drift</button><button data-val="flow">Gusts</button><button data-val="level">Level</button><button data-val="depth">Depth</button><button data-val="grid">Grid</button>
+              </div>
+            </div>
+            <div class="switch"><span class="name">Blend between inks</span><div class="tog-sw on" data-p="htInkSmooth"></div></div>
+            <div class="field"><div class="field-head"><span class="name">Colour speed</span><span class="val num" data-v="htInkSpeed" data-fmt="f2">0.50</span></div><input type="range" data-p="htInkSpeed" min="-2" max="2" step="0.02" value="0.5" /></div>
+            <div class="field"><div class="field-head"><span class="name">Colour spread</span><span class="val num" data-v="htInkSpread" data-fmt="f2">0.80</span></div><input type="range" data-p="htInkSpread" min="0" max="3" step="0.02" value="0.8" /></div>
+            <p class="note">Drift sends colour bands travelling with the wind · Gusts paints patches that follow the field · Grid falls back to the global ink mapping in Art.</p>
+          </div>
+
+          <!-- RIDGE -->
+          <div class="group" data-case="ridge" style="display:none">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8c3 0 4-3 6-3s3 3 6 3 3-2 6-2"/><path d="M3 13c3 0 4-3 6-3s3 3 6 3 3-2 6-2"/><path d="M3 18c3 0 4-3 6-3s3 3 6 3 3-2 6-2"/></svg><span class="lbl">Ridgeline</span></div>
+            <div class="field"><div class="field-head"><span class="name">Lines</span><span class="val num" data-v="rgLines">32</span></div><input type="range" data-p="rgLines" min="3" max="90" step="1" value="32" /></div>
+            <div class="field"><div class="field-head"><span class="name">Spacing</span><span class="val num" data-v="rgGap" data-fmt="f3">0.026</span></div><input type="range" data-p="rgGap" min="0.004" max="0.09" step="0.001" value="0.026" /></div>
+            <div class="field"><div class="field-head"><span class="name">Amplitude</span><span class="val num" data-v="rgAmp" data-fmt="f2">0.17</span></div><input type="range" data-p="rgAmp" min="0.01" max="0.6" step="0.01" value="0.17" /></div>
+            <div class="field"><div class="field-head"><span class="name">Scroll · frames per line</span><span class="val num" data-v="rgStep">3</span></div><input type="range" data-p="rgStep" min="0" max="20" step="1" value="3" /></div>
+            <div class="field"><div class="field-head"><span class="name">Width</span><span class="val num" data-v="rgSpread" data-fmt="f2">0.86</span></div><input type="range" data-p="rgSpread" min="0.2" max="1" step="0.01" value="0.86" /></div>
+            <div class="field"><div class="field-head"><span class="name">Line weight</span><span class="val num" data-v="rgW" data-fmt="f1">1.8</span></div><input type="range" data-p="rgW" min="0.4" max="10" step="0.1" value="1.8" /></div>
+            <div class="field"><div class="field-head"><span class="name">Skew</span><span class="val num" data-v="rgSkew" data-fmt="f2">0.00</span></div><input type="range" data-p="rgSkew" min="-0.5" max="0.5" step="0.01" value="0" /></div>
+            <div class="switch"><span class="name">Occlude (fill under lines)</span><div class="tog-sw on" data-p="rgFill"></div></div>
+            <div class="switch"><span class="name">Mirror both sides</span><div class="tog-sw" data-p="rgMirror"></div></div>
+          </div>
+
+          <!-- GRID -->
+          <div class="group" data-case="grid" style="display:none">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h18v18H3zM9 3v18M15 3v18M3 9h18M3 15h18"/></svg><span class="lbl">Data grid</span></div>
+            <div class="field"><span class="name">Cell behaviour</span>
+              <div class="seg fill" data-p="gdMode" data-radio>
+                <button data-val="level" class="active">Level</button><button data-val="scale">Scale</button><button data-val="flip">Flip</button>
+              </div>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Columns</span><span class="val num" data-v="gdCols">14</span></div><input type="range" data-p="gdCols" min="3" max="48" step="1" value="14" /></div>
+            <div class="field"><div class="field-head"><span class="name">Rows</span><span class="val num" data-v="gdRows">22</span></div><input type="range" data-p="gdRows" min="3" max="64" step="1" value="22" /></div>
+            <div class="field"><div class="field-head"><span class="name">Cell gap</span><span class="val num" data-v="gdGap" data-fmt="f2">0.22</span></div><input type="range" data-p="gdGap" min="0" max="0.8" step="0.01" value="0.22" /></div>
+            <div class="field"><div class="field-head"><span class="name">Coverage</span><span class="val num" data-v="gdSize" data-fmt="f2">0.80</span></div><input type="range" data-p="gdSize" min="0.2" max="1" step="0.01" value="0.8" /></div>
+            <div class="field"><div class="field-head"><span class="name">Corner radius</span><span class="val num" data-v="gdRadius" data-fmt="f2">0.00</span></div><input type="range" data-p="gdRadius" min="0" max="1" step="0.01" value="0" /></div>
+            <div class="switch"><span class="name">Show unlit cells</span><div class="tog-sw on" data-p="gdGhost"></div></div>
+          </div>
+
+          <!-- SPIKES -->
+          <div class="group" data-case="spikes" style="display:none">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2v5M12 17v5M2 12h5M17 12h5M5 5l3.5 3.5M15.5 15.5L19 19M19 5l-3.5 3.5M8.5 15.5L5 19"/></svg><span class="lbl">Radial</span></div>
+            <div class="field"><div class="field-head"><span class="name">Rays</span><span class="val num" data-v="spCount">140</span></div><input type="range" data-p="spCount" min="12" max="400" step="1" value="140" /></div>
+            <div class="field"><div class="field-head"><span class="name">Inner radius</span><span class="val num" data-v="spInner" data-fmt="f2">0.16</span></div><input type="range" data-p="spInner" min="0" max="0.45" step="0.01" value="0.16" /></div>
+            <div class="field"><div class="field-head"><span class="name">Length</span><span class="val num" data-v="spLen" data-fmt="f2">0.28</span></div><input type="range" data-p="spLen" min="0.02" max="0.7" step="0.01" value="0.28" /></div>
+            <div class="field"><div class="field-head"><span class="name">Weight</span><span class="val num" data-v="spW" data-fmt="f1">2.4</span></div><input type="range" data-p="spW" min="0.4" max="20" step="0.1" value="2.4" /></div>
+            <div class="field"><div class="field-head"><span class="name">Spin</span><span class="val num" data-v="spSpin" data-fmt="f2">0.03</span></div><input type="range" data-p="spSpin" min="-0.5" max="0.5" step="0.01" value="0.03" /></div>
+            <div class="field"><div class="field-head"><span class="name">Taper</span><span class="val num" data-v="spTaper" data-fmt="f2">0.60</span></div><input type="range" data-p="spTaper" min="0" max="1" step="0.01" value="0.6" /></div>
+            <div class="field"><div class="field-head"><span class="name">Inner ring weight</span><span class="val num" data-v="spRing" data-fmt="f1">0.0</span></div><input type="range" data-p="spRing" min="0" max="14" step="0.5" value="0" /></div>
+            <div class="switch"><span class="name">Mirror (symmetrical)</span><div class="tog-sw on" data-p="spMirror"></div></div>
+          </div>
+
+          <!-- SHEAR -->
+          <div class="group" data-case="shear" style="display:none">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h10M8 9h12M2 13h12M7 17h11"/></svg><span class="lbl">Slit shear</span></div>
+            <div class="field"><span class="name">Base shape</span>
+              <div class="seg fill" data-p="shShape" data-radio>
+                <button data-val="disc" class="active">Disc</button><button data-val="bar">Bar</button><button data-val="text">Text</button>
+              </div>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Slices</span><span class="val num" data-v="shSlices">28</span></div><input type="range" data-p="shSlices" min="4" max="140" step="1" value="28" /></div>
+            <div class="field"><div class="field-head"><span class="name">Shift</span><span class="val num" data-v="shAmt" data-fmt="f2">0.20</span></div><input type="range" data-p="shAmt" min="0" max="0.9" step="0.01" value="0.2" /></div>
+            <div class="field"><div class="field-head"><span class="name">Size</span><span class="val num" data-v="shSize" data-fmt="f2">0.36</span></div><input type="range" data-p="shSize" min="0.08" max="0.9" step="0.01" value="0.36" /></div>
+            <div class="field"><div class="field-head"><span class="name">Slice gap</span><span class="val num" data-v="shGap" data-fmt="f2">0.00</span></div><input type="range" data-p="shGap" min="0" max="0.6" step="0.01" value="0" /></div>
+            <div class="field"><span class="name">Direction</span>
+              <div class="seg fill" data-p="shDir" data-radio>
+                <button data-val="h" class="active">Horizontal</button><button data-val="v">Vertical</button>
+              </div>
+            </div>
+            <div class="switch"><span class="name">Alternate direction</span><div class="tog-sw on" data-p="shAlt"></div></div>
+          </div>
+
+          <!-- TYPE -->
+          <div class="group" data-case="type" style="display:none">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M12 6v13"/></svg><span class="lbl">Type mask</span></div>
+            <div class="field"><span class="name">Word</span><input type="text" data-p="tyText" value="WTFFF!?" /></div>
+            <div class="field"><span class="name">Fill</span>
+              <div class="seg fill" data-p="tyMode" data-radio>
+                <button data-val="bars" class="active">Bars</button><button data-val="ridge">Ridge</button><button data-val="dots">Dots</button><button data-val="solid">Solid</button>
+              </div>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Size</span><span class="val num" data-v="tySize" data-fmt="f2">0.20</span></div><input type="range" data-p="tySize" min="0.05" max="0.6" step="0.01" value="0.2" /></div>
+            <div class="field"><div class="field-head"><span class="name">Tracking</span><span class="val num" data-v="tyTrack" data-fmt="f2">0.00</span></div><input type="range" data-p="tyTrack" min="-0.1" max="0.4" step="0.01" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Line height</span><span class="val num" data-v="tyLead" data-fmt="f2">0.92</span></div><input type="range" data-p="tyLead" min="0.6" max="1.6" step="0.01" value="0.92" /></div>
+            <div class="field"><div class="field-head"><span class="name">Outline</span><span class="val num" data-v="tyStroke" data-fmt="f1">0.0</span></div><input type="range" data-p="tyStroke" min="0" max="12" step="0.5" value="0" /></div>
+            <div class="switch"><span class="name">Speech bubble</span><div class="tog-sw" data-p="tyBubble"></div></div>
+            <p class="note">Use a short word or an ALL-CAPS line. Newlines are honoured — type a line break for a stacked headline.</p>
+          </div>
+
+        </div><!-- /look -->
+
+        <!-- ══════════ ART ══════════ -->
+        <div class="panel-grid" data-tab-panel="art" style="display:none">
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="9" r="5"/><circle cx="15" cy="15" r="5"/></svg><span class="lbl">Colour</span></div>
+            <div class="color-row"><span class="color-label">Background</span><div class="color-swatch" id="sw-bg" style="background:#0B0A0D"><input type="color" class="native-picker" data-p="bg" value="#0b0a0d" /></div><input type="text" class="color-hex" id="hex-bg" value="#0B0A0D" maxlength="7" /></div>
+            <div id="pal-list" style="display:flex;flex-direction:column;gap:7px"></div>
+            <button class="add-pal" id="btn-add-col">+ Add colour</button>
+            <div class="field"><span class="name">Ink mapping</span>
+              <div class="hty-select" data-p="colorMode">
+                <button class="hty-select-btn"><span class="hty-select-val">Across the spectrum</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+                <div class="hty-select-menu" role="listbox">
+                  <button class="hty-opt is-selected" data-value="band">Across the spectrum</button>
+                  <button class="hty-opt" data-value="blend">Blended spectrum</button>
+                  <button class="hty-opt" data-value="alt">Alternating</button>
+                  <button class="hty-opt" data-value="level">By loudness</button>
+                  <button class="hty-opt" data-value="cycle">Cycle over time</button>
+                  <button class="hty-opt" data-value="layer">Per layer</button>
+                  <button class="hty-opt" data-value="mono">Single ink</button>
+                </div>
+              </div>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Cycle speed</span><span class="val num" data-v="cycleSpeed" data-fmt="f2">0.25</span></div><input type="range" data-p="cycleSpeed" min="0" max="4" step="0.05" value="0.25" /></div>
+            <div class="field"><div class="field-head"><span class="name">Ink opacity</span><span class="val num" data-v="ink" data-fmt="f2">1.00</span></div><input type="range" data-p="ink" min="0.1" max="1" step="0.01" value="1" /></div>
+            <div class="field"><span class="name">Blend</span>
+              <div class="seg fill" data-p="blend" data-radio>
+                <button data-val="source-over" class="active">Normal</button><button data-val="screen">Screen</button><button data-val="lighter">Add</button><button data-val="difference">Diff</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg><span class="lbl">Layout</span></div>
+            <div class="field"><div class="field-head"><span class="name">Margin</span><span class="val num" data-v="margin" data-fmt="f3">0.075</span></div><input type="range" data-p="margin" min="0" max="0.2" step="0.005" value="0.075" /></div>
+            <div class="field"><span class="name">Anchor</span>
+              <div class="hty-select" data-p="anchor">
+                <button class="hty-select-btn"><span class="hty-select-val">Centre</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+                <div class="hty-select-menu" role="listbox">
+                  <button class="hty-opt" data-value="lt">Top left</button>
+                  <button class="hty-opt" data-value="ct">Top centre</button>
+                  <button class="hty-opt" data-value="rt">Top right</button>
+                  <button class="hty-opt" data-value="lc">Middle left</button>
+                  <button class="hty-opt is-selected" data-value="cc">Centre</button>
+                  <button class="hty-opt" data-value="rc">Middle right</button>
+                  <button class="hty-opt" data-value="lb">Bottom left</button>
+                  <button class="hty-opt" data-value="cb">Bottom centre</button>
+                  <button class="hty-opt" data-value="rb">Bottom right</button>
+                </div>
+              </div>
+            </div>
+            <div class="field"><span class="name">Rules</span>
+              <div class="seg fill" data-p="rules" data-radio>
+                <button data-val="off" class="active">Off</button><button data-val="frame">Frame</button><button data-val="hlines">Lines</button><button data-val="cross">Cross</button>
+              </div>
+            </div>
+            <div class="switch"><span class="name">Column grid · rendered</span><div class="tog-sw" data-p="gridOn"></div></div>
+            <div class="field"><div class="field-head"><span class="name">Columns</span><span class="val num" data-v="gridCols">12</span></div><input type="range" data-p="gridCols" min="2" max="24" step="1" value="12" /></div>
+            <div class="field"><span class="name">Metadata</span>
+              <div class="seg fill" data-p="meta" data-radio>
+                <button data-val="off" class="active">Off</button><button data-val="tag">Tag</button><button data-val="full">Full</button>
+              </div>
+            </div>
+            <p class="note">Anchor and margin move the whole system off centre and lock it to the margin box — the fastest way out of a symmetrical composition.</p>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20c4-2 5-8 8-8s4 6 8 4"/><circle cx="7" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="13" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="9" r="1.2" fill="currentColor" stroke="none"/></svg><span class="lbl">Texture</span></div>
+            <div class="preset-row" id="finish-row">
+              <button class="chip" data-finish="flat">Flat</button>
+              <button class="chip" data-finish="print">Print</button>
+              <button class="chip" data-finish="glow">Glow</button>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Grain</span><span class="val num" data-v="grain" data-fmt="f2">0.16</span></div><input type="range" data-p="grain" min="0" max="0.8" step="0.01" value="0.16" /></div>
+            <div class="field"><div class="field-head"><span class="name">Grain scale</span><span class="val num" data-v="grainScale" data-fmt="f1">1.6</span></div><input type="range" data-p="grainScale" min="0.5" max="6" step="0.1" value="1.6" /></div>
+            <div class="field"><div class="field-head"><span class="name">Bloom</span><span class="val num" data-v="bloom" data-fmt="f2">0.30</span></div><input type="range" data-p="bloom" min="0" max="1.2" step="0.01" value="0.3" /></div>
+            <div class="field"><div class="field-head"><span class="name">Misregistration</span><span class="val num" data-v="chroma" data-fmt="f2">0.00</span></div><input type="range" data-p="chroma" min="0" max="2" step="0.01" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Vignette</span><span class="val num" data-v="vignette" data-fmt="f2">0.35</span></div><input type="range" data-p="vignette" min="0" max="1" step="0.01" value="0.35" /></div>
+            <div class="field"><div class="field-head"><span class="name">Spray haze</span><span class="val num" data-v="spray" data-fmt="f2">0.35</span></div><input type="range" data-p="spray" min="0" max="1" step="0.01" value="0.35" /></div>
+            <div class="field"><div class="field-head"><span class="name">Scanlines</span><span class="val num" data-v="scan" data-fmt="f2">0.00</span></div><input type="range" data-p="scan" min="0" max="1" step="0.01" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Sparkles</span><span class="val num" data-v="stars">0</span></div><input type="range" data-p="stars" min="0" max="40" step="1" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Trail (motion echo)</span><span class="val num" data-v="trail" data-fmt="f2">0.00</span></div><input type="range" data-p="trail" min="0" max="0.92" step="0.01" value="0" /></div>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h6M4 4v6M20 20h-6M20 20v-6"/><rect x="8" y="8" width="8" height="8"/></svg><span class="lbl">Composition</span></div>
+            <div class="field"><div class="field-head"><span class="name">Zoom</span><span class="val num" data-v="zoom" data-fmt="f2">1.00</span></div><input type="range" data-p="zoom" min="0.2" max="3" step="0.01" value="1" /></div>
+            <div class="field"><div class="field-head"><span class="name">Position X</span><span class="val num" data-v="posX" data-fmt="f2">0.00</span></div><input type="range" data-p="posX" min="-0.5" max="0.5" step="0.01" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Position Y</span><span class="val num" data-v="posY" data-fmt="f2">0.00</span></div><input type="range" data-p="posY" min="-0.5" max="0.5" step="0.01" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Rotation</span><span class="val num" data-v="rot">0</span></div><input type="range" data-p="rot" min="-180" max="180" step="1" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Seed</span><span class="val num" data-v="seed">1847</span></div><input type="range" data-p="seed" min="1" max="9999" step="1" value="1847" /></div>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h10M4 18h13"/></svg><span class="lbl">Caption</span></div>
+            <div class="field"><span class="name">Text · one line per row</span><textarea data-p="capText" placeholder="“It took me four years to say it out loud.”"></textarea></div>
+            <div class="field"><span class="name">Style</span>
+              <div class="seg fill" data-p="capStyle" data-radio>
+                <button data-val="mono" class="active">Mono</button><button data-val="sans">Sans</button><button data-val="bubble">Bubble</button>
+              </div>
+            </div>
+            <div class="field"><span class="name">Position</span>
+              <div class="seg fill" data-p="capPos" data-radio>
+                <button data-val="bottom" class="active">Bottom</button><button data-val="top">Top</button><button data-val="center">Centre</button>
+              </div>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Size</span><span class="val num" data-v="capSize" data-fmt="f3">0.038</span></div><input type="range" data-p="capSize" min="0.014" max="0.14" step="0.002" value="0.038" /></div>
+            <div class="color-row"><span class="color-label">Text</span><div class="color-swatch" id="sw-cap" style="background:#FFFFFF"><input type="color" class="native-picker" data-p="capColor" value="#ffffff" /></div><input type="text" class="color-hex" id="hex-cap" value="#FFFFFF" maxlength="7" /></div>
+            <div class="color-row"><span class="color-label">Bubble</span><div class="color-swatch" id="sw-bub" style="background:#3FC08C"><input type="color" class="native-picker" data-p="bubbleColor" value="#3fc08c" /></div><input type="text" class="color-hex" id="hex-bub" value="#3FC08C" maxlength="7" /></div>
+            <div class="field"><span class="name">Corner label · e.g. campaign tag</span><input type="text" data-p="label" placeholder="hear the youth" /></div>
+          </div>
+        </div><!-- /art -->
+
+        <!-- ══════════ EXPORT ══════════ -->
+        <div class="panel-grid" data-tab-panel="export" style="display:none">
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M5 15v4a2 2 0 002 2h10a2 2 0 002-2v-4"/></svg><span class="lbl">Video</span></div>
+            <div class="field"><span class="name">Frame rate</span>
+              <div class="seg fill" data-p="fps" data-radio>
+                <button data-val="25">25</button><button data-val="30" class="active">30</button><button data-val="50">50</button><button data-val="60">60</button>
+              </div>
+            </div>
+            <div class="field"><span class="name">Render scale</span>
+              <div class="seg fill" data-p="rscale" data-radio>
+                <button data-val="0.5">50%</button><button data-val="0.75">75%</button><button data-val="1" class="active">100%</button>
+              </div>
+            </div>
+            <div class="field"><span class="name">Bitrate</span>
+              <div class="seg fill" data-p="mbps" data-radio>
+                <button data-val="6">6M</button><button data-val="12" class="active">12M</button><button data-val="20">20M</button><button data-val="32">32M</button>
+              </div>
+            </div>
+            <div class="switch"><span class="name">Monitor audio while recording</span><div class="tog-sw on" data-p="monitor"></div></div>
+            <button class="btn full" id="btn-rec"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>Record clip</button>
+            <button class="btn ghost full" id="btn-rec-stop" style="display:none">■ Stop &amp; save</button>
+            <div class="kv"><span>Output</span><b id="kv-mime">—</b></div>
+            <div class="kv"><span>Pixels</span><b id="kv-px">—</b></div>
+            <div class="kv"><span>Clip length</span><b id="kv-len">—</b></div>
+            <p class="note">Recording runs in real time and captures exactly the trimmed range — a 20 s clip takes 20 s. Keep the browser tab in the foreground; background tabs drop frames. If the preview stutters, drop the render scale to 75%.</p>
+            <a class="dl-link" id="dl"></a>
+          </div>
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg><span class="lbl">Still</span></div>
+            <button class="btn ghost full" id="btn-png">↓ Export current frame · PNG</button>
+            <p class="note">Grabs the frame under the playhead at full artboard resolution — good for the static post that accompanies the reel.</p>
+          </div>
+        </div><!-- /export -->
+
+      </div>
+    </div>
+
+    <div class="hty-main">
+      <div class="hty-chip"><div class="nm">Resonance</div><div class="lbl">Sound Visual Studio · 1.0</div></div>
+      <div class="preset-row" id="preset-row" data-radio>
+        <button class="chip active" data-preset="studio">Studio</button>
+        <button class="chip" data-preset="dumbar">Dumbar</button>
+        <button class="chip" data-preset="cavalry">Cavalry</button>
+        <button class="chip" data-preset="editorial">Editorial</button>
+        <button class="chip" data-preset="matrix">Matrix</button>
+        <button class="chip" data-preset="halo">Halo</button>
+        <button class="chip" data-preset="testimony">Testimony</button>
+        <button class="chip" data-preset="contour">Contour</button>
+        <button class="chip" data-preset="liquid">Liquid</button>
+        <button class="chip" data-preset="hayfield">Hayfield</button>
+        <button class="chip" data-preset="quote">Quote</button>
+        <button class="chip" data-preset="riso">Riso</button>
+        <button class="btn ghost sm" id="btn-dice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M4 9a8 8 0 0 1 13-3l3 3M20 15a8 8 0 0 1-13 3l-3-3"/><path d="M20 4v5h-5M4 20v-5h5"/></svg>Vary</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="../../shared/hty-ui.js"></script>
+  <script>
+/* ════════════════════════════════════════════════════════════════════════
+   RESONANCE · SOUND VISUAL STUDIO
+   Offline audio analysis (own FFT) → deterministic per-frame spectrum →
+   nine drawing systems → real-time MediaRecorder capture (MP4 + audio).
+   ════════════════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+  const cl01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const TAU = Math.PI * 2;
+
+  /* ─────────────── parameters ─────────────── */
+  const P = {
+    /* canvas + reaction */
+    cw: 1080, ch: 1920, rscale: 1, fps: 30, mbps: 12, monitor: true, guides: false,
+    gain: 1.2, curve: 1, attack: 0.55, release: 0.14, tilt: 0.35, pump: 0.06,
+    /* structure + layout */
+    steps: 0, stagger: 0, margin: 0.075, anchor: 'cc',
+    rules: 'off', gridOn: false, gridCols: 12, meta: 'off',
+    /* look */
+    look: 'stack',
+    stArr: 'row', stCount: 13, stRows: 6, stThick: 0.052, stLen: 0.42, stMin: 0.03,
+    stSpread: 0.86, stSpreadV: 0.7, stRing: 0.16, stSpin: 0, stRadius: 1,
+    stAlign: 'center', stWave: true, stBand: 0.18,
+    msCols: 6, msGap: 0.12, msSet: 'quarter', msMode: 'rotate', msDelay: 'diag',
+    msOutline: 0, msColorBy: 'col', msBandRow: false,
+    dlArcs: 5, dlR0: 0.12, dlGap: 0.045, dlW: 0.014, dlSweep: 0.85, dlStart: -90,
+    dlOffset: 0.06, dlSpin: 0, dlCap: 'butt', dlTicks: 60, dlTickLen: 0.03, dlDot: 0,
+    edSize: 0.11, edRows: 7, edCols: 12, edRowH: 0.022, edRowGap: 0.6, edRadius: 0, edLabels: true, edFill: true,
+    barMode: 'mirror', barCount: 56, barGap: 0.34, barAmp: 0.4, barSpread: 0.84,
+    barRadius: 0, barBlocks: 0, barBase: 0, barFloor: 0.01,
+    blobR: 0.26, blobAmp: 0.55, blobSoft: 4, blobLobes: 1, blobLayers: 3,
+    blobOff: 0.02, blobEcho: 4, blobSpin: 0.06, blobStroke: 0,
+    ringCount: 16, ringR0: 0.07, ringGap: 0.022, ringAmp: 0.36, ringEcho: 3,
+    ringW: 2.2, ringSpin: 0.02, ringFade: 0.45,
+    htShape: 'dot', htMap: 'field', htCols: 34, htMax: 1.05, htMask: 0.3, htJit: 0, htFlow: 0.45,
+    htField: 'wind', htWindAng: 0, htScale: 1.1, htSpeed: 0.3, htTurb: 0.3,
+    htSway: 0.12, htBend: 0.5, htBreath: 0.25,
+    htInk: 'drift', htInkSmooth: true, htInkSpeed: 0.5, htInkSpread: 0.8,
+    rgLines: 32, rgGap: 0.026, rgAmp: 0.17, rgStep: 3, rgSpread: 0.86, rgW: 1.8,
+    rgSkew: 0, rgFill: true, rgMirror: false,
+    gdMode: 'level', gdCols: 14, gdRows: 22, gdGap: 0.22, gdSize: 0.8, gdRadius: 0, gdGhost: true,
+    spCount: 140, spInner: 0.16, spLen: 0.28, spW: 2.4, spSpin: 0.03, spTaper: 0.6,
+    spRing: 0, spMirror: true,
+    shShape: 'disc', shSlices: 28, shAmt: 0.2, shSize: 0.36, shGap: 0, shDir: 'h', shAlt: true,
+    tyText: 'WTFFF!?', tyMode: 'bars', tySize: 0.2, tyTrack: 0, tyLead: 0.92,
+    tyStroke: 0, tyBubble: false,
+    /* art direction */
+    bg: '#0B0A0D',
+    palette: ['#A65FD6', '#C4182B', '#3FC08C'],
+    colorMode: 'band', cycleSpeed: 0.25, ink: 1, blend: 'source-over',
+    grain: 0.16, grainScale: 1.6, bloom: 0.3, chroma: 0, vignette: 0.35,
+    spray: 0.35, scan: 0, stars: 0, trail: 0,
+    zoom: 1, posX: 0, posY: 0, rot: 0, seed: 1847,
+    capText: '', capStyle: 'mono', capPos: 'bottom', capSize: 0.038,
+    capColor: '#FFFFFF', bubbleColor: '#3FC08C', label: '',
+    /* transport */
+    trimIn: 0, trimOut: 0, loop: true
+  };
+
+  /* ─────────────── analysis constants ─────────────── */
+  const NB = 96;          // spectrum bands
+  const AFPS = 60;        // analysis frames per second
+  const FFTN = 2048;
+  const FLOOR_DB = -84, CEIL_DB = -6;
+
+  let audio = null;       // { name, buffer, dur }
+  let A = null;           // { frames, raw, level, peaks }
+  let S = null, LV = null;// shaped bands + level
+  let shapeDirty = true;
+
+  /* ─────────────── tiny FFT (radix-2, in-place) ─────────────── */
+  function makeFFT(n) {
+    const levels = Math.round(Math.log2(n));
+    const cos = new Float64Array(n / 2), sin = new Float64Array(n / 2);
+    for (let i = 0; i < n / 2; i++) { cos[i] = Math.cos(TAU * i / n); sin[i] = Math.sin(TAU * i / n); }
+    const rev = new Uint32Array(n);
+    for (let i = 0; i < n; i++) { let x = i, r = 0; for (let j = 0; j < levels; j++) { r = (r << 1) | (x & 1); x >>= 1; } rev[i] = r; }
+    return function (re, im) {
+      for (let i = 0; i < n; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+      for (let size = 2; size <= n; size <<= 1) {
+        const half = size >> 1, step = n / size;
+        for (let i = 0; i < n; i += size) {
+          for (let j = i, k = 0; j < i + half; j++, k += step) {
+            const l = j + half;
+            const tre = re[l] * cos[k] + im[l] * sin[k];
+            const tim = -re[l] * sin[k] + im[l] * cos[k];
+            re[l] = re[j] - tre; im[l] = im[j] - tim;
+            re[j] += tre; im[j] += tim;
+          }
+        }
+      }
+    };
+  }
+
+  /* ─────────────── analysis ─────────────── */
+  async function analyse(buffer, onProg) {
+    const sr = buffer.sampleRate, len = buffer.length, chs = buffer.numberOfChannels;
+    const mono = new Float32Array(len);
+    for (let c = 0; c < chs; c++) { const d = buffer.getChannelData(c); for (let i = 0; i < len; i++) mono[i] += d[i]; }
+    if (chs > 1) { const g = 1 / chs; for (let i = 0; i < len; i++) mono[i] *= g; }
+
+    const frames = Math.max(1, Math.floor(buffer.duration * AFPS));
+    const raw = new Float32Array(frames * NB), level = new Float32Array(frames);
+    const win = new Float32Array(FFTN);
+    for (let i = 0; i < FFTN; i++) win[i] = 0.5 - 0.5 * Math.cos(TAU * i / (FFTN - 1));
+    const re = new Float64Array(FFTN), im = new Float64Array(FFTN), fft = makeFFT(FFTN);
+
+    const binHz = sr / FFTN, fMin = 32, fMax = Math.min(16000, sr * 0.46);
+    const edges = new Int32Array(NB + 1);
+    for (let i = 0; i <= NB; i++) edges[i] = clamp(Math.round(fMin * Math.pow(fMax / fMin, i / NB) / binHz), 1, (FFTN >> 1) - 1);
+    const norm = FFTN / 4, span = CEIL_DB - FLOOR_DB;
+
+    for (let f = 0; f < frames; f++) {
+      const centre = Math.round(f * sr / AFPS), start = centre - (FFTN >> 1);
+      for (let i = 0; i < FFTN; i++) { const s = start + i; re[i] = (s >= 0 && s < len ? mono[s] : 0) * win[i]; im[i] = 0; }
+      let sum = 0, a = Math.max(0, centre - 512), b = Math.min(len, centre + 512);
+      for (let i = a; i < b; i++) sum += mono[i] * mono[i];
+      const rms = Math.sqrt(sum / Math.max(1, b - a));
+      level[f] = cl01((20 * Math.log10(rms + 1e-7) - (FLOOR_DB + 12)) / span);
+      fft(re, im);
+      const base = f * NB;
+      for (let bd = 0; bd < NB; bd++) {
+        const lo = edges[bd], hi = Math.max(lo + 1, edges[bd + 1]);
+        let m = 0;
+        for (let k = lo; k < hi; k++) { const p = Math.sqrt(re[k] * re[k] + im[k] * im[k]); if (p > m) m = p; }
+        raw[base + bd] = cl01((20 * Math.log10(m / norm + 1e-7) - FLOOR_DB) / span);
+      }
+      if ((f & 31) === 0) { onProg(f / frames); await new Promise(r => setTimeout(r)); }
+    }
+
+    /* waveform peaks for the transport strip */
+    const NP = 1600, peaks = new Float32Array(NP), step = len / NP;
+    for (let i = 0; i < NP; i++) {
+      let m = 0; const s0 = (i * step) | 0, s1 = Math.min(len, ((i + 1) * step) | 0);
+      for (let s = s0; s < s1; s += 3) { const v = Math.abs(mono[s]); if (v > m) m = v; }
+      peaks[i] = m;
+    }
+    /* auto-reference: 99.5th percentile, so a quiet voice note and a mastered
+       track both arrive at the visuals with the same headroom */
+    const pct = (arr, q) => {
+      const h = new Uint32Array(256);
+      for (let i = 0; i < arr.length; i++) h[(arr[i] * 255) | 0]++;
+      let acc = 0; const need = arr.length * q;
+      for (let b = 0; b < 256; b++) { acc += h[b]; if (acc >= need) return b / 255; }
+      return 1;
+    };
+    return { frames, raw, level, peaks, ref: Math.max(0.12, pct(raw, 0.995)), levelRef: Math.max(0.12, pct(level, 0.99)) };
+  }
+
+  /* shaping: gain / curve / tilt / attack / release — deterministic, per frame */
+  function buildShaped() {
+    if (!A) { S = LV = null; shapeDirty = false; return; }
+    const frames = A.frames, atk = P.attack, rel = P.release;
+    S = new Float32Array(frames * NB); LV = new Float32Array(frames);
+    const gk = P.gain * 0.92 / A.ref, gl = P.gain * 0.92 / A.levelRef;
+    const cur = new Float32Array(NB); let l = 0;
+    for (let f = 0; f < frames; f++) {
+      const base = f * NB;
+      for (let b = 0; b < NB; b++) {
+        let v = A.raw[base + b] * (1 + P.tilt * ((b / (NB - 1)) - 0.32) * 1.7);
+        v = Math.pow(cl01(v * gk), P.curve);
+        const c = cur[b];
+        cur[b] = v > c ? c + (v - c) * atk : c + (v - c) * rel;
+        S[base + b] = cur[b];
+      }
+      const lv = Math.pow(cl01(A.level[f] * gl), P.curve);
+      l = lv > l ? l + (lv - l) * atk : l + (lv - l) * rel;
+      LV[f] = l;
+    }
+    shapeDirty = false;
+  }
+
+  /* ─────────────── spectrum accessors (t in 0..1 = low→high) ─────────────── */
+  function synthBand(f, t) {
+    const s = f / AFPS;
+    const a = Math.abs(Math.sin(t * 5.2 + s * 2.3)) * Math.pow(1 - t, 0.55);
+    const b = Math.abs(Math.sin(t * 13 - s * 1.1)) * 0.35 * Math.pow(1 - t, 1.2);
+    const env = 0.55 + 0.45 * Math.sin(s * 1.7);
+    return cl01((0.1 + a * 0.85 + b) * env * P.gain * 0.72);
+  }
+  function bAt(f, t) {
+    if (!S) return synthBand(f, t);
+    const fr = clamp(f | 0, 0, A.frames - 1), x = cl01(t) * (NB - 1);
+    const i = x | 0, k = x - i, base = fr * NB;
+    return lerp(S[base + i], S[base + Math.min(NB - 1, i + 1)], k);
+  }
+  function lvAt(f) {
+    if (!LV) return 0.35 + 0.28 * Math.abs(Math.sin(f / AFPS * 1.9));
+    return LV[clamp(f | 0, 0, A.frames - 1)];
+  }
+  function rangeAt(f, t0, t1) {
+    let s = 0; const n = 6;
+    for (let i = 0; i < n; i++) s += bAt(f, lerp(t0, t1, (i + 0.5) / n));
+    return s / n;
+  }
+
+  /* ─────────────── colour ─────────────── */
+  const hex2rgb = h => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+  const rgb2css = (r, g, b, a) => a === undefined || a >= 1 ? `rgb(${r|0},${g|0},${b|0})` : `rgba(${r|0},${g|0},${b|0},${a})`;
+  function mixHex(h1, h2, t) { const a = hex2rgb(h1), b = hex2rgb(h2); return rgb2css(lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)); }
+  const isHex = s => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(s);
+
+  /* pick an ink. i/n = index within the drawing, v = its amplitude, f = frame, layer = layer idx */
+  function ink(i, n, v, f, layer) {
+    const pal = P.palette.length ? P.palette : ['#FFFFFF'];
+    const L = pal.length, t = n > 1 ? i / (n - 1) : 0;
+    switch (P.colorMode) {
+      case 'blend': { if (L === 1) return pal[0]; const x = t * (L - 1), k = clamp(x | 0, 0, L - 2); return mixHex(pal[k], pal[k + 1], x - k); }
+      case 'alt': return pal[i % L];
+      case 'level': return pal[clamp(Math.floor(cl01(v) * L), 0, L - 1)];
+      case 'cycle': return pal[Math.floor(Math.abs(i * 0.37 + f * P.cycleSpeed * 0.12)) % L];
+      case 'layer': return pal[(layer || 0) % L];
+      case 'mono': return pal[0];
+      default: return pal[clamp(Math.floor(t * L), 0, L - 1)];
+    }
+  }
+
+  /* ─────────────── deterministic noise ─────────────── */
+  function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const hash2 = (x, y, s) => { let h = x * 374761393 + y * 668265263 + s * 1442695040; h = (h ^ (h >> 13)) * 1274126177; return ((h ^ (h >> 16)) >>> 0) / 4294967296; };
+
+  /* ── smooth 3-D value noise: one organic field, reused for delay, lean and ink ── */
+  function hash3(x, y, z) {
+    let h = x * 374761393 + y * 668265263 + z * 1103515245 + P.seed * 1442695040;
+    h = (h ^ (h >>> 13)) * 1274126177;
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+  const sstep = t => t * t * (3 - 2 * t);
+  function vnoise(x, y, z) {
+    const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+    const u = sstep(x - xi), v = sstep(y - yi), w = sstep(z - zi);
+    return lerp(
+      lerp(lerp(hash3(xi, yi, zi), hash3(xi + 1, yi, zi), u), lerp(hash3(xi, yi + 1, zi), hash3(xi + 1, yi + 1, zi), u), v),
+      lerp(lerp(hash3(xi, yi, zi + 1), hash3(xi + 1, yi, zi + 1), u), lerp(hash3(xi, yi + 1, zi + 1), hash3(xi + 1, yi + 1, zi + 1), u), v), w);
+  }
+  const fbm2 = (x, y, z) => vnoise(x, y, z) * 0.66 + vnoise(x * 2.17 + 5.3, y * 2.17 - 3.1, z * 1.63 + 1.7) * 0.34;
+
+  /* continuous position in the palette — wraps, blends or steps */
+  function paletteAt(x, smooth) {
+    const pal = P.palette.length ? P.palette : ['#FFFFFF'];
+    const L = pal.length;
+    if (L === 1) return pal[0];
+    const p = ((x % L) + L) % L, i = Math.floor(p);
+    if (!smooth) return pal[i];
+    const k = p - i;
+    return mixHex(pal[i], pal[(i + 1) % L], sstep(sstep(k)));   /* plateau, then cross fast */
+  }
+
+  /* ─────────────── canvases ─────────────── */
+  const cv = $('#c'), ctx = cv.getContext('2d');
+  const art = document.createElement('canvas'), actx = art.getContext('2d');
+  const tmp = document.createElement('canvas'), tctx = tmp.getContext('2d');
+  const blr = document.createElement('canvas'), bctx = blr.getContext('2d');
+  const acc = document.createElement('canvas'), accx = acc.getContext('2d');   // trail accumulator
+  const msk = document.createElement('canvas'), mctx = msk.getContext('2d');   // text mask
+  let W = 1080, H = 1920, RS = 1, U = 1080;
+  let grainTiles = [];
+
+  function buildGrain() {
+    grainTiles = [];
+    const n = 160;
+    for (let t = 0; t < 3; t++) {
+      const c = document.createElement('canvas'); c.width = c.height = n;
+      const g = c.getContext('2d'), id = g.createImageData(n, n), rnd = mulberry(9000 + t);
+      for (let i = 0; i < n * n; i++) {
+        const v = clamp(128 + (rnd() - 0.5) * 210, 0, 255) | 0;
+        id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = v; id.data[i * 4 + 3] = 255;
+      }
+      g.putImageData(id, 0, 0); grainTiles.push(c);
+    }
+  }
+
+  function resize() {
+    W = P.cw; H = P.ch; RS = P.rscale; U = Math.min(W, H);
+    /* even pixel dimensions — h.264 encoders reject odd sizes */
+    const pw = Math.max(2, Math.round(W * RS / 2) * 2), ph = Math.max(2, Math.round(H * RS / 2) * 2);
+    [cv, art, tmp, acc, msk].forEach(c => { c.width = pw; c.height = ph; });
+    blr.width = Math.max(2, pw >> 3); blr.height = Math.max(2, ph >> 3);
+    $('#kv-px').textContent = pw + ' × ' + ph;
+    accx.clearRect(0, 0, pw, ph);
+    render();
+  }
+
+  /* ─────────────── drawing helpers ─────────────── */
+  function rrect(g, x, y, w, h, r) {
+    if (w < 0) { x += w; w = -w; } if (h < 0) { y += h; h = -h; }
+    r = Math.min(r, w / 2, h / 2);
+    g.beginPath();
+    if (r <= 0.2) { g.rect(x, y, w, h); return; }
+    if (g.roundRect) { g.roundRect(x, y, w, h, r); return; }
+    g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.arcTo(x + w, y, x + w, y + r, r);
+    g.lineTo(x + w, y + h - r); g.arcTo(x + w, y + h, x + w - r, y + h, r);
+    g.lineTo(x + r, y + h); g.arcTo(x, y + h, x, y + h - r, r);
+    g.lineTo(x, y + r); g.arcTo(x, y, x + r, y, r); g.closePath();
+  }
+  function withP(over, fn) {
+    const bak = {};
+    for (const k in over) { bak[k] = P[k]; P[k] = over[k]; }
+    try { fn(); } finally { for (const k in bak) P[k] = bak[k]; }
+  }
+  /* symmetric spectrum coordinate: 0→1→0 across a span, so shapes stay balanced */
+  const sym = (t, lobes) => { const x = (t * (lobes || 1)) % 1; return x < 0.5 ? x * 2 : (1 - x) * 2; };
+
+  /* wobbling closed contour, sampled from the spectrum */
+  function contour(g, R, amp, rot, fr, lobes, soft) {
+    const K = 200, r = new Float32Array(K);
+    for (let k = 0; k < K; k++) r[k] = R * (1 + amp * (bAt(fr, sym(k / K, lobes)) - 0.12));
+    for (let p = 0; p < soft; p++) {
+      const c = Float32Array.from(r);
+      for (let k = 0; k < K; k++) r[k] = (c[(k - 1 + K) % K] + 2 * c[k] + c[(k + 1) % K]) * 0.25;
+    }
+    g.beginPath();
+    for (let k = 0; k <= K; k++) {
+      const i = k % K, a = rot + TAU * i / K;
+      const x = Math.cos(a) * r[i], y = Math.sin(a) * r[i];
+      if (k) g.lineTo(x, y); else g.moveTo(x, y);
+    }
+    g.closePath();
+  }
+
+  /* ══════════════════ LOOK 1 · BARS ══════════════════ */
+  function drawBars(g, f) {
+    const n = P.barCount, spread = W * P.barSpread, cell = spread / n;
+    const bw = Math.max(0.7, cell * (1 - P.barGap));
+    const amp = U * P.barAmp, fl = U * P.barFloor, y0 = H * P.barBase;
+    const rad = P.barRadius * bw * 0.5, gapH = U * 0.018;
+
+    if (P.barMode === 'radial') {
+      const r0 = U * (0.14 + P.barBase);
+      for (let i = 0; i < n; i++) {
+        const t = sym(i / n, 1), v = bAt(f, t);
+        const a = TAU * i / n - Math.PI / 2, L = fl + amp * v;
+        g.save(); g.rotate(a); g.fillStyle = ink(i, n, v, f, 0);
+        rrect(g, r0, -bw / 2, L, bw, rad); g.fill(); g.restore();
+      }
+      return;
+    }
+
+    for (let i = 0; i < n; i++) {
+      const t = n > 1 ? i / (n - 1) : 0, v = bAt(f, t);
+      const h = fl + amp * v, x = -spread / 2 + cell * i + (cell - bw) / 2;
+      g.fillStyle = ink(i, n, v, f, 0);
+      if (P.barBlocks > 0) {
+        const steps = P.barBlocks, sh = amp / steps, lit = Math.ceil(h / sh);
+        for (let s = 0; s < lit; s++) {
+          const bh = sh * 0.78, yy = y0 - (s + 1) * sh + (sh - bh) / 2;
+          rrect(g, x, yy, bw, bh, rad); g.fill();
+          if (P.barMode === 'mirror') { rrect(g, x, y0 + s * sh + (sh - bh) / 2, bw, bh, rad); g.fill(); }
+        }
+        continue;
+      }
+      if (P.barMode === 'up') { rrect(g, x, y0 - h, bw, h, rad); g.fill(); }
+      else if (P.barMode === 'split') {
+        rrect(g, x, y0 - gapH - h, bw, h, rad); g.fill();
+        rrect(g, x, y0 + gapH, bw, h, rad); g.fill();
+      } else { rrect(g, x, y0 - h, bw, h * 2, rad); g.fill(); }
+    }
+  }
+
+  /* ══════════════════ LOOK 2 · LIQUID ══════════════════ */
+  function drawBlob(g, f) {
+    const L = P.blobLayers, R = U * P.blobR, spin = f * P.blobSpin * 0.04;
+    for (let l = L - 1; l >= 0; l--) {
+      const fr = f - l * P.blobEcho, v = lvAt(fr);
+      const ang = 2.4 * l + P.seed * 0.01, off = U * P.blobOff * l;
+      g.save();
+      g.translate(Math.cos(ang) * off, Math.sin(ang) * off);
+      contour(g, R * (1 - l * 0.012), P.blobAmp, spin + l * 0.12, fr, P.blobLobes, P.blobSoft);
+      const c = ink(l, L, v, f, l);
+      if (P.blobStroke > 0) { g.strokeStyle = c; g.lineWidth = P.blobStroke; g.stroke(); }
+      else { g.fillStyle = c; g.fill(); }
+      g.restore();
+    }
+  }
+
+  /* ══════════════════ LOOK 3 · CONTOUR ECHO ══════════════════ */
+  function drawRings(g, f) {
+    const n = P.ringCount;
+    for (let j = n - 1; j >= 0; j--) {
+      const fr = f - j * P.ringEcho, R = U * (P.ringR0 + j * P.ringGap);
+      if (R <= 0) continue;
+      const fade = n > 1 ? 1 - P.ringFade * (j / (n - 1)) : 1;
+      contour(g, R, P.ringAmp * (0.45 + 0.55 * (1 - j / n)), j * P.ringSpin + f * 0.004, fr, P.blobLobes, 3);
+      g.globalAlpha = cl01(fade);
+      g.strokeStyle = ink(j, n, lvAt(fr), f, j);
+      g.lineWidth = P.ringW; g.stroke();
+    }
+    g.globalAlpha = 1;
+  }
+
+  /* ══════════════════ LOOK 4 · HALFTONE FIELD ══════════════════
+     A single noise field (x, y, time) drives four things at once: how far the
+     reaction is delayed across the grid, which way each mark leans, how much it
+     drifts, and where it sits in the palette. That coupling is what reads as
+     organic rather than as a meter. ═══════════════════════════════════════════ */
+  function drawHalftone(g, f) {
+    const cols = Math.max(1, P.htCols | 0), cw = W / cols;
+    const rows = Math.max(1, Math.round(H / cw)), ch = H / rows;
+    const cell = Math.min(cw, ch);
+    const wind = P.htWindAng * Math.PI / 180, wx = Math.cos(wind), wy = Math.sin(wind);
+    const nz = f / AFPS * P.htSpeed, adv = nz * 1.5;   /* the field drifts downwind */
+    const fine = cols * rows <= 5000;                 /* second octave only when it's cheap */
+    const field = (x, y) => fine ? fbm2(x, y, nz * 0.45) : vnoise(x, y, nz * 0.45);
+    const usesField = P.htField !== 'radial' || P.htMap === 'field' || P.htTurb > 0
+      || P.htSway > 0 || P.htBend > 0 || P.htBreath > 0 || P.htInk === 'flow' || P.htInk === 'drift';
+    const L = Math.max(1, P.palette.length);
+    const sx = P.htScale * 3, sy = P.htScale * 3 * (H / W);
+    const stalk = P.htShape === 'stalk';
+    g.lineCap = 'round';
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const ux = (c + 0.5) / cols - 0.5, uy = (r + 0.5) / rows - 0.5;
+        const du = ux * W / U, dv = uy * H / U;
+        const dist = Math.min(1, Math.hypot(du, dv) * 2);
+        const proj = cl01((du * wx + dv * wy + 0.9) * 0.55);        /* 0→1 along the wind */
+        const n = usesField ? field(ux * sx - wx * adv, uy * sy - wy * adv) : 0.5;
+
+        /* which band this mark listens to */
+        let t;
+        if (P.htMap === 'columns') t = c / Math.max(1, cols - 1);
+        else if (P.htMap === 'rows') t = r / Math.max(1, rows - 1);
+        else if (P.htMap === 'diag') t = ((c / cols) + (r / rows)) * 0.5;
+        else if (P.htMap === 'field') t = cl01(n * 1.15 - 0.05);
+        else t = dist;
+
+        /* how far back in time this mark reads — the wave shape */
+        let d;
+        if (P.htField === 'wind') d = proj * 0.68 + n * 0.5;
+        else if (P.htField === 'sweep') d = proj;
+        else if (P.htField === 'swirl') d = (Math.atan2(dv, du) / TAU + 0.5) * 0.75 + dist * 0.3;
+        else if (P.htField === 'turb') d = n;
+        else d = dist;
+
+        const mask = cl01(1 - P.htMask * dist * 1.5) * (1 - P.htBreath * (1 - n));
+        const v = bAt(f - Math.round(P.htFlow * 30 * d), t) * mask;
+        if (v < (stalk ? 0.0008 : 0.012)) continue;
+
+        /* ink — a continuous position in the palette, blended or stepped */
+        let col;
+        if (P.htInk === 'flow') col = paletteAt(n * L * P.htInkSpread + f * P.htInkSpeed * 0.02, P.htInkSmooth);
+        else if (P.htInk === 'drift') col = paletteAt((proj * P.htInkSpread + n * 0.45) * L + f * P.htInkSpeed * 0.06, P.htInkSmooth);
+        else if (P.htInk === 'level') col = paletteAt(v * L * 0.999, P.htInkSmooth);
+        else if (P.htInk === 'depth') col = paletteAt(d * L * P.htInkSpread, P.htInkSmooth);
+        else col = ink(P.htMap === 'rows' ? r : c, P.htMap === 'rows' ? rows : cols, v, f, r);
+
+        /* geometry — gust angle, sway, lean */
+        const gust = (n - 0.5) * 2;
+        const ang = wind + gust * TAU * P.htTurb * 0.5;
+        const sway = P.htSway * cell * (0.35 + 0.65 * v);
+        let lean = P.htBend * 1.55 * (0.6 * gust + 0.4 * wx) * (0.5 + 0.7 * v);
+        lean = clamp(lean, -1.25, 1.25);
+        const jx = P.htJit ? (hash2(c, r, P.seed) - 0.5) * cw * P.htJit : 0;
+        const jy = P.htJit ? (hash2(r, c, P.seed + 7) - 0.5) * ch * P.htJit : 0;
+        const x = -W / 2 + cw * (c + 0.5) + Math.cos(ang) * sway + jx;
+        const y = -H / 2 + ch * (r + 0.5) + Math.sin(ang) * sway + jy;
+        const s = cell * 0.5 * P.htMax * v;
+
+        g.fillStyle = col; g.strokeStyle = col;
+        if (stalk) {
+          /* a stalk exists even in silence — sound gives it height, wind gives it lean */
+          const grow = 0.34 + 0.66 * v, vary = 0.72 + 0.56 * hash2(c, r, P.seed + 13);
+          const len = cell * 2.1 * P.htMax * grow * vary;
+          const by = y + ch * 0.5, sl = Math.sin(lean), cs = Math.cos(lean);
+          g.lineWidth = Math.max(0.7, cell * 0.13 * P.htMax);
+          g.beginPath(); g.moveTo(x, by);
+          g.quadraticCurveTo(x + sl * len * 0.14, by - cs * len * 0.62, x + sl * len, by - cs * len);
+          g.stroke();
+        } else if (P.htShape === 'line') {
+          g.save(); g.translate(x, y); g.rotate(lean);
+          g.lineWidth = Math.max(0.6, cell * 0.16 * P.htMax);
+          g.beginPath(); g.moveTo(0, -s); g.lineTo(0, s); g.stroke(); g.restore();
+        } else if (P.htShape === 'square') {
+          g.save(); g.translate(x, y); g.rotate(lean);
+          g.beginPath(); g.rect(-s, -s, s * 2, s * 2); g.fill(); g.restore();
+        } else if (P.htShape === 'plus') {
+          const k = Math.max(0.6, s * 0.34);
+          g.save(); g.translate(x, y); g.rotate(lean);
+          g.beginPath(); g.rect(-s, -k, s * 2, k * 2); g.rect(-k, -s, k * 2, s * 2); g.fill(); g.restore();
+        } else {
+          g.beginPath(); g.arc(x, y, s, 0, TAU); g.fill();
+        }
+      }
+    }
+    g.lineCap = 'butt';
+  }
+
+  /* ══════════════════ LOOK 5 · RIDGELINE ══════════════════ */
+  function drawRidge(g, f) {
+    const n = P.rgLines, spread = W * P.rgSpread, amp = U * P.rgAmp, gap = U * P.rgGap;
+    const M = 150, total = (n - 1) * gap, top = -total / 2;
+    for (let l = n - 1; l >= 0; l--) {
+      const fr = f - l * P.rgStep, y = top + (n - 1 - l) * gap;
+      g.beginPath();
+      for (let i = 0; i <= M; i++) {
+        const t = i / M, x = -spread / 2 + spread * t;
+        const s = P.rgMirror ? sym(t, 1) : t;
+        const env = Math.pow(Math.sin(Math.PI * cl01(t)), 0.55);
+        const yy = y - amp * bAt(fr, s) * env + P.rgSkew * U * (t - 0.5);
+        if (i) g.lineTo(x, yy); else g.moveTo(x, yy);
+      }
+      if (P.rgFill) {
+        g.save();
+        g.lineTo(spread / 2, y + gap * 2.2); g.lineTo(-spread / 2, y + gap * 2.2); g.closePath();
+        g.fillStyle = P.bg; g.globalAlpha = 0.94; g.fill(); g.restore();
+      }
+      g.strokeStyle = ink(l, n, lvAt(fr), f, l);
+      g.lineWidth = P.rgW; g.stroke();
+    }
+  }
+
+  /* ══════════════════ LOOK 6 · DATA GRID ══════════════════ */
+  function drawGrid(g, f) {
+    const cols = P.gdCols, rows = P.gdRows;
+    const pw = W * P.gdSize / cols, ph = H * P.gdSize / rows;
+    const sw = pw * (1 - P.gdGap), sh = ph * (1 - P.gdGap);
+    const x0 = -cols * pw / 2, y0 = -rows * ph / 2;
+    for (let c = 0; c < cols; c++) {
+      const t = cols > 1 ? c / (cols - 1) : 0, v = bAt(f, t);
+      for (let r = 0; r < rows; r++) {
+        const thr = (r + 0.5) / rows;
+        const x = x0 + pw * (c + 0.5), y = y0 + ph * (rows - 1 - r + 0.5);
+        const col = ink(c, cols, v, f, r), rad = P.gdRadius * Math.min(sw, sh) * 0.5;
+        if (P.gdMode === 'scale') {
+          const s = cl01(v * 1.35 - thr * 0.55);
+          if (s > 0.02) { g.fillStyle = col; rrect(g, x - sw * s / 2, y - sh * s / 2, sw * s, sh * s, rad * s); g.fill(); }
+          else if (P.gdGhost) { g.globalAlpha = 0.1; g.fillStyle = col; rrect(g, x - sw * 0.06, y - sh * 0.06, sw * 0.12, sh * 0.12, 0); g.fill(); g.globalAlpha = 1; }
+          continue;
+        }
+        const lit = v >= thr;
+        if (!lit) {
+          if (P.gdGhost) { g.globalAlpha = 0.11; g.strokeStyle = col; g.lineWidth = Math.max(0.6, Math.min(sw, sh) * 0.07); rrect(g, x - sw / 2, y - sh / 2, sw, sh, rad); g.stroke(); g.globalAlpha = 1; }
+          continue;
+        }
+        g.fillStyle = col;
+        if (P.gdMode === 'flip') { g.save(); g.translate(x, y); g.rotate(Math.PI / 4); rrect(g, -sw * 0.36, -sh * 0.36, sw * 0.72, sh * 0.72, rad * 0.72); g.fill(); g.restore(); }
+        else { rrect(g, x - sw / 2, y - sh / 2, sw, sh, rad); g.fill(); }
+      }
+    }
+  }
+
+  /* ══════════════════ LOOK 7 · RADIAL ══════════════════ */
+  function drawSpikes(g, f) {
+    const n = P.spCount, r0 = U * P.spInner, len = U * P.spLen, spin = f * P.spSpin * 0.05;
+    g.lineCap = 'round';
+    for (let i = 0; i < n; i++) {
+      const t = P.spMirror ? sym(i / n, 1) : i / n, v = bAt(f, t);
+      const a = TAU * i / n - Math.PI / 2 + spin, L = len * v + U * 0.004;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      g.strokeStyle = ink(i, n, v, f, 0);
+      g.lineWidth = Math.max(0.4, P.spW * (1 - P.spTaper * (1 - v)));
+      g.beginPath(); g.moveTo(ca * r0, sa * r0); g.lineTo(ca * (r0 + L), sa * (r0 + L)); g.stroke();
+    }
+    g.lineCap = 'butt';
+    if (P.spRing > 0) {
+      g.beginPath(); g.arc(0, 0, r0 * (1 - 0.06 * lvAt(f)), 0, TAU);
+      g.strokeStyle = ink(0, 1, lvAt(f), f, 1); g.lineWidth = P.spRing; g.stroke();
+    }
+  }
+
+  /* ══════════════════ LOOK 8 · SLIT SHEAR ══════════════════ */
+  function shapePath(g, f) {
+    const R = U * P.shSize;
+    if (P.shShape === 'bar') { rrect(g, -W * 0.44, -R * 0.5, W * 0.88, R, 0); }
+    else { g.beginPath(); g.arc(0, 0, R, 0, TAU); }
+  }
+  function drawShear(g, f) {
+    const n = P.shSlices, R = U * P.shSize, horiz = P.shDir === 'h';
+    const span = horiz ? R * 2 : (P.shShape === 'bar' ? W * 0.88 : R * 2);
+    const step = span / n, useText = P.shShape === 'text';
+    for (let s = 0; s < n; s++) {
+      const t = n > 1 ? s / (n - 1) : 0, v = bAt(f, t);
+      const dir = P.shAlt && (s % 2) ? -1 : 1;
+      const d = dir * P.shAmt * U * (v - 0.1);
+      g.save(); g.beginPath();
+      if (horiz) g.rect(-W, -span / 2 + s * step, W * 2, step * (1 - P.shGap));
+      else g.rect(-span / 2 + s * step, -H, step * (1 - P.shGap), H * 2);
+      g.clip();
+      g.translate(horiz ? d : 0, horiz ? 0 : d);
+      g.fillStyle = ink(s, n, v, f, 0);
+      if (useText) { const lines = (P.tyText || 'SOUND').split('\n').filter(l => l.length); textBlock(g, lines, U * P.tySize, (ch, x, y) => g.fillText(ch, x, y)); }
+      else { shapePath(g, f); g.fill(); }
+      g.restore();
+    }
+  }
+
+  /* ══════════════════ LOOK 9 · TYPE MASK ══════════════════ */
+  function textBlock(g, lines, size, fn) {
+    g.font = '700 ' + size + 'px "Suisse Intl", Helvetica, Arial, sans-serif';
+    g.textAlign = 'left'; g.textBaseline = 'middle';
+    const lh = size * P.tyLead, tr = P.tyTrack * size, total = lh * (lines.length - 1);
+    const box = [];
+    lines.forEach((ln, li) => {
+      const chars = [...ln];
+      let wsum = 0; for (const ch of chars) wsum += g.measureText(ch).width + tr;
+      wsum = Math.max(0, wsum - tr);
+      let x = -wsum / 2; const y = -total / 2 + li * lh;
+      box.push({ w: wsum, y: y });
+      for (const ch of chars) { fn(ch, x, y); x += g.measureText(ch).width + tr; }
+    });
+    return { box: box, lh: lh };
+  }
+  function textTransform(g) {
+    g.setTransform(RS, 0, 0, RS, 0, 0);
+    g.translate(W / 2 + P.posX * W, H / 2 + P.posY * H);
+    g.rotate(P.rot * Math.PI / 180);
+  }
+  function drawType(g, f) {
+    const lines = (P.tyText || '').split('\n').filter(l => l.length);
+    if (!lines.length) return;
+    const size = U * P.tySize, lv = lvAt(f);
+
+    if (P.tyBubble) {
+      g.save(); textTransform(g);
+      const m = textBlock(g, lines, size, () => {});
+      g.fillStyle = P.bubbleColor;
+      m.box.forEach(b => { const px = size * 0.46, py = size * 0.42; rrect(g, -b.w / 2 - px, b.y - size * 0.6 - py * 0.4, b.w + px * 2, size * 1.2 + py * 0.8, (size * 1.2 + py * 0.8) / 2); g.fill(); });
+      g.restore();
+    }
+
+    if (P.tyMode === 'solid') {
+      g.save(); textTransform(g); g.fillStyle = ink(0, 1, lv, f, 0);
+      const s = 1 + P.pump * 0.4 * lv;
+      g.scale(s, s);
+      textBlock(g, lines, size, (ch, x, y) => g.fillText(ch, x, y));
+      g.restore();
+    } else {
+      tctx.setTransform(1, 0, 0, 1, 0, 0);
+      tctx.clearRect(0, 0, tmp.width, tmp.height);
+      tctx.globalCompositeOperation = 'source-over'; tctx.globalAlpha = 1;
+      applyBase(tctx, f);
+      if (P.tyMode === 'ridge') withP({ rgAmp: P.tySize * 0.55, rgSpread: 1, rgFill: false, rgLines: Math.max(10, P.rgLines) }, () => drawRidge(tctx, f));
+      else if (P.tyMode === 'dots') withP({ htMask: 0, htBreath: 0, htCols: Math.max(22, P.htCols) }, () => drawHalftone(tctx, f));
+      else withP({ barMode: 'mirror', barAmp: P.tySize * 1.2, barSpread: 1, barFloor: 0.004, barBase: 0, barBlocks: 0 }, () => drawBars(tctx, f));
+      /* one-pass mask: letters must be composited together, not one by one */
+      mctx.setTransform(1, 0, 0, 1, 0, 0);
+      mctx.globalCompositeOperation = 'source-over'; mctx.globalAlpha = 1;
+      mctx.clearRect(0, 0, msk.width, msk.height);
+      textTransform(mctx); mctx.fillStyle = '#fff';
+      textBlock(mctx, lines, size, (ch, x, y) => mctx.fillText(ch, x, y));
+      tctx.setTransform(1, 0, 0, 1, 0, 0);
+      tctx.globalCompositeOperation = 'destination-in';
+      tctx.drawImage(msk, 0, 0);
+      g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over';
+      g.drawImage(tmp, 0, 0); g.restore();
+    }
+
+    if (P.tyStroke > 0) {
+      g.save(); textTransform(g);
+      g.strokeStyle = ink(1, 2, lv, f, 1); g.lineWidth = P.tyStroke;
+      textBlock(g, lines, size, (ch, x, y) => g.strokeText(ch, x, y));
+      g.restore();
+    }
+  }
+
+  /* ══════════════════ geometric systems ══════════════════
+     Procedural arrays with a per-copy delay — the value travels through the
+     array instead of every copy reacting at once. Quantise snaps it to steps.
+     Flat fills, hard edges, grid-locked. ═══════════════════════════════════ */
+  const qz = v => P.steps > 1 ? Math.round(v * P.steps) / P.steps : v;
+  const bq = (f, t, delay) => qz(bAt(f - (delay || 0), t));
+  function boxDims() { const m = U * P.margin; return { m: m, bw: W - 2 * m, bh: H - 2 * m }; }
+
+  /* ══ LOOK 10 · CAPSULE ARRAY ══ */
+  function drawStack(g, f) {
+    const arr = P.stArr, n = Math.max(1, P.stCount | 0);
+    const th = U * P.stThick, minL = U * P.stMin;
+    const band = c => P.stWave ? P.stBand : (n > 1 ? c / (n - 1) : 0);
+    const rd = L => Math.min(P.stRadius * th * 0.5, Math.abs(L) / 2);
+
+    if (arr === 'ring') {
+      const R = U * P.stRing, maxL = U * P.stLen;
+      for (let i = 0; i < n; i++) {
+        const v = bq(f, band(i), i * P.stagger), L = minL + maxL * v;
+        g.save(); g.rotate(TAU * i / n - Math.PI / 2 + f * P.stSpin * 0.05);
+        g.fillStyle = ink(i, n, v, f, i);
+        rrect(g, R, -th / 2, L, th, rd(L)); g.fill(); g.restore();
+      }
+      return;
+    }
+    if (arr === 'col') {
+      const spanH = H * P.stSpreadV, pitch = spanH / n, maxL = W * P.stSpread;
+      for (let i = 0; i < n; i++) {
+        const v = bq(f, band(i), i * P.stagger), L = minL + (maxL - minL) * v;
+        const y = -spanH / 2 + pitch * (i + 0.5);
+        const x0 = P.stAlign === 'start' ? -maxL / 2 : -L / 2;
+        g.fillStyle = ink(i, n, v, f, i);
+        rrect(g, x0, y - th / 2, L, th, rd(L)); g.fill();
+      }
+      return;
+    }
+    const rows = arr === 'grid' ? Math.max(1, P.stRows | 0) : 1;
+    const spanW = W * P.stSpread, spanH = H * P.stSpreadV;
+    const pw = spanW / n, ph = spanH / rows;
+    const maxL = rows > 1 ? ph * 0.9 : U * P.stLen;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < n; c++) {
+        const v = bq(f, band(c), (arr === 'grid' ? c + r : c) * P.stagger);
+        const L = minL + Math.max(0, maxL - minL) * v;
+        const x = -spanW / 2 + pw * (c + 0.5);
+        let y = rows > 1 ? -spanH / 2 + ph * (r + 0.5) : 0;
+        if (arr === 'diag') y = spanH * 0.5 * ((c / Math.max(1, n - 1)) - 0.5);
+        const y0 = P.stAlign === 'start' ? y + maxL / 2 - L : y - L / 2;
+        g.fillStyle = ink(c, n, v, f, r);
+        rrect(g, x - th / 2, y0, th, L, rd(L)); g.fill();
+      }
+    }
+  }
+
+  /* ══ LOOK 11 · MODULAR MOSAIC ══ */
+  const PRIM_SETS = {
+    quarter: ['quarter'],
+    geo: ['sq', 'tri', 'quarter', 'cap'],
+    dots: ['circ', 'ring'],
+    all: ['sq', 'circ', 'half', 'quarter', 'tri', 'cap', 'cross', 'ring']
+  };
+  function prim(g, kind, s) {
+    const h = s / 2;
+    g.beginPath();
+    switch (kind) {
+      case 'circ': g.arc(0, 0, h, 0, TAU); break;
+      case 'half': g.arc(0, 0, h, Math.PI, TAU); g.closePath(); break;
+      case 'quarter': g.moveTo(-h, h); g.arc(-h, h, s, -Math.PI / 2, 0); g.closePath(); break;
+      case 'tri': g.moveTo(-h, h); g.lineTo(h, h); g.lineTo(-h, -h); g.closePath(); break;
+      case 'cap': { const t = s * 0.44; rrect(g, -h, -t / 2, s, t, t / 2); break; }
+      case 'cross': { const t = s * 0.3; g.rect(-h, -t / 2, s, t); g.rect(-t / 2, -h, t, s); break; }
+      case 'ring': g.arc(0, 0, h, 0, TAU); g.arc(0, 0, h * 0.5, 0, TAU, true); break;
+      default: g.rect(-h, -h, s, s);
+    }
+  }
+  function drawMosaic(g, f) {
+    const cols = Math.max(1, P.msCols | 0), d = boxDims();
+    const cw = d.bw / cols, rows = Math.max(1, Math.round(d.bh / cw)), ch = d.bh / rows;
+    const cell = Math.min(cw, ch) * (1 - P.msGap);
+    const set = PRIM_SETS[P.msSet] || PRIM_SETS.quarter;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const h1 = hash2(c, r, P.seed), h2 = hash2(r, c, P.seed + 3);
+        const step = P.msDelay === 'diag' ? c + r : P.msDelay === 'col' ? c
+          : P.msDelay === 'radial' ? Math.round(Math.hypot(c - (cols - 1) / 2, r - (rows - 1) / 2)) : r;
+        const t = P.msBandRow ? (rows > 1 ? r / (rows - 1) : 0) : (cols > 1 ? c / (cols - 1) : 0);
+        const v = bq(f, t, step * P.stagger);
+        let kind = set[Math.floor(h1 * set.length) % set.length];
+        let rot = Math.floor(h2 * 4) * 90, s = cell;
+        if (P.msMode === 'rotate') rot += Math.floor(cl01(v) * 3.999) * 90;
+        else if (P.msMode === 'scale') s = cell * (0.1 + 0.9 * v);
+        else if (P.msMode === 'swap') kind = set[Math.floor(cl01(v) * (set.length - 0.001))];
+        else if (P.msMode === 'reveal' && v < 0.12 + h1 * 0.7) continue;
+        if (s < cell * 0.04) continue;
+        const idx = P.msColorBy === 'row' ? r : P.msColorBy === 'cell' ? c + r * cols : c;
+        const tot = P.msColorBy === 'row' ? rows : P.msColorBy === 'cell' ? cols * rows : cols;
+        g.save();
+        g.translate(-d.bw / 2 + cw * (c + 0.5), -d.bh / 2 + ch * (r + 0.5));
+        g.rotate(rot * Math.PI / 180);
+        prim(g, kind, s);
+        if (P.msOutline > 0) { g.strokeStyle = ink(idx, tot, v, f, r); g.lineWidth = U * 0.0022 * P.msOutline; g.stroke(); }
+        else { g.fillStyle = ink(idx, tot, v, f, r); kind === 'ring' ? g.fill('evenodd') : g.fill(); }
+        g.restore();
+      }
+    }
+  }
+
+  /* ══ LOOK 12 · DIAL ══ */
+  function drawDial(g, f) {
+    const n = Math.max(1, P.dlArcs | 0), R0 = U * P.dlR0, gap = U * P.dlGap;
+    g.lineCap = P.dlCap;
+    for (let i = 0; i < n; i++) {
+      const v = bq(f, n > 1 ? i / (n - 1) : 0.2, i * P.stagger);
+      const R = R0 + i * gap;
+      if (R <= 0) continue;
+      const a0 = P.dlStart * Math.PI / 180 + i * P.dlOffset * TAU + f * P.dlSpin * 0.02;
+      g.beginPath(); g.arc(0, 0, R, a0, a0 + TAU * P.dlSweep * (0.04 + 0.96 * v));
+      g.strokeStyle = ink(i, n, v, f, i); g.lineWidth = U * P.dlW; g.stroke();
+    }
+    g.lineCap = 'butt';
+    if (P.dlTicks > 0) {
+      const tn = P.dlTicks | 0, R = R0 + n * gap + U * 0.018, w = Math.max(0.8, U * 0.0024);
+      for (let i = 0; i < tn; i++) {
+        const v = bq(f, sym(i / tn, 1), 0), L = U * P.dlTickLen * (0.22 + 0.78 * v);
+        const a = TAU * i / tn - Math.PI / 2, ca = Math.cos(a), sa = Math.sin(a);
+        g.strokeStyle = ink(i, tn, v, f, 0); g.lineWidth = w;
+        g.beginPath(); g.moveTo(ca * R, sa * R); g.lineTo(ca * (R + L), sa * (R + L)); g.stroke();
+      }
+    }
+    if (P.dlDot > 0) {
+      const lv = lvAt(f);
+      g.beginPath(); g.arc(0, 0, U * P.dlDot * (0.75 + 0.5 * lv), 0, TAU);
+      g.fillStyle = ink(0, 1, lv, f, 0); g.fill();
+    }
+  }
+
+  /* ══ LOOK 13 · EDITORIAL ══ */
+  function hzLabel(t) {
+    const hz = 32 * Math.pow(16000 / 32, cl01(t));
+    return hz >= 1000 ? (hz / 1000).toFixed(hz < 10000 ? 1 : 0) + 'K' : Math.round(hz) + '';
+  }
+  function drawEditorial(g, f) {
+    const d = boxDims(), lines = (P.tyText || 'WTFFF!?').split('\n').filter(l => l.length);
+    const size = U * P.edSize;
+    const rows = Math.max(1, P.edRows | 0), cols = Math.max(2, P.edCols | 0);
+    let y = 0;
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    if (lines.length && size > 0) {
+      y = size * 0.14;                                  /* clear the top rule */
+      g.font = '700 ' + size + 'px "Suisse Intl", Helvetica, Arial, sans-serif';
+      lines.forEach((ln, i) => {
+        g.fillStyle = ink(i, Math.max(2, lines.length), lvAt(f), f, i);
+        g.fillText(ln.toUpperCase(), 0, y);
+        y += size * P.tyLead;
+      });
+      y += U * 0.028;
+    }
+    let rowH = U * P.edRowH, gap = rowH * P.edRowGap;
+    if (P.edFill) {                                     /* rows fill the margin box */
+      const reserve = P.meta === 'full' ? U * 0.06 : 0; /* leave the tick scale room */
+      const pitch = Math.max(0, d.bh - y - reserve) / rows;
+      rowH = pitch / (1 + P.edRowGap); gap = rowH * P.edRowGap;
+    }
+    const lblSize = U * 0.014;
+    for (let i = 0; i < rows; i++) {
+      const v = bq(f, rows > 1 ? i / (rows - 1) : 0, i * P.stagger);
+      const steps = Math.max(1, Math.round(v * cols));
+      g.fillStyle = ink(i, rows, v, f, i);
+      rrect(g, 0, y, d.bw * steps / cols, rowH, P.edRadius * rowH * 0.5); g.fill();
+      if (P.edLabels) {
+        g.font = '400 ' + lblSize + 'px "Suisse Intl Mono", ui-monospace, monospace';
+        g.fillStyle = P.capColor; g.globalAlpha = 0.5;
+        g.textAlign = 'right'; g.fillText(hzLabel(rows > 1 ? i / (rows - 1) : 0), d.bw, y + rowH * 0.5 - lblSize * 0.5);
+        g.textAlign = 'left'; g.globalAlpha = 1;
+      }
+      y += rowH + gap;
+    }
+    g.textBaseline = 'alphabetic';
+  }
+
+  const LOOKS = { bars: drawBars, blob: drawBlob, rings: drawRings, halftone: drawHalftone, ridge: drawRidge, grid: drawGrid, spikes: drawSpikes, shear: drawShear, type: drawType, stack: drawStack, mosaic: drawMosaic, dial: drawDial, editorial: drawEditorial };
+
+  /* ─────────────── overlays ─────────────── */
+  /* anchor the system inside the margin box instead of always dead centre */
+  function anchorXY() {
+    const m = U * P.margin, a = String(P.anchor || 'cc');
+    const hx = { l: m, c: W / 2, r: W - m }, vy = { t: m, c: H / 2, b: H - m };
+    const x = hx[a[0]], y = vy[a[1]];
+    return [x === undefined ? W / 2 : x, y === undefined ? H / 2 : y];
+  }
+  function applyBase(g, f) {
+    const a = anchorXY();
+    g.setTransform(RS, 0, 0, RS, 0, 0);
+    g.translate(a[0] + P.posX * W, a[1] + P.posY * H);
+    g.rotate(P.rot * Math.PI / 180);
+    const z = P.zoom * (1 + P.pump * (lvAt(f) - 0.3) * 2);
+    g.scale(z, z);
+  }
+  /* atmospheric haze — cached, only rebuilt when its inputs change */
+  const spr = document.createElement('canvas'), sctx = spr.getContext('2d');
+  let sprKey = '';
+  function sprayLayer() {
+    const key = [P.seed, P.spray, P.palette.join(''), cv.width, cv.height].join('|');
+    if (key === sprKey) return spr;
+    sprKey = key;
+    spr.width = cv.width; spr.height = cv.height;
+    sctx.setTransform(1, 0, 0, 1, 0, 0);
+    sctx.clearRect(0, 0, spr.width, spr.height);
+    if (P.spray <= 0 || !P.palette.length) return spr;
+    const rnd = mulberry(P.seed * 7 + 11);
+    sctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 4; i++) {
+      const bx = rnd() * W, by = rnd() * H, r = U * (0.28 + rnd() * 0.5);
+      const c = hex2rgb(P.palette[i % P.palette.length]);
+      const gr = sctx.createRadialGradient(bx * RS, by * RS, 0, bx * RS, by * RS, r * RS);
+      gr.addColorStop(0, rgb2css(c[0], c[1], c[2], 0.42 * P.spray));
+      gr.addColorStop(0.55, rgb2css(c[0], c[1], c[2], 0.11 * P.spray));
+      gr.addColorStop(1, rgb2css(c[0], c[1], c[2], 0));
+      sctx.fillStyle = gr; sctx.fillRect(0, 0, spr.width, spr.height);
+    }
+    return spr;
+  }
+  function drawSpray(g) {
+    if (P.spray <= 0 || !P.palette.length) return;
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalCompositeOperation = 'screen';
+    g.drawImage(sprayLayer(), 0, 0);
+    g.restore();
+  }
+  function drawTint(src, color, dx, dy, alpha) {
+    tctx.setTransform(1, 0, 0, 1, 0, 0); tctx.globalCompositeOperation = 'source-over'; tctx.globalAlpha = 1;
+    tctx.clearRect(0, 0, tmp.width, tmp.height); tctx.drawImage(src, 0, 0);
+    tctx.globalCompositeOperation = 'source-in'; tctx.fillStyle = color;
+    tctx.fillRect(0, 0, tmp.width, tmp.height);
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = alpha;
+    ctx.drawImage(tmp, dx, dy);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  }
+  function drawStars(f) {
+    if (P.stars <= 0) return;
+    const rnd = mulberry(P.seed * 31 + 5), lv = lvAt(f);
+    ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
+    for (let i = 0; i < P.stars; i++) {
+      const x = rnd() * W, y = rnd() * H, base = U * (0.008 + rnd() * 0.022);
+      const ph = rnd() * TAU, r = base * (0.7 + 0.6 * Math.abs(Math.sin(f / AFPS * 1.6 + ph)) + lv * 0.5);
+      const w = r * 0.26;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(ph * 0.2);
+      ctx.beginPath(); ctx.moveTo(0, -r);
+      ctx.quadraticCurveTo(0, 0, w, 0); ctx.quadraticCurveTo(0, 0, 0, r);
+      ctx.quadraticCurveTo(0, 0, -w, 0); ctx.quadraticCurveTo(0, 0, 0, -r);
+      ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.55 + 0.45 * lv; ctx.fill(); ctx.restore();
+    }
+    ctx.restore();
+  }
+  function drawCaption(f) {
+    const lines = (P.capText || '').split('\n').filter(l => l.trim().length);
+    if (!lines.length) return;
+    const size = U * P.capSize, lh = size * 1.42, mono = P.capStyle === 'mono';
+    ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
+    ctx.font = mono ? '400 ' + size + 'px "Suisse Intl Mono", ui-monospace, monospace'
+                    : '600 ' + size + 'px "Suisse Intl", Helvetica, Arial, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const total = lh * lines.length;
+    let y0;
+    if (P.capPos === 'top') y0 = H * 0.10 + lh / 2;
+    else if (P.capPos === 'center') y0 = H / 2 - total / 2 + lh / 2;
+    else y0 = H * 0.90 - total + lh / 2;
+    lines.forEach((ln, i) => {
+      const txt = mono ? ln.toUpperCase() : ln, y = y0 + i * lh;
+      if (P.capStyle === 'bubble') {
+        const w = ctx.measureText(txt).width, px = size * 0.5, py = size * 0.36;
+        rrect(ctx, W / 2 - w / 2 - px, y - size * 0.62 - py, w + px * 2, size * 1.24 + py * 2, (size * 1.24 + py * 2) / 2);
+        ctx.fillStyle = P.bubbleColor; ctx.fill();
+        ctx.fillStyle = P.bg;
+      } else ctx.fillStyle = P.capColor;
+      ctx.fillText(txt, W / 2, y);
+    });
+    ctx.restore();
+  }
+  /* ── layout overlays: grid, rules, instrument metadata ── */
+  function drawGridOverlay() {
+    if (!P.gridOn) return;
+    const d = boxDims(), n = Math.max(2, P.gridCols | 0);
+    ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
+    ctx.strokeStyle = P.capColor; ctx.globalAlpha = 0.1;
+    ctx.lineWidth = Math.max(1, U * 0.0012);
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) { const x = d.m + d.bw * i / n; ctx.moveTo(x, d.m); ctx.lineTo(x, H - d.m); }
+    ctx.stroke(); ctx.restore();
+  }
+  function drawRules() {
+    if (P.rules === 'off') return;
+    const m = U * P.margin;
+    ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
+    ctx.strokeStyle = P.capColor; ctx.globalAlpha = 0.3;
+    ctx.lineWidth = Math.max(1, U * 0.0016);
+    ctx.beginPath();
+    if (P.rules === 'frame') ctx.rect(m, m, W - 2 * m, H - 2 * m);
+    else if (P.rules === 'hlines') { ctx.moveTo(m, m); ctx.lineTo(W - m, m); ctx.moveTo(m, H - m); ctx.lineTo(W - m, H - m); }
+    else { ctx.moveTo(m, H / 2); ctx.lineTo(W - m, H / 2); ctx.moveTo(W / 2, m); ctx.lineTo(W / 2, H - m); }
+    ctx.stroke(); ctx.restore();
+  }
+  const pad2 = v => (v < 10 ? '0' : '') + Math.floor(v);
+  function drawMeta(f) {
+    if (P.meta === 'off') return;
+    const m = U * P.margin, s = U * 0.0145;
+    const t = audio ? uiTime : f / AFPS;
+    ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
+    ctx.font = '400 ' + s + 'px "Suisse Intl Mono", ui-monospace, monospace';
+    ctx.fillStyle = P.capColor; ctx.textBaseline = 'alphabetic';
+    ctx.globalAlpha = 0.55;
+    ctx.textAlign = 'left'; ctx.fillText((P.label || '').toUpperCase(), m, m + s);
+    ctx.textAlign = 'right';
+    ctx.fillText(pad2(t / 60) + ':' + pad2(t % 60) + ':' + pad2((t % 1) * P.fps), W - m, m + s);
+    if (P.meta === 'full') {
+      const n = 56, y = H - m, w = W - 2 * m, tw = Math.max(1, U * 0.0022);
+      ctx.globalAlpha = 0.85;
+      for (let i = 0; i < n; i++) {
+        const v = bAt(f, i / (n - 1)), h = U * 0.005 + U * 0.022 * v;
+        ctx.fillRect(m + w * i / (n - 1) - tw / 2, y - h, tw, h);
+      }
+      ctx.globalAlpha = 0.5;
+      ctx.textAlign = 'left'; ctx.fillText('32HZ', m, y - U * 0.034);
+      ctx.textAlign = 'right'; ctx.fillText('16KHZ', W - m, y - U * 0.034);
+    }
+    ctx.restore();
+  }
+  function drawLabel() {
+    if (!P.label || P.meta !== 'off') return;   /* metadata owns the label when on */
+    const size = U * 0.019;
+    ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
+    ctx.font = '400 ' + size + 'px "Suisse Intl Mono", ui-monospace, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = P.capColor; ctx.globalAlpha = 0.6;
+    ctx.fillText(P.label.toUpperCase(), W * 0.055, H * 0.955);
+    ctx.restore();
+  }
+  function drawVignette() {
+    if (P.vignette <= 0) return;
+    const cx = cv.width / 2, cy = cv.height / 2;
+    const gr = ctx.createRadialGradient(cx, cy, U * RS * 0.18, cx, cy, U * RS * 0.82);
+    gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,' + P.vignette + ')');
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = gr;
+    ctx.fillRect(0, 0, cv.width, cv.height); ctx.restore();
+  }
+  function drawScan() {
+    if (P.scan <= 0) return;
+    const step = Math.max(2, Math.round(3 * RS));
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = 'rgba(0,0,0,' + (P.scan * 0.5) + ')';
+    for (let y = 0; y < cv.height; y += step) ctx.fillRect(0, y, cv.width, Math.max(1, step * 0.4));
+    ctx.restore();
+  }
+  function drawGrain(f) {
+    if (P.grain <= 0 || !grainTiles.length) return;
+    const tile = grainTiles[f % grainTiles.length], s = P.grainScale * RS;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = P.grain;
+    ctx.scale(s, s); ctx.translate(-(f * 13 % 160), -(f * 7 % 160));
+    ctx.fillStyle = ctx.createPattern(tile, 'repeat');
+    ctx.fillRect(0, 0, cv.width / s + 160, cv.height / s + 160);
+    ctx.restore();
+  }
+  function drawGuides() {
+    if (!P.guides || recording) return;   /* never burn guides into a recording */
+    ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
+    ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = Math.max(1, U * 0.002);
+    ctx.setLineDash([U * 0.02, U * 0.014]);
+    ctx.strokeRect(W * 0.055, H * 0.105, W * 0.89, H * 0.735);
+    ctx.setLineDash([]); ctx.restore();
+  }
+
+  /* ─────────────── frame composite ─────────────── */
+  function render() {
+    if (shapeDirty) buildShaped();
+    const f = frameIndex(), pw = cv.width, ph = cv.height;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    ctx.fillStyle = P.bg; ctx.fillRect(0, 0, pw, ph);
+    drawSpray(ctx);
+    drawGridOverlay();
+
+    actx.setTransform(1, 0, 0, 1, 0, 0);
+    actx.clearRect(0, 0, pw, ph);
+    actx.globalCompositeOperation = 'source-over'; actx.globalAlpha = 1;
+    actx.lineJoin = 'round'; actx.lineCap = 'butt';
+    applyBase(actx, f);
+    (LOOKS[P.look] || drawBars)(actx, f);
+
+    let layer = art;
+    if (P.trail > 0) {
+      accx.setTransform(1, 0, 0, 1, 0, 0);
+      accx.globalCompositeOperation = 'destination-out'; accx.globalAlpha = cl01(1 - P.trail);
+      accx.fillStyle = '#000'; accx.fillRect(0, 0, pw, ph);
+      accx.globalCompositeOperation = 'lighter'; accx.globalAlpha = 1;
+      accx.drawImage(art, 0, 0);
+      layer = acc;
+    }
+
+    if (P.bloom > 0) {
+      bctx.setTransform(1, 0, 0, 1, 0, 0);
+      bctx.clearRect(0, 0, blr.width, blr.height);
+      bctx.drawImage(layer, 0, 0, blr.width, blr.height);
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(1, P.bloom);
+      ctx.imageSmoothingEnabled = true; ctx.drawImage(blr, 0, 0, pw, ph);
+      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    }
+    if (P.chroma > 0 && P.palette.length) {
+      const d = P.chroma * 0.011 * U * RS;
+      drawTint(layer, P.palette[1 % P.palette.length], -d, 0, 0.5);
+      drawTint(layer, P.palette[2 % P.palette.length], d, d * 0.35, 0.5);
+    }
+    ctx.globalCompositeOperation = P.blend; ctx.globalAlpha = P.ink;
+    ctx.drawImage(layer, 0, 0);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+
+    drawRules(); drawStars(f); drawCaption(f); drawLabel(); drawMeta(f);
+    drawVignette(); drawScan(); drawGrain(f); drawGuides();
+  }
+
+  /* ═══════════════════ transport ═══════════════════ */
+  const wave = $('#wave'), wwrap = $('#wave-wrap');
+  let ac = null, src = null, gainN = null, recDest = null;
+  let playing = false, startedAt = 0, startOffset = 0, uiTime = 0, demoT = 0;
+  const frameIndex = () => Math.round((audio ? uiTime : demoT) * AFPS);
+
+  const ensureAC = () => (ac = ac || new (window.AudioContext || window.webkitAudioContext)());
+  function stopSrc() { if (src) { try { src.onended = null; src.stop(); } catch (e) {} try { src.disconnect(); } catch (e) {} src = null; } }
+  function setPlayIcon(on) {
+    $('#ic-play').innerHTML = on ? '<rect x="7" y="5" width="3.6" height="14"/><rect x="13.4" y="5" width="3.6" height="14"/>' : '<path d="M8 5l12 7-12 7z"/>';
+    $('#btn-play').classList.toggle('on', on);
+  }
+  function startPlay(from) {
+    if (!audio) return;
+    ensureAC(); if (ac.state === 'suspended') ac.resume();
+    stopSrc();
+    src = ac.createBufferSource(); src.buffer = audio.buffer;
+    gainN = ac.createGain(); src.connect(gainN);
+    if (!recording || P.monitor) gainN.connect(ac.destination);
+    if (recDest) gainN.connect(recDest);
+    const dur = Math.max(0.05, P.trimOut - from);
+    src.start(0, from, dur);
+    startedAt = ac.currentTime; startOffset = from; uiTime = from;
+    playing = true; setPlayIcon(true);
+  }
+  function stopPlay() { stopSrc(); playing = false; setPlayIcon(false); }
+  function togglePlay() {
+    if (!audio) return;
+    if (playing) { stopPlay(); return; }
+    startPlay(uiTime >= P.trimOut - 0.02 || uiTime < P.trimIn ? P.trimIn : uiTime);
+  }
+
+  function fmtTime(t) {
+    t = Math.max(0, t || 0);
+    const m = Math.floor(t / 60), s = t - m * 60;
+    return m + ':' + (s < 10 ? '0' : '') + s.toFixed(1);
+  }
+  function drawWaveStrip() {
+    const w = wwrap.clientWidth, h = wwrap.clientHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (!w) return;
+    if (wave.width !== Math.round(w * dpr)) { wave.width = Math.round(w * dpr); wave.height = Math.round(h * dpr); }
+    const g = wave.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    const n = Math.max(1, Math.floor(w / 2)), bw = w / n, dur = audio ? audio.dur : 1;
+    for (let i = 0; i < n; i++) {
+      const t = i / n;
+      let v = 0.05;
+      if (A) { const pi = Math.min(A.peaks.length - 1, Math.floor(t * A.peaks.length)); v = Math.max(0.02, A.peaks[pi]); }
+      const inTrim = !audio || (t * dur >= P.trimIn && t * dur <= P.trimOut);
+      g.fillStyle = inTrim ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.12)';
+      const bh = Math.max(1, Math.pow(v, 0.75) * h * 0.9);
+      g.fillRect(i * bw, (h - bh) / 2, Math.max(1, bw - 1), bh);
+    }
+  }
+  const elPh = $('#playhead'), elIn = $('#h-in'), elOut = $('#h-out'), elTc = $('#tcode');
+  const elDur = $('#kv-dur'), elTrim = $('#kv-trim'), elLen = $('#kv-len');
+  function updateTransport() {
+    const dur = audio ? audio.dur : 1;
+    elPh.style.left = (cl01(uiTime / dur) * 100) + '%';
+    elIn.style.left = (cl01(P.trimIn / dur) * 100) + '%';
+    elOut.style.left = (cl01(P.trimOut / dur) * 100) + '%';
+    elTc.textContent = fmtTime(uiTime) + ' / ' + fmtTime(dur);
+    const len = Math.max(0, P.trimOut - P.trimIn);
+    elDur.textContent = audio ? fmtTime(dur) + ' s' : '—';
+    elTrim.textContent = audio ? fmtTime(len) + ' s' : '—';
+    elLen.textContent = audio ? fmtTime(len) + ' s' : '—';
+  }
+  function seekTo(t) {
+    if (!audio) return;
+    uiTime = clamp(t, P.trimIn, P.trimOut);
+    if (playing) startPlay(uiTime);
+    updateTransport();
+  }
+  function tFromEvent(e) {
+    const r = wwrap.getBoundingClientRect();
+    return cl01((e.clientX - r.left) / Math.max(1, r.width)) * (audio ? audio.dur : 1);
+  }
+  wwrap.addEventListener('pointerdown', e => { if (e.target.classList.contains('trim-h')) return; seekTo(tFromEvent(e)); });
+  ['h-in', 'h-out'].forEach(id => {
+    const el = $('#' + id);
+    el.addEventListener('pointerdown', e => { el.setPointerCapture(e.pointerId); el.dataset.drag = '1'; e.stopPropagation(); });
+    el.addEventListener('pointermove', e => {
+      if (el.dataset.drag !== '1' || !audio) return;
+      const t = tFromEvent(e);
+      if (id === 'h-in') P.trimIn = clamp(t, 0, P.trimOut - 0.25);
+      else P.trimOut = clamp(t, P.trimIn + 0.25, audio.dur);
+      uiTime = clamp(uiTime, P.trimIn, P.trimOut);
+      drawWaveStrip(); updateTransport();
+    });
+    const end = () => { if (el.dataset.drag === '1') { el.dataset.drag = '0'; if (playing) startPlay(clamp(uiTime, P.trimIn, P.trimOut)); } };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+  });
+  $('#btn-play').addEventListener('click', togglePlay);
+  $('#btn-loop').addEventListener('click', () => { P.loop = !P.loop; $('#btn-loop').classList.toggle('on', P.loop); });
+
+  /* ═══════════════════ audio loading ═══════════════════ */
+  async function loadFile(file) {
+    if (!file) return;
+    const prog = $('#prog-wrap'), fill = $('#prog-fill'), lbl = $('#prog-lbl');
+    prog.classList.add('on'); lbl.textContent = 'Decoding'; fill.style.width = '4%';
+    try {
+      const buf = await file.arrayBuffer();
+      ensureAC();
+      const decoded = await new Promise((res, rej) => {
+        const p = ac.decodeAudioData(buf, res, rej);
+        if (p && p.then) p.then(res, rej);
+      });
+      stopPlay();
+      audio = { name: file.name, buffer: decoded, dur: decoded.duration };
+      P.trimIn = 0; P.trimOut = decoded.duration; uiTime = 0;
+      lbl.textContent = 'Analysing audio';
+      A = await analyse(decoded, p => { fill.style.width = (6 + p * 92) + '%'; });
+      shapeDirty = true; buildShaped();
+      $('#audio-name').textContent = file.name;
+      $('#empty-state').classList.add('hidden');
+      drawWaveStrip(); updateTransport();
+      $$('#btn-rec, #btn-trim-reset, #btn-trim-15').forEach(b => b.disabled = false);
+    } catch (err) {
+      lbl.textContent = 'Could not decode that file';
+      console.error(err);
+      await new Promise(r => setTimeout(r, 1400));
+    }
+    fill.style.width = '100%';
+    prog.classList.remove('on');
+  }
+  const fi = $('#file-input'), uz = $('#upload-zone');
+  fi.addEventListener('change', () => loadFile(fi.files[0]));
+  ['dragenter', 'dragover'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); uz.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); if (ev === 'dragleave' && e.relatedTarget) return; uz.classList.remove('drag'); }));
+  document.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) loadFile(f); });
+  $('#btn-trim-reset').addEventListener('click', () => { if (!audio) return; P.trimIn = 0; P.trimOut = audio.dur; drawWaveStrip(); updateTransport(); });
+  $('#btn-trim-15').addEventListener('click', () => { if (!audio) return; P.trimIn = clamp(uiTime, 0, Math.max(0, audio.dur - 1)); P.trimOut = Math.min(audio.dur, P.trimIn + 15); drawWaveStrip(); updateTransport(); });
+
+  /* ═══════════════════ recording ═══════════════════ */
+  let rec = null, recording = false, chunks = [], recMime = '', recT0 = 0, loopBak = true;
+  function pickMime() {
+    if (!window.MediaRecorder) return '';
+    const list = [
+      'video/mp4;codecs="avc1.640028,mp4a.40.2"',
+      'video/mp4;codecs="avc1.4d002a,mp4a.40.2"',
+      'video/mp4;codecs="avc1.42E01E,mp4a.40.2"',
+      'video/mp4',
+      'video/webm;codecs="vp9,opus"',
+      'video/webm;codecs="vp8,opus"',
+      'video/webm'
+    ];
+    for (const m of list) { try { if (MediaRecorder.isTypeSupported(m)) return m; } catch (e) {} }
+    return '';
+  }
+  function startRec() {
+    if (!audio || recording) return;
+    const mime = pickMime();
+    if (!mime) { $('#kv-mime').textContent = 'not supported'; return; }
+    ensureAC(); if (ac.state === 'suspended') ac.resume();
+    recDest = ac.createMediaStreamDestination();
+    const vs = cv.captureStream(P.fps);
+    const stream = new MediaStream([...vs.getVideoTracks(), ...recDest.stream.getAudioTracks()]);
+    chunks = []; recMime = mime;
+    try {
+      rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: P.mbps * 1e6, audioBitsPerSecond: 192000 });
+    } catch (e) { rec = new MediaRecorder(stream); recMime = rec.mimeType || 'video/webm'; }
+    rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop = saveClip;
+    loopBak = P.loop; recording = true; recT0 = 0;
+    $('#btn-rec').style.display = 'none'; $('#btn-rec-stop').style.display = '';
+    $('#rec-badge').classList.add('on');
+    rec.start(250);
+    startPlay(P.trimIn);
+  }
+  function finishRec() {
+    if (!recording) return;
+    recording = false; stopPlay();
+    if (recDest) { try { recDest.disconnect(); } catch (e) {} }
+    recDest = null; P.loop = loopBak;
+    $('#btn-rec').style.display = ''; $('#btn-rec-stop').style.display = 'none';
+    $('#rec-badge').classList.remove('on');
+    setTimeout(() => { if (rec && rec.state !== 'inactive') rec.stop(); }, 300);
+  }
+  function saveClip() {
+    if (!chunks.length) return;
+    const type = (recMime || 'video/webm').split(';')[0];
+    const blob = new Blob(chunks, { type });
+    const ext = type.indexOf('mp4') >= 0 ? 'mp4' : 'webm';
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+    const a = $('#dl');
+    if (a.href) URL.revokeObjectURL(a.href);
+    a.href = URL.createObjectURL(blob);
+    a.download = 'resonance-' + P.look + '-' + stamp + '.' + ext;
+    a.click();
+    chunks = [];
+  }
+  $('#btn-rec').addEventListener('click', startRec);
+  $('#btn-rec-stop').addEventListener('click', finishRec);
+  $('#btn-png').addEventListener('click', () => {
+    const bak = P.rscale;
+    if (bak !== 1) { P.rscale = 1; resize(); render(); }
+    cv.toBlob(b => {
+      const a = $('#dl');
+      if (a.href) URL.revokeObjectURL(a.href);
+      a.href = URL.createObjectURL(b);
+      a.download = 'resonance-' + P.look + '-frame.png';
+      a.click();
+      if (bak !== 1) { P.rscale = bak; resize(); }
+    }, 'image/png');
+  });
+
+  /* ═══════════════════ main loop ═══════════════════ */
+  function tick() {
+    if (audio) {
+      if (playing && ac) {
+        uiTime = startOffset + (ac.currentTime - startedAt);
+        if (uiTime >= P.trimOut - 0.004) {
+          if (P.loop && !recording) startPlay(P.trimIn);
+          else { uiTime = P.trimOut; stopPlay(); if (recording) finishRec(); }
+        }
+      }
+    } else demoT += 1 / 60;
+    if (recording) $('#rec-time').textContent = 'REC ' + fmtTime(uiTime - P.trimIn);
+    render();
+    updateTransport();
+    requestAnimationFrame(tick);
+  }
+
+  /* ═══════════════════ UI wiring ═══════════════════ */
+  const FMT = { f1: v => (+v).toFixed(1), f2: v => (+v).toFixed(2), f3: v => (+v).toFixed(3) };
+  function paintVal(k) {
+    const el = $('[data-v="' + k + '"]');
+    if (!el) return;
+    const f = FMT[el.dataset.fmt];
+    el.textContent = f ? f(P[k]) : Math.round(P[k]);
+  }
+  const RESHAPE = { gain: 1, curve: 1, attack: 1, release: 1, tilt: 1 };
+  function onParam(k) {
+    if (RESHAPE[k]) shapeDirty = true;
+    if (k === 'rscale') resize();
+  }
+  function syncSelectUI(sel, value) {
+    const val = $('.hty-select-val', sel);
+    $$('.hty-opt', sel).forEach(o => {
+      const on = (o.dataset.value || o.textContent.trim()) === value;
+      o.classList.toggle('is-selected', on);
+      if (on && val) val.textContent = (o.dataset.label || o.textContent).trim();
+    });
+  }
+  function sizeValue() {
+    const key = P.cw + 'x' + P.ch;
+    const sel = $('.hty-select[data-p="size"]');
+    return $$('.hty-opt', sel).some(o => o.dataset.value === key) ? key : 'custom';
+  }
+  function applySize(v) {
+    const custom = $('#custom-res-wrap');
+    if (v === 'custom') { custom.classList.add('visible'); P.cw = +$('#inp-cw').value || 1080; P.ch = +$('#inp-ch').value || 1920; }
+    else { custom.classList.remove('visible'); const m = v.split('x').map(Number); if (m[0] && m[1]) { P.cw = m[0]; P.ch = m[1]; } }
+    resize();
+  }
+
+  $$('[data-p]').forEach(el => {
+    const k = el.dataset.p;
+    if (el.matches('input[type=range]')) {
+      el.addEventListener('input', () => { P[k] = parseFloat(el.value); paintVal(k); onParam(k); });
+    } else if (el.matches('input[type=color]')) {
+      el.addEventListener('input', () => { P[k] = el.value.toUpperCase(); syncColorRow(k); });
+    } else if (el.matches('input[type=text]') || el.matches('textarea')) {
+      el.addEventListener('input', () => { P[k] = el.value; });
+    } else if (el.matches('.tog-sw')) {
+      el.addEventListener('click', () => { el.classList.toggle('on'); P[k] = el.classList.contains('on'); onParam(k); });
+    } else if (el.matches('.seg')) {
+      el.addEventListener('click', e => {
+        const b = e.target.closest('button');
+        if (!b || b.dataset.val === undefined) return;
+        const raw = b.dataset.val;
+        P[k] = (raw !== '' && !isNaN(+raw)) ? +raw : raw;
+        onParam(k);
+      });
+    } else if (el.matches('.hty-select')) {
+      el.addEventListener('hty:change', e => { if (k === 'size') applySize(e.detail.value); else P[k] = e.detail.value; });
+    }
+  });
+  $$('#inp-cw, #inp-ch').forEach(el => el.addEventListener('input', () => { P.cw = clamp(+$('#inp-cw').value || 1080, 64, 4096); P.ch = clamp(+$('#inp-ch').value || 1920, 64, 4096); resize(); }));
+
+  /* colour rows (single swatches) */
+  const COLROW = { bg: ['#sw-bg', '#hex-bg'], capColor: ['#sw-cap', '#hex-cap'], bubbleColor: ['#sw-bub', '#hex-bub'] };
+  function syncColorRow(k) {
+    const r = COLROW[k]; if (!r) return;
+    $(r[0]).style.background = P[k];
+    $(r[1]).value = P[k].toUpperCase();
+    const cp = $('input[data-p="' + k + '"]'); if (cp) cp.value = P[k].toLowerCase();
+  }
+  Object.keys(COLROW).forEach(k => {
+    $(COLROW[k][1]).addEventListener('input', e => {
+      let v = e.target.value.trim(); if (v[0] !== '#') v = '#' + v;
+      if (isHex(v)) { P[k] = v.toUpperCase(); syncColorRow(k); }
+    });
+  });
+
+  /* palette rows */
+  function buildPal() {
+    const box = $('#pal-list'); box.innerHTML = '';
+    P.palette.forEach((c, i) => {
+      const row = document.createElement('div');
+      row.className = 'pal-row';
+      row.innerHTML = '<div class="color-swatch" style="background:' + c + '"><input type="color" class="native-picker" value="' + c.toLowerCase() + '" /></div>'
+        + '<input type="text" class="color-hex" value="' + c.toUpperCase() + '" maxlength="7" />'
+        + '<button class="rowbtn" title="Remove">×</button>';
+      const sw = row.querySelector('.color-swatch'), cp = row.querySelector('input[type=color]');
+      const hx = row.querySelector('.color-hex'), rm = row.querySelector('.rowbtn');
+      cp.addEventListener('input', () => { P.palette[i] = cp.value.toUpperCase(); sw.style.background = cp.value; hx.value = cp.value.toUpperCase(); });
+      hx.addEventListener('input', () => { let v = hx.value.trim(); if (v[0] !== '#') v = '#' + v; if (isHex(v)) { P.palette[i] = v.toUpperCase(); sw.style.background = v; cp.value = v.toLowerCase(); } });
+      rm.addEventListener('click', () => { if (P.palette.length > 1) { P.palette.splice(i, 1); buildPal(); } });
+      box.appendChild(row);
+    });
+  }
+  $('#btn-add-col').addEventListener('click', () => {
+    const p = P.palette;
+    const next = p.length > 1 ? mixHex(p[0], p[p.length - 1], 0.5) : '#FFFFFF';
+    const rgb = next.match(/\d+/g);
+    P.palette.push(rgb ? '#' + rgb.slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('').toUpperCase() : '#FFFFFF');
+    buildPal();
+  });
+
+  /* look chips */
+  $('#look-row').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    P.look = b.dataset.caseBtn;
+  });
+
+  /* ═══════════════════ presets ═══════════════════ */
+  /* every preset starts from a clean flat baseline, so nothing leaks between them */
+  const BASE = {
+    steps: 0, stagger: 0, margin: 0.075, anchor: 'cc', rules: 'off', gridOn: false, gridCols: 12, meta: 'off',
+    grain: 0, grainScale: 1.6, bloom: 0, chroma: 0, vignette: 0, spray: 0, scan: 0, stars: 0, trail: 0,
+    zoom: 1, posX: 0, posY: 0, rot: 0, ink: 1, blend: 'source-over', cycleSpeed: 0.25,
+    gain: 1.2, curve: 1, attack: 0.6, release: 0.12, tilt: 0.35, pump: 0.04,
+    capStyle: 'mono', capPos: 'bottom', capSize: 0.034
+  };
+  const FINISH = {
+    flat:  { grain: 0, bloom: 0, vignette: 0, spray: 0, scan: 0, chroma: 0, stars: 0, trail: 0 },
+    print: { grain: 0.28, grainScale: 1.4, bloom: 0, vignette: 0.12, spray: 0.2, scan: 0, chroma: 0.5, trail: 0 },
+    glow:  { grain: 0.1, grainScale: 1.8, bloom: 0.5, vignette: 0.4, spray: 0.45, scan: 0, chroma: 0, trail: 0.3 }
+  };
+  const PRESETS = {
+    studio:    { look: 'stack', stArr: 'row', stCount: 13, stThick: 0.052, stLen: 0.44, stMin: 0.028, stSpread: 0.86, stRadius: 1, stAlign: 'center', stWave: true, stBand: 0.18, stagger: 4, colorMode: 'alt', margin: 0.08, meta: 'tag', attack: 0.62, release: 0.11 },
+    dumbar:    { look: 'mosaic', msCols: 6, msGap: 0.1, msSet: 'quarter', msMode: 'rotate', msDelay: 'diag', msColorBy: 'col', msOutline: 0, stagger: 3, steps: 4, colorMode: 'alt', margin: 0.055, rules: 'frame', attack: 0.75, release: 0.09 },
+    cavalry:   { look: 'dial', dlArcs: 6, dlR0: 0.1, dlGap: 0.042, dlW: 0.016, dlSweep: 0.8, dlStart: -90, dlOffset: 0.08, dlSpin: 0.05, dlCap: 'butt', dlTicks: 72, dlTickLen: 0.028, dlDot: 0.012, stagger: 3, colorMode: 'band', margin: 0.08, meta: 'full' },
+    editorial: { look: 'editorial', edSize: 0.12, edRows: 8, edCols: 12, edRowH: 0.024, edRowGap: 0.55, edRadius: 0, edLabels: true, edFill: true, tyLead: 0.86, stagger: 2, colorMode: 'alt', anchor: 'lt', margin: 0.085, meta: 'full', rules: 'hlines', attack: 0.68 },
+    matrix:    { look: 'stack', stArr: 'grid', stCount: 16, stRows: 11, stThick: 0.014, stMin: 0.003, stSpread: 0.84, stSpreadV: 0.74, stRadius: 1, stAlign: 'center', stWave: true, stBand: 0.24, stagger: 2, steps: 6, colorMode: 'band', margin: 0.08, meta: 'tag', attack: 0.72, release: 0.1 },
+    halo:      { look: 'stack', stArr: 'ring', stCount: 56, stRing: 0.18, stThick: 0.011, stLen: 0.16, stMin: 0.008, stRadius: 1, stWave: true, stBand: 0.2, stSpin: 0.04, stagger: 1, colorMode: 'band', margin: 0.08, meta: 'tag', release: 0.13 },
+    testimony: { look: 'bars', barMode: 'mirror', barCount: 64, barGap: 0.55, barAmp: 0.3, barSpread: 0.86, barRadius: 1, barBlocks: 0, barBase: 0, barFloor: 0.006, colorMode: 'alt', margin: 0.08, meta: 'tag', tilt: 0.45 },
+    contour:   { look: 'rings', ringCount: 22, ringR0: 0.05, ringGap: 0.02, ringAmp: 0.3, ringEcho: 4, ringW: 1.6, ringSpin: 0.01, ringFade: 0.25, colorMode: 'mono', margin: 0.08, meta: 'tag', tilt: 0.4 },
+    liquid:    { look: 'blob', blobR: 0.26, blobAmp: 0.5, blobSoft: 5, blobLobes: 1, blobLayers: 3, blobOff: 0.03, blobEcho: 6, blobSpin: 0.04, blobStroke: 0, colorMode: 'layer', margin: 0.08, pump: 0.08 },
+    quote:     { look: 'type', tyMode: 'bars', tySize: 0.18, tyTrack: 0.01, tyLead: 0.92, tyStroke: 0, tyBubble: true, colorMode: 'alt', margin: 0.08, meta: 'tag', posY: -0.02, tilt: 0.4 },
+    hayfield:  { look: 'halftone', htShape: 'stalk', htMap: 'field', htCols: 26, htMax: 1.1, htMask: 0.28, htJit: 0.08, htFlow: 0.5, htField: 'wind', htWindAng: 0, htScale: 1.15, htSpeed: 0.32, htTurb: 0.3, htSway: 0.1, htBend: 0.85, htBreath: 0.32, htInk: 'drift', htInkSmooth: true, htInkSpeed: 0.55, htInkSpread: 0.85, margin: 0.06, meta: 'tag', attack: 0.5, release: 0.08, tilt: 0.5, pump: 0 },
+    riso:      { look: 'bars', barMode: 'mirror', barCount: 36, barGap: 0.5, barAmp: 0.42, barSpread: 0.84, barRadius: 0, barBlocks: 12, colorMode: 'alt', grain: 0.3, grainScale: 1.4, chroma: 0.7, vignette: 0.12, spray: 0.2, margin: 0.075, tilt: 0.3, pump: 0.08 }
+  };
+  function applyPreset(name) {
+    const p = PRESETS[name]; if (!p) return;
+    Object.assign(P, BASE, p);
+    shapeDirty = true; syncUI();
+  }
+  $('#finish-row').addEventListener('click', e => {
+    const b = e.target.closest('button[data-finish]');
+    if (!b) return;
+    Object.assign(P, FINISH[b.dataset.finish]);
+    syncUI();
+  });
+  $('#preset-row').addEventListener('click', e => {
+    const b = e.target.closest('button[data-preset]');
+    if (b) applyPreset(b.dataset.preset);
+  });
+
+  /* ═══════════════════ vary (randomise within taste) ═══════════════════ */
+  /* Vary — re-rolls the system inside ranges that stay clean and geometric */
+  const LOOK_POOL = ['stack', 'stack', 'stack', 'mosaic', 'mosaic', 'dial', 'dial', 'editorial',
+    'grid', 'bars', 'type', 'rings', 'halftone', 'ridge', 'spikes', 'shear', 'blob'];
+  function vary() {
+    const R = Math.random, pick = a => a[(R() * a.length) | 0];
+    P.look = pick(LOOK_POOL);
+    P.seed = 1 + ((R() * 9998) | 0);
+    switch (P.look) {
+      case 'stack':
+        P.stArr = pick(['row', 'row', 'col', 'grid', 'ring', 'diag']);
+        P.stCount = P.stArr === 'ring' ? 20 + ((R() * 52) | 0) : 5 + ((R() * 26) | 0);
+        P.stRows = 2 + ((R() * 12) | 0);
+        P.stThick = (P.stArr === 'grid' || P.stArr === 'ring') ? 0.008 + R() * 0.02 : 0.018 + R() * 0.07;
+        P.stLen = 0.2 + R() * 0.42; P.stMin = R() * 0.045;
+        P.stSpread = 0.6 + R() * 0.4; P.stSpreadV = 0.4 + R() * 0.55;
+        P.stRing = 0.08 + R() * 0.24; P.stRadius = R() < 0.78 ? 1 : 0;
+        P.stAlign = R() < 0.5 ? 'center' : 'start';
+        P.stWave = R() < 0.72; P.stBand = R() * 0.6;
+        P.stSpin = R() < 0.3 ? R() * 0.1 - 0.05 : 0; break;
+      case 'mosaic':
+        P.msCols = 3 + ((R() * 13) | 0); P.msGap = R() * 0.4;
+        P.msSet = pick(['quarter', 'quarter', 'geo', 'dots', 'all']);
+        P.msMode = pick(['rotate', 'rotate', 'scale', 'swap', 'reveal']);
+        P.msDelay = pick(['diag', 'row', 'col', 'radial']);
+        P.msOutline = R() < 0.25 ? 1 + R() * 3 : 0;
+        P.msColorBy = pick(['col', 'row', 'cell']); P.msBandRow = R() < 0.35; break;
+      case 'dial':
+        P.dlArcs = 2 + ((R() * 13) | 0); P.dlR0 = R() * 0.24; P.dlGap = 0.012 + R() * 0.055;
+        P.dlW = 0.004 + R() * 0.028; P.dlSweep = 0.3 + R() * 0.7; P.dlStart = -180 + R() * 360;
+        P.dlOffset = R() * 0.2 - 0.1; P.dlSpin = R() < 0.4 ? R() * 0.1 - 0.05 : 0;
+        P.dlCap = R() < 0.7 ? 'butt' : 'round';
+        P.dlTicks = R() < 0.6 ? 24 + ((R() * 110) | 0) : 0;
+        P.dlTickLen = 0.01 + R() * 0.055; P.dlDot = R() < 0.4 ? R() * 0.028 : 0; break;
+      case 'editorial':
+        P.edSize = 0.05 + R() * 0.15; P.edRows = 3 + ((R() * 15) | 0);
+        P.edCols = pick([6, 8, 10, 12, 12, 16, 24]); P.edRowH = 0.008 + R() * 0.035;
+        P.edRowGap = R() * 1.3; P.edRadius = R() < 0.4 ? 1 : 0; P.edLabels = R() < 0.6;
+        P.edFill = R() < 0.8;
+        P.tyLead = 0.8 + R() * 0.2; break;
+      case 'bars':
+        P.barMode = pick(['mirror', 'up', 'split', 'radial']); P.barCount = 14 + ((R() * 70) | 0);
+        P.barGap = 0.2 + R() * 0.5; P.barAmp = 0.22 + R() * 0.36; P.barSpread = 0.6 + R() * 0.4;
+        P.barRadius = R() < 0.55 ? 1 : 0; P.barBlocks = R() < 0.3 ? 6 + ((R() * 12) | 0) : 0;
+        P.barBase = 0; P.barFloor = R() * 0.02; break;
+      case 'grid':
+        P.gdMode = pick(['level', 'scale', 'flip']); P.gdCols = 5 + ((R() * 20) | 0);
+        P.gdRows = 5 + ((R() * 28) | 0); P.gdGap = 0.1 + R() * 0.35; P.gdSize = 0.72 + R() * 0.28;
+        P.gdRadius = R() < 0.3 ? 1 : 0; P.gdGhost = R() < 0.5; break;
+      case 'rings':
+        P.ringCount = 8 + ((R() * 26) | 0); P.ringR0 = R() * 0.12; P.ringGap = 0.012 + R() * 0.028;
+        P.ringAmp = 0.12 + R() * 0.4; P.ringEcho = (R() * 8) | 0; P.ringW = 1 + R() * 3;
+        P.ringSpin = R() * 0.06 - 0.03; P.ringFade = R() * 0.6; break;
+      case 'halftone':
+        P.htShape = pick(['dot', 'dot', 'square', 'plus', 'line', 'stalk']);
+        P.htMap = pick(['field', 'field', 'radial', 'columns', 'rows', 'diag']);
+        P.htCols = 16 + ((R() * 34) | 0); P.htMax = 0.95 + R() * 0.75;
+        P.htMask = R() * 0.42; P.htJit = R() < 0.4 ? R() * 0.22 : 0; P.htFlow = 0.15 + R() * 0.7;
+        P.htField = pick(['wind', 'wind', 'sweep', 'swirl', 'turb', 'radial']);
+        P.htWindAng = R() * 360 - 180; P.htScale = 0.5 + R() * 2; P.htSpeed = 0.05 + R() * 0.6;
+        P.htTurb = R() * 0.6; P.htSway = R() < 0.7 ? R() * 0.22 : 0; P.htBend = R();
+        P.htBreath = R() * 0.45;
+        P.htInk = pick(['drift', 'drift', 'flow', 'level', 'depth', 'grid']);
+        P.htInkSmooth = R() < 0.6; P.htInkSpeed = R() * 1.4 - 0.2; P.htInkSpread = 0.2 + R() * 1.5; break;
+      case 'ridge':
+        P.rgLines = 10 + ((R() * 44) | 0); P.rgGap = 0.012 + R() * 0.032; P.rgAmp = 0.08 + R() * 0.2;
+        P.rgStep = (R() * 7) | 0; P.rgSpread = 0.62 + R() * 0.38; P.rgW = 1 + R() * 2.4;
+        P.rgSkew = 0; P.rgFill = R() < 0.7; P.rgMirror = R() < 0.4; break;
+      case 'spikes':
+        P.spCount = 48 + ((R() * 220) | 0); P.spInner = 0.06 + R() * 0.24;
+        P.spLen = 0.15 + R() * 0.3; P.spW = 1.2 + R() * 4.5; P.spSpin = R() < 0.4 ? R() * 0.08 - 0.04 : 0;
+        P.spTaper = R(); P.spRing = R() < 0.3 ? 1 + R() * 5 : 0; P.spMirror = R() < 0.8; break;
+      case 'shear':
+        P.shShape = pick(['disc', 'bar', 'text']); P.shSlices = 8 + ((R() * 60) | 0);
+        P.shAmt = 0.06 + R() * 0.4; P.shSize = 0.16 + R() * 0.38;
+        P.shGap = R() < 0.6 ? R() * 0.25 : 0; P.shDir = pick(['h', 'v']); P.shAlt = R() < 0.7; break;
+      case 'type':
+        P.tyMode = pick(['bars', 'ridge', 'dots', 'solid']); P.tySize = 0.12 + R() * 0.14;
+        P.tyTrack = R() * 0.1; P.tyStroke = R() < 0.25 ? 1 + R() * 4 : 0; P.tyBubble = R() < 0.4; break;
+      case 'blob':
+        P.blobR = 0.19 + R() * 0.16; P.blobAmp = 0.2 + R() * 0.5; P.blobSoft = 2 + ((R() * 7) | 0);
+        P.blobLobes = 1 + ((R() * 4) | 0); P.blobLayers = 1 + ((R() * 5) | 0);
+        P.blobOff = R() * 0.045; P.blobEcho = (R() * 9) | 0; P.blobSpin = R() * 0.1 - 0.05;
+        P.blobStroke = R() < 0.3 ? 1 + R() * 6 : 0; break;
+    }
+    /* structure */
+    P.stagger = R() < 0.75 ? (R() * 8) | 0 : 0;
+    P.steps = R() < 0.45 ? 2 + ((R() * 7) | 0) : 0;
+    P.margin = 0.03 + R() * 0.09;
+    P.anchor = P.look === 'editorial' ? 'lt' : pick(['cc', 'cc', 'cc', 'cc', 'ct', 'cb']);
+    P.rules = R() < 0.28 ? pick(['frame', 'hlines', 'cross']) : 'off';
+    P.gridOn = R() < 0.14; P.gridCols = pick([6, 8, 12, 12, 16, 24]);
+    P.meta = R() < 0.62 ? pick(['tag', 'tag', 'full']) : 'off';
+    /* ink + finish — flat by default, texture is the exception */
+    P.colorMode = pick(['band', 'alt', 'alt', 'alt', 'level', 'cycle', 'layer', 'mono', 'blend']);
+    P.blend = R() < 0.82 ? 'source-over' : pick(['screen', 'lighter']);
+    P.ink = 0.88 + R() * 0.12;
+    Object.assign(P, FINISH[R() < 0.7 ? 'flat' : R() < 0.67 ? 'print' : 'glow']);
+    /* frame */
+    P.zoom = 0.92 + R() * 0.26;
+    P.rot = R() < 0.14 ? R() * 8 - 4 : 0;
+    P.posX = R() < 0.22 ? R() * 0.14 - 0.07 : 0;
+    P.posY = R() < 0.22 ? R() * 0.14 - 0.07 : 0;
+    P.tilt = 0.15 + R() * 0.55;
+    P.pump = R() < 0.4 ? R() * 0.1 : 0;
+    P.attack = 0.45 + R() * 0.45; P.release = 0.07 + R() * 0.16;
+    syncUI();
+  }
+  $('#btn-dice').addEventListener('click', vary);
+
+  /* ═══════════════════ sync every control from P ═══════════════════ */
+  function syncUI() {
+    $$('[data-p]').forEach(el => {
+      const k = el.dataset.p, v = P[k];
+      if (el.matches('input[type=range]')) { el.value = v; if (window.HTY) HTY.paintRange(el); paintVal(k); }
+      else if (el.matches('input[type=color]')) { if (typeof v === 'string') el.value = v.toLowerCase(); }
+      else if (el.matches('input[type=text]') || el.matches('textarea')) { el.value = v == null ? '' : v; }
+      else if (el.matches('.tog-sw')) el.classList.toggle('on', !!v);
+      else if (el.matches('.seg')) $$('button', el).forEach(b => b.classList.toggle('active', String(b.dataset.val) === String(v)));
+      else if (el.matches('.hty-select')) syncSelectUI(el, k === 'size' ? sizeValue() : String(v));
+    });
+    Object.keys(COLROW).forEach(syncColorRow);
+    buildPal();
+    $$('#look-row .chip').forEach(b => b.classList.toggle('active', b.dataset.caseBtn === P.look));
+    $$('[data-case]').forEach(el => el.style.display = el.dataset.case === P.look ? '' : 'none');
+    $('#custom-res-wrap').classList.toggle('visible', sizeValue() === 'custom');
+    $('#btn-loop').classList.toggle('on', P.loop);
+    $('#inp-cw').value = P.cw; $('#inp-ch').value = P.ch;
+  }
+
+  /* ═══════════════════ boot ═══════════════════ */
+  document.addEventListener('keydown', e => {
+    if (/input|textarea|select/i.test(e.target.tagName)) return;
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+    else if (e.key === 'r' || e.key === 'R') vary();
+  });
+  window.addEventListener('resize', drawWaveStrip);
+
+  buildGrain();
+  $('#kv-mime').textContent = (pickMime() || 'unsupported').replace(/;.*/, '').replace('video/', '') + (pickMime().indexOf('mp4') >= 0 ? ' · h.264 + aac' : pickMime() ? ' · vp9 + opus' : '');
+  $$('#btn-rec, #btn-trim-reset, #btn-trim-15').forEach(b => b.disabled = true);
+  applyPreset('studio');
+  resize();
+  drawWaveStrip();
+  updateTransport();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
+  requestAnimationFrame(tick);
+
+})();
+  </script>
+</body>
+</html>

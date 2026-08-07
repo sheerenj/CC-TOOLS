@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Flux · Particle Studio</title>
+<meta name="description" content="One particle engine — streamlines, force-directed graphs and flow fields from a shared pipeline."/>
+<link rel="stylesheet" href="../../shared/hty-ui.css"/>
+<style>
+  /* tool-local: the live render surface fills the artboard frame */
+  #art{ display:block; width:100%; height:100%; background:#fff; }
+  .hty-frame{ background:#fff; }
+  /* mode-conditional groups are shown/hidden from JS */
+  [data-mg]{ display:none; }
+</style>
+</head>
+<body class="hty">
+
+  <!-- ═══ STAGE ═══ -->
+  <div class="hty-stage">
+    <div class="hty-tele">
+      <div class="read"><span class="lbl">Mode</span><b data-out="modeRead">Streamlines</b></div>
+      <div class="read"><span class="lbl">Count</span><b data-out="countRead">—</b></div>
+      <div style="display:flex;align-items:center;gap:6px;"><span class="hty-live"></span><span class="lbl" data-out="statusRead">Ready</span></div>
+    </div>
+    <div class="hty-canvas">
+      <div class="hty-frame" data-w="1080" data-h="1080">
+        <canvas id="art"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DOCK ═══ -->
+  <div class="hty-dock">
+
+    <!-- top rail -->
+    <div class="hty-rail">
+      <button class="tab active" data-tab="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12c4-6 14-6 18 0M3 12c4 6 14 6 18 0"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>System</button>
+      <button class="tab" data-tab="style"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><path d="M12 22a10 10 0 1 1 0-20c5 0 7 3 7 6 0 2.5-2 3-4 3h-3c-2 0-3 1-3 2.5S10 22 12 22z"/></svg>Style</button>
+      <button class="tab" data-tab="motion"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="3.6"/><path d="M12 3v18"/></svg>Motion</button>
+      <button class="tab" data-tab="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Export</button>
+      <div class="sp"></div>
+      <div class="hty-zoom">
+        <button class="vbtn" data-zoom="out" title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+        <b data-zoom-level>100%</b>
+        <button class="vbtn" data-zoom="in" title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="vbtn" data-zoom="reset" title="Fit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+      </div>
+    </div>
+
+    <!-- expandable panel -->
+    <div class="hty-panel">
+      <div class="hty-panel-inner">
+
+       <!-- ── SYSTEM ─────────────────────────────────────────────── -->
+       <div class="panel-grid" data-tab-panel="field">
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/></svg><span class="lbl">Engine</span></div>
+          <div class="field"><span class="name">Visual</span>
+            <div class="hty-select" id="modeSel">
+              <button class="hty-select-btn"><span class="hty-select-val">Streamlines · vector field</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+              <div class="hty-select-menu" role="listbox">
+                <button class="hty-opt is-selected" data-value="streamlines">Streamlines · vector field</button>
+                <button class="hty-opt" data-value="graph">Force Graph · network</button>
+                <button class="hty-opt" data-value="flow">Flow Field · noise</button>
+              </div>
+            </div>
+          </div>
+          <div class="field"><span class="name">Seed</span><div class="stepper"><button data-step="-1">−</button><div class="vs"></div><input type="number" id="seed" value="2048"/><div class="vs"></div><button data-step="1">+</button></div></div>
+          <p class="note">All three modes are the same particle pipeline — <b style="font-weight:500">emit → forces → integrate → render</b>. Only the force law and the renderer change.</p>
+        </div>
+
+        <!-- STREAMLINES params -->
+        <div class="group" data-mg="streamlines">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12c4-6 14-6 18 0M3 12c4 6 14 6 18 0"/></svg><span class="lbl">Vector field</span></div>
+          <div class="field"><div class="field-head"><span class="name">Singularities</span><span class="val num" data-out="sl-sing">26</span></div><input type="range" min="3" max="70" value="26" data-bind="sl-sing" id="sl-sing"/></div>
+          <div class="field"><div class="field-head"><span class="name">Sink bias</span><span class="val num" data-out="sl-sink">55</span></div><input type="range" min="0" max="100" value="55" data-bind="sl-sink" id="sl-sink"/></div>
+          <div class="field"><div class="field-head"><span class="name">Vortex amount</span><span class="val num" data-out="sl-vort">22</span></div><input type="range" min="0" max="100" value="22" data-bind="sl-vort" id="sl-vort"/></div>
+          <div class="field"><div class="field-head"><span class="name">Petal (dipole)</span><span class="val num" data-out="sl-dip">30</span></div><input type="range" min="0" max="100" value="30" data-bind="sl-dip" id="sl-dip"/></div>
+          <div class="field"><div class="field-head"><span class="name">Line spacing</span><span class="val num" data-out="sl-sep">9</span></div><input type="range" min="3" max="22" value="9" data-bind="sl-sep" id="sl-sep"/></div>
+          <div class="field"><div class="field-head"><span class="name">Density</span><span class="val num" data-out="sl-dens">85</span></div><input type="range" min="10" max="100" value="85" data-bind="sl-dens" id="sl-dens"/></div>
+        </div>
+
+        <!-- FLOW FIELD params -->
+        <div class="group" data-mg="flow">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8c3-3 6 3 9 0s6-3 9 0M3 16c3-3 6 3 9 0s6-3 9 0"/></svg><span class="lbl">Noise flow</span></div>
+          <div class="field"><div class="field-head"><span class="name">Scale</span><span class="val num" data-out="ff-scale">14</span></div><input type="range" min="2" max="100" value="14" data-bind="ff-scale" id="ff-scale"/></div>
+          <div class="field"><div class="field-head"><span class="name">Turbulence</span><span class="val num" data-out="ff-turb">30</span></div><input type="range" min="0" max="100" value="30" data-bind="ff-turb" id="ff-turb"/></div>
+          <div class="field"><div class="field-head"><span class="name">Swirl</span><span class="val num" data-out="ff-swirl">20</span></div><input type="range" min="0" max="100" value="20" data-bind="ff-swirl" id="ff-swirl"/></div>
+          <div class="field"><div class="field-head"><span class="name">Line spacing</span><span class="val num" data-out="ff-sep">7</span></div><input type="range" min="3" max="22" value="7" data-bind="ff-sep" id="ff-sep"/></div>
+          <div class="field"><div class="field-head"><span class="name">Density</span><span class="val num" data-out="ff-dens">100</span></div><input type="range" min="10" max="100" value="100" data-bind="ff-dens" id="ff-dens"/></div>
+        </div>
+
+        <!-- FORCE GRAPH params -->
+        <div class="group" data-mg="graph">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="1.6" fill="currentColor"/><path d="M12 12l6-4M12 12l7 1M12 12l4 6M12 12l-2 7M12 12l-6 3M12 12l-5-5M12 12l1-7"/></svg><span class="lbl">Dandelions</span></div>
+          <div class="field"><div class="field-head"><span class="name">Nodes</span><span class="val num" data-out="g-nodes">900</span></div><input type="range" min="100" max="3000" step="20" value="900" data-bind="g-nodes" id="g-nodes"/></div>
+          <div class="field"><div class="field-head"><span class="name">Hubs (fans)</span><span class="val num" data-out="g-hubs">15</span></div><input type="range" min="2" max="50" value="15" data-bind="g-hubs" id="g-hubs"/></div>
+          <div class="field"><div class="field-head"><span class="name">Fan variation</span><span class="val num" data-out="g-skew">55</span></div><input type="range" min="0" max="100" value="55" data-bind="g-skew" id="g-skew"/></div>
+          <div class="field"><div class="field-head"><span class="name">Core tangle</span><span class="val num" data-out="g-tangle">40</span></div><input type="range" min="0" max="100" value="40" data-bind="g-tangle" id="g-tangle"/></div>
+          <div class="field"><div class="field-head"><span class="name">Core size</span><span class="val num" data-out="g-coresize">50</span></div><input type="range" min="0" max="100" value="50" data-bind="g-coresize" id="g-coresize"/></div>
+          <div class="field"><div class="field-head"><span class="name">Detached balls</span><span class="val num" data-out="g-balls">2</span></div><input type="range" min="0" max="8" value="2" data-bind="g-balls" id="g-balls"/></div>
+        </div>
+        <div class="group" data-mg="graph">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg><span class="lbl">Layout forces</span></div>
+          <div class="field"><div class="field-head"><span class="name">Repulsion</span><span class="val num" data-out="g-rep">62</span></div><input type="range" min="5" max="100" value="62" data-bind="g-rep" id="g-rep"/></div>
+          <div class="field"><div class="field-head"><span class="name">Fan radius</span><span class="val num" data-out="g-link">115</span></div><input type="range" min="10" max="240" value="115" data-bind="g-link" id="g-link"/></div>
+          <div class="field"><div class="field-head"><span class="name">Fan openness</span><span class="val num" data-out="g-open">62</span></div><input type="range" min="0" max="100" value="62" data-bind="g-open" id="g-open"/></div>
+          <div class="field"><div class="field-head"><span class="name">Gravity</span><span class="val num" data-out="g-grav">16</span></div><input type="range" min="2" max="100" value="16" data-bind="g-grav" id="g-grav"/></div>
+        </div>
+
+       </div><!-- /field -->
+
+       <!-- ── STYLE ──────────────────────────────────────────────── -->
+       <div class="panel-grid" data-tab-panel="style" style="display:none">
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><path d="M12 22a10 10 0 1 1 0-20c5 0 7 3 7 6 0 2.5-2 3-4 3h-3c-2 0-3 1-3 2.5S10 22 12 22z"/></svg><span class="lbl">Art direction</span></div>
+          <div class="field"><span class="name">Palette</span>
+            <div class="hty-select" id="paletteSel">
+              <button class="hty-select-btn"><span class="hty-select-val">Dandelion</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+              <div class="hty-select-menu" role="listbox">
+                <button class="hty-opt is-selected" data-value="dandelion">Dandelion</button>
+                <button class="hty-opt" data-value="blueprint">Blueprint</button>
+                <button class="hty-opt" data-value="ink">Mono Ink</button>
+                <button class="hty-opt" data-value="neon">Neon Night</button>
+                <button class="hty-opt" data-value="siena">Siena</button>
+                <button class="hty-opt" data-value="cyan">Cyan Wire</button>
+              </div>
+            </div>
+          </div>
+          <p class="note">Pick a palette as a starting point, then fine-tune any colour below.</p>
+        </div>
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/></svg><span class="lbl">Canvas</span></div>
+          <div class="field"><span class="name">Background</span><input type="color" id="c-bg" value="#ffffff"/></div>
+          <div class="field"><span class="name">Size</span>
+            <div class="hty-select" data-size-preset>
+              <button class="hty-select-btn"><span class="hty-select-val">1080 × 1080 · 1:1</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+              <div class="hty-select-menu" role="listbox">
+                <button class="hty-opt is-selected" data-value="1080x1080">1080 × 1080 · 1:1</button>
+                <button class="hty-opt" data-value="1080x1350">1080 × 1350 · 4:5</button>
+                <button class="hty-opt" data-value="1080x1920">1080 × 1920 · 9:16</button>
+                <button class="hty-opt" data-value="1920x1080">1920 × 1080 · 16:9</button>
+                <button class="hty-opt" data-value="2048x2048">2048 × 2048 · 1:1</button>
+                <button class="hty-opt" data-value="custom">Custom…</button>
+              </div>
+            </div>
+          </div>
+          <div class="tf-row" data-size-custom style="display:none;">
+            <label class="tf"><span class="g">W</span><input type="number" data-size="w" data-scrub="2" data-min="1" data-step="1" value="1080"/></label>
+            <label class="tf"><span class="g">H</span><input type="number" data-size="h" data-scrub="2" data-min="1" data-step="1" value="1080"/></label>
+          </div>
+          <div class="field-head"><span class="val num" data-size-read>1080 × 1080</span><span class="lbl">px</span></div>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17c5-10 13-10 18 0"/></svg><span class="lbl">Line</span></div>
+          <div class="field"><span class="name">Stroke</span><input type="color" id="c-stroke" value="#2222dd"/></div>
+          <div class="field"><div class="field-head"><span class="name">Width</span><span class="val num" data-out="s-width">1.0</span></div><input type="range" min="0.3" max="4" step="0.1" value="1" data-bind="s-width" id="s-width"/></div>
+          <div class="field"><div class="field-head"><span class="name">Opacity</span><span class="val num" data-out="s-op">85</span></div><input type="range" min="5" max="100" value="85" data-bind="s-op" id="s-op"/></div>
+          <div class="field"><div class="field-head"><span class="name">Particle drift</span><span class="val num" data-out="s-var">26</span></div><input type="range" min="0" max="100" value="26" data-bind="s-var" id="s-var"/></div>
+          <label class="check on" id="chk-nodes"><span class="box"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-6"/></svg></span>Show field nodes</label>
+        </div>
+
+        <div class="group" id="graphColors">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 8l8 8"/></svg><span class="lbl">Network colours</span></div>
+          <div class="field"><span class="name">Edges</span><input type="color" id="c-edge" value="#9ec06a"/></div>
+          <div class="field"><div class="field-head"><span class="name">Line drift</span><span class="val num" data-out="s-var-line">0</span></div><input type="range" min="0" max="100" value="0" data-bind="s-var-line" id="s-var-line"/></div>
+          <div class="field"><span class="name">Leaf nodes</span><input type="color" id="c-node" value="#8a1f1f"/></div>
+          <div class="field"><span class="name">Hub nodes</span><input type="color" id="c-hub" value="#5a1414"/></div>
+          <div class="field"><div class="field-head"><span class="name">Node size</span><span class="val num" data-out="g-dot">2.0</span></div><input type="range" min="0.8" max="7" step="0.1" value="2.0" data-bind="g-dot" id="g-dot"/></div>
+          <label class="check" id="chk-nodestroke"><span class="box"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-6"/></svg></span>Stroke particles (edge colour)</label>
+          <div class="field"><div class="field-head"><span class="name">Stroke width</span><span class="val num" data-out="g-nodestroke">2.0</span></div><input type="range" min="0.3" max="6" step="0.1" value="2.0" data-bind="g-nodestroke" id="g-nodestroke"/></div>
+          <label class="check on" id="chk-hubsize"><span class="box"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-6"/></svg></span>Scale nodes by degree</label>
+          <label class="check" id="chk-hubdist"><span class="box"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-6"/></svg></span>Colour hubs distinctly</label>
+        </div>
+       </div><!-- /style -->
+
+       <!-- ── MOTION ─────────────────────────────────────────────── -->
+       <div class="panel-grid" data-tab-panel="motion" style="display:none">
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9z"/></svg><span class="lbl">Playback</span></div>
+          <div class="switch"><span class="name">Animate</span><div class="track-sw" id="m-play"></div></div>
+          <p class="note">3D tumble &amp; organic motion for the <b style="font-weight:500">Force Graph</b>. Screen-record the canvas to capture a clip.</p>
+        </div>
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="3.6"/><path d="M12 3v18"/></svg><span class="lbl">3D rotation</span></div>
+          <div class="field"><span class="name">Shape</span>
+            <div class="seg fill" data-radio id="m-shape"><button class="active" data-shape="sphere">Sphere</button><button data-shape="disc">Disc</button></div>
+          </div>
+          <div class="field"><div class="field-head"><span class="name">Spin</span><span class="val num" data-out="m-spin">20</span></div><input type="range" min="-100" max="100" value="20" data-bind="m-spin" id="m-spin"/></div>
+          <div class="field"><div class="field-head"><span class="name">Tumble</span><span class="val num" data-out="m-tumble">0</span></div><input type="range" min="-100" max="100" value="0" data-bind="m-tumble" id="m-tumble"/></div>
+          <div class="field"><div class="field-head"><span class="name">Depth</span><span class="val num" data-out="m-depth">60</span></div><input type="range" min="0" max="100" value="60" data-bind="m-depth" id="m-depth"/></div>
+          <div class="field"><div class="field-head"><span class="name">Perspective</span><span class="val num" data-out="m-persp">45</span></div><input type="range" min="0" max="100" value="45" data-bind="m-persp" id="m-persp"/></div>
+          <div class="field"><div class="field-head"><span class="name">Depth fade</span><span class="val num" data-out="m-fade">45</span></div><input type="range" min="0" max="100" value="45" data-bind="m-fade" id="m-fade"/></div>
+        </div>
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8c3-3 6 3 9 0s6-3 9 0M3 16c3-3 6 3 9 0s6-3 9 0"/></svg><span class="lbl">Organic</span></div>
+          <div class="field"><div class="field-head"><span class="name">Drift</span><span class="val num" data-out="m-organic">25</span></div><input type="range" min="0" max="100" value="25" data-bind="m-organic" id="m-organic"/></div>
+          <div class="field"><div class="field-head"><span class="name">Flow speed</span><span class="val num" data-out="m-flow">30</span></div><input type="range" min="0" max="100" value="30" data-bind="m-flow" id="m-flow"/></div>
+          <div class="field"><div class="field-head"><span class="name">Breathe</span><span class="val num" data-out="m-breathe">15</span></div><input type="range" min="0" max="100" value="15" data-bind="m-breathe" id="m-breathe"/></div>
+        </div>
+       </div><!-- /motion -->
+
+       <!-- ── EXPORT ─────────────────────────────────────────────── -->
+       <div class="panel-grid" data-tab-panel="export" style="display:none">
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg><span class="lbl">Output</span></div>
+          <div class="field"><span class="name">Format</span>
+            <div class="seg fill" data-radio id="ex-fmt"><button class="active" data-fmt="png">PNG</button><button data-fmt="svg">SVG</button></div>
+          </div>
+          <div class="field"><span class="name">Resolution</span>
+            <div class="seg fill" data-radio id="ex-res"><button class="active" data-mult="1">1×</button><button data-mult="2">2×</button><button data-mult="4">4×</button></div>
+          </div>
+          <div class="switch"><span class="name">Transparent background</span><div class="track-sw" id="m-transp"></div></div>
+          <p class="note">SVG = clean vector (plotter/Illustrator). Transparent affects PNG &amp; the motion clip.</p>
+          <div class="btn-row"><button class="btn" id="btn-export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>Export still</button></div>
+        </div>
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg><span class="lbl">Motion clip (Force Graph)</span></div>
+          <div class="field"><span class="name">Format</span>
+            <div class="seg fill" data-radio id="clip-fmt"><button class="active" data-clip="webm">WebM α</button><button data-clip="png">PNG seq</button></div>
+          </div>
+          <div class="field"><div class="field-head"><span class="name">Duration</span><span class="val num" data-out="clip-dur">6</span></div><input type="range" min="1" max="20" value="6" data-bind="clip-dur" id="clip-dur"/></div>
+          <div class="field"><span class="name">FPS</span>
+            <div class="chips" data-radio id="clip-fps"><button class="chip">24</button><button class="chip active">30</button><button class="chip">60</button></div>
+          </div>
+          <div class="switch"><span class="name">Seamless loop</span><div class="track-sw" id="chk-loop"></div></div>
+          <div class="switch"><span class="name">Transparent (alpha)</span><div class="track-sw" id="clip-transp"></div></div>
+          <div class="switch"><span class="name">PNG: +1 closing frame</span><div class="track-sw on" id="chk-closeframe"></div></div>
+          <p class="note" id="clip-note">WebM has true alpha — convert to ProRes&nbsp;.mov:<br><span style="font-family:var(--mono);font-size:9.5px">ffmpeg -i in.webm -c:v prores_ks -pix_fmt yuva444p10le out.mov</span></p>
+          <div class="btn-row"><button class="btn" id="btn-clip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9z"/></svg>Export clip</button></div>
+        </div>
+       </div><!-- /export -->
+
+      </div>
+    </div>
+
+    <!-- main row -->
+    <div class="hty-main">
+      <div class="hty-chip"><div class="nm">Flux</div><div class="lbl">Particle Studio</div></div>
+      <div class="hty-main-sep"></div>
+      <div class="hty-tools">
+        <button class="tbtn active" title="Select"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 3l7 17 2.5-6.5L21 11z"/></svg></button>
+        <button class="tbtn" title="Pan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V7a2 2 0 0 0-4 0M14 9V5a2 2 0 0 0-4 0v2M10 9V5a2 2 0 0 0-4 0v9"/><path d="M6 14l-1.5-1.5a2 2 0 0 0-3 3L6 21h8a4 4 0 0 0 4-4v-6a2 2 0 0 0-4 0"/></svg></button>
+      </div>
+      <div class="sp"></div>
+      <button class="icon-btn" id="btn-shuffle" title="Shuffle seed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
+      <button class="btn" id="btn-render"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9z"/></svg>Generate</button>
+      <button class="icon-btn" data-expand title="More controls"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></button>
+    </div>
+
+  </div>
+
+  <script src="../../shared/hty-ui.js"></script>
+  <script>
+  /* ══════════════════════════════════════════════════════════════════════
+     FLUX · PARTICLE STUDIO — engine
+     One pipeline, three renderers. Geometry is recorded in artboard pixels
+     into GEO, then painted to canvas (any scale) or serialised to SVG.
+     ══════════════════════════════════════════════════════════════════════ */
+  (function(){
+    const cv  = document.getElementById('art');
+    const ctx = cv.getContext('2d');
+    const frame = document.querySelector('.hty-frame');
+
+    /* — seeded RNG (mulberry32) — */
+    function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+    let RND = mulberry32(2048);
+    const rnd  = ()=>RND();
+    const rng  = (a,b)=>a+(b-a)*RND();
+    const rint = (a,b)=>Math.floor(rng(a,b+1));
+
+    /* — colour helpers — */
+    function hexToHsl(hex){
+      let r=parseInt(hex.slice(1,3),16)/255, g=parseInt(hex.slice(3,5),16)/255, b=parseInt(hex.slice(5,7),16)/255;
+      const mx=Math.max(r,g,b), mn=Math.min(r,g,b); let h=0,s=0,l=(mx+mn)/2;
+      if(mx!==mn){ const d=mx-mn; s=l>0.5?d/(2-mx-mn):d/(mx+mn);
+        h = mx===r ? (g-b)/d+(g<b?6:0) : mx===g ? (b-r)/d+2 : (r-g)/d+4; h/=6; }
+      return {h:h*360,s:s*100,l:l*100};
+    }
+
+    /* — value/state readers — */
+    const $ = id=>document.getElementById(id);
+    const num = id=>parseFloat($(id).value);
+    let MODE = 'streamlines';
+
+    /* ============================ NOISE (2D simplex) =================== */
+    const Noise = (function(){
+      let perm=new Uint8Array(512), grad=[[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]];
+      function seed(r){ const p=new Uint8Array(256); for(let i=0;i<256;i++)p[i]=i;
+        for(let i=255;i>0;i--){ const j=Math.floor(r()*(i+1)); const t=p[i];p[i]=p[j];p[j]=t; }
+        for(let i=0;i<512;i++)perm[i]=p[i&255]; }
+      const F2=0.5*(Math.sqrt(3)-1), G2=(3-Math.sqrt(3))/6;
+      function n2(xin,yin){
+        let s=(xin+yin)*F2, i=Math.floor(xin+s), j=Math.floor(yin+s);
+        let t=(i+j)*G2, X0=i-t, Y0=j-t, x0=xin-X0, y0=yin-Y0;
+        let i1,j1; if(x0>y0){i1=1;j1=0;}else{i1=0;j1=1;}
+        let x1=x0-i1+G2, y1=y0-j1+G2, x2=x0-1+2*G2, y2=y0-1+2*G2;
+        let ii=i&255, jj=j&255; let n0=0,n1=0,n2_=0;
+        let g0=grad[perm[ii+perm[jj]]%8], g1=grad[perm[ii+i1+perm[jj+j1]]%8], g2=grad[perm[ii+1+perm[jj+1]]%8];
+        let t0=0.5-x0*x0-y0*y0; if(t0>0){t0*=t0; n0=t0*t0*(g0[0]*x0+g0[1]*y0);}
+        let t1=0.5-x1*x1-y1*y1; if(t1>0){t1*=t1; n1=t1*t1*(g1[0]*x1+g1[1]*y1);}
+        let t2=0.5-x2*x2-y2*y2; if(t2>0){t2*=t2; n2_=t2*t2*(g2[0]*x2+g2[1]*y2);}
+        return 70*(n0+n1+n2_);
+      }
+      return {seed,n2};
+    })();
+
+    /* ============================ FIELDS ============================== */
+    // Streamline singularity field. Returns a fieldFn + a list of sinks (for capture) + node list.
+    function buildSingularityField(W,H,P){
+      const n=P.sing, sings=[];
+      const minD=Math.min(W,H);
+      for(let i=0;i<n;i++){
+        const x=rng(W*0.06,W*0.94), y=rng(H*0.06,H*0.94);
+        let type;
+        if(rnd()<P.vort) type='vortex';
+        else if(rnd()<P.dip) type='dipole';
+        else type = rnd()<P.sink ? 'sink' : 'source';
+        sings.push({ x,y,type, str:rng(0.6,1.6), dir: rnd()<0.5?1:-1, ang:rng(0,Math.PI*2), r0:minD*0.012 });
+      }
+      const sinks = sings.filter(s=>s.type==='sink');
+      const field = (x,y)=>{
+        let vx=0,vy=0;
+        for(let i=0;i<sings.length;i++){
+          const s=sings[i]; let dx=x-s.x, dy=y-s.y; let r=Math.sqrt(dx*dx+dy*dy);
+          const rc=Math.max(r,s.r0);
+          if(s.type==='source'||s.type==='sink'){
+            const g=(s.type==='source'?1:-1)*s.str/rc; vx+=g*dx/rc; vy+=g*dy/rc;
+          } else if(s.type==='vortex'){
+            const g=s.str*s.dir/rc; vx+=g*(-dy/rc); vy+=g*(dx/rc);
+          } else { // dipole (faster 1/r^2 falloff → localised petals)
+            const cx=Math.cos(s.ang), cy=Math.sin(s.ang), ux=dx/rc, uy=dy/rc, md=cx*ux+cy*uy;
+            const g=s.str*minD*0.5/(rc*rc); vx+=g*(2*md*ux-cx); vy+=g*(2*md*uy-cy);
+          }
+        }
+        return {x:vx,y:vy};
+      };
+      const capR=minD*0.018;
+      const stopNear = sinks.length ? (x,y)=>{ for(const s of sinks){ const dx=x-s.x,dy=y-s.y; if(dx*dx+dy*dy<capR*capR) return true; } return false; } : null;
+      // seed a ring around every singularity → guarantees the radial petal bundles
+      const seeds=[[W/2,H/2]];
+      for(const s of sings){ const k=8, rr=minD*0.03; for(let a=0;a<k;a++){ const t=a/k*Math.PI*2; seeds.push([s.x+Math.cos(t)*rr, s.y+Math.sin(t)*rr]); } }
+      return { field, stopNear, seeds, nodes:sings };
+    }
+
+    // Flow field from simplex noise.
+    function buildFlowField(W,H,P){
+      Noise.seed(RND);
+      const sc=P.scale/Math.max(W,H)*0.32;  // larger "Scale" slider → smaller features
+      const amp=Math.PI*0.8, oct=Math.PI*0.35*P.turb, swirl=P.swirl*Math.PI*2;
+      const field=(x,y)=>{
+        let a = Noise.n2(x*sc, y*sc)*amp + swirl;
+        a += Noise.n2(x*sc*2.2+100, y*sc*2.2-40)*oct;   // subtle high-frequency detail
+        return {x:Math.cos(a), y:Math.sin(a)};
+      };
+      const seeds=[]; const g=6; for(let i=0;i<=g;i++)for(let j=0;j<=g;j++) seeds.push([W*(i/g), H*(j/g)]);
+      return { field, stopNear:null, seeds, nodes:[] };
+    }
+
+    /* ===================== STREAMLINE TRACER (Jobard–Lefebvre) ========= */
+    function traceStreamlines(W,H,fieldFn,dsep,opts){
+      opts=opts||{};
+      const dtest=dsep*0.5, step=Math.min(Math.max(dsep*0.5,1.6),6), maxLen=Math.max(W,H)*2.5;
+      const maxSteps=Math.floor(maxLen/step), maxLines=opts.maxLines||5000;
+      const cell=dsep, cols=Math.max(1,Math.ceil(W/cell)), rows=Math.max(1,Math.ceil(H/cell));
+      const grid=new Array(cols*rows); for(let i=0;i<grid.length;i++)grid[i]=[];
+      const stopNear=opts.stopNear;
+      function nearby(x,y,d){
+        const c0=Math.max(0,(x-d)/cell|0), c1=Math.min(cols-1,(x+d)/cell|0);
+        const r0=Math.max(0,(y-d)/cell|0), r1=Math.min(rows-1,(y+d)/cell|0), d2=d*d;
+        for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){ const arr=grid[c+r*cols];
+          for(let k=0;k<arr.length;k++){ const dx=arr[k][0]-x, dy=arr[k][1]-y; if(dx*dx+dy*dy<d2) return true; } }
+        return false;
+      }
+      function commit(x,y){ const c=(x/cell|0)+(y/cell|0)*cols; if(c>=0&&c<grid.length) grid[c].push([x,y]); }
+      function unit(v){ if(!v)return null; const m=Math.hypot(v.x,v.y); return m<1e-7?null:{x:v.x/m,y:v.y/m}; }
+      function integrate(sx,sy,dir){
+        const pts=[[sx,sy]]; let x=sx,y=sy;
+        for(let i=0;i<maxSteps;i++){
+          const k1=unit(fieldFn(x,y)); if(!k1)break;
+          const k2=unit(fieldFn(x+k1.x*step*0.5*dir,y+k1.y*step*0.5*dir))||k1;
+          const k3=unit(fieldFn(x+k2.x*step*0.5*dir,y+k2.y*step*0.5*dir))||k1;
+          const k4=unit(fieldFn(x+k3.x*step*dir,y+k3.y*step*dir))||k1;
+          let vx=(k1.x+2*k2.x+2*k3.x+k4.x)/6, vy=(k1.y+2*k2.y+2*k3.y+k4.y)/6;
+          const m=Math.hypot(vx,vy)||1; vx/=m; vy/=m;
+          x+=vx*step*dir; y+=vy*step*dir;
+          if(x<0||y<0||x>W||y>H) break;
+          if(stopNear&&stopNear(x,y)){ pts.push([x,y]); break; }
+          if(nearby(x,y,dtest)) break;
+          pts.push([x,y]);
+        }
+        return pts;
+      }
+      function make(sx,sy){
+        if(sx<0||sy<0||sx>W||sy>H||nearby(sx,sy,dsep)) return null;
+        const f=integrate(sx,sy,1), b=integrate(sx,sy,-1);
+        const pts=b.slice(1).reverse().concat(f);
+        if(pts.length<3) return null;
+        const stride=Math.max(1,Math.round(dsep/step));
+        for(let i=0;i<pts.length;i+=1) commit(pts[i][0],pts[i][1]);
+        return {pts,stride};
+      }
+      function seedsFrom(pts,stride){
+        const out=[];
+        for(let i=0;i<pts.length;i+=stride){
+          const a=pts[i], b=pts[Math.min(pts.length-1,i+1)];
+          let tx=b[0]-a[0], ty=b[1]-a[1]; const m=Math.hypot(tx,ty)||1; tx/=m; ty/=m;
+          out.push([a[0]-ty*dsep, a[1]+tx*dsep]); out.push([a[0]+ty*dsep, a[1]-tx*dsep]);
+        }
+        return out;
+      }
+      const lines=[], queue=(opts.seeds||[[W/2,H/2]]).slice();
+      let head=0;
+      while(head<queue.length && lines.length<maxLines){
+        const s=queue[head++]; const ln=make(s[0],s[1]);
+        if(ln){ lines.push(ln.pts); const ns=seedsFrom(ln.pts,ln.stride); for(let i=0;i<ns.length;i++)queue.push(ns[i]); }
+      }
+      return lines;
+    }
+
+    /* ===================== FORCE GRAPH (Barnes–Hut) =================== */
+    function Quad(x0,y0,s){ this.x0=x0;this.y0=y0;this.s=s;this.m=0;this.cx=0;this.cy=0;this.b=null;this.k=null; }
+    Quad.prototype.child=function(n){ const h=this.s/2; const i=(n.x>=this.x0+h?1:0)+(n.y>=this.y0+h?2:0);
+      if(!this.k[i]){ this.k[i]=new Quad(this.x0+(i&1?h:0), this.y0+(i&2?h:0), h); } return this.k[i]; };
+    Quad.prototype.insert=function(n){
+      if(this.m===0){ this.b=n; this.m=1; this.cx=n.x; this.cy=n.y; return; }
+      if(!this.k){
+        if(this.s<0.5){ this.cx=(this.cx*this.m+n.x)/(this.m+1); this.cy=(this.cy*this.m+n.y)/(this.m+1); this.m++; return; } // coincident nodes — aggregate, don't recurse forever
+        this.k=[null,null,null,null]; const old=this.b; this.b=null; this.child(old).insert(old);
+      }
+      this.cx=(this.cx*this.m+n.x)/(this.m+1); this.cy=(this.cy*this.m+n.y)/(this.m+1); this.m++;
+      this.child(n).insert(n);
+    };
+    // Fruchterman–Reingold repulsion: magnitude = strength·m/d, pushing n AWAY from the cell's centre of mass.
+    Quad.prototype.force=function(n,theta,strength,o){
+      if(this.m===0||this.b===n) return;
+      let dx=n.x-this.cx, dy=n.y-this.cy, d2=dx*dx+dy*dy+0.01;
+      if(this.k && (this.s*this.s)/d2 > theta*theta){ for(let i=0;i<4;i++) if(this.k[i]) this.k[i].force(n,theta,strength,o); }
+      else { const d=Math.sqrt(d2), f=strength*this.m/d; o.x+=f*dx/d; o.y+=f*dy/d; }
+    };
+    // Dandelion model: a dense interconnected CORE web, HUBS tethered to it whose leaves
+    // fan outward, and a few fully-detached hubs whose leaves wrap into complete balls.
+    function buildGraph(W,H,P){
+      const N=P.nodes, hubs=Math.max(1,P.hubs), balls=Math.max(0,P.balls);
+      const coreN=Math.max(hubs+1, Math.round(N*(0.03+0.10*P.tangle)));
+      const hubTotal=hubs+balls, leaves=Math.max(0, N-coreN-hubTotal);
+      const nodes=[], edges=[];
+      const cx=W/2, cy=H/2, R=Math.min(W,H)*0.34;
+      const addNode=(role)=>{ const a=rng(0,Math.PI*2), r=R*Math.sqrt(rnd());
+        const node={x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r,deg:0,role,cj:rnd()-0.5,j1:rnd(),j2:rnd(),jz:rnd()};
+        if(role==='hub'||role==='ball') node.leafList=[];
+        nodes.push(node); return nodes.length-1; };
+      // edges carry a rest-length MULTIPLIER (× fan radius): short = tight, long = pushed out
+      const link=(a,b,mult)=>{ if(a===b)return; edges.push([a,b,mult||1]); nodes[a].deg++; nodes[b].deg++; };
+      // central web
+      const core=[]; for(let i=0;i<coreN;i++) core.push(addNode('core'));
+      const perCore=1+Math.round(P.tangle*4);
+      for(let i=0;i<coreN;i++) for(let j=0;j<perCore;j++) link(core[i], core[rint(0,coreN-1)], 1);
+      // hubs ride OUT to a ring (long tether) so their leaves fan outward
+      const hubIdx=[];
+      for(let i=0;i<hubs;i++){ const h=addNode('hub'); hubIdx.push(h);
+        link(h, core[rint(0,coreN-1)], 2.4); if(rnd()<0.35) link(h, core[rint(0,coreN-1)], 2.4); }
+      const ballIdx=[]; for(let i=0;i<balls;i++) ballIdx.push(addNode('ball'));
+      const allHubs=hubIdx.concat(ballIdx);
+      // skewed leaf distribution → a few giant fans, many small ones
+      const skew=1+P.skew*5, w=allHubs.map(()=>Math.pow(rnd(),skew)+0.04);
+      const sum=w.reduce((a,b)=>a+b,0)||1, cum=[]; let acc=0; for(const wi of w){ acc+=wi/sum; cum.push(acc); }
+      for(let i=0;i<leaves;i++){ const r=rnd(); let k=0; while(k<cum.length-1 && r>cum[k]) k++;
+        const parent=allHubs[k], li=addNode('leaf'); nodes[li].fan=(k<hubs); nodes[li].parent=parent;
+        nodes[parent].leafList.push(li); link(li, parent, 1.1); }   // fan=true → core hub (opens outward); false → ball
+      return {nodes,edges};
+    }
+
+    /* ============================ STATE / GEO ========================= */
+    let GEO=null;            // {bg,polys:[{pts,stroke,width}],segs:[{...}],dots:[{x,y,r,fill}]}
+    let RAF=0, graphState=null, LAST=null;   // LAST = cached raw lines for cheap re-skin
+    let motionRAF=0, motionT=0, motionLast=0, motionOn=false;   // 3D / organic motion loop
+    const VIEW={z:1,px:0,py:0};                                 // crisp render-level zoom + pan
+    const clampv=(v,a,b)=>Math.min(b,Math.max(a,v));
+
+    function nodeFill(st,n,hN,hH){
+      const isHub=st.hubDistinct&&(n.role==='hub'||n.role==='ball'), b=isHub?hH:hN;
+      const l=Math.max(8,Math.min(94, b.l+(n.cj||0)*24*st.drift));
+      return `hsl(${b.h.toFixed(0)},${b.s.toFixed(0)}%,${l.toFixed(0)}%)`;
+    }
+    let _edgeHsl=null, _edgeHex=null;
+    function lineColor(st,ej){
+      if(!st.lineDrift) return st.edge;
+      if(_edgeHex!==st.edge){ _edgeHex=st.edge; _edgeHsl=hexToHsl(st.edge); }
+      const b=_edgeHsl, h=b.h+(ej||0)*70*st.lineDrift, l=Math.max(8,Math.min(92,b.l+(ej||0)*26*st.lineDrift));
+      return `hsl(${h.toFixed(0)},${b.s.toFixed(0)}%,${l.toFixed(0)}%)`;
+    }
+
+    function readStyle(){
+      return { bg:$('c-bg').value, stroke:$('c-stroke').value, width:num('s-width'),
+        op:num('s-op')/100, drift:num('s-var')/100, lineDrift:num('s-var-line')/100, showNodes:$('chk-nodes').classList.contains('on'),
+        edge:$('c-edge').value, node:$('c-node').value, hub:$('c-hub').value, dot:num('g-dot'),
+        nodeStroke:num('g-nodestroke'), nodeStrokeOn:$('chk-nodestroke').classList.contains('on'),
+        hubSize:$('chk-hubsize').classList.contains('on'), hubDistinct:$('chk-hubdist').classList.contains('on') };
+    }
+
+    function streamlinesToGEO(lines,nodes,W,H,showNodes){
+      const st=readStyle(), base=hexToHsl(st.stroke), polys=[];
+      for(let i=0;i<lines.length;i++){
+        const j=(rnd()-0.5)*2;
+        const h=base.h + j*60*st.drift, l=Math.min(92,Math.max(12,base.l + j*18*st.drift));
+        polys.push({pts:lines[i], stroke:`hsl(${h.toFixed(0)},${base.s.toFixed(0)}%,${l.toFixed(0)}%)`, width:st.width, op:st.op});
+      }
+      const dots = showNodes ? nodes.map(s=>({x:s.x,y:s.y,r:st.width*2.2+1.5,fill:st.stroke})) : [];
+      return {bg:st.bg, polys, segs:[], dots};
+    }
+
+    function graphToGEO(gs){
+      const st=readStyle(), {nodes,edges}=gs;
+      // fit current node cloud into the frame
+      let a=1e9,b=1e9,c=-1e9,d=-1e9;
+      for(const n of nodes){ if(n.x<a)a=n.x; if(n.y<b)b=n.y; if(n.x>c)c=n.x; if(n.y>d)d=n.y; }
+      const W=cv.width, H=cv.height, pad=0.07;
+      const bw=Math.max(1,c-a), bh=Math.max(1,d-b);
+      const s=Math.min(W*(1-2*pad)/bw, H*(1-2*pad)/bh);
+      const ox=W/2-((a+c)/2)*s, oy=H/2-((b+d)/2)*s;
+      const TX=(n)=>[n.x*s+ox, n.y*s+oy];
+      const segs=[];
+      for(const e of edges){ const A=nodes[e[0]],B=nodes[e[1]],p=TX(A),q=TX(B); segs.push({x1:p[0],y1:p[1],x2:q[0],y2:q[1],stroke:lineColor(st,(A.cj||0)+(B.j1-0.5)),width:st.width,op:st.op}); }
+      const hN=hexToHsl(st.node), hH=hexToHsl(st.hub), nsk=st.nodeStrokeOn?st.edge:null, dots=[];
+      for(const n of nodes){ const p=TX(n);
+        const r=st.hubSize? st.dot*(0.7+0.5*Math.min(6,Math.sqrt(n.deg))) : st.dot;
+        dots.push({x:p[0],y:p[1],r,fill:nodeFill(st,n,hN,hH),stroke:nsk,strokeW:st.nodeStroke,strokeAlpha:st.op});
+      }
+      return {bg:st.bg, polys:[], segs, dots};
+    }
+
+    /* ============================ PAINT / SVG ========================= */
+    function paint(c,W,H,geo,scale,noView,transparent,view){
+      scale=scale||1;
+      c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,W,H);
+      if(!transparent){ c.fillStyle=geo.bg; c.fillRect(0,0,W,H); }   // transparent → leave alpha for MOV/PNG-seq
+      c.save();
+      const v = view || (noView?null:VIEW);
+      if(v){ c.translate(v.px,v.py); c.scale(v.z,v.z); }   // crisp zoom + pan
+      c.lineJoin='round'; c.lineCap='round';
+      for(const s of geo.segs){ c.globalAlpha=s.op; c.strokeStyle=s.stroke; c.lineWidth=s.width*scale;
+        c.beginPath(); c.moveTo(s.x1*scale,s.y1*scale); c.lineTo(s.x2*scale,s.y2*scale); c.stroke(); }
+      for(const p of geo.polys){ if(p.pts.length<2)continue; c.globalAlpha=p.op; c.strokeStyle=p.stroke; c.lineWidth=p.width*scale;
+        c.beginPath(); c.moveTo(p.pts[0][0]*scale,p.pts[0][1]*scale); for(let i=1;i<p.pts.length;i++)c.lineTo(p.pts[i][0]*scale,p.pts[i][1]*scale); c.stroke(); }
+      for(const d of geo.dots){ c.beginPath(); c.arc(d.x*scale,d.y*scale,d.r*scale,0,Math.PI*2);
+        c.globalAlpha=d.alpha==null?1:d.alpha; c.fillStyle=d.fill; c.fill();
+        if(d.stroke&&d.strokeW>0){ c.globalAlpha=d.strokeAlpha==null?(d.alpha==null?1:d.alpha):d.strokeAlpha; c.lineWidth=d.strokeW*scale; c.strokeStyle=d.stroke; c.stroke(); } }
+      c.globalAlpha=1;
+      c.restore();
+    }
+    function toSVG(W,H,geo,transparent,view){
+      const f=n=>(+n).toFixed(1); let o=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+      if(!transparent) o+=`<rect width="${W}" height="${H}" fill="${geo.bg}"/>`;
+      const vt = view && (view.z!==1||view.px||view.py) ? ` transform="translate(${f(view.px)} ${f(view.py)}) scale(${view.z})"` : '';
+      o+=`<g${vt}>`;
+      o+=`<g fill="none" stroke-linecap="round" stroke-linejoin="round">`;
+      for(const s of geo.segs) o+=`<line x1="${f(s.x1)}" y1="${f(s.y1)}" x2="${f(s.x2)}" y2="${f(s.y2)}" stroke="${s.stroke}" stroke-width="${s.width}" stroke-opacity="${s.op}"/>`;
+      for(const p of geo.polys){ if(p.pts.length<2)continue; o+=`<polyline points="${p.pts.map(pt=>f(pt[0])+','+f(pt[1])).join(' ')}" stroke="${p.stroke}" stroke-width="${p.width}" stroke-opacity="${p.op}"/>`; }
+      o+=`</g>`;
+      for(const d of geo.dots) o+=`<circle cx="${f(d.x)}" cy="${f(d.y)}" r="${f(d.r)}" fill="${d.fill}"${d.stroke&&d.strokeW>0?` stroke="${d.stroke}" stroke-width="${f(d.strokeW)}" stroke-opacity="${(d.strokeAlpha==null?1:d.strokeAlpha).toFixed(3)}"`:''}/>`;
+      return o+`</g></svg>`;
+    }
+
+    /* ============================ GENERATE ============================ */
+    const setOut=(k,v)=>{ const e=document.querySelector(`[data-out="${k}"]`); if(e)e.textContent=v; };
+    function stopAnim(){ if(RAF){cancelAnimationFrame(RAF); RAF=0;} if(motionRAF){cancelAnimationFrame(motionRAF); motionRAF=0;} }
+
+    /* ============================ MOTION (3D + organic) =============== */
+    function readMotion(){ return {
+      spin:num('m-spin')/100*1.3, tumble:num('m-tumble')/100*0.7, depth:num('m-depth')/100,
+      persp:num('m-persp')/100, organic:num('m-organic')/100, flow:num('m-flow')/100*0.8, breathe:num('m-breathe')/100*0.16,
+      fade:num('m-fade')/100 };
+    }
+    let graphMeta=null;   // {k,S,cx,cy} stored at settle so depth can be re-assigned on Shape change
+    const motionShape=()=>{ const b=document.querySelector('#m-shape button.active'); return b?b.dataset.shape:'sphere'; };
+    const vlen=(x,y,z)=>Math.sqrt(x*x+y*y+z*z)||1;
+    // assign base 3D coords (bx,by,bz) to every node → DISC (puff the planar layout) or SPHERE (volumetric ball of tufts)
+    function assignDepth(g,meta,shape){
+      const {k,S,cx,cy}=meta, nodes=g.nodes, open=num('g-open')/100;
+      if(shape!=='sphere'){
+        for(const n of nodes){ let z;
+          if(n.role==='core') z=(n.jz-0.5)*S*1.4;
+          else if(n.role==='hub'||n.role==='ball'){ const d=Math.hypot(n.x-cx,n.y-cy); z=(n.jz-0.5)*d*0.95; }
+          else { const h=g.nodes[n.parent]; z=((h&&h._z)||0)+(n.jz-0.5)*k*1.3; }
+          n._z=z; n.bx=n.x-cx; n.by=n.y-cy; n.bz=z; }
+        return;
+      }
+      // SPHERE — core blob at centre, hubs on a Fibonacci sphere, fans as outward tufts.
+      // shell radius is FIXED (canvas-relative); fan radius (k) controls tuft length only → it reads clearly.
+      const hubLike=nodes.filter(n=>n.role==='hub'||n.role==='ball'), Hn=Math.max(1,hubLike.length), GA2=2.399963267;
+      const D=Math.max(cv.width,cv.height), Rs=D*0.26, cz=D*0.06;
+      for(const n of nodes) if(n.role==='core'){ n.bx=(n.x-cx)*0.45; n.by=(n.y-cy)*0.45; n.bz=(n.jz-0.5)*cz; }
+      hubLike.forEach((h,hi)=>{ const gy=1-(hi+0.5)/Hn*2, rr=Math.sqrt(Math.max(0,1-gy*gy)), phi=hi*GA2;
+        const dx=Math.cos(phi)*rr, dy=gy, dz=Math.sin(phi)*rr; h.bdir=[dx,dy,dz]; h.bx=dx*Rs; h.by=dy*Rs; h.bz=dz*Rs; });
+      for(const n of nodes){ if(n.role!=='leaf') continue; const h=g.nodes[n.parent]; if(!h||!h.bdir){ n.bx=h?h.bx:0; n.by=h?h.by:0; n.bz=h?h.bz:0; continue; }
+        const d=h.bdir;
+        const t=Math.abs(d[1])<0.99?[0,1,0]:[1,0,0];                       // tangent basis ⟂ d
+        let ux=d[1]*t[2]-d[2]*t[1], uy=d[2]*t[0]-d[0]*t[2], uz=d[0]*t[1]-d[1]*t[0]; const ul=vlen(ux,uy,uz); ux/=ul;uy/=ul;uz/=ul;
+        const vx=d[1]*uz-d[2]*uy, vy=d[2]*ux-d[0]*uz, vz=d[0]*uy-d[1]*ux;
+        if(h.role==='ball'){                                              // small 3D sphere on the surface (sized by fan radius)
+          const th=n.j1*6.2832, cph=2*n.j2-1, sph=Math.sqrt(Math.max(0,1-cph*cph)), r2=k*0.9*(0.45+0.55*(n.cj+0.5));
+          n.bx=h.bx+sph*Math.cos(th)*r2; n.by=h.by+sph*Math.sin(th)*r2; n.bz=h.bz+cph*r2;
+        } else {                                                          // outward cone tuft anchored AT the hub → size scales with fan radius
+          const aa=n.j1*6.2832, coneHalf=0.15+open*1.0, th=coneHalf*Math.sqrt(n.j2), len=k*(0.5+1.2*n.jz);
+          const tx=ux*Math.cos(aa)+vx*Math.sin(aa), ty=uy*Math.cos(aa)+vy*Math.sin(aa), tz=uz*Math.cos(aa)+vz*Math.sin(aa);
+          const ct=Math.cos(th), stt=Math.sin(th);
+          const cdx=ct*d[0]+stt*tx, cdy=ct*d[1]+stt*ty, cdz=ct*d[2]+stt*tz;   // direction in a cone (half-angle = openness) around the hub's outward axis
+          n.bx=h.bx+cdx*len; n.by=h.by+cdy*len; n.bz=h.bz+cdz*len;
+        }
+      }
+    }
+    // build the projected GEO for a given time & canvas size (used live AND by clip export)
+    // loopDur>0 → every channel is made periodic over that duration for a seamless loop
+    function motionGEO(t,W,H,loopDur){
+      const g=graphState, st=readStyle(), {nodes,edges}=g, M=readMotion();
+      const cx=W/2,cy=H/2,dF=M.depth, flat=(motionShape()!=='sphere'), TAU=6.283185307;
+      const L=loopDur>0, p=L?(t/loopDur):0;
+      // periodic (loop) vs linear (live) channels
+      const turns=r=> r===0?0 : Math.sign(r)*Math.max(1,Math.round(Math.abs(r)*loopDur/TAU));
+      const spinAng = L ? turns(M.spin)*TAU*p : M.spin*t;
+      const tiltExtra = L ? turns(M.tumble)*TAU*p : M.tumble*t;
+      const brPhase = L ? TAU*Math.max(1,Math.round(1.3*loopDur/TAU))*p : t*1.3;
+      const br=1+Math.sin(brPhase)*M.breathe;
+      const la=TAU*p, lr=0.5+M.flow*3;                        // loop-noise: sample a circle in noise space (returns home at p=1)
+      const nz=(sx,sy)=> L ? Noise.n2(sx+Math.cos(la)*lr, sy+Math.sin(la)*lr) : Noise.n2(sx, t*M.flow);
+      let Rb=1; for(const n of nodes){ const X=(n.bx||0),Y=(n.by||0),Z=flat?0:(n.bz||0)*dF, r=Math.sqrt(X*X+Y*Y+Z*Z); if(r>Rb)Rb=r; }
+      const amp=M.organic*Rb*0.22, focal=Rb*(1.08+(1-M.persp)*2.7), scale=Math.min(W,H)*0.46/Rb;
+      const mlt=Math.min(W,H)/Math.max(1,Math.min(cv.width,cv.height));   // render-size factor → dot/line sizes track export resolution
+      if(flat){                                               // 2D — front-on in-plane spin (clean pinwheel, never tilts away)
+        const ca=Math.cos(spinAng), sa=Math.sin(spinAng);
+        for(const n of nodes){ let X=(n.bx||0),Y=(n.by||0);
+          if(amp>0){ X+=nz(n.j1*40, n.j2*40)*amp; Y+=nz(n.j2*40+19, n.cj*40)*amp; }
+          X*=br;Y*=br;
+          n._px=cx+(X*ca-Y*sa)*scale; n._py=cy+(X*sa+Y*ca)*scale; n._pp=1; n._z2=0;
+        }
+      } else {                                                // 3D tumble
+        const spin=spinAng, tilt=0.42+tiltExtra, cY=Math.cos(spin),sY=Math.sin(spin),cX=Math.cos(tilt),sX=Math.sin(tilt);
+        for(const n of nodes){
+          let X=(n.bx||0),Y=(n.by||0),Z=(n.bz||0)*dF;
+          if(amp>0){ X+=nz(n.j1*40, n.j2*40)*amp; Y+=nz(n.j2*40+19, n.cj*40)*amp; Z+=nz(n.cj*40+47, n.j1*40+7)*amp; }
+          X*=br;Y*=br;Z*=br;
+          const x1=X*cY+Z*sY, z1=-X*sY+Z*cY, y1=Y;
+          const y2=y1*cX-z1*sX, z2=y1*sX+z1*cX;
+          const pp=Math.min(16, focal/Math.max(focal-z2, focal*0.045));
+          n._px=cx+x1*pp*scale; n._py=cy+y2*pp*scale; n._pp=pp; n._z2=z2;
+        }
+      }
+      const fade=flat?0:M.fade, hN=hexToHsl(st.node),hH=hexToHsl(st.hub), nsk=st.nodeStrokeOn?st.edge:null, segs=[], dots=[];
+      for(const e of edges){ const A=nodes[e[0]],B=nodes[e[1]], f=(((A._z2+B._z2)/(2*Rb))*0.5+0.5);
+        segs.push({x1:A._px,y1:A._py,x2:B._px,y2:B._py,stroke:lineColor(st,(A.cj||0)+(B.j1-0.5)),width:st.width*((A._pp+B._pp)/2)*mlt,op:st.op*(1-fade*(1-f))}); }
+      for(const n of nodes){ const f=(n._z2/Rb)*0.5+0.5, baseR=st.hubSize? st.dot*(0.7+0.5*Math.min(6,Math.sqrt(n.deg))):st.dot;
+        dots.push({x:n._px,y:n._py,r:baseR*n._pp*mlt,fill:nodeFill(st,n,hN,hH),alpha:1-fade*(1-f),z:n._z2,stroke:nsk,strokeW:st.nodeStroke*n._pp*mlt,strokeAlpha:st.op*(1-fade*(1-f))}); }
+      if(!flat) dots.sort((a,b)=>a.z-b.z);                    // back-to-front (3D only)
+      return {bg:st.bg,polys:[],segs,dots};
+    }
+    const loopDur=()=>$('chk-loop').classList.contains('on')?num('clip-dur'):0;   // preview the actual loop when armed
+    function renderGraphMotion(){ if(!graphState) return; GEO=motionGEO(motionT,cv.width,cv.height,loopDur()); paint(ctx,cv.width,cv.height,GEO,1); }
+    function motionTick(ts){
+      if(!motionOn){ motionRAF=0; return; }
+      if(!motionLast) motionLast=ts; const dt=Math.min(0.05,(ts-motionLast)/1000); motionLast=ts; motionT+=dt;
+      renderGraphMotion(); motionRAF=requestAnimationFrame(motionTick);
+    }
+    function startMotion(){ if(motionRAF) return; motionLast=0; motionRAF=requestAnimationFrame(motionTick); }
+    function stopMotion(){ if(motionRAF){cancelAnimationFrame(motionRAF);motionRAF=0;} }
+
+    function generate(){
+      stopAnim();
+      const W=cv.width, H=cv.height; if(W<2||H<2) return;
+      RND=mulberry32(parseInt($('seed').value)||0);
+      setOut('statusRead','Working…');
+      setOut('modeRead', MODE==='graph'?'Force Graph':MODE==='flow'?'Flow Field':'Streamlines');
+
+      if(MODE==='streamlines'){
+        const P={ sing:num('sl-sing'), sink:num('sl-sink')/100, vort:num('sl-vort')/100, dip:num('sl-dip')/100,
+                  sep:num('sl-sep'), dens:num('sl-dens')/100 };
+        const F=buildSingularityField(W,H,P);
+        const maxLines=Math.round(5000*P.dens);
+        const lines=traceStreamlines(W,H,F.field,P.sep,{seeds:F.seeds,stopNear:F.stopNear,maxLines});
+        LAST={lines, nodes:F.nodes};
+        GEO=streamlinesToGEO(lines,F.nodes,W,H,readStyle().showNodes);
+        paint(ctx,W,H,GEO,1);
+        setOut('countRead', lines.length+' lines'); setOut('statusRead','Ready');
+      }
+      else if(MODE==='flow'){
+        const P={ scale:num('ff-scale'), turb:num('ff-turb')/100, swirl:num('ff-swirl')/100, sep:num('ff-sep'), dens:num('ff-dens')/100 };
+        const F=buildFlowField(W,H,P);
+        const maxLines=Math.round(6000*P.dens);
+        const lines=traceStreamlines(W,H,F.field,P.sep,{seeds:F.seeds,stopNear:null,maxLines});
+        LAST={lines, nodes:[]};
+        GEO=streamlinesToGEO(lines,[],W,H,false);
+        paint(ctx,W,H,GEO,1);
+        setOut('countRead', lines.length+' lines'); setOut('statusRead','Ready');
+      }
+      else { // graph — simulate the SKELETON (core tangle + hub ring), then place leaves as fans / balls
+        const P={ nodes:Math.round(num('g-nodes')), hubs:Math.round(num('g-hubs')), balls:Math.round(num('g-balls')),
+                  tangle:num('g-tangle')/100, coreSize:num('g-coresize')/100, skew:num('g-skew')/100, rep:num('g-rep'), link:num('g-link'), open:num('g-open')/100, grav:num('g-grav') };
+        const g=buildGraph(W,H,P); graphState=g; LAST=null;
+        const k=Math.max(4,P.link);                 // fan / leaf radius (placement only)
+        const S=Math.max(W,H)*0.04 + k*0.18;        // skeleton spacing — decoupled from fan radius so big fans don't blow up the ring
+        const repStr=(P.rep/45)*S*S*0.55;
+        const coreMul=0.3+P.coreSize*1.5;           // core-core rest length scale → central-cluster diameter (~1.0 at 50)
+        const coreGrav=Math.max(0,0.55-P.coreSize)*0.22;  // extra inward pull below ~50 → compact knot
+        const grav=P.grav/100*0.05;                 // centring pull on the skeleton
+        const cx=W/2, cy=H/2, GA=2.399963267, maxIter=900;
+        // detached balls aren't simulated — pin them around the perimeter so they don't drift & blow up the fit
+        const ballNodes=g.nodes.filter(n=>n.role==='ball'), rBall=Math.min(W,H)*0.40;
+        ballNodes.forEach((n,i)=>{ const ang=(i+0.5)/Math.max(1,ballNodes.length)*6.2832+(n.j1-0.5)*0.9, rr=rBall*(0.82+n.j2*0.34);
+          n.x=cx+Math.cos(ang)*rr; n.y=cy+Math.sin(ang)*rr; });
+        const sim=g.nodes.filter(n=>n.role==='core'||n.role==='hub');   // only core + hubs simulate
+        const simEdges=[]; for(const e of g.edges){ const A=g.nodes[e[0]],B=g.nodes[e[1]];
+          if((A.role==='core'||A.role==='hub')&&(B.role==='core'||B.role==='hub')) simEdges.push([A,B,e[2]]); }
+        let t=Math.max(W,H)*0.09, iter=0;
+        const stepsPerFrame=Math.max(2,Math.min(10,Math.round(500/Math.max(1,sim.length))+2));
+        function placeLeaves(){
+          for(const h of g.nodes){ if(!h.leafList||!h.leafList.length) continue; const list=h.leafList, n=list.length;
+            if(h.role==='hub'){                                       // open filled wedge → airy fan with visible spokes
+              const dir=Math.atan2(h.y-cy,h.x-cx), arc=(0.18+P.open*0.95)*Math.PI;
+              for(let j=0;j<n;j++){ const lf=g.nodes[list[j]];
+                const ang=dir+(lf.j1-0.5)*arc, rad=k*(0.32+0.98*Math.sqrt(lf.j2));   // area-uniform fill, long spokes
+                lf.x=h.x+Math.cos(ang)*rad; lf.y=h.y+Math.sin(ang)*rad; } }
+            else {                                                    // full disc, each dot on its own spoke → airy ball
+              for(let j=0;j<n;j++){ const lf=g.nodes[list[j]], ang=lf.j1*6.2832, rad=k*Math.sqrt(0.05+lf.j2*0.95);
+                lf.x=h.x+Math.cos(ang)*rad; lf.y=h.y+Math.sin(ang)*rad; } }
+          }
+        }
+        function physics(){
+          for(let s=0;s<stepsPerFrame;s++){
+            let a=1e9,b=1e9,c=-1e9,d=-1e9; for(const n of sim){ if(n.x<a)a=n.x;if(n.y<b)b=n.y;if(n.x>c)c=n.x;if(n.y>d)d=n.y; }
+            const size=Math.max(c-a,d-b)+1; const root=new Quad(a-1,b-1,size+2);
+            for(const n of sim) root.insert(n);
+            for(const n of sim){ const o={x:0,y:0}; root.force(n,0.9,repStr,o); n.ox=o.x; n.oy=o.y; }
+            for(const e of simEdges){ const A=e[0],B=e[1]; let dx=A.x-B.x,dy=A.y-B.y,dd=Math.hypot(dx,dy)||0.01;
+              const restLen=S*e[2]*((A.role==='core'&&B.role==='core')?coreMul:1); const fa=dd*dd/restLen; dx/=dd;dy/=dd;
+              A.ox-=dx*fa; A.oy-=dy*fa; B.ox+=dx*fa; B.oy+=dy*fa; }
+            for(const n of sim){ n.ox+=(cx-n.x)*grav; n.oy+=(cy-n.y)*grav;
+              if(n.role==='core'){ n.ox+=(cx-n.x)*coreGrav; n.oy+=(cy-n.y)*coreGrav; }
+              const len=Math.hypot(n.ox,n.oy)||1e-6, mv=Math.min(len,t); n.x+=n.ox/len*mv; n.y+=n.oy/len*mv; }
+            t*=0.985; iter++;
+          }
+          placeLeaves(); GEO=graphToGEO(g); paint(ctx,W,H,GEO,1);
+          if(iter<maxIter && t>0.5){ setOut('statusRead','Settling… '+Math.min(99,Math.round(iter/(maxIter*0.5)*100))+'%'); RAF=requestAnimationFrame(physics); }
+          else { setOut('statusRead','Ready'); RAF=0; graphMeta={k,S,cx,cy}; assignDepth(g,graphMeta,motionShape()); if(motionOn) startMotion(); }
+        }
+        setOut('countRead', g.nodes.length+' nodes · '+g.edges.length+' edges');
+        physics();
+      }
+    }
+
+    /* ============================ EXPORT ============================== */
+    function download(name,blob){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); }
+    const isTransparent=()=>$('m-transp').classList.contains('on')||$('clip-transp').classList.contains('on');
+    function doExport(){
+      if(!GEO) return;
+      const W=cv.width, H=cv.height, seed=$('seed').value, transp=isTransparent();
+      const fmt=(document.querySelector('#ex-fmt button.active')||{}).dataset?.fmt || 'png';
+      const mult=+((document.querySelector('#ex-res button.active')||{}).dataset?.mult || 1);
+      if(fmt==='svg'){ download(`flux-${MODE}-${seed}.svg`, new Blob([toSVG(W,H,GEO,transp,{z:VIEW.z,px:VIEW.px,py:VIEW.py})],{type:'image/svg+xml'})); }
+      else { const off=document.createElement('canvas'); off.width=W*mult; off.height=H*mult;
+        paint(off.getContext('2d'),W*mult,H*mult,GEO,mult,false,transp,{z:VIEW.z,px:VIEW.px*mult,py:VIEW.py*mult});   // WYSIWYG: match on-screen zoom/pan (so stroke weight matches); transp → alpha PNG
+        off.toBlob(bl=>download(`flux-${MODE}-${seed}@${mult}x.png`,bl),'image/png'); }
+    }
+
+    /* — minimal store-method ZIP (self-contained, no deps) for PNG sequences — */
+    function crc32(u8){ let c=0xFFFFFFFF; for(let i=0;i<u8.length;i++){ c^=u8[i]; for(let k=0;k<8;k++) c=(c>>>1)^(0xEDB88320&-(c&1)); } return (c^0xFFFFFFFF)>>>0; }
+    function zipStore(files){
+      const enc=new TextEncoder(), u16=n=>[n&255,(n>>8)&255], u32=n=>[n&255,(n>>8)&255,(n>>16)&255,(n>>24)&255];
+      const parts=[], cen=[]; let off=0;
+      for(const f of files){ const nm=enc.encode(f.name), crc=crc32(f.data), sz=f.data.length;
+        const lh=[0x50,0x4b,3,4,...u16(20),...u16(0),...u16(0),...u16(0),...u16(0),...u32(crc),...u32(sz),...u32(sz),...u16(nm.length),...u16(0)];
+        const blk=new Uint8Array(lh.length+nm.length+sz); blk.set(lh,0); blk.set(nm,lh.length); blk.set(f.data,lh.length+nm.length);
+        parts.push(blk); cen.push({nm,crc,sz,off}); off+=blk.length; }
+      let cdSize=0; const cdStart=off, cdParts=[];
+      for(const c of cen){ const h=[0x50,0x4b,1,2,...u16(20),...u16(20),...u16(0),...u16(0),...u16(0),...u16(0),...u32(c.crc),...u32(c.sz),...u32(c.sz),...u16(c.nm.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(c.off)];
+        const blk=new Uint8Array(h.length+c.nm.length); blk.set(h,0); blk.set(c.nm,h.length); cdParts.push(blk); cdSize+=blk.length; }
+      const end=new Uint8Array([0x50,0x4b,5,6,...u16(0),...u16(0),...u16(cen.length),...u16(cen.length),...u32(cdSize),...u32(cdStart),...u16(0)]);
+      return new Blob([...parts,...cdParts,end],{type:'application/zip'});
+    }
+    async function exportClip(){
+      if(MODE!=='graph'||!graphState){ alert('The motion clip is for the Force Graph (switch Visual → Force Graph).'); return; }
+      const fmt=(document.querySelector('#clip-fmt button.active')||{}).dataset?.clip||'webm';
+      const fps=+((document.querySelector('#clip-fps button.active')||{}).textContent.trim())||30;
+      const dur=num('clip-dur'), mult=+((document.querySelector('#ex-res button.active')||{}).dataset?.mult||1);
+      const transp=isTransparent(), seed=$('seed').value;
+      const W=Math.round(cv.width*mult), H=Math.round(cv.height*mult), total=Math.max(1,Math.round(dur*fps));
+      const seamless=$('chk-loop').classList.contains('on'), ld=seamless?dur:0;   // frames 0..total-1 span p∈[0,1) → no duplicate seam
+      const vw={z:VIEW.z, px:VIEW.px*mult, py:VIEW.py*mult};   // honour current pan/zoom (WYSIWYG framing), scaled to export res
+      const ec=document.createElement('canvas'); ec.width=W; ec.height=H; const c=ec.getContext('2d');
+      const btn=$('btn-clip'); btn.disabled=true;
+      if(fmt==='png'){
+        const files=[];
+        const nframes=total+($('chk-closeframe').classList.contains('on')?1:0);   // +1 = the p=1.0 closing frame (== frame 0) for frame-based loopers (Cavalry/AE)
+        for(let i=0;i<nframes;i++){ paint(c,W,H,motionGEO(i/fps,W,H,ld),1,false,transp,vw);
+          const bl=await new Promise(r=>ec.toBlob(r,'image/png'));
+          files.push({name:`flux_${String(i).padStart(4,'0')}.png`, data:new Uint8Array(await bl.arrayBuffer())});
+          setOut('statusRead',`Frames ${i+1}/${nframes}`); await new Promise(r=>setTimeout(r)); }
+        download(`flux-graph-${seed}-${fps}fps-seq.zip`, zipStore(files)); setOut('statusRead','Ready'); btn.disabled=false; return;
+      }
+      // WebM with alpha
+      let mime='video/webm;codecs=vp9'; if(!window.MediaRecorder||!MediaRecorder.isTypeSupported(mime)) mime=MediaRecorder.isTypeSupported('video/webm;codecs=vp8')?'video/webm;codecs=vp8':'video/webm';
+      const stream=ec.captureStream(fps), rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:16e6}), blobs=[];
+      rec.ondataavailable=e=>{ if(e.data.size) blobs.push(e.data); };
+      rec.onstop=()=>{ download(`flux-graph-${seed}.webm`, new Blob(blobs,{type:'video/webm'})); setOut('statusRead','Ready'); btn.disabled=false; };
+      let fr=0; rec.start();
+      (function loop(){ if(fr>=total){ setTimeout(()=>rec.stop(),120); return; }
+        paint(c,W,H,motionGEO(fr/fps,W,H,ld),1,false,transp,vw); setOut('statusRead',`Recording ${fr+1}/${total}`); fr++; setTimeout(loop,1000/fps); })();
+    }
+
+    /* ============================ UI WIRING =========================== */
+    function updateModeUI(){
+      document.querySelectorAll('[data-mg]').forEach(g=>g.style.display = g.dataset.mg===MODE?'':'none');
+      $('graphColors').style.display = MODE==='graph'?'':'none';
+      $('chk-nodes').style.display = MODE==='streamlines'?'':'none';
+    }
+
+    // re-skin without re-simulating (style-only controls)
+    function restyle(){
+      const W=cv.width,H=cv.height;
+      if(MODE==='graph'){ if(graphState){ GEO=graphToGEO(graphState); paint(ctx,W,H,GEO,1); } return; }
+      if(LAST){ GEO=streamlinesToGEO(LAST.lines,LAST.nodes,W,H,readStyle().showNodes); paint(ctx,W,H,GEO,1); }
+    }
+    const STYLE_IDS=new Set(['s-width','s-op','s-var','s-var-line','g-dot','g-nodestroke','c-stroke','c-bg','c-edge','c-node']);
+    const MOTION_IDS=new Set(['m-spin','m-tumble','m-depth','m-persp','m-fade','m-organic','m-flow','m-breathe']);
+
+    // mode select
+    $('modeSel').addEventListener('hty:change', e=>{ MODE=e.detail.value; updateModeUI(); generate(); });
+    $('seed').addEventListener('input', generate);
+    // ranges: motion → live (loop reads it); style → re-skin; structural → regenerate
+    document.querySelectorAll('.hty-panel input[type=range]').forEach(r=>r.addEventListener('change', ()=>{
+      if(MOTION_IDS.has(r.id)){ if(motionOn) renderGraphMotion(); return; }
+      STYLE_IDS.has(r.id)?restyle():generate(); }));
+    // Shape (sphere/disc) → re-map 3D coords on the settled layout, no re-simulation
+    $('m-shape').addEventListener('click', ()=>setTimeout(()=>{ if(graphState&&graphMeta){ assignDepth(graphState,graphMeta,motionShape()); if(!motionOn&&MODE==='graph') renderGraphMotion(); } },0));
+    // Animate toggle
+    $('m-play').addEventListener('click', ()=>setTimeout(()=>{ motionOn=$('m-play').classList.contains('on');
+      if(motionOn){ if(MODE==='graph'&&graphState) startMotion(); }
+      else { stopMotion(); if(MODE==='graph'&&graphState){ GEO=graphToGEO(graphState); paint(ctx,cv.width,cv.height,GEO,1); } } },0));
+    document.querySelectorAll('.hty-panel input[type=color]').forEach(c=>c.addEventListener('input', restyle));
+    ['chk-nodes','chk-hubsize','chk-hubdist','chk-nodestroke'].forEach(id=>$(id).addEventListener('click', ()=>setTimeout(restyle,0)));
+    // palette presets — art-direction starting points (bg / line / edge / node / hub)
+    const PRESETS={
+      dandelion:{bg:'#ffffff',stroke:'#2a7d4f',edge:'#9ec06a',node:'#8a1f1f',hub:'#5a1414'},
+      blueprint:{bg:'#0e1b2e',stroke:'#5b9bd5',edge:'#3f6ea5',node:'#dbe9ff',hub:'#ffffff'},
+      ink:{bg:'#ffffff',stroke:'#1a1a1a',edge:'#bdbdb8',node:'#141414',hub:'#000000'},
+      neon:{bg:'#08080c',stroke:'#2bd4a8',edge:'#1f7a6a',node:'#ff3d7f',hub:'#ffd23d'},
+      siena:{bg:'#f4efe4',stroke:'#b06a2c',edge:'#c89a5b',node:'#5a2d12',hub:'#7a1f0f'},
+      cyan:{bg:'#04141a',stroke:'#22d3ee',edge:'#1d6b7a',node:'#e0fbff',hub:'#7df9ff'}
+    };
+    $('paletteSel').addEventListener('hty:change', e=>{ const p=PRESETS[e.detail.value]; if(!p)return;
+      $('c-bg').value=p.bg; $('c-stroke').value=p.stroke; $('c-edge').value=p.edge; $('c-node').value=p.node; $('c-hub').value=p.hub;
+      restyle(); });
+    $('btn-render').addEventListener('click', generate);
+    $('btn-shuffle').addEventListener('click', ()=>{ $('seed').value=Math.floor(Math.random()*1e6); generate(); });
+    $('btn-export').addEventListener('click', doExport);
+    $('btn-clip').addEventListener('click', exportClip);
+    // keep the two transparent switches mirrored (one in Output, one in Motion clip) so they never disagree
+    ['m-transp','clip-transp'].forEach(id=>$(id).addEventListener('click', ()=>setTimeout(()=>{
+      const on=$(id).classList.contains('on'); $('m-transp').classList.toggle('on',on); $('clip-transp').classList.toggle('on',on); },0)));
+    $('clip-fmt').addEventListener('click', e=>{ if(!e.target.closest('button'))return; setTimeout(()=>{
+      const png=(document.querySelector('#clip-fmt button.active')||{}).dataset?.clip==='png';
+      $('clip-note').innerHTML = png
+        ? 'Transparent PNG frames in a .zip → import the sequence into After Effects / Premiere and export ProRes&nbsp;4444 .mov (lossless alpha).'
+        : 'WebM has true alpha — convert to ProRes&nbsp;.mov:<br><span style="font-family:var(--mono);font-size:9.5px">ffmpeg -i in.webm -c:v prores_ks -pix_fmt yuva444p10le out.mov</span>'; },0); });
+
+    /* ============================ ZOOM + PAN (render-level) =========== */
+    const repaint=()=>{ if(!motionRAF && GEO) paint(ctx,cv.width,cv.height,GEO,1); };
+    const zlbl=()=>{ const e=document.querySelector('[data-zoom-level]'); if(e)e.textContent=Math.round(VIEW.z*100)+'%'; };
+    const stageEl=document.querySelector('.hty-stage');
+    function zoomAt(bx,by,z1){ z1=clampv(z1,0.25,16); VIEW.px=bx-(bx-VIEW.px)*(z1/VIEW.z); VIEW.py=by-(by-VIEW.py)*(z1/VIEW.z); VIEW.z=z1; zlbl(); repaint(); }
+    const toBack=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*cv.width, (e.clientY-r.top)/r.height*cv.height]; };
+    // wheel zoom toward cursor (capture-phase → preempts the built-in CSS zoom)
+    document.addEventListener('wheel', e=>{ if(!stageEl||!stageEl.contains(e.target)) return;
+      e.preventDefault(); e.stopImmediatePropagation(); const [bx,by]=toBack(e); zoomAt(bx,by,VIEW.z*Math.exp(-e.deltaY*0.0015));
+    }, {capture:true, passive:false});
+    // drag to pan
+    let panning=false, ps=null;
+    document.addEventListener('pointerdown', e=>{ if(e.button!==0||!stageEl||!stageEl.contains(e.target)) return;
+      panning=true; ps={x:e.clientX,y:e.clientY,px:VIEW.px,py:VIEW.py}; e.stopImmediatePropagation();
+    }, {capture:true});
+    window.addEventListener('pointermove', e=>{ if(!panning) return; const r=cv.getBoundingClientRect();
+      VIEW.px=ps.px+(e.clientX-ps.x)*(cv.width/r.width); VIEW.py=ps.py+(e.clientY-ps.y)*(cv.height/r.height); repaint(); });
+    window.addEventListener('pointerup', ()=>{ panning=false; });
+    // take over the −/＋/Fit HUD buttons (clone to strip the built-in handlers)
+    document.querySelectorAll('[data-zoom]').forEach(b=>{ const c=b.cloneNode(true); b.parentNode.replaceChild(c,b);
+      c.addEventListener('click', ()=>{ const m=c.dataset.zoom;
+        if(m==='reset'){ VIEW.z=1; VIEW.px=0; VIEW.py=0; zlbl(); repaint(); }
+        else zoomAt(cv.width/2, cv.height/2, VIEW.z*(m==='in'?1.25:0.8)); }); });
+    zlbl();
+
+    /* ============================ CANVAS SIZING ====================== */
+    let szT=0;
+    const sync=()=>{ const w=frame.clientWidth|0, h=frame.clientHeight|0;
+      if(w<2||h<2) return; if(cv.width===w&&cv.height===h) return; cv.width=w; cv.height=h; clearTimeout(szT); szT=setTimeout(generate,120); };
+    new ResizeObserver(sync).observe(frame);
+    // initial kick (frame may already be sized by hty-ui)
+    motionOn=$('m-play').classList.contains('on');
+    setTimeout(()=>{ cv.width=frame.clientWidth|0||1080; cv.height=frame.clientHeight|0||1080; updateModeUI(); generate(); }, 60);
+  })();
+  </script>
+</body>
+</html>
