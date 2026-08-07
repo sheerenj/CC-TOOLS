@@ -4,340 +4,217 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Halftone Dots</title>
+<link rel="stylesheet" href="../../shared/hty-ui.css" />
 <style>
-:root {
-  --bg: #ececec; --card: #ffffff; --text: #000000; --dim: #6b6b6b;
-  --line: #e4e4e4; --line2: #d4d4d4; --accent: #d4fc4e;
-  --radius-lg: 20px; --radius-md: 14px; --radius-pill: 999px;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; overflow: hidden;
-  background: var(--bg); color: var(--text);
-  font-family: -apple-system, "Inter", "Helvetica Neue", sans-serif;
-  -webkit-font-smoothing: antialiased; }
-body { display: flex; }
-
-/* ── Sidebar ── */
-#sidebar {
-  width: 296px; flex-shrink: 0; background: var(--bg);
-  padding: 16px; overflow-y: auto; height: 100vh;
-  border-right: 1px solid var(--line2);
-}
-#sidebar::-webkit-scrollbar { width: 6px; }
-#sidebar::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 3px; }
-
-.brand-row { display: flex; align-items: baseline; justify-content: space-between;
-  margin-bottom: 16px; padding: 0 2px; }
-.brand { font-size: 16px; font-weight: 900; letter-spacing: -0.02em; }
-.brand-sub { font-size: 11px; color: var(--dim); text-transform: uppercase;
-  letter-spacing: 0.1em; font-weight: 600; }
-
-.section { background: var(--card); border-radius: var(--radius-lg);
-  padding: 14px 14px 16px; margin-bottom: 10px; }
-.section-title { display: inline-block; background: var(--accent); color: #000;
-  padding: 3px 7px; font-family: ui-monospace, monospace; font-size: 10px;
-  font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-  margin-bottom: 12px; border-radius: 3px; }
-
-.ctrl { margin-bottom: 12px; }
-.ctrl:last-child { margin-bottom: 0; }
-.ctrl > label { display: flex; justify-content: space-between; align-items: center;
-  font-size: 12px; font-weight: 500; margin-bottom: 6px; }
-.ctrl > label .val { color: var(--dim); font-size: 11px; font-family: ui-monospace, monospace; }
-
-input[type=range] { -webkit-appearance: none; width: 100%; height: 4px;
-  background: var(--line2); border-radius: 2px; outline: none; cursor: pointer; }
-input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
-  width: 16px; height: 16px; border-radius: 50%; background: #000; cursor: pointer;
-  transition: transform 0.1s; }
-input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
-
-select { width: 100%; background: #f4f4f4; border: 1px solid var(--line);
-  color: var(--text); padding: 9px 12px; border-radius: var(--radius-pill);
-  font-size: 12px; outline: none; cursor: pointer; font-family: inherit; font-weight: 500;
-  appearance: none; -webkit-appearance: none;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='black' stroke-width='1.5' fill='none'/></svg>");
-  background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
-
-.color-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.color-row:last-child { margin-bottom: 0; }
-.color-label { font-size: 12px; font-weight: 500; flex: 1; }
-.color-swatch { width: 30px; height: 30px; border-radius: 8px;
-  border: 1px solid var(--line2); flex-shrink: 0; cursor: pointer;
-  position: relative; overflow: hidden; }
-.native-picker { position: absolute; inset: -4px; width: calc(100% + 8px);
-  height: calc(100% + 8px); opacity: 0; cursor: pointer; border: none; padding: 0; }
-.color-hex { flex: 1; background: #f4f4f4; border: 1px solid var(--line); color: #000;
-  padding: 7px 9px; border-radius: var(--radius-md); font-size: 12px; outline: none;
-  font-family: ui-monospace, monospace; min-width: 0; }
-.color-hex:focus { border-color: var(--line2); }
-
-.custom-res-wrap { margin-top: 8px; display: none; }
-.custom-res-wrap.visible { display: block; }
-.custom-res-row { display: flex; gap: 6px; align-items: center; }
-.custom-res-row input[type=number] { flex: 1; background: #f4f4f4; border: 1px solid var(--line);
-  color: #000; padding: 7px 9px; border-radius: var(--radius-md); font-size: 12px;
-  outline: none; font-family: inherit; min-width: 0; }
-.custom-res-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-.custom-res-sep { font-size: 11px; color: var(--dim); flex-shrink: 0; }
-
-.toggle { display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px; }
-.toggle:last-child { margin-bottom: 0; }
-.toggle > label { font-size: 12px; font-weight: 500; }
-.tog-sw { position: relative; width: 38px; height: 22px; background: var(--line2);
-  border-radius: 11px; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
-.tog-sw::after { content: ''; position: absolute; top: 2px; left: 2px;
-  width: 18px; height: 18px; background: #fff; border-radius: 50%;
-  transition: left 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-.tog-sw.on { background: #000; }
-.tog-sw.on::after { left: 18px; }
-
-button.btn { width: 100%; background: #000; color: #fff; border: none;
-  padding: 10px 14px; border-radius: var(--radius-pill); font-size: 13px;
-  font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit;
-  margin-bottom: 8px; }
-button.btn:last-of-type { margin-bottom: 0; }
-button.btn:hover:not(:disabled) { background: #222; }
-button.btn.ghost { background: #fff; color: #000; border: 1px solid var(--line2); }
-button.btn.ghost:hover:not(:disabled) { background: #f5f5f5; }
-button.btn.accent { background: var(--accent); color: #000; }
-button.btn.accent:hover:not(:disabled) { background: #c2ea3c; }
-button.btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-.upload-zone { border: 1.5px dashed var(--line2); border-radius: var(--radius-md);
-  padding: 20px 16px; text-align: center; cursor: pointer; transition: all 0.15s;
-  color: var(--dim); font-size: 12px; line-height: 1.8; margin-bottom: 10px;
-  display: block; }
-.upload-zone:hover, .upload-zone.drag { border-color: #000; color: #000; }
-.upload-zone input { display: none; }
-#img-name { font-size: 11px; color: var(--dim); font-family: ui-monospace, monospace;
-  text-align: center; min-height: 14px; margin-bottom: 10px; overflow: hidden;
-  text-overflow: ellipsis; white-space: nowrap; }
-
-/* ── Canvas area ── */
-#canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center;
-  background: var(--bg); overflow: hidden; position: relative; padding: 16px; }
-#c { display: block; } /* width/height set by JS */
-
-#empty-state { position: absolute; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 10px; pointer-events: none; }
-#empty-state.hidden { display: none; }
-.empty-dot-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px;
-  margin-bottom: 12px; opacity: 0.15; }
-.empty-dot { width: 8px; height: 8px; background: #000; border-radius: 50%; }
-.empty-dot:nth-child(odd) { width: 5px; height: 5px; opacity: 0.5; }
-.empty-text { font-size: 13px; color: var(--dim); font-weight: 500; }
+/* tool-specific bits not covered by the design system (scoped under .hty) */
+.hty #canvas-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 18px; }
+.hty #c { display: block; }
+.hty #empty-state { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; pointer-events: none; }
+.hty #empty-state.hidden { display: none; }
+.hty .empty-dot-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin-bottom: 12px; opacity: .15; }
+.hty .empty-dot { width: 8px; height: 8px; background: #000; border-radius: 50%; }
+.hty .empty-dot:nth-child(odd) { width: 5px; height: 5px; opacity: .5; }
+.hty .empty-text { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+.hty .upload-zone { border: 1.5px dashed var(--line-2); border-radius: var(--r-md); padding: 18px 14px; text-align: center; cursor: pointer; transition: all .15s; color: var(--ink-2); font-size: 12px; line-height: 1.7; display: block; }
+.hty .upload-zone:hover, .hty .upload-zone.drag { border-color: var(--ink); color: var(--ink); }
+.hty .upload-zone input { display: none; }
+.hty #img-name { font-size: 11px; color: var(--ink-2); font-family: var(--mono); text-align: center; min-height: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hty .color-row { display: flex; align-items: center; gap: 8px; }
+.hty .color-label { font-size: 11.5px; font-weight: 500; flex: 1; }
+.hty .color-swatch { width: 30px; height: 30px; border-radius: var(--r-sm); border: 1px solid var(--line-2); flex-shrink: 0; cursor: pointer; position: relative; overflow: hidden; }
+.hty .native-picker { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); opacity: 0; cursor: pointer; border: none; padding: 0; }
+.hty .color-row .color-hex { flex: 1; min-width: 0; }
+.hty .custom-res-wrap { margin-top: 8px; display: none; }
+.hty .custom-res-wrap.visible { display: block; }
+.hty .custom-res-row { display: flex; gap: 6px; align-items: center; }
+.hty .custom-res-row input { flex: 1; min-width: 0; }
+.hty .custom-res-sep { font-size: 11px; color: var(--ink-3); flex-shrink: 0; }
+.hty #var-size-ctrls .field:not(:last-child), .hty #uni-size-ctrls .field:not(:last-child) { margin-bottom: 11px; }
+/* tool-managed toggle (kept as .tog-sw so the system's auto-toggle never touches it) */
+.hty .tog-sw { position: relative; width: 36px; height: 20px; background: var(--track); border-radius: var(--r-pill); cursor: pointer; transition: background .2s; flex-shrink: 0; }
+.hty .tog-sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: transform .22s var(--ease); }
+.hty .tog-sw.on { background: var(--ink); }
+.hty .tog-sw.on::after { transform: translateX(16px); }
+.hty .btn.full { width: 100%; justify-content: center; }
+.hty .btn:disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
+.hty .seq-note { font-size: 10.5px; color: var(--ink-2); line-height: 1.5; }
 </style>
 </head>
-<body>
+<body class="hty">
 
-<div id="sidebar">
-  <div class="brand-row">
-    <span class="brand">Halftone<span style="display:inline-block;width:5px;height:5px;background:#000;border-radius:50%;vertical-align:middle;margin:0 1px 1px"></span></span>
-    <span class="brand-sub">Dot Studio</span>
-  </div>
-
-  <!-- Image -->
-  <div class="section">
-    <div class="section-title">Image</div>
-    <label class="upload-zone" id="upload-zone">
-      <input type="file" id="file-input" accept="image/*" />
-      Drop image here<br>or click to upload
-    </label>
-    <div id="img-name"></div>
-    <div class="ctrl">
-      <label>Position X <span class="val" id="v-px">0</span>px</label>
-      <input type="range" id="sl-px" min="-600" max="600" value="0" />
-    </div>
-    <div class="ctrl">
-      <label>Position Y <span class="val" id="v-py">0</span>px</label>
-      <input type="range" id="sl-py" min="-600" max="600" value="0" />
-    </div>
-    <div class="ctrl">
-      <label>Scale <span class="val" id="v-sc">100</span>%</label>
-      <input type="range" id="sl-sc" min="10" max="400" value="100" step="1" />
-    </div>
-    <div class="toggle" style="margin-top:14px;">
-      <label>Show image under dots</label>
-      <div class="tog-sw" id="tog-img"></div>
-    </div>
-  </div>
-
-  <!-- Adjust -->
-  <div class="section">
-    <div class="section-title">Adjust</div>
-    <div class="ctrl">
-      <label>Brightness <span class="val" id="v-br">0</span></label>
-      <input type="range" id="sl-br" min="-100" max="100" value="0" />
-    </div>
-    <div class="ctrl">
-      <label>Contrast <span class="val" id="v-co">1.00</span>×</label>
-      <input type="range" id="sl-co" min="0.1" max="3" value="1" step="0.05" />
-    </div>
-    <div class="ctrl">
-      <label>Gamma <span class="val" id="v-ga">1.00</span></label>
-      <input type="range" id="sl-ga" min="0.2" max="3" value="1" step="0.05" />
-    </div>
-    <div class="ctrl">
-      <label>Pre-blur <span class="val" id="v-bl">0</span>px</label>
-      <input type="range" id="sl-bl" min="0" max="12" value="0" step="0.5" />
-    </div>
-  </div>
-
-  <!-- Grid -->
-  <div class="section">
-    <div class="section-title">Grid</div>
-    <div class="ctrl">
-      <label>Spacing <span class="val" id="v-sp">10</span>px</label>
-      <input type="range" id="sl-sp" min="3" max="50" value="10" step="0.5" />
-    </div>
-    <div class="ctrl">
-      <label>Angle <span class="val" id="v-an">22</span>°</label>
-      <input type="range" id="sl-an" min="0" max="89" value="22" step="1" />
-    </div>
-    <div class="ctrl">
-      <label>Pattern</label>
-      <select id="sel-pat">
-        <option value="square">Square</option>
-        <option value="hex">Hexagonal</option>
-        <option value="random">Random scatter</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- Dots -->
-  <div class="section">
-    <div class="section-title">Dots</div>
-
-    <div class="toggle" style="margin-bottom:14px;">
-      <label>Uniform dots</label>
-      <div class="tog-sw" id="tog-uni"></div>
-    </div>
-
-    <div id="var-size-ctrls">
-      <div class="ctrl">
-        <label>Max size <span class="val" id="v-ms">7</span>px</label>
-        <input type="range" id="sl-ms" min="1" max="30" value="7" step="0.5" />
-      </div>
-      <div class="ctrl">
-        <label>Min size <span class="val" id="v-mn">0</span>px</label>
-        <input type="range" id="sl-mn" min="0" max="10" value="0" step="0.25" />
-      </div>
-    </div>
-
-    <div id="uni-size-ctrls" style="display:none">
-      <div class="ctrl">
-        <label>Dot size <span class="val" id="v-sz">3.5</span>px</label>
-        <input type="range" id="sl-sz" min="0.5" max="20" value="3.5" step="0.25" />
-      </div>
-      <div class="ctrl">
-        <label>Coverage <span class="val" id="v-cov">1.00</span>×</label>
-        <input type="range" id="sl-cov" min="0.1" max="3" value="1" step="0.05" />
-      </div>
-    </div>
-
-    <div class="ctrl">
-      <label>Position jitter <span class="val" id="v-jt">1.5</span>px</label>
-      <input type="range" id="sl-jt" min="0" max="20" value="1.5" step="0.25" />
-    </div>
-    <div class="ctrl">
-      <label>Size variance <span class="val" id="v-sv">1.5</span>px</label>
-      <input type="range" id="sl-sv" min="0" max="10" value="1.5" step="0.25" />
-    </div>
-    <div class="ctrl">
-      <label>Dropout <span class="val" id="v-do">0</span>%</label>
-      <input type="range" id="sl-do" min="0" max="70" value="0" step="1" />
-    </div>
-    <div class="toggle">
-      <label>Organic shape</label>
-      <div class="tog-sw" id="tog-org"></div>
-    </div>
-    <div class="toggle">
-      <label>Invert (light = big dot)</label>
-      <div class="tog-sw" id="tog-inv"></div>
-    </div>
-  </div>
-
-  <!-- Color -->
-  <div class="section">
-    <div class="section-title">Color</div>
-    <div class="color-row">
-      <span class="color-label">Dots</span>
-      <div class="color-swatch" id="sw-dot" style="background:#1c1212">
-        <input type="color" class="native-picker" id="cp-dot" value="#1c1212" />
-      </div>
-      <input type="text" class="color-hex" id="hex-dot" value="#1c1212" maxlength="7" />
-    </div>
-    <div class="color-row">
-      <span class="color-label">Background</span>
-      <div class="color-swatch" id="sw-bg" style="background:#6ec4c0">
-        <input type="color" class="native-picker" id="cp-bg" value="#6ec4c0" />
-      </div>
-      <input type="text" class="color-hex" id="hex-bg" value="#6ec4c0" maxlength="7" />
-    </div>
-    <div class="toggle" style="margin-top:12px;">
-      <label>Background</label>
-      <div class="tog-sw" id="tog-bg"></div>
-    </div>
-  </div>
-
-  <!-- Export -->
-  <div class="section">
-    <div class="section-title">Export</div>
-    <div class="ctrl">
-      <label>Resolution</label>
-      <select id="sel-res">
-        <option value="1920x1080">1920 × 1080</option>
-        <option value="2560x1440">2560 × 1440</option>
-        <option value="3840x2160">3840 × 2160</option>
-        <option value="1080x1080">1080 × 1080 — Square</option>
-        <option value="1080x1350">1080 × 1350 — Portrait</option>
-        <option value="1080x1920">1080 × 1920 — Story</option>
-        <option value="custom">Custom…</option>
-      </select>
-      <div class="custom-res-wrap" id="custom-res-wrap">
-        <div class="custom-res-row">
-          <input type="number" id="inp-cw" value="1920" min="100" max="8000" placeholder="Width" />
-          <span class="custom-res-sep">×</span>
-          <input type="number" id="inp-ch" value="1080" min="100" max="8000" placeholder="Height" />
+  <!-- ═══ STAGE ═══ -->
+  <div class="hty-stage">
+    <div id="canvas-wrap">
+      <svg id="c" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMidYMid meet">
+        <rect id="svg-bg" x="0" y="0" />
+        <image id="svg-img" x="0" y="0" preserveAspectRatio="none" style="display:none" />
+        <path id="svg-dots" fill-rule="nonzero" />
+      </svg>
+      <div id="empty-state">
+        <div class="empty-dot-grid">
+          <div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div>
+          <div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div>
+          <div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div>
+          <div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div>
         </div>
+        <div class="empty-text">Drop an image to begin</div>
       </div>
     </div>
-    <button class="btn accent" id="btn-svg" disabled>↓ Export SVG</button>
-    <button class="btn ghost" id="btn-png" disabled>↓ Export PNG</button>
-    <button class="btn ghost" id="btn-png-alpha" disabled>↓ PNG + α</button>
-    <button class="btn ghost" id="btn-reseed">↺ Re-randomize</button>
-
-    <div style="height:1px;background:var(--line);margin:12px 0"></div>
-    <div class="ctrl">
-      <label>Seq frames <span class="val" id="v-seq-n">24</span></label>
-      <input type="range" id="sl-seq-n" min="6" max="120" value="24" step="6"/>
-    </div>
-    <button class="btn ghost" id="btn-seq-alpha" disabled>↓ PNG Sequence + α</button>
-    <p style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.6;">Transparent bg — varies random seed per frame. Import as image sequence in AE/Premiere.</p>
   </div>
-</div>
 
-<!-- SVG canvas -->
-<div id="canvas-wrap">
-  <svg id="c" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMidYMid meet">
-    <rect id="svg-bg" x="0" y="0" />
-    <image id="svg-img" x="0" y="0" preserveAspectRatio="none" style="display:none" />
-    <path id="svg-dots" fill-rule="nonzero" />
-  </svg>
-  <div id="empty-state">
-    <div class="empty-dot-grid">
-      <div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div>
-      <div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div>
-      <div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div>
-      <div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div><div class="empty-dot"></div>
+  <!-- ═══ DOCK ═══ -->
+  <div class="hty-dock">
+
+    <div class="hty-rail">
+      <button class="tab active" data-tab="compose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="13" cy="18" r="1.6" fill="currentColor" stroke="none"/></svg>Compose</button>
+      <button class="tab" data-tab="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Export</button>
     </div>
-    <div class="empty-text">Drop an image to begin</div>
-  </div>
-</div>
 
-<script>
+    <div class="hty-panel">
+      <div class="hty-panel-inner">
+
+        <!-- ── COMPOSE ── -->
+        <div class="panel-grid" data-tab-panel="compose">
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5L5 20"/></svg><span class="lbl">Image</span></div>
+            <label class="upload-zone" id="upload-zone"><input type="file" id="file-input" accept="image/*" />Drop image here<br>or click to upload</label>
+            <div id="img-name"></div>
+            <div class="field"><div class="field-head"><span class="name">Position X</span><span class="val"><span class="num" id="v-px">0</span> px</span></div><input type="range" id="sl-px" min="-600" max="600" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Position Y</span><span class="val"><span class="num" id="v-py">0</span> px</span></div><input type="range" id="sl-py" min="-600" max="600" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Scale</span><span class="val"><span class="num" id="v-sc">100</span>%</span></div><input type="range" id="sl-sc" min="10" max="400" value="100" step="1" /></div>
+            <div class="switch"><span class="name">Show image under dots</span><div class="tog-sw" id="tog-img"></div></div>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg><span class="lbl">Adjust</span></div>
+            <div class="field"><div class="field-head"><span class="name">Brightness</span><span class="val num" id="v-br">0</span></div><input type="range" id="sl-br" min="-100" max="100" value="0" /></div>
+            <div class="field"><div class="field-head"><span class="name">Contrast</span><span class="val"><span class="num" id="v-co">1.00</span>×</span></div><input type="range" id="sl-co" min="0.1" max="3" value="1" step="0.05" /></div>
+            <div class="field"><div class="field-head"><span class="name">Gamma</span><span class="val num" id="v-ga">1.00</span></div><input type="range" id="sl-ga" min="0.2" max="3" value="1" step="0.05" /></div>
+            <div class="field"><div class="field-head"><span class="name">Pre-blur</span><span class="val"><span class="num" id="v-bl">0</span> px</span></div><input type="range" id="sl-bl" min="0" max="12" value="0" step="0.5" /></div>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg><span class="lbl">Grid</span></div>
+            <div class="field"><div class="field-head"><span class="name">Spacing</span><span class="val"><span class="num" id="v-sp">10</span> px</span></div><input type="range" id="sl-sp" min="3" max="50" value="10" step="0.5" /></div>
+            <div class="field"><div class="field-head"><span class="name">Angle</span><span class="val"><span class="num" id="v-an">22</span>°</span></div><input type="range" id="sl-an" min="0" max="89" value="22" step="1" /></div>
+            <div class="field"><span class="name">Pattern</span>
+              <select id="sel-pat" style="display:none">
+                <option value="square">Square</option>
+                <option value="hex">Hexagonal</option>
+                <option value="random">Random scatter</option>
+              </select>
+              <div class="hty-select" data-native="sel-pat">
+                <button class="hty-select-btn"><span class="hty-select-val">Square</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+                <div class="hty-select-menu" role="listbox">
+                  <button class="hty-opt" data-value="square">Square</button>
+                  <button class="hty-opt" data-value="hex">Hexagonal</button>
+                  <button class="hty-opt" data-value="random">Random scatter</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="7" r="1"/><circle cx="12" cy="6" r="1"/><circle cx="18" cy="8" r="1"/><circle cx="8" cy="13" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="19" cy="16" r="1"/><circle cx="6" cy="18" r="1"/><circle cx="12" cy="18" r="1"/></svg><span class="lbl">Dots</span></div>
+            <div class="switch"><span class="name">Uniform dots</span><div class="tog-sw" id="tog-uni"></div></div>
+            <div id="var-size-ctrls">
+              <div class="field"><div class="field-head"><span class="name">Max size</span><span class="val"><span class="num" id="v-ms">7</span> px</span></div><input type="range" id="sl-ms" min="1" max="30" value="7" step="0.5" /></div>
+              <div class="field"><div class="field-head"><span class="name">Min size</span><span class="val"><span class="num" id="v-mn">0</span> px</span></div><input type="range" id="sl-mn" min="0" max="10" value="0" step="0.25" /></div>
+            </div>
+            <div id="uni-size-ctrls" style="display:none">
+              <div class="field"><div class="field-head"><span class="name">Dot size</span><span class="val"><span class="num" id="v-sz">3.5</span> px</span></div><input type="range" id="sl-sz" min="0.5" max="20" value="3.5" step="0.25" /></div>
+              <div class="field"><div class="field-head"><span class="name">Coverage</span><span class="val"><span class="num" id="v-cov">1.00</span>×</span></div><input type="range" id="sl-cov" min="0.1" max="3" value="1" step="0.05" /></div>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Position jitter</span><span class="val"><span class="num" id="v-jt">1.5</span> px</span></div><input type="range" id="sl-jt" min="0" max="20" value="1.5" step="0.25" /></div>
+            <div class="field"><div class="field-head"><span class="name">Size variance</span><span class="val"><span class="num" id="v-sv">1.5</span> px</span></div><input type="range" id="sl-sv" min="0" max="10" value="1.5" step="0.25" /></div>
+            <div class="field"><div class="field-head"><span class="name">Dropout</span><span class="val"><span class="num" id="v-do">0</span>%</span></div><input type="range" id="sl-do" min="0" max="70" value="0" step="1" /></div>
+            <div class="switch"><span class="name">Organic shape</span><div class="tog-sw" id="tog-org"></div></div>
+            <div class="switch"><span class="name">Invert (light = big dot)</span><div class="tog-sw" id="tog-inv"></div></div>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 22a10 10 0 1 1 0-20c5 0 7 3 7 6 0 2.5-2 3-4 3h-3c-2 0-3 1-3 2.5S10 22 12 22z"/></svg><span class="lbl">Colour</span></div>
+            <div class="color-row">
+              <span class="color-label">Dots</span>
+              <div class="color-swatch" id="sw-dot" style="background:#1c1212"><input type="color" class="native-picker" id="cp-dot" value="#1c1212" /></div>
+              <input type="text" class="color-hex" id="hex-dot" value="#1c1212" maxlength="7" />
+            </div>
+            <div class="color-row">
+              <span class="color-label">Background</span>
+              <div class="color-swatch" id="sw-bg" style="background:#6ec4c0"><input type="color" class="native-picker" id="cp-bg" value="#6ec4c0" /></div>
+              <input type="text" class="color-hex" id="hex-bg" value="#6ec4c0" maxlength="7" />
+            </div>
+            <div class="switch"><span class="name">Show background</span><div class="tog-sw" id="tog-bg"></div></div>
+          </div>
+
+        </div><!-- /compose -->
+
+        <!-- ── EXPORT ── -->
+        <div class="panel-grid" data-tab-panel="export" style="display:none">
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/></svg><span class="lbl">Output</span></div>
+            <div class="field"><span class="name">Resolution</span>
+              <select id="sel-res" style="display:none">
+                <option value="1920x1080">1920 × 1080</option>
+                <option value="2560x1440">2560 × 1440</option>
+                <option value="3840x2160">3840 × 2160</option>
+                <option value="1080x1080">1080 × 1080 — Square</option>
+                <option value="1080x1350">1080 × 1350 — Portrait</option>
+                <option value="1080x1920">1080 × 1920 — Story</option>
+                <option value="custom">Custom…</option>
+              </select>
+              <div class="hty-select" data-native="sel-res">
+                <button class="hty-select-btn"><span class="hty-select-val">1920 × 1080</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+                <div class="hty-select-menu" role="listbox">
+                  <button class="hty-opt" data-value="1920x1080">1920 × 1080</button>
+                  <button class="hty-opt" data-value="2560x1440">2560 × 1440</button>
+                  <button class="hty-opt" data-value="3840x2160">3840 × 2160</button>
+                  <button class="hty-opt" data-value="1080x1080">1080 × 1080 · Square</button>
+                  <button class="hty-opt" data-value="1080x1350">1080 × 1350 · Portrait</button>
+                  <button class="hty-opt" data-value="1080x1920">1080 × 1920 · Story</button>
+                  <button class="hty-opt" data-value="custom">Custom…</button>
+                </div>
+              </div>
+              <div class="custom-res-wrap" id="custom-res-wrap">
+                <div class="custom-res-row">
+                  <input type="number" id="inp-cw" value="1920" min="100" max="8000" placeholder="Width" />
+                  <span class="custom-res-sep">×</span>
+                  <input type="number" id="inp-ch" value="1080" min="100" max="8000" placeholder="Height" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg><span class="lbl">Files</span></div>
+            <button class="btn full" id="btn-svg" disabled>↓ Export SVG</button>
+            <button class="btn ghost full" id="btn-png" disabled>↓ Export PNG</button>
+            <button class="btn ghost full" id="btn-png-alpha" disabled>↓ PNG + α</button>
+          </div>
+
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg><span class="lbl">Sequence</span></div>
+            <div class="field"><div class="field-head"><span class="name">Frames</span><span class="val num" id="v-seq-n">24</span></div><input type="range" id="sl-seq-n" min="6" max="120" value="24" step="6" /></div>
+            <button class="btn ghost full" id="btn-seq-alpha" disabled>↓ PNG Sequence + α</button>
+            <p class="seq-note">Transparent bg — varies random seed per frame. Import as image sequence in AE / Premiere.</p>
+          </div>
+
+        </div><!-- /export -->
+
+      </div>
+    </div>
+
+    <div class="hty-main">
+      <div class="hty-chip"><div class="nm">Halftone</div><div class="lbl">Image</div></div>
+      <button class="btn ghost full" id="btn-reseed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>Re-randomize</button>
+    </div>
+
+  </div>
+
+  <script src="../../shared/hty-ui.js"></script>
+  <script>
 (function () {
 'use strict';
 
@@ -505,6 +382,8 @@ function fitCanvasToImage() {
 
   updateViewBox();
   resizeDisplay();
+  // keep the custom Resolution dropdown label in sync with this programmatic change
+  document.getElementById('sel-res').dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 function loadFile(file) {
@@ -857,12 +736,56 @@ document.getElementById('btn-seq-alpha').addEventListener('click', async () => {
   btn.textContent = '↓ PNG Sequence + α';
 });
 
+// ── Pan (drag) + zoom (scroll, toward cursor) the image across the canvas ──────
+(function () {
+  let dragging = false, sx = 0, sy = 0, startPX = 0, startPY = 0;
+  const slpx = document.getElementById('sl-px'), slpy = document.getElementById('sl-py'), slsc = document.getElementById('sl-sc');
+  const clampSl = (sl, v) => Math.max(+sl.min, Math.min(+sl.max, v));
+  const out = (id, v) => { document.getElementById(id).textContent = v; };
+  wrap.addEventListener('pointermove', e => {
+    if (!dragging) { wrap.style.cursor = img ? 'grab' : 'default'; return; }
+    const rect = svgEl.getBoundingClientRect();
+    const sc = exportW / rect.width;                 // screen px → export-space px
+    const nx = clampSl(slpx, startPX + (e.clientX - sx) * sc);
+    const ny = clampSl(slpy, startPY + (e.clientY - sy) * sc);
+    slpx.value = nx; slpy.value = ny;
+    out('v-px', Math.round(nx)); out('v-py', Math.round(ny));
+    render();
+  });
+  wrap.addEventListener('pointerdown', e => {
+    if (!img) return;
+    dragging = true; sx = e.clientX; sy = e.clientY;
+    startPX = +slpx.value; startPY = +slpy.value;
+    wrap.style.cursor = 'grabbing'; wrap.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  const endDrag = () => { dragging = false; wrap.style.cursor = img ? 'grab' : 'default'; };
+  wrap.addEventListener('pointerup', endDrag);
+  wrap.addEventListener('pointercancel', endDrag);
+  wrap.addEventListener('wheel', e => {
+    if (!img) return;
+    e.preventDefault();
+    const rect = svgEl.getBoundingClientRect();
+    const ex = (e.clientX - rect.left) * (exportW / rect.width);   // cursor → export coords
+    const ey = (e.clientY - rect.top)  * (exportH / rect.height);
+    const s0 = (+slsc.value) / 100;
+    const s1 = Math.max(+slsc.min / 100, Math.min(+slsc.max / 100, s0 * Math.exp(-e.deltaY * 0.0015)));
+    if (s1 === s0) return;
+    const panX = exportW / 2 + (+slpx.value), panY = exportH / 2 + (+slpy.value);
+    const nPanX = ex - (ex - panX) * (s1 / s0), nPanY = ey - (ey - panY) * (s1 / s0);
+    slsc.value = Math.round(s1 * 100);
+    slpx.value = clampSl(slpx, Math.round(nPanX - exportW / 2));
+    slpy.value = clampSl(slpy, Math.round(nPanY - exportH / 2));
+    out('v-sc', Math.round(s1 * 100)); out('v-px', Math.round(+slpx.value)); out('v-py', Math.round(+slpy.value));
+    render();
+  }, { passive: false });
+})();
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 updateViewBox();
 resizeDisplay();
 render();
 
 })();
-</script>
+  </script>
 </body>
 </html>

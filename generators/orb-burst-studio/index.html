@@ -128,20 +128,59 @@ body.warp-mode .burst-only { display: none; }
 }
 #webgl-fallback.show { display: flex; }
 </style>
+<link rel="stylesheet" href="../../shared/hty-ui.css" />
+<style>
+/* ── Orb Burst · tool-specific styling on top of the HTY system ──────────────── */
+.hty #canvas-wrap { width: 100%; height: 100%; flex: none; background: transparent; }
+.hty #c { background: #0e0e0e; }
+.hty #webgl-fallback { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; padding: 24px; text-align: center; font-size: 13px; color: var(--ink-2); }
+.hty #webgl-fallback.show { display: flex; }
+/* old section/ctrl markup re-skinned as system groups/fields */
+.hty .section { display: flex; flex-direction: column; gap: 11px; background: transparent; border-radius: 0; padding: 0; margin: 0; }
+.hty .section-title { display: flex; align-items: center; gap: 6px; background: transparent; color: var(--ink-3); padding: 0; margin: 0; border-radius: 0; font-family: var(--mono); font-size: 9px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; }
+.hty .section-title svg { width: 12px; height: 12px; color: var(--ink-3); flex-shrink: 0; }
+.hty .ctrl { display: flex; flex-direction: column; gap: 7px; margin: 0; }
+.hty .ctrl > label { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 500; margin: 0; }
+.hty .ctrl .val { color: var(--ink-2); font-size: 10.5px; font-family: var(--mono); }
+.hty .hint { font-size: 10.5px; color: var(--ink-2); line-height: 1.5; margin: 0; }
+.hty .section > .btn { width: 100%; justify-content: center; }
+/* mode pills → segmented */
+.hty .pill-row { display: flex; gap: 4px; background: var(--soft); border-radius: var(--r-pill); padding: 3px; }
+.hty .mode-pill { flex: 1; background: transparent; color: var(--ink-2); border: none; border-radius: var(--r-pill); padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .18s; }
+.hty .mode-pill.active { background: var(--ink); color: #fff; }
+/* checkboxes + fieldsets */
+.hty input[type=checkbox] { accent-color: var(--ink); width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+.hty .hub-check, .hty .ctrl > label.hub-check { display: flex; align-items: center; justify-content: flex-start; gap: 8px; cursor: pointer; font-size: 11.5px; font-weight: 500; }
+.hty fieldset.fset { border: none; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 11px; }
+.hty fieldset.fset:disabled { opacity: .4; pointer-events: none; }
+/* colour swatches */
+.hty .swatch-wrap { position: relative; width: 40px; height: 32px; border: 1px solid var(--line-2); border-radius: var(--r-md); overflow: hidden; flex-shrink: 0; }
+.hty .swatch-wrap input[type=color] { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); border: none; cursor: pointer; padding: 0; }
+.hty .col-swatches { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px; }
+.hty .col-swatch { position: relative; }
+.hty .col-swatch .swatch-wrap { width: 32px; height: 32px; border-radius: var(--r-sm); }
+.hty .col-del { position: absolute; top: -5px; right: -5px; width: 15px; height: 15px; background: var(--ink); color: #fff; border: none; border-radius: 50%; font-size: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
+.hty .col-add-btn { width: 32px; height: 32px; background: transparent; border: 1px dashed var(--line-2); border-radius: var(--r-sm); color: var(--ink-3); font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: inherit; flex-shrink: 0; }
+.hty .col-add-btn:hover { border-color: var(--ink); color: var(--ink); }
+.hty #export-status { font-size: 10.5px; color: var(--ink-2); margin-top: 6px; min-height: 2.4em; line-height: 1.5; }
+/* mode-conditional visibility (JS toggles body.warp-mode) */
+.hty .warp-only { display: none; }
+body.warp-mode .warp-only { display: flex; }
+body.warp-mode .burst-only { display: none; }
+</style>
 </head>
-<body>
+<body class="hty">
 
-<div id="sidebar">
-  <div class="brand-row">
-    <div>
-      <div class="brand">HEAR THE YOUTH<span class="dot"></span></div>
-      <div class="brand-sub">Orb Burst Studio</div>
-    </div>
+<div class="hty-dock">
+  <div class="hty-rail">
+    <div class="hty-chip"><div class="nm">Orb Burst</div><div class="lbl">Generator</div></div>
   </div>
+  <div class="hty-panel"><div class="hty-panel-inner">
+    <div class="panel-grid">
 
   <!-- MODE -->
   <div class="section">
-    <div class="section-title">Mode</div>
+    <div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/><circle cx="12" cy="12" r="3"/></svg>Mode</div>
     <div class="pill-row">
       <button class="mode-pill active" id="pill-burst">3D Burst</button>
       <button class="mode-pill" id="pill-warp">Warp Tunnel</button>
@@ -150,7 +189,7 @@ body.warp-mode .burst-only { display: none; }
 
   <!-- CANVAS -->
   <div class="section">
-    <div class="section-title">Canvas</div>
+    <div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/></svg>Canvas</div>
     <div class="ctrl">
       <label>Output size</label>
       <select id="sel-canvas">
@@ -174,7 +213,7 @@ body.warp-mode .burst-only { display: none; }
 
   <!-- LOOK -->
   <div class="section">
-    <div class="section-title">Look</div>
+    <div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>Look</div>
     <div class="ctrl">
       <label>Radial streaks <span class="val" id="v-n">400</span></label>
       <input type="range" id="sl-n" min="100" max="8000" step="100" value="400" />
@@ -203,7 +242,7 @@ body.warp-mode .burst-only { display: none; }
 
   <!-- SHAPE -->
   <div class="section">
-    <div class="section-title">Shape</div>
+    <div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12c3-7 6 7 9 0s6-7 9 0"/></svg>Shape</div>
     <div class="ctrl">
       <label>Spiral / curl <span class="val" id="v-spiral">0.00</span></label>
       <input type="range" id="sl-spiral" min="-100" max="100" value="0" />
@@ -233,7 +272,7 @@ body.warp-mode .burst-only { display: none; }
 
   <!-- MOTION -->
   <div class="section">
-    <div class="section-title">Motion</div>
+    <div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h15M3 12h11M3 16h8"/><path d="M16 12l5 0M18 9l3 3-3 3"/></svg>Motion</div>
     <div class="ctrl">
       <label>Radial speed <span class="val" id="v-sp">0.05</span></label>
       <input type="range" id="sl-sp" min="5" max="200" value="5" />
@@ -254,7 +293,7 @@ body.warp-mode .burst-only { display: none; }
 
   <!-- BLOOM -->
   <div class="section">
-    <div class="section-title">Bloom</div>
+    <div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>Bloom</div>
     <div class="ctrl">
       <label>Bloom mix <span class="val" id="v-bl">0.37</span></label>
       <input type="range" id="sl-bl" min="0" max="150" value="37" />
@@ -267,7 +306,7 @@ body.warp-mode .burst-only { display: none; }
 
   <!-- LENS -->
   <div class="section">
-    <div class="section-title">Lens</div>
+    <div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Lens</div>
     <div class="ctrl">
       <label>Anamorphic streak <span class="val" id="v-ana">0%</span></label>
       <input type="range" id="sl-ana" min="0" max="150" value="0" />
@@ -300,7 +339,7 @@ body.warp-mode .burst-only { display: none; }
 
   <!-- CENTER CORE -->
   <div class="section">
-    <div class="section-title">Center core</div>
+    <div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>Center core</div>
     <div class="ctrl">
       <label class="hub-check"><input type="checkbox" id="ck-hotcore" /> Hot star (overexposed center)</label>
     </div>
@@ -341,7 +380,7 @@ body.warp-mode .burst-only { display: none; }
 
   <!-- COLORS -->
   <div class="section">
-    <div class="section-title">Colors</div>
+    <div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 22a10 10 0 1 1 0-20c5 0 7 3 7 6 0 2.5-2 3-4 3h-3c-2 0-3 1-3 2.5S10 22 12 22z"/></svg>Colors</div>
     <div class="ctrl">
       <label>Layer blend</label>
       <select id="sel-blend">
@@ -405,7 +444,7 @@ body.warp-mode .burst-only { display: none; }
 
   <!-- FILM GRAIN -->
   <div class="section">
-    <div class="section-title">Film grain</div>
+    <div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="7" r="1"/><circle cx="12" cy="6" r="1"/><circle cx="18" cy="8" r="1"/><circle cx="8" cy="13" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="19" cy="16" r="1"/><circle cx="6" cy="18" r="1"/><circle cx="12" cy="18" r="1"/></svg>Film grain</div>
     <div class="ctrl">
       <label class="hub-check"><input type="checkbox" id="ck-grain" /> Enable grain</label>
     </div>
@@ -419,7 +458,7 @@ body.warp-mode .burst-only { display: none; }
 
   <!-- EXPORT -->
   <div class="section">
-    <div class="section-title">Export</div>
+    <div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>Export</div>
     <button type="button" class="btn ghost" id="btn-png">Save PNG (current frame)</button>
     <div class="ctrl" style="margin-top:12px">
       <label>Sequence — frames</label>
@@ -453,13 +492,19 @@ body.warp-mode .burst-only { display: none; }
     <p class="hint"><strong>Video:</strong> MP4 when supported, otherwise WebM.</p>
     <div id="export-status"></div>
   </div>
+
+    </div>
+  </div></div>
 </div>
 
-<div id="canvas-wrap">
-  <canvas id="c"></canvas>
-  <div id="webgl-fallback"></div>
+<div class="hty-stage">
+  <div id="canvas-wrap">
+    <canvas id="c"></canvas>
+    <div id="webgl-fallback"></div>
+  </div>
 </div>
 
+<script src="../../shared/hty-ui.js"></script>
 <script>
 (function () {
   'use strict';
