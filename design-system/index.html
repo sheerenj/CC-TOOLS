@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HTY · Tools UI Kit</title>
+<!-- ════════════════════════════════════════════════════════════════════════
+     LIVING DEMO of the master design system. It links the two shared files —
+     this is exactly how each tool will consume it once migrated:
+       <link rel="stylesheet" href="../shared/hty-ui.css">
+       …markup scoped under <body class="hty">…
+       <script src="../shared/hty-ui.js"></script>
+     ════════════════════════════════════════════════════════════════════════ -->
+<link rel="stylesheet" href="../shared/hty-ui.css"/>
+</head>
+<body class="hty">
+
+  <!-- ═══ STAGE (canvas) ═══ -->
+  <div class="hty-stage">
+    <div class="hty-tele">
+      <div class="read"><span class="lbl">Cursor</span><b data-cursor>000 · 000</b></div>
+      <div class="read"><span class="lbl">Frame</span><b data-size-read>1080 × 1440</b></div>
+      <div style="display:flex;align-items:center;gap:6px;"><span class="hty-live"></span><span class="lbl">Live</span></div>
+    </div>
+    <!-- .hty-canvas → pan / wheel-zoom · .hty-frame → sized artboard · [data-draggable] → Select-tool movable -->
+    <div class="hty-canvas">
+      <div class="hty-frame" data-w="1080" data-h="1440">
+        <div class="hty-hero" data-draggable style="position:absolute;left:14%;top:25%;width:72%;display:flex;flex-direction:column;gap:18px;">
+      <svg viewBox="0 0 540 190" style="width:100%;height:auto;overflow:visible;" aria-hidden="true">
+        <line stroke="rgba(0,0,0,.10)" x1="0" y1="95" x2="540" y2="95"/>
+        <line stroke="rgba(0,0,0,.10)" x1="90"  y1="0" x2="90"  y2="190" opacity=".5"/>
+        <line stroke="rgba(0,0,0,.10)" x1="180" y1="0" x2="180" y2="190" opacity=".5"/>
+        <line stroke="rgba(0,0,0,.10)" x1="270" y1="0" x2="270" y2="190" opacity=".5"/>
+        <line stroke="rgba(0,0,0,.10)" x1="360" y1="0" x2="360" y2="190" opacity=".5"/>
+        <line stroke="rgba(0,0,0,.10)" x1="450" y1="0" x2="450" y2="190" opacity=".5"/>
+        <path id="curvefill" fill="rgba(0,0,0,.05)"/>
+        <path id="curvepath" fill="none" stroke="#0c0c0c" stroke-width="1.5"/>
+        <g id="nodes"></g>
+      </svg>
+      <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--ink-3);">
+        <span>20</span><span>100</span><span>500</span><span>1K</span><span>5K</span><span>20K</span>
+      </div>
+    </div>
+        <!-- movable / scalable objects, positioned in artboard pixels -->
+        <div data-draggable style="position:absolute;left:120px;top:150px;width:150px;height:150px;border-radius:50%;background:#0c0c0c;"></div>
+        <div data-draggable style="position:absolute;left:740px;top:1090px;width:160px;height:160px;border:2px solid #0c0c0c;border-radius:22px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DOCK ═══ -->
+  <div class="hty-dock">
+
+    <!-- top rail -->
+    <div class="hty-rail">
+      <button class="tab active" data-tab="compose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="13" cy="18" r="1.6" fill="currentColor" stroke="none"/></svg>Compose</button>
+      <button class="tab" data-tab="texture"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Texture</button>
+      <button class="tab" data-tab="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Export</button>
+      <div class="sp"></div>
+      <button class="vbtn" title="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg></button>
+      <button class="vbtn" title="Redo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M21 13a9 9 0 1 1-3-7.7L21 8"/></svg></button>
+      <span class="kbd">⌘Z</span>
+      <div class="hty-rail-sep"></div>
+      <div class="hty-zoom">
+        <button class="vbtn" data-zoom="out" title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+        <b data-zoom-level>100%</b>
+        <button class="vbtn" data-zoom="in" title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="vbtn" data-zoom="reset" title="Fit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+      </div>
+      <div class="hty-rail-sep"></div>
+      <button class="vbtn" title="Grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></button>
+      <button class="vbtn" title="Snap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 4v8a6 6 0 0 0 12 0V4M6 4H3m3 0h2m10 0h3m-3 0h-2"/></svg></button>
+    </div>
+
+    <!-- expandable panel -->
+    <div class="hty-panel">
+      <div class="hty-panel-inner">
+       <div class="panel-grid" data-tab-panel="compose">
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="lbl">Inputs</span></div>
+          <div class="field"><div class="field-head"><span class="name">Scale</span><span class="val num" data-out="scale">1.40</span></div><input type="range" min="0" max="4" step="0.01" value="1.4" data-bind="scale"/></div>
+          <div class="field"><div class="field-head"><span class="name">Density</span><span class="val num" data-out="density">62</span></div><input type="range" min="0" max="100" value="62" data-bind="density"/></div>
+          <div class="field"><span class="name">Preset</span>
+            <div class="hty-select">
+              <button class="hty-select-btn"><span class="hty-select-val">Studio · Default</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+              <div class="hty-select-menu" role="listbox">
+                <button class="hty-opt is-selected">Studio · Default</button>
+                <button class="hty-opt">High Contrast</button>
+                <button class="hty-opt">Soft Bloom</button>
+                <button class="hty-opt">Wireframe</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg><span class="lbl">Numeric</span></div>
+          <div class="field"><span class="name">Seed</span><div class="stepper"><button data-step="-1">−</button><div class="vs"></div><input type="number" value="2048"/><div class="vs"></div><button data-step="1">+</button></div></div>
+          <div class="field"><span class="name">Label</span><input type="text" value="untitled-01" spellcheck="false"/></div>
+          <div class="field"><span class="name">Iterations</span><input type="number" value="120"/></div>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg><span class="lbl">Transform</span></div>
+          <div data-transform style="display:flex;flex-direction:column;gap:8px;">
+            <div class="tf-row">
+              <label class="tf"><span class="g">X</span><input type="number" data-tf="x" data-scrub="1" data-step="1" value="0"/></label>
+              <label class="tf"><span class="g">Y</span><input type="number" data-tf="y" data-scrub="1" data-step="1" value="0"/></label>
+            </div>
+            <div class="tf-row">
+              <label class="tf"><span class="g">S</span><input type="number" data-tf="scale" data-scrub="1" data-min="1" data-max="800" data-step="1" value="100"/><i>%</i></label>
+              <label class="tf"><span class="g">R</span><input type="number" data-tf="rotate" data-scrub="1" data-step="1" value="0"/><i>°</i></label>
+            </div>
+          </div>
+          <p class="note">Select an object, then <b style="font-weight:500">drag a value left/right</b> to scrub, or double-click to type.</p>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/></svg><span class="lbl">Canvas</span></div>
+          <div class="field"><span class="name">Size</span>
+            <div class="hty-select" data-size-preset>
+              <button class="hty-select-btn"><span class="hty-select-val">1080 × 1440 · 3:4</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+              <div class="hty-select-menu" role="listbox">
+                <button class="hty-opt" data-value="1080x1080">1080 × 1080 · 1:1</button>
+                <button class="hty-opt" data-value="1080x1350">1080 × 1350 · 4:5</button>
+                <button class="hty-opt is-selected" data-value="1080x1440">1080 × 1440 · 3:4</button>
+                <button class="hty-opt" data-value="1080x1920">1080 × 1920 · 9:16</button>
+                <button class="hty-opt" data-value="1920x1080">1920 × 1080 · 16:9</button>
+                <button class="hty-opt" data-value="2048x2048">2048 × 2048 · 1:1</button>
+                <button class="hty-opt" data-value="custom">Custom…</button>
+              </div>
+            </div>
+          </div>
+          <div class="tf-row" data-size-custom style="display:none;">
+            <label class="tf"><span class="g">W</span><input type="number" data-size="w" data-scrub="2" data-min="1" data-step="1" value="1080"/></label>
+            <label class="tf"><span class="g">H</span><input type="number" data-size="h" data-scrub="2" data-min="1" data-step="1" value="1440"/></label>
+          </div>
+          <div class="field-head"><span class="val num" data-size-read>1080 × 1440</span><span class="lbl">px</span></div>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/></svg><span class="lbl">Choice</span></div>
+          <div class="field"><span class="name">Blend</span><div class="chips" data-radio><button class="chip active">Normal</button><button class="chip">Multiply</button><button class="chip">Screen</button><button class="chip">Overlay</button></div></div>
+          <div class="field" style="gap:9px;">
+            <div class="switch"><span class="name">Snap to grid</span><div class="track-sw on"></div></div>
+            <div class="switch"><span class="name">Symmetry</span><div class="track-sw"></div></div>
+            <label class="check on"><span class="box"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-6"/></svg></span>Show guides</label>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 22a10 10 0 1 1 0-20c5 0 7 3 7 6 0 2.5-2 3-4 3h-3c-2 0-3 1-3 2.5S10 22 12 22z"/></svg><span class="lbl">Colour</span></div>
+          <div class="field"><span class="name">Base</span><input type="color" value="#0c0c0c"/></div>
+          <div class="field"><span class="name">Palette</span>
+            <div class="palette">
+              <span class="swatch" style="background:#111"><span class="x">×</span></span>
+              <span class="swatch" style="background:#7d7d7a"><span class="x">×</span></span>
+              <span class="swatch" style="background:#cfcfca"><span class="x">×</span></span>
+              <span class="swatch" style="background:#fff"><span class="x">×</span></span>
+              <button class="add-swatch">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="3"/></svg><span class="lbl">Spatial · XY</span></div>
+          <div class="xypad" data-xy-out="xy"></div>
+          <div class="field-head"><span class="val num" data-out="xy">x 0.50 · y 0.50</span></div>
+        </div>
+
+        <div class="group" style="grid-column:span 2;">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14v6M9 4v16M14 9v11M19 6v14"/></svg><span class="lbl">Bands · drag vertical</span></div>
+          <div class="eq" data-eq='[{"hz":"20","v":0.5},{"hz":"60","v":0.66},{"hz":"150","v":0.82},{"hz":"400","v":0.46},{"hz":"1K","v":0.3},{"hz":"3K","v":0.5},{"hz":"8K","v":0.62},{"hz":"20K","v":0.54}]' data-eq-change="syncCurve"></div>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="lbl">Status</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <span class="pill ok"><span class="d"></span>Ready</span>
+            <span class="pill"><span class="d"></span>Idle</span>
+            <span class="pill warn"><span class="d"></span>Unsaved</span>
+          </div>
+          <div class="field"><div class="field-head"><span class="name">Render</span><span class="val num">74%</span></div><div class="meter"><i style="width:74%"></i></div></div>
+          <div class="btn-row"><button class="btn ghost sm">Reset</button><button class="btn sm">Apply</button></div>
+        </div>
+
+       </div><!-- /compose -->
+
+       <!-- ── TEXTURE ──────────────────────────────────────────────── -->
+       <div class="panel-grid" data-tab-panel="texture" style="display:none">
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="7" r="1"/><circle cx="12" cy="6" r="1"/><circle cx="18" cy="8" r="1"/><circle cx="8" cy="13" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="19" cy="16" r="1"/><circle cx="6" cy="18" r="1"/><circle cx="12" cy="18" r="1"/></svg><span class="lbl">Grain</span></div>
+          <div class="field"><div class="field-head"><span class="name">Amount</span><span class="val num" data-out="grain">22</span></div><input type="range" min="0" max="100" value="22" data-bind="grain"/></div>
+          <div class="field"><div class="field-head"><span class="name">Scale</span><span class="val num" data-out="grainsc">1.0</span></div><input type="range" min="0" max="4" step="0.1" value="1" data-bind="grainsc"/></div>
+          <div class="switch"><span class="name">Monochrome</span><div class="track-sw on"></div></div>
+        </div>
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5"/></svg><span class="lbl">Surface</span></div>
+          <div class="field"><span class="name">Blend</span>
+            <div class="hty-select">
+              <button class="hty-select-btn"><span class="hty-select-val">Overlay</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+              <div class="hty-select-menu" role="listbox"><button class="hty-opt">Normal</button><button class="hty-opt">Multiply</button><button class="hty-opt">Screen</button><button class="hty-opt is-selected">Overlay</button><button class="hty-opt">Soft Light</button></div>
+            </div>
+          </div>
+          <div class="field"><div class="field-head"><span class="name">Opacity</span><span class="val num" data-out="op">100</span></div><input type="range" min="0" max="100" value="100" data-bind="op"/></div>
+        </div>
+       </div><!-- /texture -->
+
+       <!-- ── EXPORT ───────────────────────────────────────────────── -->
+       <div class="panel-grid" data-tab-panel="export" style="display:none">
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0L8 7m4-4l4 4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg><span class="lbl">Output</span></div>
+          <div class="field"><span class="name">Type</span>
+            <div class="seg fill" data-switch><button class="active" data-case-btn="static">Static</button><button data-case-btn="motion">Motion</button></div>
+          </div>
+          <div class="field"><span class="name">Resolution</span>
+            <div class="seg fill" data-radio data-res><button class="active" data-mult="1">1×</button><button data-mult="2">2×</button><button data-mult="3">3×</button><button data-mult="4">4×</button></div>
+          </div>
+          <div class="field-head"><span class="name">Renders at</span><span class="val num"><span data-export-size>1080 × 1440</span> px</span></div>
+        </div>
+
+        <!-- STATIC -->
+        <div data-case="static">
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5L5 20"/></svg><span class="lbl">Image</span></div>
+            <div class="field"><span class="name">Format</span>
+              <div class="hty-select">
+                <button class="hty-select-btn"><span class="hty-select-val">PNG</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+                <div class="hty-select-menu" role="listbox"><button class="hty-opt is-selected">PNG</button><button class="hty-opt">JPG</button><button class="hty-opt">WEBP</button><button class="hty-opt">SVG</button><button class="hty-opt">PDF</button></div>
+              </div>
+            </div>
+            <div class="field"><div class="field-head"><span class="name">Quality</span><span class="val num" data-out="q">92</span></div><input type="range" min="1" max="100" value="92" data-bind="q"/></div>
+            <div class="field"><span class="name">Colour profile</span>
+              <div class="hty-select">
+                <button class="hty-select-btn"><span class="hty-select-val">sRGB</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+                <div class="hty-select-menu" role="listbox"><button class="hty-opt is-selected">sRGB</button><button class="hty-opt">Display P3</button><button class="hty-opt">Adobe RGB</button></div>
+              </div>
+            </div>
+          </div>
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z"/></svg><span class="lbl">Background</span></div>
+            <div class="switch"><span class="name">Transparent</span><div class="track-sw on"></div></div>
+            <div class="field"><span class="name">Matte</span><input type="color" value="#ffffff"/></div>
+            <div class="switch"><span class="name">Trim to content</span><div class="track-sw"></div></div>
+          </div>
+        </div>
+
+        <!-- MOTION -->
+        <div data-case="motion" style="display:none">
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg><span class="lbl">Video</span></div>
+            <div class="field"><span class="name">Format</span>
+              <div class="hty-select">
+                <button class="hty-select-btn"><span class="hty-select-val">MP4 · H.264</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+                <div class="hty-select-menu" role="listbox"><button class="hty-opt is-selected">MP4 · H.264</button><button class="hty-opt">WebM · VP9</button><button class="hty-opt">GIF</button><button class="hty-opt">PNG sequence</button><button class="hty-opt">Lottie · JSON</button></div>
+              </div>
+            </div>
+            <div class="tf-row"><label class="tf"><span class="g">Dur</span><input type="number" data-scrub="0.1" data-min="0.1" data-step="0.1" value="5"/><i>s</i></label></div>
+            <div class="field"><div class="field-head"><span class="name">Bitrate</span><span class="val num" data-out="br">12</span></div><input type="range" min="1" max="60" value="12" data-bind="br"/></div>
+          </div>
+          <div class="group">
+            <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg><span class="lbl">Playback</span></div>
+            <div class="field"><span class="name">Frame rate</span>
+              <div class="chips" data-radio><button class="chip">24</button><button class="chip active">30</button><button class="chip">60</button></div>
+            </div>
+            <div class="switch"><span class="name">Loop</span><div class="track-sw on"></div></div>
+            <div class="switch"><span class="name">Ping-pong</span><div class="track-sw"></div></div>
+            <div class="switch"><span class="name">Transparent (WebM/PNG)</span><div class="track-sw"></div></div>
+          </div>
+        </div>
+
+        <!-- FILE (common) -->
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg><span class="lbl">File</span></div>
+          <div class="field"><span class="name">Filename</span><input type="text" value="pattern-studio_{seed}" spellcheck="false"/></div>
+          <div class="field"><span class="name">Destination</span>
+            <div class="hty-select">
+              <button class="hty-select-btn"><span class="hty-select-val">Downloads</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+              <div class="hty-select-menu" role="listbox"><button class="hty-opt is-selected">Downloads</button><button class="hty-opt">Desktop</button><button class="hty-opt">Choose folder…</button></div>
+            </div>
+          </div>
+          <div class="switch"><span class="name">Reveal after export</span><div class="track-sw on"></div></div>
+          <div class="btn-row"><button class="btn ghost sm">Add to queue</button><button class="btn sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>Export</button></div>
+        </div>
+
+       </div><!-- /export -->
+
+      </div>
+    </div>
+
+    <!-- main row -->
+    <div class="hty-main">
+      <div class="hty-chip"><div class="nm">Pattern Studio</div><div class="lbl">Generator</div></div>
+      <div class="hty-main-sep"></div>
+      <div class="hty-tools">
+        <button class="tbtn active" title="Select"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 3l7 17 2.5-6.5L21 11z"/></svg></button>
+        <button class="tbtn" title="Pan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V7a2 2 0 0 0-4 0M14 9V5a2 2 0 0 0-4 0v2M10 9V5a2 2 0 0 0-4 0v9"/><path d="M6 14l-1.5-1.5a2 2 0 0 0-3 3L6 21h8a4 4 0 0 0 4-4v-6a2 2 0 0 0-4 0"/></svg></button>
+        <button class="tbtn" title="Brush"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 14.5L18 6a2 2 0 0 1 3 3l-8.5 8.5"/><path d="M9.5 14.5c-2 0-3 1-3.5 3-.3 1.2-1.5 2-3 1.5 1-1 1-2 1.5-3 .5-1 1.5-1.5 2.5-1.5"/></svg></button>
+        <button class="tbtn" title="Shape"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+        <button class="tbtn" title="Text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg></button>
+        <button class="tbtn" title="Eyedropper"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 7l4 4M19.5 4.5a2.1 2.1 0 0 0-3 0L14 7l3 3 2.5-2.5a2.1 2.1 0 0 0 0-3zM14 10l-7.5 7.5a2 2 0 0 0-.5 1L5 21l2.5-1a2 2 0 0 0 1-.5L17 12"/></svg></button>
+      </div>
+      <div class="sp"></div>
+      <button class="icon-btn" title="Shuffle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
+      <button class="icon-btn" title="Export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0L8 7m4-4l4 4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg></button>
+      <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9z"/></svg>Render</button>
+      <button class="icon-btn" data-expand title="More controls"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></button>
+    </div>
+
+  </div>
+
+  <script src="../shared/hty-ui.js"></script>
+  <script>
+    /* demo-only: drive the hero curve from the EQ bands (named for data-eq-change) */
+    function syncCurve(vals) {
+      vals = vals || [.5,.66,.82,.46,.3,.5,.62,.54];
+      const W = 540, H = 190, n = vals.length, pts = vals.map((v, i) => [(i/(n-1))*W, H-(v*H*0.8)-H*0.1]);
+      let d = `M ${pts[0][0]} ${pts[0][1]}`;
+      for (let i = 0; i < pts.length-1; i++) { const [x0,y0]=pts[i],[x1,y1]=pts[i+1],mx=(x0+x1)/2; d += ` C ${mx} ${y0} ${mx} ${y1} ${x1} ${y1}`; }
+      document.getElementById('curvepath').setAttribute('d', d);
+      document.getElementById('curvefill').setAttribute('d', d + ` L ${W} ${H/2} L 0 ${H/2} Z`);
+      const g = document.getElementById('nodes'); g.innerHTML = '';
+      pts.forEach(([x,y], i) => { const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r', i%2?4:5.5);
+        c.setAttribute('fill', i%2?'#0c0c0c':'#fff'); if(!(i%2)){c.setAttribute('stroke','#0c0c0c');c.setAttribute('stroke-width','1.5');}
+        g.appendChild(c); });
+    }
+    syncCurve();
+  </script>
+</body>
+</html>

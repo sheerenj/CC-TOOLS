@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>J(x) · System Studio — Motion</title>
+<style>
+  :root{
+    --paper:#e7e6e3; --ink:#0c0c0c; --stage:#dedcd7;
+    --dock:#141416; --dock-2:#1d1d20; --line:#2b2b2f; --txt:#e9e8e4; --mut:#8a8a86; --accent:#2b3bff;
+    --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono",Menlo,monospace; --radius:9px;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{ background:var(--stage); color:var(--ink); font-family:var(--mono); overflow:hidden; -webkit-font-smoothing:antialiased; }
+
+  .hty-stage{ position:fixed; inset:0; overflow:hidden; }
+  .hty-tele{ position:fixed; top:16px; left:18px; z-index:20; display:flex; gap:18px; align-items:center; font-size:10.5px; letter-spacing:.05em; color:#5f5e5a; text-transform:uppercase; }
+  .hty-tele .read{ display:flex; gap:7px; align-items:baseline; }
+  .hty-tele .lbl{ color:#9a998f; } .hty-tele b{ font-weight:500; color:#1c1c1a; }
+  .hty-live{ width:7px; height:7px; border-radius:50%; background:var(--accent); display:inline-block; }
+
+  .hty-canvas{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+  .hty-frame{ box-shadow:0 1px 0 rgba(0,0,0,.04),0 30px 80px -30px rgba(0,0,0,.35); transform-origin:center; }
+  .hty-frame canvas{ display:block; }
+
+  /* transport */
+  .transport{ position:fixed; left:50%; bottom:104px; transform:translateX(-50%); z-index:29; display:flex; align-items:center; gap:12px;
+    width:min(560px,calc(100vw - 40px)); background:rgba(20,20,22,.92); border:0.5px solid var(--line); border-radius:11px; padding:8px 12px; color:var(--txt); }
+  .transport .pp{ width:30px; height:30px; border-radius:7px; border:none; background:var(--txt); color:var(--dock); display:grid; place-items:center; cursor:pointer; flex:none; }
+  .transport .pp svg{ width:14px; height:14px; }
+  .transport input[type=range]{ flex:1; }
+  .transport .t{ font-size:11px; color:var(--mut); min-width:64px; text-align:right; }
+  .transport .lp{ font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); border:0.5px solid var(--line); border-radius:6px; padding:5px 8px; cursor:pointer; }
+  .transport .lp.on{ color:var(--accent); border-color:var(--accent); }
+
+  /* dock */
+  .hty-dock{ position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:30;
+    width:min(1120px,calc(100vw - 32px)); background:var(--dock); color:var(--txt); border:0.5px solid var(--line); border-radius:14px; box-shadow:0 24px 60px -20px rgba(0,0,0,.5); overflow:hidden; }
+  .hty-rail{ display:flex; align-items:center; gap:8px; padding:10px 12px; }
+  .hty-chip{ display:flex; flex-direction:column; line-height:1.15; padding:2px 12px 2px 4px; }
+  .hty-chip .nm{ font-size:12px; font-weight:600; } .hty-chip .lbl{ font-size:9px; letter-spacing:.12em; color:var(--mut); text-transform:uppercase; }
+  .sep{ width:0.5px; height:26px; background:var(--line); margin:0 4px; } .sp{ flex:1; }
+  .tabs{ display:flex; gap:4px; }
+  .tab{ font-family:var(--mono); font-size:11px; letter-spacing:.04em; color:var(--mut); background:transparent; border:0.5px solid var(--line); border-radius:999px; padding:7px 14px; cursor:pointer; text-transform:uppercase; }
+  .tab.active{ background:var(--txt); color:var(--dock); border-color:var(--txt); }
+  .vbtn{ width:34px; height:34px; display:grid; place-items:center; background:transparent; border:0.5px solid var(--line); border-radius:8px; color:var(--txt); cursor:pointer; }
+  .vbtn:hover{ background:var(--dock-2); } .vbtn svg{ width:17px; height:17px; }
+  .btn{ display:inline-flex; align-items:center; gap:7px; font-size:11.5px; letter-spacing:.04em; background:var(--txt); color:var(--dock); border:none; border-radius:8px; padding:8px 15px; cursor:pointer; text-transform:uppercase; font-weight:600; font-family:var(--mono); }
+  .btn.ghost{ background:transparent; color:var(--txt); border:0.5px solid var(--line); font-weight:400; } .btn svg{ width:15px; height:15px; }
+  .zoomrow{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--mut); } .zoomrow b{ min-width:38px; text-align:center; color:var(--txt); font-weight:500; }
+
+  .hty-panel{ max-height:0; overflow:hidden; transition:max-height .32s cubic-bezier(.4,0,.2,1); border-top:0.5px solid transparent; }
+  .hty-panel.open{ max-height:300px; border-top-color:var(--line); overflow-y:auto; }
+  .panel-grid{ display:grid; grid-template-columns:repeat(5,1fr); }
+  .group{ padding:14px 16px; border-right:0.5px solid var(--line); }
+  .group:last-child{ border-right:none; }
+  .group-h{ display:flex; align-items:center; gap:7px; font-size:9.5px; letter-spacing:.12em; color:var(--mut); text-transform:uppercase; margin-bottom:12px; }
+  .field{ margin-bottom:11px; }
+  .field .name{ font-size:10px; letter-spacing:.05em; color:var(--mut); text-transform:uppercase; display:block; margin-bottom:6px; }
+  .field-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .val{ font-size:11px; color:var(--txt); font-weight:500; }
+  input[type=range]{ -webkit-appearance:none; width:100%; height:3px; background:var(--line); border-radius:2px; outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:var(--txt); cursor:pointer; }
+  input[type=range].acc::-webkit-slider-thumb{ background:var(--accent); }
+  .tf-row{ display:flex; gap:8px; } .tf{ flex:1; display:flex; align-items:center; gap:6px; background:var(--dock-2); border:0.5px solid var(--line); border-radius:7px; padding:6px 9px; }
+  .tf .g{ font-size:10px; color:var(--mut); } .tf input{ width:100%; background:none; border:none; color:var(--txt); font-family:var(--mono); font-size:12px; outline:none; }
+  .chips{ display:flex; flex-wrap:wrap; gap:4px; } .chip{ font-family:var(--mono); font-size:10.5px; color:var(--mut); background:transparent; border:0.5px solid var(--line); border-radius:999px; padding:6px 11px; cursor:pointer; text-transform:uppercase; }
+  .chip.active{ background:var(--txt); color:var(--dock); border-color:var(--txt); }
+  .switch{ display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; } .switch .name{ font-size:11px; color:var(--txt); }
+  .track-sw{ width:34px; height:19px; border-radius:999px; background:var(--line); position:relative; cursor:pointer; transition:.16s; flex:none; }
+  .track-sw::after{ content:""; position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%; background:var(--txt); transition:.16s; }
+  .track-sw.on{ background:var(--accent); } .track-sw.on::after{ left:17px; }
+  .clr-row{ display:flex; gap:8px; } .clr{ flex:1; } .clr label{ font-size:10px; color:var(--mut); text-transform:uppercase; display:block; margin-bottom:5px; }
+  input[type=color]{ width:100%; height:30px; border:0.5px solid var(--line); border-radius:7px; background:none; cursor:pointer; padding:2px; }
+  .seg{ display:flex; border:0.5px solid var(--line); border-radius:7px; overflow:hidden; } .seg button{ flex:1; font-family:var(--mono); font-size:11px; color:var(--mut); background:var(--dock-2); border:none; padding:7px 0; cursor:pointer; } .seg button.active{ background:var(--txt); color:var(--dock); }
+</style>
+</head>
+<body>
+  <div class="hty-stage">
+    <div class="hty-tele">
+      <div class="read"><span class="lbl">Frame</span><b data-tele-size>1080 × 1080</b></div>
+      <div class="read"><span class="lbl">Layout</span><b data-tele-mode>Grid</b></div>
+      <div class="read"><span class="lbl">Motion</span><b data-tele-motion>Decode</b></div>
+      <div style="display:flex;align-items:center;gap:6px;"><span class="hty-live"></span><span class="lbl">Live</span></div>
+    </div>
+    <div class="hty-canvas" id="canvasWrap"><div class="hty-frame" id="frame"><canvas id="art"></canvas></div></div>
+  </div>
+
+  <div class="transport">
+    <button class="pp" id="pp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+    <input type="range" id="scrub" min="0" max="1000" value="0">
+    <span class="t" id="tRead">0.00 / 4.0s</span>
+    <span class="lp on" id="loopBtn">Loop</span>
+  </div>
+
+  <div class="hty-dock">
+    <div class="hty-rail">
+      <div class="hty-chip"><div class="nm">J(x) Studio</div><div class="lbl">Motion system</div></div>
+      <div class="sep"></div>
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-tab="compose">Compose</button>
+        <button class="tab" data-tab="motion">Motion</button>
+        <button class="tab" data-tab="export">Export</button>
+      </div>
+      <div class="sp"></div>
+      <div class="zoomrow">
+        <button class="vbtn" data-zoom="out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+        <b data-zoom-level>—</b>
+        <button class="vbtn" data-zoom="in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="vbtn" data-zoom="fit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+      </div>
+      <div class="sep"></div>
+      <button class="vbtn" id="shuffle" title="New seed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
+      <button class="btn" id="expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>Controls</button>
+    </div>
+
+    <div class="hty-panel" id="panel">
+      <!-- COMPOSE -->
+      <div class="panel-grid" data-tab-panel="compose">
+        <div class="group">
+          <div class="group-h">Canvas</div>
+          <div class="field"><span class="name">Preset</span><div class="chips" id="sizePresets">
+            <button class="chip" data-size="1050x600">Card</button><button class="chip active" data-size="1080x1080">1:1</button><button class="chip" data-size="1080x1350">4:5</button><button class="chip" data-size="1920x1080">16:9</button><button class="chip" data-size="2480x3508">A4</button></div></div>
+          <div class="field"><span class="name">Custom (px)</span><div class="tf-row"><label class="tf"><span class="g">W</span><input type="number" id="cw" value="1080"></label><label class="tf"><span class="g">H</span><input type="number" id="ch" value="1080"></label></div></div>
+        </div>
+        <div class="group">
+          <div class="group-h">Layout</div>
+          <div class="field"><span class="name">Mode</span><div class="chips" id="modes">
+            <button class="chip active" data-mode="grid">Grid</button><button class="chip" data-mode="field">Field</button><button class="chip" data-mode="stack">Stack</button><button class="chip" data-mode="jumble">Jumble</button></div></div>
+          <div class="field"><div class="field-head"><span>Columns</span><span class="val" data-out="cols">3</span></div><input type="range" id="cols" min="1" max="10" value="3"></div>
+          <div class="field"><div class="field-head"><span>Count</span><span class="val" data-out="count">14</span></div><input type="range" id="count" min="1" max="140" value="14"></div>
+        </div>
+        <div class="group">
+          <div class="group-h">Size &amp; spacing</div>
+          <div class="field"><div class="field-head"><span>Scale</span><span class="val" data-out="scale">1.0</span></div><input type="range" id="scale" min="0.2" max="4" step="0.05" value="1"></div>
+          <div class="field"><div class="field-head"><span>H-space</span><span class="val" data-out="hgap">40</span></div><input type="range" id="hgap" min="0" max="300" value="40"></div>
+          <div class="field"><div class="field-head"><span>V-space</span><span class="val" data-out="vgap">24</span></div><input type="range" id="vgap" min="0" max="300" value="24"></div>
+          <div class="field"><div class="field-head"><span>Spread</span><span class="val" data-out="spread">35</span></div><input type="range" id="spread" min="0" max="100" value="35"></div>
+        </div>
+        <div class="group">
+          <div class="group-h">Glyph mix</div>
+          <div class="field"><div class="field-head"><span>Letters</span><span class="val" data-out="wL">50</span></div><input type="range" id="wL" min="0" max="100" value="50"></div>
+          <div class="field"><div class="field-head"><span>Numbers</span><span class="val" data-out="wN">20</span></div><input type="range" id="wN" min="0" max="100" value="20"></div>
+          <div class="field"><div class="field-head"><span>Shapes</span><span class="val" data-out="wS">30</span></div><input type="range" id="wS" class="acc" min="0" max="100" value="30"></div>
+          <div class="field"><span class="name">Seed</span><div class="tf-row"><label class="tf"><span class="g">#</span><input type="number" id="seed" value="2048"></label></div></div>
+        </div>
+        <div class="group">
+          <div class="group-h">Elements &amp; colour</div>
+          <div class="switch"><span class="name">Index no.</span><div class="track-sw" data-toggle="index"></div></div>
+          <div class="switch"><span class="name">x = caption</span><div class="track-sw on" data-toggle="caption"></div></div>
+          <div class="switch"><span class="name">Rules</span><div class="track-sw" data-toggle="rules"></div></div>
+          <div class="clr-row" style="margin-top:4px;"><div class="clr"><label>Ink</label><input type="color" id="ink" value="#0c0c0c"></div><div class="clr"><label>Paper</label><input type="color" id="paper" value="#e7e6e3"></div></div>
+        </div>
+      </div>
+
+      <!-- MOTION -->
+      <div class="panel-grid" data-tab-panel="motion" style="display:none">
+        <div class="group" style="grid-column:span 2;">
+          <div class="group-h">Behavior</div>
+          <div class="chips" id="motions">
+            <button class="chip" data-motion="none">None</button>
+            <button class="chip active" data-motion="decode">Decode</button>
+            <button class="chip" data-motion="cascade">Cascade</button>
+            <button class="chip" data-motion="flicker">Flicker</button>
+            <button class="chip" data-motion="scroll">Scroll</button>
+            <button class="chip" data-motion="oscillate">Oscillate</button>
+            <button class="chip" data-motion="spin">Spin</button>
+          </div>
+        </div>
+        <div class="group">
+          <div class="group-h">Timing</div>
+          <div class="field"><div class="field-head"><span>Speed</span><span class="val" data-out="speed">2</span></div><input type="range" id="speed" min="1" max="8" step="1" value="2"></div>
+          <div class="field"><div class="field-head"><span>Stagger</span><span class="val" data-out="stagger">50</span></div><input type="range" id="stagger" min="0" max="100" value="50"></div>
+        </div>
+        <div class="group">
+          <div class="group-h">Shape</div>
+          <div class="field"><div class="field-head"><span>Intensity</span><span class="val" data-out="intensity">55</span></div><input type="range" id="intensity" min="0" max="100" value="55"></div>
+          <div class="field"><div class="field-head"><span>Direction</span><span class="val" data-out="dir">45°</span></div><input type="range" id="dir" min="0" max="360" value="45"></div>
+        </div>
+        <div class="group">
+          <div class="group-h">Loop</div>
+          <div class="field"><div class="field-head"><span>Duration</span><span class="val" data-out="dur">4.0s</span></div><input type="range" id="dur" min="1" max="12" step="0.5" value="4"></div>
+          <div class="field"><span class="name">Export FPS</span><div class="seg" id="fps"><button data-fps="24">24</button><button class="active" data-fps="30">30</button><button data-fps="60">60</button></div></div>
+        </div>
+      </div>
+
+      <!-- EXPORT -->
+      <div class="panel-grid" data-tab-panel="export" style="display:none">
+        <div class="group" style="grid-column:span 2;">
+          <div class="group-h">Still</div>
+          <div class="field"><span class="name">Scale</span><div class="seg" id="expScale"><button data-mult="1">1×</button><button class="active" data-mult="2">2×</button><button data-mult="3">3×</button></div></div>
+          <div class="tf-row"><button class="btn ghost" id="exportSVG" style="flex:1;justify-content:center;">SVG (frame)</button><button class="btn" id="exportPNG" style="flex:1;justify-content:center;">PNG (frame)</button></div>
+        </div>
+        <div class="group" style="grid-column:span 3;">
+          <div class="group-h">Motion</div>
+          <p class="name" style="text-transform:none;color:var(--mut);line-height:1.6;margin-bottom:10px;">Records one seamless loop (Duration × FPS) straight from the canvas as WebM. Drop it into After Effects / editing, or convert to MP4.</p>
+          <button class="btn" id="exportWEBM" style="justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg><span id="webmLabel">Record WebM loop</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  var LETTERS="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  var NUMBERS="0123456789".split("");
+  var SHAPES="◌∅▮░▓×✕¬∆◆●○◇⁂‰§∴◈⌗⊘⧫⌐¿⍰∎∷⊛✧◫▚▞⊙⌁".split("");
+  var TPL=[{c:'J'},{c:'('},{v:0},{v:1},{c:')'},{c:' '},{c:'S'},{c:"'"},{c:'('},{v:2},{v:3},{v:4},{v:5},{v:6},{v:7},{c:')'}];
+
+  var S={ w:1080,h:1080, mode:'grid', cols:3, count:14, scale:1, hgap:40, vgap:24, spread:35,
+    wL:50, wN:20, wS:30, seed:2048, index:false, caption:true, rules:false, ink:'#0c0c0c', paper:'#e7e6e3',
+    motion:'decode', speed:2, stagger:50, intensity:55, dir:45, dur:4, fps:30, expMult:2 };
+
+  var cv=document.getElementById('art'), ctx=cv.getContext('2d'), frame=document.getElementById('frame'), wrap=document.getElementById('canvasWrap');
+  var zoom=1, panX=0, panY=0, items=[], playing=true, t0=performance.now(), pManual=0, loopOn=true;
+
+  function mulberry(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  function glyph(r){ var tot=S.wL+S.wN+S.wS; if(tot<=0) return 'X'; var x=r()*tot;
+    if(x<S.wL) return LETTERS[r()*26|0]; if(x<S.wL+S.wN) return NUMBERS[r()*10|0]; return SHAPES[r()*SHAPES.length|0]; }
+  function target(r){ var a=[]; for(var i=0;i<8;i++) a.push(glyph(r)); return a; }
+  function tri(x){ x=((x%1)+1)%1; return x<0.5?x*2:(1-x)*2; }
+  function sm(x){ x=Math.max(0,Math.min(1,x)); return x*x*(3-2*x); }
+
+  function cellW(fs){ return fs*0.62; }
+
+  /* ── build spatial items ── */
+  function buildItems(){
+    items=[]; var W=S.w,H=S.h, r=mulberry(S.seed), m=Math.min(W,H)*0.09;
+    function it(cx,cy,fs,rot){ var rr=mulberry((S.seed*131+items.length*977)>>>0);
+      return {cx:cx,cy:cy,fs:fs,rot:rot||0, t:target(rr), thr:[rr(),rr(),rr(),rr(),rr(),rr(),rr(),rr()], nx:cx/W, ny:cy/H, idx:items.length}; }
+    if(S.mode==='grid' || S.mode==='field'){
+      var fs=W*0.026*S.scale, cw=cellW(fs), nameW=16*cw, stepX=nameW+S.hgap, rowStep=fs*1.05+S.vgap;
+      if(S.mode==='grid'){
+        var cols=Math.max(1,Math.min(S.cols,S.count)), rows=Math.ceil(S.count/cols);
+        var blockW=cols*stepX-S.hgap, blockH=(rows-1)*rowStep+fs, ox=(W-blockW)/2, oy=(H-blockH)/2+fs, i=0;
+        for(var rw=0;rw<rows;rw++) for(var c=0;c<cols && i<S.count;c++,i++) items.push(it(ox+c*stepX+nameW/2, oy+rw*rowStep, fs));
+      } else {
+        var cols2=Math.max(1,Math.floor((W+ S.hgap)/stepX)), rows2=Math.ceil(H/rowStep)+2;
+        var ox2=(W-(cols2*stepX-S.hgap))/2;
+        for(var rw2=-1;rw2<rows2;rw2++) for(var c2=0;c2<cols2;c2++) items.push(it(ox2+c2*stepX+nameW/2, m+rw2*rowStep, fs));
+      }
+    } else if(S.mode==='stack'){
+      var fs2=W*0.03*S.scale, n=Math.max(1,Math.min(S.count,26)), lh=fs2*1.05+S.vgap, sy=(H-n*lh)/2+fs2;
+      for(var k=0;k<n;k++) items.push(it(W/2, sy+k*lh, fs2));
+    } else if(S.mode==='jumble'){
+      var base=W*0.03*S.scale, sp=0.06+(S.spread/100)*0.94, j=S.intensity/100;
+      for(var q=0;q<S.count;q++){ var fs3=base*(0.5+r()*1.7); items.push(it(W/2+(r()-0.5)*W*sp, H/2+(r()-0.5)*H*sp, fs3, (r()-0.5)*80*j)); }
+    }
+  }
+
+  /* ── per-frame character + transform for an item, given loop phase p ── */
+  function frameChars(item,p){
+    var out={ chars:item.t.slice(), alpha:[1,1,1,1,1,1,1,1], op:1, scale:1, dx:0, dy:0, rot:item.rot, col:S.ink, track:0 };
+    var dir=S.dir*Math.PI/180, wp=(item.nx*Math.cos(dir)+item.ny*Math.sin(dir)); wp=(wp+1)/2;
+    var stag=(S.stagger/100)*1.6, inten=S.intensity/100, loc=p*S.speed - wp*stag;
+    if(S.motion==='decode'){
+      var rev=sm(tri(loc)*(0.55+inten));
+      for(var i=0;i<8;i++){ out.chars[i]= rev>item.thr[i]? item.t[i] : glyph(Math.random); }
+      out.op=0.1+0.9*rev;
+    } else if(S.motion==='cascade'){
+      var v=sm(tri(loc)); out.scale=1+inten*0.5*v; out.op=0.3+0.7*v; out.track=v*inten*6; if(v>0.85) out.col=S.accentUse||'#2b3bff';
+    } else if(S.motion==='flicker'){
+      var lock=tri(loc)>(1-inten*0.5);
+      for(var f=0;f<8;f++) out.chars[f]= (lock&&Math.random()<0.85)? item.t[f] : glyph(Math.random);
+      for(var a=0;a<8;a++) out.alpha[a]= Math.random()<0.18? 0.14 : 1;
+    } else if(S.motion==='oscillate'){
+      var off=Math.sin(2*Math.PI*loc)*inten*(S.h*0.12); var per=dir+Math.PI/2; out.dx=Math.cos(per)*off; out.dy=Math.sin(per)*off;
+    } else if(S.motion==='spin'){
+      out.rot=item.rot + p*S.speed*360;
+    }
+    return out;
+  }
+
+  /* ── draw one item ── */
+  function drawItem(g,item,fc,sc){
+    var fs=item.fs*sc, cw=cellW(fs), nameW=16*cw, left=(item.cx*sc)-nameW/2, baseY=item.cy*sc;
+    g.save();
+    g.translate(item.cx*sc + fc.dx*sc, item.cy*sc + fc.dy*sc);
+    if(fc.rot) g.rotate(fc.rot*Math.PI/180);
+    if(fc.scale!==1) g.scale(fc.scale,fc.scale);
+    g.translate(-(item.cx*sc), -(item.cy*sc));
+    g.font='700 '+fs.toFixed(1)+'px '+'"SFMono-Regular",ui-monospace,Menlo,monospace';
+    g.textAlign='center'; g.textBaseline='alphabetic';
+    g.globalAlpha=fc.op;
+    for(var col=0; col<16; col++){ var slot=TPL[col]; var chr=slot.c!==undefined? slot.c : fc.chars[slot.v];
+      if(chr===' ') continue;
+      var ca=(slot.v!==undefined)? fc.alpha[slot.v] : 1;
+      g.globalAlpha=fc.op*ca;
+      g.fillStyle=fc.col;
+      var cx=left + (col+0.5)*(cw+fc.track*sc*(slot.v!==undefined?1:1));
+      g.fillText(chr, cx, baseY);
+    }
+    g.restore();
+  }
+
+  /* ── full frame ── */
+  function drawFrame(g,p,sc){
+    var W=S.w*sc,H=S.h*sc;
+    g.clearRect(0,0,W,H); g.fillStyle=S.paper; g.fillRect(0,0,W,H);
+    var dir=S.dir*Math.PI/180;
+    var tiles=[[0,0]];
+    if(S.motion==='scroll'){ var sh=((p*S.speed)%1); var dxs=Math.cos(dir)*sh*S.w, dys=Math.sin(dir)*sh*S.h; tiles=[[ -dxs,-dys],[ -dxs+S.w*Math.cos(dir), -dys+S.h*Math.sin(dir)],[ -dxs-S.w*Math.cos(dir), -dys-S.h*Math.sin(dir)]]; }
+    for(var ti=0; ti<tiles.length; ti++){
+      for(var i=0;i<items.length;i++){ var item=items[i];
+        if(S.motion==='scroll'){ item={cx:item.cx+tiles[ti][0], cy:item.cy+tiles[ti][1], fs:item.fs, rot:item.rot, t:item.t, thr:item.thr, nx:item.nx, ny:item.ny}; }
+        var fc=frameChars(item,p); drawItem(g,item,fc,sc);
+      }
+    }
+    g.globalAlpha=1;
+    if(S.rules && (S.mode==='grid'||S.mode==='stack')){ /* light rules handled by spacing; skip for now */ }
+    if(S.caption){ g.font='500 '+(Math.max(11,S.w*0.012)*sc).toFixed(1)+'px "SFMono-Regular",monospace'; g.fillStyle=S.ink; g.textAlign='left'; g.globalAlpha=1; g.fillText('x = '+S.seed, S.w*0.06*sc, (S.h-S.h*0.05)*sc); }
+  }
+
+  /* ── view / playback ── */
+  function applyView(){ frame.style.transform='translate('+panX+'px,'+panY+'px) scale('+zoom+')'; document.querySelector('[data-zoom-level]').textContent=Math.round(zoom*100)+'%'; }
+  function fit(){ cv.width=S.w; cv.height=S.h; frame.style.width=S.w+'px'; frame.style.height=S.h+'px';
+    var aw=wrap.clientWidth-120, ah=wrap.clientHeight-230; zoom=Math.min(aw/S.w, ah/S.h); panX=0; panY=-18; applyView(); }
+  function currentP(now){ if(playing){ return ((now-t0)/1000/S.dur)%1; } return pManual; }
+  var scrub=document.getElementById('scrub'), tRead=document.getElementById('tRead');
+  function loop(now){ var p=currentP(now); drawFrame(ctx,p,1);
+    if(playing){ scrub.value=p*1000; } tRead.textContent=(p*S.dur).toFixed(2)+' / '+S.dur.toFixed(1)+'s';
+    requestAnimationFrame(loop); }
+
+  function refresh(){ buildItems();
+    document.querySelector('[data-tele-size]').textContent=S.w+' × '+S.h;
+    document.querySelector('[data-tele-mode]').textContent=S.mode.charAt(0).toUpperCase()+S.mode.slice(1);
+    document.querySelector('[data-tele-motion]').textContent=S.motion.charAt(0).toUpperCase()+S.motion.slice(1);
+  }
+
+  /* ── bindings ── */
+  function out(id,v){ var e=document.querySelector('[data-out="'+id+'"]'); if(e) e.textContent=v; }
+  function range(id,key,fmt){ var el=document.getElementById(id); el.addEventListener('input',function(){ var v=el.step&&el.step!=='1'?parseFloat(el.value):+el.value; S[key]=v; out(id, fmt?fmt(v):v); refresh(); }); }
+  range('cols','cols'); range('count','count'); range('scale','scale',function(v){return v.toFixed(2);});
+  range('hgap','hgap'); range('vgap','vgap'); range('spread','spread');
+  range('wL','wL'); range('wN','wN'); range('wS','wS');
+  range('speed','speed'); range('stagger','stagger'); range('intensity','intensity');
+  range('dir','dir',function(v){return v+'°';});
+  document.getElementById('dur').addEventListener('input',function(e){ S.dur=parseFloat(e.target.value); out('dur',S.dur.toFixed(1)+'s'); });
+
+  document.querySelectorAll('#modes .chip').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('#modes .chip').forEach(function(x){x.classList.remove('active');}); b.classList.add('active'); S.mode=b.dataset.mode; refresh(); }); });
+  document.querySelectorAll('#motions .chip').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('#motions .chip').forEach(function(x){x.classList.remove('active');}); b.classList.add('active'); S.motion=b.dataset.motion; refresh(); }); });
+  document.querySelectorAll('#sizePresets .chip').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('#sizePresets .chip').forEach(function(x){x.classList.remove('active');}); b.classList.add('active'); var p=b.dataset.size.split('x'); S.w=+p[0]; S.h=+p[1]; cw.value=S.w; ch.value=S.h; refresh(); fit(); }); });
+  var cw=document.getElementById('cw'), ch=document.getElementById('ch');
+  function custom(){ S.w=Math.max(1,+cw.value||1); S.h=Math.max(1,+ch.value||1); document.querySelectorAll('#sizePresets .chip').forEach(function(x){x.classList.remove('active');}); refresh(); fit(); }
+  cw.addEventListener('change',custom); ch.addEventListener('change',custom);
+  document.querySelectorAll('[data-toggle]').forEach(function(sw){ sw.addEventListener('click',function(){ sw.classList.toggle('on'); S[sw.dataset.toggle]=sw.classList.contains('on'); refresh(); }); });
+  document.getElementById('ink').addEventListener('input',function(e){ S.ink=e.target.value; });
+  document.getElementById('paper').addEventListener('input',function(e){ S.paper=e.target.value; });
+  document.getElementById('seed').addEventListener('change',function(e){ S.seed=+e.target.value||0; refresh(); });
+  document.getElementById('shuffle').addEventListener('click',function(){ S.seed=Math.floor(Math.random()*99999); document.getElementById('seed').value=S.seed; refresh(); });
+  document.querySelectorAll('#fps button').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('#fps button').forEach(function(x){x.classList.remove('active');}); b.classList.add('active'); S.fps=+b.dataset.fps; }); });
+  document.querySelectorAll('#expScale button').forEach(function(b){ b.addEventListener('click',function(){ document.querySelectorAll('#expScale button').forEach(function(x){x.classList.remove('active');}); b.classList.add('active'); S.expMult=+b.dataset.mult; }); });
+
+  document.querySelectorAll('#tabs .tab').forEach(function(t){ t.addEventListener('click',function(){ document.querySelectorAll('#tabs .tab').forEach(function(x){x.classList.remove('active');}); t.classList.add('active'); document.querySelectorAll('[data-tab-panel]').forEach(function(pn){ pn.style.display = pn.dataset.tabPanel===t.dataset.tab?'grid':'none'; }); document.getElementById('panel').classList.add('open'); }); });
+  document.getElementById('expand').addEventListener('click',function(){ document.getElementById('panel').classList.toggle('open'); });
+
+  document.querySelectorAll('[data-zoom]').forEach(function(b){ b.addEventListener('click',function(){ var z=b.dataset.zoom; if(z==='in')zoom*=1.2; else if(z==='out')zoom/=1.2; else return fit(); applyView(); }); });
+  wrap.addEventListener('wheel',function(e){ e.preventDefault(); zoom*=(e.deltaY<0?1.08:0.925); zoom=Math.max(0.05,Math.min(8,zoom)); applyView(); },{passive:false});
+  var dragging=false,sx,sy;
+  wrap.addEventListener('pointerdown',function(e){ dragging=true; sx=e.clientX-panX; sy=e.clientY-panY; wrap.setPointerCapture(e.pointerId); });
+  wrap.addEventListener('pointermove',function(e){ if(dragging){ panX=e.clientX-sx; panY=e.clientY-sy; applyView(); } });
+  wrap.addEventListener('pointerup',function(){ dragging=false; });
+
+  var pp=document.getElementById('pp');
+  function setPlay(v){ playing=v; if(v){ t0=performance.now()-pManual*S.dur*1000; } else { pManual=currentP(performance.now()); } pp.innerHTML= v? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>':'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'; }
+  pp.addEventListener('click',function(){ setPlay(!playing); }); setPlay(true);
+  scrub.addEventListener('input',function(){ setPlay(false); pManual=+scrub.value/1000; });
+  document.getElementById('loopBtn').addEventListener('click',function(){ loopOn=!loopOn; this.classList.toggle('on',loopOn); });
+
+  /* ── exports ── */
+  function dl(blob,name){ var u=URL.createObjectURL(blob),a=document.createElement('a'); a.href=u; a.download=name; a.click(); setTimeout(function(){URL.revokeObjectURL(u);},1500); }
+  document.getElementById('exportPNG').addEventListener('click',function(){ var mult=S.expMult, tc=document.createElement('canvas'); tc.width=S.w*mult; tc.height=S.h*mult; drawFrame(tc.getContext('2d'), currentP(performance.now()), mult); tc.toBlob(function(b){ dl(b,'jx-'+S.motion+'-'+S.seed+'.png'); }); });
+  document.getElementById('exportSVG').addEventListener('click',function(){ dl(new Blob([buildSVG(currentP(performance.now()))],{type:'image/svg+xml'}), 'jx-'+S.motion+'-'+S.seed+'.svg'); });
+  function buildSVG(p){ var o='<svg xmlns="http://www.w3.org/2000/svg" width="'+S.w+'" height="'+S.h+'" viewBox="0 0 '+S.w+' '+S.h+'"><rect width="'+S.w+'" height="'+S.h+'" fill="'+S.paper+'"/><g font-family="monospace" font-weight="700">';
+    for(var i=0;i<items.length;i++){ var item=items[i], fc=frameChars(item,p), fs=item.fs, cw=cellW(fs), left=item.cx-16*cw/2;
+      for(var col=0; col<16; col++){ var slot=TPL[col], chr=slot.c!==undefined?slot.c:fc.chars[slot.v]; if(chr===' '||chr==='<'||chr==='>'||chr==='&') { if(chr!==' ')chr=' '; else continue; }
+        var a=(slot.v!==undefined)?fc.alpha[slot.v]:1; var cx=left+(col+0.5)*cw;
+        o+='<text x="'+cx.toFixed(1)+'" y="'+item.cy.toFixed(1)+'" font-size="'+fs.toFixed(1)+'" text-anchor="middle" fill="'+fc.col+'" opacity="'+(fc.op*a).toFixed(2)+'">'+chr+'</text>'; } }
+    o+='</g></svg>'; return o; }
+
+  var recBtn=document.getElementById('exportWEBM');
+  recBtn.addEventListener('click',function(){
+    if(recBtn.dataset.busy) return; recBtn.dataset.busy=1; document.getElementById('webmLabel').textContent='Recording…';
+    var stream=cv.captureStream(S.fps), rec, chunks=[];
+    try{ rec=new MediaRecorder(stream,{mimeType:'video/webm;codecs=vp9'}); }catch(e){ rec=new MediaRecorder(stream); }
+    rec.ondataavailable=function(e){ if(e.data.size) chunks.push(e.data); };
+    rec.onstop=function(){ dl(new Blob(chunks,{type:'video/webm'}),'jx-'+S.motion+'-'+S.seed+'.webm'); recBtn.dataset.busy=''; document.getElementById('webmLabel').textContent='Record WebM loop'; };
+    setPlay(true); t0=performance.now(); rec.start();
+    setTimeout(function(){ rec.stop(); }, S.dur*1000+120);
+  });
+
+  window.addEventListener('resize',fit);
+  refresh(); fit(); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
