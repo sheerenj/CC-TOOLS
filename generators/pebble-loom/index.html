@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pebble Loom · Oval Grid Studio</title>
+<meta name="description" content="A grid of overlapping ovals, each one flat colour from a weighted ramp. One flowing field drives size, position and colour together."/>
+<link rel="stylesheet" href="../../shared/hty-ui.css"/>
+<style>
+  /* tool-local: the render surface fills the artboard frame */
+  #art { display: block; width: 100%; height: 100%; }
+  .hty-frame { background: #411506; }
+
+  /* weighted ramp preview — band widths mirror the palette weights */
+  .hty .ramp-strip { display: flex; height: 16px; margin-top: 8px; border-radius: var(--r-sm); overflow: hidden; border: 1px solid var(--line-2); }
+  .hty .ramp-strip span { display: block; }
+  .hty .presets-chips { flex-wrap: wrap; }
+  /* recording state — hty-ui has no .danger variant */
+  .hty .btn.rec-on { background: #d8402f; border-color: #d8402f; color: #fff; }
+
+  /* ramp stop editor — one row per colour: swatch · hex · weight · order · remove */
+  .hty .pal-row { display: flex; align-items: center; gap: 5px; margin-bottom: 6px; }
+  .hty .pal-row .color-swatch { position: relative; width: 26px; height: 26px; flex: none; border-radius: var(--r-sm); border: 1px solid var(--line-2); overflow: hidden; cursor: pointer; }
+  .hty .pal-row .native-picker { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); opacity: 0; border: none; padding: 0; cursor: pointer; }
+  .hty .pal-row .color-hex { flex: 1; min-width: 0; font-family: var(--mono); }
+  .hty .pal-row .pal-w { width: 44px; flex: none; text-align: center; font-family: var(--mono); }
+  .hty .rowbtn { width: 22px; height: 26px; flex: none; padding: 0; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: transparent; color: var(--ink-3); cursor: pointer; display: grid; place-items: center; font-size: 11px; line-height: 1; transition: all .15s; }
+  .hty .rowbtn:hover:not(:disabled) { border-color: var(--ink); color: var(--ink); }
+  .hty .rowbtn:disabled { opacity: .3; cursor: not-allowed; }
+  .hty .add-pal { width: 100%; border: 1px dashed var(--line-2); background: transparent; color: var(--ink-2); font-size: 11.5px; font-weight: 500; padding: 8px; border-radius: var(--r-md); cursor: pointer; transition: all .15s; }
+  .hty .add-pal:hover { border-color: var(--ink); color: var(--ink); }
+
+  /* saved-look rows */
+  .hty .lib-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .hty .lib-row .nm2 { flex: 1; min-width: 0; font-size: 12px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hty .lib-row .btn { padding: 4px 10px; font-size: 10.5px; }
+  .hty .lib-empty { font-size: 11px; color: var(--ink-3); padding: 4px 0 2px; }
+</style>
+</head>
+<body class="hty">
+
+  <!-- ═══ STAGE ═══ -->
+  <div class="hty-stage">
+    <div class="hty-tele">
+      <div class="read"><span class="lbl">Artboard</span><b data-size-read>1080 × 1920</b></div>
+      <div class="read"><span class="lbl">Pebbles</span><b data-out="teleCount">—</b></div>
+      <div class="read"><span class="lbl">FPS</span><b data-out="teleFps">—</b></div>
+      <div style="display:flex;align-items:center;gap:6px;"><span class="hty-live"></span><span class="lbl" data-out="teleStatus">Playing</span></div>
+    </div>
+    <div class="hty-canvas">
+      <div class="hty-frame" data-w="1080" data-h="1920">
+        <canvas id="art"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DOCK ═══ -->
+  <div class="hty-dock">
+
+    <!-- top rail -->
+    <div class="hty-rail">
+      <button class="tab active" data-tab="shape"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="12" rx="5" ry="9"/></svg>Shape</button>
+      <button class="tab" data-tab="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8c3-3 6 3 9 0s6-3 9 0M3 16c3-3 6 3 9 0s6-3 9 0"/></svg>Field</button>
+      <button class="tab" data-tab="colour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><path d="M12 22a10 10 0 1 1 0-20c5 0 7 3 7 6 0 2.5-2 3-4 3h-3c-2 0-3 1-3 2.5S10 22 12 22z"/></svg>Colour</button>
+      <button class="tab" data-tab="motion"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="3.6"/><path d="M12 3v18"/></svg>Motion</button>
+      <button class="tab" data-tab="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>Export</button>
+      <button class="tab" data-tab="presets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="18" cy="18" r="2.4"/></svg>Presets</button>
+      <div class="sp"></div>
+      <div class="hty-zoom">
+        <button class="vbtn" data-zoom="out" title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+        <b data-zoom-level>100%</b>
+        <button class="vbtn" data-zoom="in" title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="vbtn" data-zoom="reset" title="Fit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+      </div>
+    </div>
+
+    <!-- expandable panel -->
+    <div class="hty-panel">
+      <div class="hty-panel-inner">
+
+       <!-- ── SHAPE ──────────────────────────────────────────────── -->
+       <div class="panel-grid" data-tab-panel="shape">
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="18" rx="3"/><rect x="14" y="3" width="7" height="18" rx="3"/></svg><span class="lbl">Grid</span></div>
+          <div class="field"><div class="field-head"><span class="name">Cell width</span><span class="val num" data-out="p-cell">30 px</span></div><input type="range" min="6" max="110" value="30" data-bind="p-cell" id="p-cell"/></div>
+          <div class="field"><div class="field-head"><span class="name">Cell aspect</span><span class="val num" data-out="p-aspect">4.60 ×</span></div><input type="range" min="100" max="900" step="5" value="460" data-bind="p-aspect" id="p-aspect"/></div>
+          <div class="field"><div class="field-head"><span class="name">Base scale</span><span class="val num" data-out="p-base">1.06 ×</span></div><input type="range" min="50" max="180" value="106" data-bind="p-base" id="p-base"/></div>
+          <div class="field"><div class="field-head"><span class="name">Coverage</span><span class="val num" data-out="p-cover">0.92</span></div><input type="range" min="15" max="100" value="92" data-bind="p-cover" id="p-cover"/></div>
+          <p class="note">Ovals sit on a fixed pitch and overlap opaquely, so neighbours <b style="font-weight:500">trade</b> visible width — one grows exactly as much as the other is crushed.</p>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 12h4M16 12h4"/><ellipse cx="12" cy="12" rx="3" ry="8"/></svg><span class="lbl">Weave</span></div>
+          <div class="field"><div class="field-head"><span class="name">Width weave</span><span class="val num" data-out="p-altX">1.50</span></div><input type="range" min="0" max="250" value="150" data-bind="p-altX" id="p-altX"/></div>
+          <div class="field"><div class="field-head"><span class="name">Height weave</span><span class="val num" data-out="p-altY">1.35</span></div><input type="range" min="0" max="250" value="135" data-bind="p-altY" id="p-altY"/></div>
+          <p class="note">Above 1.00 a fat oval outgrows its cell and hides its neighbours down to slivers — that contrast is the effect's signature.</p>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="12" rx="7" ry="9" transform="rotate(-12 12 12)"/></svg><span class="lbl">Pebble</span></div>
+          <div class="field"><div class="field-head"><span class="name">Edge · 2.00 = true oval</span><span class="val num" data-out="p-edge">2.00</span></div><input type="range" min="140" max="500" step="5" value="200" data-bind="p-edge" id="p-edge"/></div>
+          <div class="field"><div class="field-head"><span class="name">Irregularity</span><span class="val num" data-out="p-irreg">0.10</span></div><input type="range" min="0" max="45" value="10" data-bind="p-irreg" id="p-irreg"/></div>
+          <div class="field"><div class="field-head"><span class="name">Tilt</span><span class="val num" data-out="p-tilt">0.06 rad</span></div><input type="range" min="0" max="60" value="6" data-bind="p-tilt" id="p-tilt"/></div>
+          <div class="field"><div class="field-head"><span class="name">Gap</span><span class="val num" data-out="p-gap">0.02</span></div><input type="range" min="0" max="40" value="2" data-bind="p-gap" id="p-gap"/></div>
+          <p class="note">Edge is a superellipse exponent: below 2 goes lens-like, above 2 fills toward a rounded rectangle. Irregularity adds low harmonics so outlines wander like real pebbles.</p>
+        </div>
+
+
+       </div><!-- /shape -->
+
+       <!-- ── FIELD ──────────────────────────────────────────────── -->
+       <div class="panel-grid" data-tab-panel="field" style="display:none">
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8c3-3 6 3 9 0s6-3 9 0M3 16c3-3 6 3 9 0s6-3 9 0"/></svg><span class="lbl">Flow</span></div>
+          <div class="field"><div class="field-head"><span class="name">Detail</span><span class="val num" data-out="p-detail">0.055</span></div><input type="range" min="10" max="300" value="55" data-bind="p-detail" id="p-detail"/></div>
+          <div class="field"><div class="field-head"><span class="name">Warp</span><span class="val num" data-out="p-warp">1.10</span></div><input type="range" min="0" max="300" value="110" data-bind="p-warp" id="p-warp"/></div>
+          <div class="field"><div class="field-head"><span class="name">Octaves</span><span class="val num" data-out="p-oct">3</span></div><input type="range" min="1" max="4" value="3" data-bind="p-oct" id="p-oct"/></div>
+          <div class="field"><div class="field-head"><span class="name">Contrast</span><span class="val num" data-out="p-contrast">1.70</span></div><input type="range" min="50" max="400" step="5" value="170" data-bind="p-contrast" id="p-contrast"/></div>
+          <div class="field"><div class="field-head"><span class="name">Flow speed</span><span class="val num" data-out="p-flow">0.14</span></div><input type="range" min="0" max="100" value="14" data-bind="p-flow" id="p-flow"/></div>
+          <p class="note">Domain-warped fractal noise. Warp is what turns straight bands into organic drift.</p>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="10.5"/></svg><span class="lbl">Radial</span></div>
+          <div class="field"><div class="field-head"><span class="name">Radial pull</span><span class="val num" data-out="p-radial">0.36</span></div><input type="range" min="0" max="100" value="36" data-bind="p-radial" id="p-radial"/></div>
+          <div class="field"><div class="field-head"><span class="name">Rings</span><span class="val num" data-out="p-rings">1.30</span></div><input type="range" min="0" max="500" step="5" value="130" data-bind="p-rings" id="p-rings"/></div>
+          <p class="note">Blends the noise toward concentric rings pinned to the <b style="font-weight:500">frame</b>, not the shape — so the bright core stays put while the grid drifts through it.</p>
+        </div>
+
+       </div><!-- /field -->
+
+       <!-- ── COLOUR ─────────────────────────────────────────────── -->
+       <div class="panel-grid" data-tab-panel="colour" style="display:none">
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><path d="M12 22a10 10 0 1 1 0-20c5 0 7 3 7 6 0 2.5-2 3-4 3h-3c-2 0-3 1-3 2.5S10 22 12 22z"/></svg><span class="lbl">Ramp</span></div>
+          <div class="field"><span class="name">Palette</span>
+            <div id="paletteSelWrap"></div>
+            <div class="ramp-strip" id="rampStrip"></div>
+          </div>
+          <div class="field">
+            <div class="field-head"><span class="name">Stops</span><span class="val num" id="stopCount">13</span></div>
+            <div id="palList"></div>
+            <button class="add-pal" id="btn-addstop">+ Add colour</button>
+          </div>
+          <div class="btn-row"><button class="btn ghost" id="btn-revertpal">Revert to saved ramp</button></div>
+          <div class="field">
+            <span class="name">Save this ramp</span>
+            <div class="tf-row" style="margin-top:6px">
+              <label class="tf"><input type="text" id="palName" placeholder="Palette name" maxlength="28" spellcheck="false"/></label>
+            </div>
+            <div class="btn-row" style="margin-top:6px">
+              <button class="btn" id="btn-savepal">Save palette</button>
+              <button class="btn ghost" id="btn-delpal">Delete</button>
+            </div>
+            <p class="note" id="palMsg">Saved palettes stay in this browser and reappear next time you open the tool.</p>
+          </div>
+          <div class="field"><span class="name">Ground</span><input type="color" id="p-bg" value="#411506"/></div>
+          <p class="note">Each stop has a <b style="font-weight:500">weight</b> — its share of the ramp, shown as band width in the strip above. Order matters too: the ramp is cyclic, so the last colour steps back to the first.</p>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 18L20 6M4 12h6M14 12h6"/></svg><span class="lbl">Distribution</span></div>
+          <div class="field"><div class="field-head"><span class="name">Ramp spread</span><span class="val num" data-out="p-spread">1.30</span></div><input type="range" min="10" max="300" value="130" data-bind="p-spread" id="p-spread"/></div>
+          <div class="field"><div class="field-head"><span class="name">Ramp offset</span><span class="val num" data-out="p-offset">0.04</span></div><input type="range" min="0" max="100" value="4" data-bind="p-offset" id="p-offset"/></div>
+          <div class="field"><div class="field-head"><span class="name">Hue weave</span><span class="val num" data-out="p-weaveH">0.14</span></div><input type="range" min="0" max="50" value="14" data-bind="p-weaveH" id="p-weaveH"/></div>
+          <div class="field"><div class="field-head"><span class="name">Cell jitter</span><span class="val num" data-out="p-jitter">0.05</span></div><input type="range" min="0" max="50" value="5" data-bind="p-jitter" id="p-jitter"/></div>
+          <div class="field"><div class="field-head"><span class="name">Hue drift</span><span class="val num" data-out="p-drift">0.03</span></div><input type="range" min="-30" max="30" value="3" data-bind="p-drift" id="p-drift"/></div>
+          <p class="note">Hue weave sets how far apart neighbours sit on the ramp. Low keeps coherent fields; high goes mosaic.</p>
+        </div>
+
+       </div><!-- /colour -->
+
+       <!-- ── MOTION ─────────────────────────────────────────────── -->
+       <div class="panel-grid" data-tab-panel="motion" style="display:none">
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12c3-6 6 6 9 0s6-6 9 0"/></svg><span class="lbl">Row wave</span></div>
+          <div class="field"><div class="field-head"><span class="name">Amount</span><span class="val num" data-out="p-wave">0.55</span></div><input type="range" min="0" max="300" value="55" data-bind="p-wave" id="p-wave"/></div>
+          <div class="field"><div class="field-head"><span class="name">Frequency</span><span class="val num" data-out="p-waveF">0.36</span></div><input type="range" min="0" max="200" value="36" data-bind="p-waveF" id="p-waveF"/></div>
+          <div class="field"><div class="field-head"><span class="name">Speed</span><span class="val num" data-out="p-waveS">0.20</span></div><input type="range" min="-100" max="100" value="20" data-bind="p-waveS" id="p-waveS"/></div>
+          <div class="field"><div class="field-head"><span class="name">Row bow</span><span class="val num" data-out="p-bow">0.10</span></div><input type="range" min="-150" max="150" value="10" data-bind="p-bow" id="p-bow"/></div>
+          <p class="note">Offsets each row sideways as a travelling wave. Push Amount past 2 for the diagonal S-curve.</p>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg><span class="lbl">Transport</span></div>
+          <div class="field"><div class="field-head"><span class="name">Tempo</span><span class="val num" data-out="p-tempo">1.00 ×</span></div><input type="range" min="0" max="250" value="100" data-bind="p-tempo" id="p-tempo"/></div>
+          <div class="btn-row">
+            <button class="btn" id="btn-play2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>Pause</button>
+            <button class="btn ghost" id="btn-restart">Restart</button>
+          </div>
+          <p class="note">Tempo 0 freezes the field so you can tune a still. <b style="font-weight:500">P</b> toggles play, <b style="font-weight:500">R</b> shuffles, <b style="font-weight:500">S</b> saves a PNG.</p>
+        </div>
+
+       </div><!-- /motion -->
+
+       <!-- ── EXPORT ─────────────────────────────────────────────── -->
+       <div class="panel-grid" data-tab-panel="export" style="display:none">
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg><span class="lbl">Still</span></div>
+          <div class="field"><span class="name">Artboard</span>
+            <div class="hty-select" data-size-preset>
+              <button class="hty-select-btn"><span class="hty-select-val">1080 × 1920 · Story</span><svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>
+              <div class="hty-select-menu" role="listbox">
+                <button class="hty-opt is-selected" data-value="1080x1920">1080 × 1920 · Story</button>
+                <button class="hty-opt" data-value="1080x1350">1080 × 1350 · Portrait</button>
+                <button class="hty-opt" data-value="1080x1080">1080 × 1080 · Square</button>
+                <button class="hty-opt" data-value="1920x1080">1920 × 1080 · Landscape</button>
+                <button class="hty-opt" data-value="1440x1440">1440 × 1440</button>
+                <button class="hty-opt" data-value="custom">Custom…</button>
+              </div>
+            </div>
+            <div class="tf-row" data-size-custom style="display:none;margin-top:8px;">
+              <label class="tf"><span class="g">W</span><input type="number" data-size="w" data-min="1" data-step="1" value="1080"/></label>
+              <label class="tf"><span class="g">H</span><input type="number" data-size="h" data-min="1" data-step="1" value="1920"/></label>
+            </div>
+          </div>
+          <div class="field"><span class="name">Resolution</span>
+            <div class="seg fill" data-radio data-res id="ex-res"><button class="active" data-mult="1">1×</button><button data-mult="2">2×</button><button data-mult="4">4×</button></div>
+          </div>
+          <div class="field"><div class="field-head"><span class="name">Render size</span><span class="val num" data-export-size>1080 × 1920</span></div></div>
+          <div class="btn-row"><button class="btn" id="btn-png"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>Export PNG</button></div>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg><span class="lbl">Motion clip</span></div>
+          <div class="field"><div class="field-head"><span class="name">Duration</span><span class="val num" data-out="p-dur">6 s</span></div><input type="range" min="1" max="30" value="6" data-bind="p-dur" id="p-dur"/></div>
+          <div class="field"><span class="name">Frame rate</span>
+            <div class="chips" data-radio id="clip-fps"><button class="chip">24</button><button class="chip active">30</button><button class="chip">60</button></div>
+          </div>
+          <div class="field"><div class="field-head"><span class="name">Bitrate</span><span class="val num" data-out="p-brate">12 Mb/s</span></div><input type="range" min="2" max="40" value="12" data-bind="p-brate" id="p-brate"/></div>
+          <p class="note" id="clipNote">H.264 MP4, rendered frame by frame rather than screen-captured — exact duration and frame rate, and no dropped frames when the grid gets heavy.</p>
+          <div class="btn-row"><button class="btn" id="btn-clip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>Export MP4</button></div>
+        </div>
+
+       </div><!-- /export -->
+
+       <!-- ── PRESETS ────────────────────────────────────────────── -->
+       <div class="panel-grid" data-tab-panel="presets" style="display:none">
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg><span class="lbl">Built-in looks</span></div>
+          <div class="field"><span class="name">Starting point</span>
+            <div class="chips presets-chips" data-radio id="presetRow">
+              <button class="chip active" data-preset="Pebbles">Pebbles</button>
+              <button class="chip" data-preset="Shoal">Shoal</button>
+              <button class="chip" data-preset="Cairn">Cairn</button>
+              <button class="chip" data-preset="Ribbon">Ribbon</button>
+              <button class="chip" data-preset="Tide">Tide</button>
+            </div>
+          </div>
+          <div class="field"><span class="name">Seed</span><div class="stepper"><button data-step="-1">−</button><div class="vs"></div><input type="number" id="p-seed" value="4021"/><div class="vs"></div><button data-step="1">+</button></div></div>
+          <div class="btn-row"><button class="btn ghost" id="btn-reset">Reset to built-in</button></div>
+        </div>
+
+        <div class="group">
+          <div class="group-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 3v6h7"/></svg><span class="lbl">Saved looks</span></div>
+          <div class="tf-row">
+            <label class="tf"><input type="text" id="libName" placeholder="Name this look" maxlength="32" spellcheck="false"/></label>
+          </div>
+          <div class="btn-row" style="margin-top:6px">
+            <button class="btn" id="btn-savelook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/></svg>Save current look</button>
+          </div>
+          <div id="libList" style="margin-top:10px"></div>
+          <p class="note" id="libMsg">A look stores every control, the seed, the full colour ramp and the ground — everything except the artboard size. Saved in this browser.</p>
+        </div>
+
+       </div><!-- /presets -->
+
+
+      </div>
+    </div>
+
+    <!-- main row -->
+    <div class="hty-main">
+      <div class="hty-chip"><div class="nm">Pebble Loom</div><div class="lbl">Oval Grid Studio</div></div>
+      <div class="hty-main-sep"></div>
+      <div class="hty-tools">
+        <button class="tbtn active" title="Select"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 3l7 17 2.5-6.5L21 11z"/></svg></button>
+        <button class="tbtn" title="Pan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V7a2 2 0 0 0-4 0M14 9V5a2 2 0 0 0-4 0v2M10 9V5a2 2 0 0 0-4 0v9"/><path d="M6 14l-1.5-1.5a2 2 0 0 0-3 3L6 21h8a4 4 0 0 0 4-4v-6a2 2 0 0 0-4 0"/></svg></button>
+      </div>
+      <div class="sp"></div>
+      <button class="icon-btn" id="btn-shuffle" title="Shuffle (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
+      <button class="btn" id="btn-play"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>Pause</button>
+      <button class="icon-btn" data-expand title="More controls"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></button>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.1/build/mp4-muxer.min.js"></script>
+  <script src="../../shared/hty-ui.js"></script>
+  <script>
+  /* ══════════════════════════════════════════════════════════════════════
+     PEBBLE LOOM · oval grid studio
+     ─────────────────────────────────────────────────────────────────────
+     A fixed-pitch grid of overlapping ovals. One domain-warped noise field
+     per cell drives size, position and colour together, which is what makes
+     the motion read as a single organism rather than N independent shapes.
+
+     Reverse-engineered from a reference animation, measured rather than eyed:
+       · shapes are true ellipses  (bbox fill 0.73 vs pi/4 = 0.785)
+       · fills are FLAT — one ramp sample per shape, no internal gradient
+       · neighbours trade width, pairs summing to a constant pitch (±8%)
+       · the weave runs past 1.0, so fat ovals crush neighbours to slivers
+       · ground reads ~20% of frame; the ramp is heavily weight-skewed dark
+     ══════════════════════════════════════════════════════════════════════ */
+  (() => {
+  'use strict';
+
+  /* ── palettes: [colour, weight] ────────────────────────────────────────
+     Weight is the colour's share of the ramp. In the reference one deep
+     indigo is 11% of the frame while every bright is low single digits, so
+     the dark anchor holds most of the ramp. Even weights give confetti. */
+  const PALETTES = {
+    'Reference'   : [['#f241bf',2],['#c840c6',2],['#a944c8',1],
+                     ['#3b2697',18],
+                     ['#354aad',6],['#305eba',4],['#317dbd',3],['#3089ec',1],
+                     ['#f3f6f9',1],['#a9d8d4',2],['#82df82',2],['#6cee49',4],['#dae346',2]],
+    'Shingle'     : [['#e8e2d6',2],['#cfc6b4',2],['#a89a86',1],
+                     ['#2e2a26',18],
+                     ['#463f38',6],['#5c534a',4],['#776b5e',3],['#8f8175',1],
+                     ['#f7f4ee',1],['#ded6c8',2],['#c2b8a6',2],['#9d9184',4],['#6f665c',2]],
+    'Ember'       : [['#ff2d55',2],['#e8244a',2],['#c81d3c',1],
+                     ['#2b0a12',18],
+                     ['#5c0f1e',6],['#7a2418',4],['#a83a1c',3],['#d9531f',1],
+                     ['#fff6e6',1],['#ffd98a',2],['#ffb14a',2],['#ff8c2b',4],['#f0b429',2]],
+    'Chlorophyll' : [['#ff3ea5',2],['#ff7ac2',2],['#c6f53d',1],
+                     ['#062416',18],
+                     ['#12401f',6],['#0f4d47',4],['#15706a',3],['#1f8a7a',1],
+                     ['#ffffff',1],['#d8fff4',2],['#a8ecdc',2],['#9ae62b',4],['#eaff6b',2]],
+    'Solar'       : [['#ffd166',2],['#f4a261',2],['#e76f51',1],
+                     ['#1b1035',18],
+                     ['#3d1e3a',6],['#7a2a48',4],['#9d2f4a',3],['#c0453f',1],
+                     ['#ffffff',1],['#fff2c4',2],['#a8e0f0',2],['#4d9fd6',4],['#2c4a7a',2]],
+    'Ash'         : [['#cfcae8',2],['#b9b4cc',2],['#8f88c4',1],
+                     ['#141225',18],
+                     ['#25213a',6],['#302b4a',4],['#3d3757',3],['#4a4463',1],
+                     ['#f6f4fb',1],['#e8e6f0',2],['#c4bfd8',2],['#7d7796',4],['#5b548a',2]]
+  };
+
+  /* ── controls: slider units are integers (house style); map to real ── */
+  const CTRL = {
+    cell    : { id:'p-cell',     f: v => v,        fmt: v => v + ' px' },
+    aspect  : { id:'p-aspect',   f: v => v / 100,  fmt: v => (v/100).toFixed(2) + ' ×' },
+    base    : { id:'p-base',     f: v => v / 100,  fmt: v => (v/100).toFixed(2) + ' ×' },
+    cover   : { id:'p-cover',    f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    altX    : { id:'p-altX',     f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    altY    : { id:'p-altY',     f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    edge    : { id:'p-edge',     f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    irreg   : { id:'p-irreg',    f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    tilt    : { id:'p-tilt',     f: v => v / 100,  fmt: v => (v/100).toFixed(2) + ' rad' },
+    gap     : { id:'p-gap',      f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    detail  : { id:'p-detail',   f: v => v / 1000, fmt: v => (v/1000).toFixed(3) },
+    warp    : { id:'p-warp',     f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    oct     : { id:'p-oct',      f: v => v,        fmt: v => String(v) },
+    contrast: { id:'p-contrast', f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    flow    : { id:'p-flow',     f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    radial  : { id:'p-radial',   f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    rings   : { id:'p-rings',    f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    spread  : { id:'p-spread',   f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    offset  : { id:'p-offset',   f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    weaveH  : { id:'p-weaveH',   f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    jitter  : { id:'p-jitter',   f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    drift   : { id:'p-drift',    f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    wave    : { id:'p-wave',     f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    waveF   : { id:'p-waveF',    f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    waveS   : { id:'p-waveS',    f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    bow     : { id:'p-bow',      f: v => v / 100,  fmt: v => (v/100).toFixed(2) },
+    tempo   : { id:'p-tempo',    f: v => v / 100,  fmt: v => (v/100).toFixed(2) + ' ×' },
+    brate   : { id:'p-brate',    f: v => v,        fmt: v => v + ' Mb/s' },
+    dur     : { id:'p-dur',      f: v => v,        fmt: v => v + ' s' }
+  };
+
+  /* preset values are in the same integer slider units */
+  const PRESETS = {
+    Pebbles: { cell:30, aspect:460, base:106, altX:150, altY:135, cover:92, edge:200, irreg:10, tilt:6,  gap:2,
+               detail:55, warp:110, oct:3, contrast:170, flow:14, radial:36, rings:130,
+               spread:130, offset:4,  weaveH:14, jitter:5, drift:3,
+               wave:55,  waveF:36, waveS:20, bow:10, tempo:100 },
+    Shoal:   { cell:16, aspect:460, base:102, altX:175, altY:85,  cover:97, edge:200, irreg:16, tilt:12, gap:6,
+               detail:85, warp:170, oct:3, contrast:200, flow:22, radial:14, rings:210,
+               spread:180, offset:20, weaveH:20, jitter:7, drift:5,
+               wave:35,  waveF:70, waveS:34, bow:4,  tempo:100 },
+    Cairn:   { cell:52, aspect:160, base:104, altX:80,  altY:55,  cover:90, edge:260, irreg:22, tilt:22, gap:7,
+               detail:70, warp:80,  oct:2, contrast:150, flow:9,  radial:42, rings:100,
+               spread:150, offset:55, weaveH:10, jitter:6, drift:2,
+               wave:30,  waveF:30, waveS:12, bow:22, tempo:100 },
+    Ribbon:  { cell:22, aspect:740, base:100, altX:190, altY:120, cover:86, edge:175, irreg:7,  tilt:3,  gap:2,
+               detail:45, warp:150, oct:3, contrast:190, flow:18, radial:20, rings:85,
+               spread:155, offset:10, weaveH:17, jitter:5, drift:4,
+               wave:210, waveF:46, waveS:32, bow:5,  tempo:100 },
+    Tide:    { cell:38, aspect:260, base:102, altX:90,  altY:50,  cover:98, edge:220, irreg:28, tilt:30, gap:9,
+               detail:28, warp:70,  oct:2, contrast:140, flow:7,  radial:48, rings:260,
+               spread:170, offset:62, weaveH:8,  jitter:3, drift:2,
+               wave:24,  waveF:20, waveS:8,  bow:30, tempo:100 }
+  };
+
+  const $ = s => document.querySelector(s);
+  const GROUND = '#411506';                       // default ground — dark brown
+  const P = {};                                   // live real-valued params
+  P.palette = 'Reference';
+  P.bg = GROUND;
+  P.seed = 4021;
+
+  /* ── noise ─────────────────────────────────────────────────────────── */
+  function hash(x, y, z, seed) {
+    let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263)
+          ^ Math.imul(z, 1103515245) ^ Math.imul(seed, 1013904223);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+  }
+  function vnoise(x, y, z, seed) {
+    const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+    const xf = x - xi, yf = y - yi, zf = z - zi;
+    const u = xf*xf*(3-2*xf), v = yf*yf*(3-2*yf), w = zf*zf*(3-2*zf);
+    const c000=hash(xi,yi,zi,seed),     c100=hash(xi+1,yi,zi,seed);
+    const c010=hash(xi,yi+1,zi,seed),   c110=hash(xi+1,yi+1,zi,seed);
+    const c001=hash(xi,yi,zi+1,seed),   c101=hash(xi+1,yi,zi+1,seed);
+    const c011=hash(xi,yi+1,zi+1,seed), c111=hash(xi+1,yi+1,zi+1,seed);
+    const x00=c000+(c100-c000)*u, x10=c010+(c110-c010)*u;
+    const x01=c001+(c101-c001)*u, x11=c011+(c111-c011)*u;
+    const y0=x00+(x10-x00)*v,     y1=x01+(x11-x01)*v;
+    return y0 + (y1-y0)*w;
+  }
+  function fbm(x, y, z, oct, seed) {
+    let sum = 0, amp = .5, norm = 0, f = 1;
+    for (let i = 0; i < oct; i++) {
+      sum += amp * vnoise(x*f, y*f, z*f, seed + i*101);
+      norm += amp; amp *= .5; f *= 2.03;
+    }
+    return sum / norm;
+  }
+
+  /* ── colour lookup ─────────────────────────────────────────────────────
+     Weighted bands → a flat 512-entry table. Lookup is a hard band hit, not
+     an interpolation, so every pebble gets an exact palette colour and the
+     weights show up directly as how often each one appears. */
+  const hex2rgb = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+  const LUT_N = 512;
+  let LUT = [], lutKey = '';
+
+  /* the live, user-editable ramp — presets seed it, then it is fully owned
+     by the stop editor (colour, weight, order, add, remove) */
+  let RAMP = PALETTES['Reference'].map(p => p.slice());
+  const rampKey = () => RAMP.map(p => p[0] + ':' + p[1]).join('|');
+
+  function bandsOf(ramp) {
+    const total = ramp.reduce((a, p) => a + p[1], 0) || 1;
+    const out = []; let acc = 0;
+    for (const [hex, w] of ramp) {
+      const start = acc / total; acc += w;
+      out.push({ start, end: acc / total, c: hex2rgb(hex) });
+    }
+    return out;
+  }
+  function buildLUT() {
+    const k = rampKey();
+    if (k === lutKey) return;
+    lutKey = k;
+    const bands = bandsOf(RAMP);
+    LUT = new Array(LUT_N);
+    let bi = 0;
+    for (let i = 0; i < LUT_N; i++) {
+      const u = (i + .5) / LUT_N;
+      while (bi < bands.length - 1 && u >= bands[bi].end) bi++;
+      const c = bands[bi].c;
+      LUT[i] = `rgb(${c[0]},${c[1]},${c[2]})`;
+    }
+  }
+  const colourAt = u => LUT[((((u % 1) + 1) % 1) * LUT_N) | 0];
+
+  /* ── pebble geometry ───────────────────────────────────────────────────
+     Superellipse |x|^n + |y|^n = 1 (n = 2 is a true ellipse, which is what
+     the reference uses). Irregularity adds low harmonics — periodic in
+     theta, so the outline always closes — then quadratics through edge
+     midpoints keep it smooth with no visible facets. */
+  const TAU = Math.PI * 2;
+  const NPT = 30;
+  const BX = new Float64Array(NPT), BY = new Float64Array(NPT);
+
+  function pebblePath(x, cx, cy, rx, ry, n, irr, rot, h1, h2, h3) {
+    if (irr < .004 && n > 1.97 && n < 2.03) {        // fast path: true ellipse
+      x.beginPath();
+      x.ellipse(cx, cy, rx, ry, rot, 0, TAU);
+      return;
+    }
+    const e = 2 / n, ca = Math.cos(rot), sa = Math.sin(rot);
+    for (let i = 0; i < NPT; i++) {
+      const th = i / NPT * TAU;
+      const ct = Math.cos(th), st = Math.sin(th);
+      const ux = (ct < 0 ? -1 : 1) * Math.pow(Math.abs(ct), e);
+      const uy = (st < 0 ? -1 : 1) * Math.pow(Math.abs(st), e);
+      const k = irr > 0
+        ? 1 + irr * (.55*Math.sin(2*th + h1) + .30*Math.sin(3*th + h2) + .15*Math.sin(5*th + h3))
+        : 1;
+      const ex = rx * ux * k, ey = ry * uy * k;
+      BX[i] = cx + ex*ca - ey*sa;
+      BY[i] = cy + ex*sa + ey*ca;
+    }
+    x.beginPath();
+    x.moveTo((BX[NPT-1] + BX[0]) / 2, (BY[NPT-1] + BY[0]) / 2);
+    for (let i = 0; i < NPT; i++) {
+      const j = (i + 1) % NPT;
+      x.quadraticCurveTo(BX[i], BY[i], (BX[i] + BX[j]) / 2, (BY[i] + BY[j]) / 2);
+    }
+    x.closePath();
+  }
+
+  /* ── render ────────────────────────────────────────────────────────── */
+  const cv = $('#art');
+  const ctx = cv.getContext('2d', { alpha: false });
+  // start a little way into the loop — t=0 is the field's most uniform frame
+  const T0 = 3.5;
+  let t = T0, playing = true, lastMs = 0, fpsAvg = 60, count = 0, exporting = false;
+
+  function paint(x, W, H, k) {
+    buildLUT();
+    x.fillStyle = P.bg;
+    x.fillRect(0, 0, W, H);
+
+    const px = P.cell * k, py = P.cell * P.aspect * k;
+    const cols = Math.ceil(W / px) + 4;
+    const rows = Math.ceil(H / py) + 4;
+    const ox = -2 * px, oy = -2 * py;
+    const oct = Math.round(P.oct);
+    const ny_s = P.detail * P.aspect;
+    const shrink = 1 - P.gap;
+    let n = 0;
+
+    for (let r = 0; r < rows; r++) {
+      const rowX = P.wave * px * Math.sin(r * P.waveF + t * P.waveS * 2);
+      for (let c = 0; c < cols; c++) {
+        const nx = c * P.detail, ny = r * ny_s;
+
+        const wx = fbm(nx*.6 + 11.3, ny*.6 +  4.7, t*.11,       2, P.seed) * 2 - 1;
+        const wy = fbm(nx*.6 -  7.1, ny*.6 +  9.2, t*.11 + 3.3, 2, P.seed) * 2 - 1;
+        let s = fbm(nx + P.warp*wx, ny + P.warp*wy, t * P.flow, oct, P.seed);
+        s = (s - .5) * P.contrast + .5;              // fbm clusters near .5
+        s = s < 0 ? 0 : s > 1 ? 1 : s;
+
+        if (P.radial > 0) {                          // rings pinned to the frame
+          const dx = (c + .5) / cols - .5;
+          const dy = (r + .5) / rows - .5;
+          const dd = Math.min(1, Math.hypot(dx * 1.15, dy * .8) * 2);
+          const ring = .5 + .5 * Math.cos(dd * Math.PI * Math.max(.001, P.rings));
+          s = s * (1 - P.radial) + ring * P.radial;
+        }
+
+        let vis = 1;
+        if (P.cover < 1) {                           // feathered outline
+          const m = fbm(nx*1.1 + 31.7, ny*1.1 - 19.4, t * P.flow * .6, 2, P.seed + 77);
+          vis = (P.cover - m) / .16;
+          if (vis <= 0) continue;
+          if (vis > 1) vis = 1;
+        }
+
+        // one field value → size and colour. Neighbours trade size and sit a
+        // step apart on the ramp; clamped so a crushed neighbour becomes a
+        // sliver instead of inverting.
+        const aX = ((c + r) & 1) ? 1 : -1;
+        const aY = (r & 1) ? 1 : -1;
+        const kx = Math.max(.07, 1 + P.altX * s * aX);
+        const ky = Math.max(.07, 1 + P.altY * s * aY);
+        const w = px * P.base * kx * vis * shrink;
+        const h = py * P.base * ky * (.35 + .65 * vis) * shrink;
+        if (w < .8 || h < .8) continue;
+
+        const bow = P.bow * py * Math.cos(((c + .5) / cols - .5) * Math.PI);
+        const cx = ox + (c + .5) * px + rowX;
+        const cy = oy + (r + .5) * py + bow;
+        const rx = w / 2, ry = h / 2;
+        if (cx + rx < 0 || cx - rx > W || cy + ry < 0 || cy - ry > H) continue;
+
+        const jit = P.jitter
+          ? (hash(c * 7 + 3, r * 13 + 5, 1, P.seed + 991) - .5) * 2 * P.jitter
+          : 0;
+        const u = P.offset + s * P.spread + P.weaveH * (-aX + .5 * aY) + jit + t * P.drift;
+        const rot = P.tilt ? (hash(c*3+1, r*5+2, 2, P.seed + 313) - .5) * 2 * P.tilt : 0;
+
+        x.fillStyle = colourAt(u);
+        pebblePath(x, cx, cy, rx, ry, P.edge, P.irreg, rot,
+                   hash(c, r, 4, P.seed + 17) * TAU,
+                   hash(c, r, 5, P.seed + 29) * TAU,
+                   hash(c, r, 6, P.seed + 41) * TAU);
+        x.fill();
+        n++;
+      }
+    }
+    return n;
+  }
+
+  const teleCount = $('[data-out="teleCount"]');
+  const teleFps   = $('[data-out="teleFps"]');
+  const teleStat  = $('[data-out="teleStatus"]');
+
+  function frame(ms) {
+    const dt = lastMs ? Math.min(.05, (ms - lastMs) / 1000) : .016;
+    lastMs = ms;
+    if (playing) t += dt * P.tempo;
+    if (!exporting) count = paint(ctx, cv.width, cv.height, 1);
+    fpsAvg += (1 / Math.max(dt, .001) - fpsAvg) * .08;
+    teleCount.textContent = count.toLocaleString();
+    teleFps.textContent = Math.round(fpsAvg);
+    requestAnimationFrame(frame);
+  }
+
+  /* ── artboard size ─────────────────────────────────────────────────────
+     Driven off the design system's size contract rather than observed
+     layout: clientWidth loses 2px to the frame border, and a transient
+     reflow (e.g. collapsing the dock) can latch the backing store at an
+     intermediate height and never fire again. */
+  const frameEl = $('.hty-frame');
+  function setArt(w, h) {
+    w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h));
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  }
+  setArt(+frameEl.dataset.w || 1080, +frameEl.dataset.h || 1920);
+
+  const sizeSel = $('[data-size-preset]');
+  sizeSel.addEventListener('hty:change', e => {
+    const v = e.detail.value;
+    if (v === 'custom') return;
+    const m = String(v).split('x').map(Number);
+    if (m[0] && m[1]) setArt(m[0], m[1]);
+  });
+  const wIn = $('[data-size="w"]'), hIn = $('[data-size="h"]');
+  const onCustomSize = () => setArt(+wIn.value || 1, +hIn.value || 1);
+  wIn.addEventListener('input', onCustomSize);
+  hIn.addEventListener('input', onCustomSize);
+
+  /* ── wire the sliders ──────────────────────────────────────────────── */
+  function refresh(key) {
+    const spec = CTRL[key], el = document.getElementById(spec.id);
+    const raw = parseFloat(el.value);
+    P[key] = spec.f(raw);
+    const out = document.querySelector(`[data-out="${spec.id}"]`);
+    if (out) out.textContent = spec.fmt(raw);
+  }
+  function wireControls() {
+    Object.keys(CTRL).forEach(key => {
+      const el = document.getElementById(CTRL[key].id);
+      // registered after hty-ui's own listener, so this formatting wins
+      el.addEventListener('input', () => refresh(key));
+      refresh(key);
+    });
+  }
+
+  /* ── palette, ground, seed ─────────────────────────────────────────── */
+  const strip = $('#rampStrip');
+  const palList = $('#palList');
+  const stopCount = $('#stopCount');
+
+  function paintStrip() {
+    strip.innerHTML = '';
+    RAMP.forEach(([hex, w]) => {
+      const s = document.createElement('span');
+      s.style.background = hex;
+      s.style.flexGrow = w;
+      strip.appendChild(s);
+    });
+  }
+
+  /* DOM order is the source of truth, so reordering is just moving nodes */
+  function syncRamp() {
+    RAMP = [...palList.querySelectorAll('.pal-row')].map(r => [
+      r.querySelector('.native-picker').value,
+      Math.max(1, Math.min(40, parseInt(r.querySelector('.pal-w').value, 10) || 1))
+    ]);
+    stopCount.textContent = RAMP.length;
+    const only = RAMP.length <= 1;
+    palList.querySelectorAll('.del').forEach(b => { b.disabled = only; });
+    paintStrip();
+  }
+
+  function makeStopRow(hex, w) {
+    const row = document.createElement('div');
+    row.className = 'pal-row';
+    row.innerHTML =
+      `<div class="color-swatch" style="background:${hex}"><input type="color" class="native-picker" value="${hex}"/></div>` +
+      `<input type="text" class="color-hex" value="${hex}" maxlength="7" spellcheck="false"/>` +
+      `<input type="number" class="pal-w" min="1" max="40" step="1" value="${w}" title="Weight — this colour's share of the ramp"/>` +
+      `<button class="rowbtn" data-mv="-1" title="Move up">&uarr;</button>` +
+      `<button class="rowbtn" data-mv="1" title="Move down">&darr;</button>` +
+      `<button class="rowbtn del" title="Remove">&times;</button>`;
+
+    const sw = row.querySelector('.color-swatch');
+    const cp = row.querySelector('.native-picker');
+    const hx = row.querySelector('.color-hex');
+
+    cp.addEventListener('input', () => { hx.value = cp.value; sw.style.background = cp.value; syncRamp(); });
+    hx.addEventListener('input', () => {
+      let v = hx.value.trim();
+      if (v && v[0] !== '#') v = '#' + v;
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) { cp.value = v.toLowerCase(); sw.style.background = v; syncRamp(); }
+    });
+    hx.addEventListener('blur', () => { hx.value = cp.value; });   // snap back if left invalid
+    row.querySelector('.pal-w').addEventListener('input', syncRamp);
+    row.querySelector('.del').addEventListener('click', () => {
+      if (palList.querySelectorAll('.pal-row').length > 1) { row.remove(); syncRamp(); }
+    });
+    row.querySelectorAll('[data-mv]').forEach(b => b.addEventListener('click', () => {
+      if (+b.dataset.mv < 0) { if (row.previousElementSibling) palList.insertBefore(row, row.previousElementSibling); }
+      else if (row.nextElementSibling) palList.insertBefore(row.nextElementSibling, row);
+      syncRamp();
+    }));
+    return row;
+  }
+
+  function setRampRows(arr) {
+    palList.innerHTML = '';
+    arr.forEach(([hex, w]) => palList.appendChild(makeStopRow(hex, w)));
+    syncRamp();
+  }
+  function loadPalette(name) { setRampRows(resolvePalette(name)); }
+
+  /* ── saved palettes ───────────────────────────────────────────────────
+     User ramps persist in localStorage so they survive closing the tool.
+     They live under a "user:" prefixed value so a saved palette can share a
+     name with a built-in without shadowing it. */
+  const LS_KEY = 'pebble-loom.palettes.v1';
+  let USER = {}, storageOK = true;
+  try {
+    localStorage.setItem(LS_KEY + '.probe', '1');
+    localStorage.removeItem(LS_KEY + '.probe');
+  } catch (err) { storageOK = false; }
+
+  function loadUser() {
+    if (!storageOK) return;
+    try { USER = JSON.parse(localStorage.getItem(LS_KEY)) || {}; }
+    catch (err) { USER = {}; }
+    // drop anything that is not a well-formed [[hex, weight], …] ramp
+    Object.keys(USER).forEach(k => {
+      const r = USER[k];
+      if (!Array.isArray(r) || !r.length || !r.every(p =>
+            Array.isArray(p) && /^#[0-9a-fA-F]{6}$/.test(p[0]) && p[1] > 0)) delete USER[k];
+    });
+  }
+  function persistUser() {
+    if (!storageOK) return false;
+    try { localStorage.setItem(LS_KEY, JSON.stringify(USER)); return true; }
+    catch (err) { return false; }
+  }
+  loadUser();
+
+  const esc = t => String(t).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  const isUser = v => typeof v === 'string' && v.startsWith('user:');
+  const palLabel = v => isUser(v) ? v.slice(5) : v;
+  const resolvePalette = v =>
+    (isUser(v) ? USER[v.slice(5)] : PALETTES[v]) || PALETTES['Reference'];
+
+  const palMsg = $('#palMsg');
+  const palName = $('#palName');
+  let msgTimer = 0;
+  function say(t) {
+    palMsg.textContent = t;
+    clearTimeout(msgTimer);
+    msgTimer = setTimeout(() => {
+      palMsg.textContent = storageOK
+        ? 'Saved palettes stay in this browser and reappear next time you open the tool.'
+        : 'Storage is unavailable in this browser, so palettes cannot be saved.';
+    }, 3200);
+  }
+
+  /* The select is rebuilt wholesale when the saved list changes. hty-ui wires
+     each .hty-select once, so replacing the node (rather than appending
+     options) is what gets fresh options wired without doubling listeners. */
+  function renderPaletteSelect() {
+    // saved ones carry a dot in the menu; data-label keeps it out of the button
+    const opts = Object.keys(PALETTES).map(n => [n, n])
+      .concat(Object.keys(USER).sort().map(n => ['user:' + n, n + ' ·', n]));
+    $('#paletteSelWrap').innerHTML =
+      `<div class="hty-select" id="paletteSel">` +
+        `<button class="hty-select-btn"><span class="hty-select-val">${esc(palLabel(P.palette))}</span>` +
+        `<svg class="hty-select-chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2l5 4 5-4"/></svg></button>` +
+        `<div class="hty-select-menu" role="listbox">` +
+          opts.map(([v, l, label]) =>
+            `<button class="hty-opt${v === P.palette ? ' is-selected' : ''}" data-value="${esc(v)}"` +
+            `${label ? ` data-label="${esc(label)}"` : ''}>${esc(l)}</button>`
+          ).join('') +
+        `</div></div>`;
+    if (window.HTY) HTY.init();          // every component is once-guarded
+    $('#btn-delpal').disabled = !isUser(P.palette);
+  }
+
+  // hty:change bubbles, so this survives the select being replaced
+  $('#paletteSelWrap').addEventListener('hty:change', e => {
+    P.palette = e.detail.value;
+    palName.value = isUser(P.palette) ? palLabel(P.palette) : '';
+    $('#btn-delpal').disabled = !isUser(P.palette);
+    loadPalette(P.palette);
+  });
+
+  $('#btn-savepal').addEventListener('click', () => {
+    const name = palName.value.trim();
+    if (!name) { say('Give the palette a name first.'); palName.focus(); return; }
+    if (!storageOK) { say('Storage is unavailable, so this palette cannot be saved.'); return; }
+    const existed = Object.prototype.hasOwnProperty.call(USER, name);
+    USER[name] = RAMP.map(p => p.slice());
+    if (!persistUser()) { say('Could not save — browser storage is full.'); return; }
+    P.palette = 'user:' + name;
+    renderPaletteSelect();
+    say(existed ? `Updated “${name}”.` : `Saved “${name}”.`);
+  });
+
+  $('#btn-delpal').addEventListener('click', () => {
+    if (!isUser(P.palette)) return;
+    const name = palLabel(P.palette);
+    delete USER[name];
+    persistUser();
+    P.palette = 'Reference';
+    palName.value = '';
+    renderPaletteSelect();
+    loadPalette(P.palette);
+    say(`Deleted “${name}”.`);
+  });
+
+  $('#btn-addstop').addEventListener('click', () => { palList.appendChild(makeStopRow('#9a9a9a', 2)); syncRamp(); });
+  $('#btn-revertpal').addEventListener('click', () => loadPalette(P.palette));
+
+  renderPaletteSelect();
+  loadPalette(P.palette);
+  if (!storageOK) palMsg.textContent = 'Storage is unavailable in this browser, so palettes cannot be saved.';
+
+  const bgIn = $('#p-bg');
+  bgIn.addEventListener('input', () => { P.bg = bgIn.value; frameEl.style.background = bgIn.value; });
+  frameEl.style.background = P.bg;
+
+  const seedIn = $('#p-seed');
+  const readSeed = () => { P.seed = parseInt(seedIn.value, 10) || 0; };
+  seedIn.addEventListener('input', readSeed);
+  seedIn.addEventListener('change', readSeed);
+
+  /* ── presets ───────────────────────────────────────────────────────── */
+  let currentPreset = 'Pebbles';
+  function applyPreset(name) {
+    currentPreset = name;
+    const p = PRESETS[name];
+    Object.entries(p).forEach(([key, v]) => {
+      const spec = CTRL[key]; if (!spec) return;
+      const el = document.getElementById(spec.id);
+      el.value = v;
+      if (window.HTY) HTY.paintRange(el);
+      refresh(key);
+    });
+  }
+  $('#presetRow').addEventListener('click', e => {
+    const b = e.target.closest('button[data-preset]');
+    if (b) applyPreset(b.dataset.preset);
+  });
+  $('#btn-reset').addEventListener('click', () => {
+    applyPreset(currentPreset);
+    seedIn.value = 4021; readSeed(); t = T0;
+  });
+
+  /* ── transport ─────────────────────────────────────────────────────── */
+  const PLAY_ICON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l14 8-14 8z"/></svg>';
+  const PAUSE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
+  const playBtns = [$('#btn-play'), $('#btn-play2')];
+  function setPlaying(v) {
+    playing = v;
+    playBtns.forEach(b => { b.innerHTML = (v ? PAUSE_ICON : PLAY_ICON) + (v ? 'Pause' : 'Play'); });
+    teleStat.textContent = v ? 'Playing' : 'Paused';
+  }
+  playBtns.forEach(b => b.addEventListener('click', () => setPlaying(!playing)));
+  $('#btn-restart').addEventListener('click', () => { t = T0; });
+
+  /* ── randomiser ────────────────────────────────────────────────────────
+     Rolling ~27 independent uniform values does NOT feel random: with that
+     many draws every roll lands near the middle of the space, so results
+     converge on one average look. So each roll first picks an ARCHETYPE —
+     a corner of the space — and biases its defining controls there, then
+     samples everything else wide. That is what makes consecutive rolls feel
+     like different pieces rather than variations of one.
+     Fixed by request: base 0.85–1.40, edge 2.00 (true oval), irreg 0–0.12. */
+  const RND = (a, b) => a + Math.random() * (b - a);
+  const RNDINT = (a, b) => Math.round(RND(a, b));
+  const PICK = o => { const k = Object.keys(o); return k[(Math.random() * k.length) | 0]; };
+
+  // wide baseline — nearly the whole usable span of every slider
+  const WIDE = {
+    cell:[10,92],   aspect:[110,860], cover:[42,100], altX:[20,240], altY:[10,225],
+    tilt:[0,58],    gap:[0,22],       detail:[12,270], warp:[10,290], oct:[1,4],
+    contrast:[70,370], flow:[2,72],   radial:[0,95],  rings:[10,450],
+    spread:[25,290],   offset:[0,100], weaveH:[0,46], jitter:[0,44],
+    drift:[-24,24], wave:[0,270],     waveF:[5,175],  waveS:[-85,85],
+    bow:[-120,140], tempo:[45,190]
+  };
+
+  // each archetype overrides only the controls that define its character
+  const ARCHETYPES = {
+    Boulders: { cell:[52,102], aspect:[105,260], altX:[35,115], altY:[20,95], cover:[78,100], tilt:[0,55] },
+    Threads:  { cell:[8,18],   aspect:[480,880], altX:[110,235], altY:[55,155], gap:[0,14] },
+    Reef:     { cell:[14,32],  aspect:[240,520], altX:[145,245], altY:[110,235], weaveH:[24,50], jitter:[12,42] },
+    Rings:    { radial:[55,100], rings:[50,430], wave:[0,45], detail:[12,55], contrast:[90,200] },
+    Ribbon:   { wave:[140,300], waveF:[20,125], waveS:[-95,95], bow:[-110,125], aspect:[300,820] },
+    Drift:    { detail:[10,45], warp:[5,90], flow:[2,14], contrast:[65,150], radial:[8,50], tempo:[35,90] },
+    Storm:    { detail:[110,290], warp:[170,300], contrast:[230,400], flow:[32,88], jitter:[18,50], tempo:[110,240] },
+    Sparse:   { cover:[30,66], gap:[6,26], cell:[26,70], altX:[30,120] }
+  };
+
+  /* dense archetypes can ask for tens of thousands of shapes; grow the cell
+     until the grid is affordable so a roll never tanks the framerate */
+  function affordableCell(cellUI, aspectUI) {
+    let c = cellUI;
+    for (let i = 0; i < 60; i++) {
+      const px = c, py = c * aspectUI / 100;
+      if ((cv.width / px + 4) * (cv.height / py + 4) <= 4200) break;
+      c *= 1.07;
+    }
+    return Math.min(c, 110);
+  }
+
+  function hsl2hex(h, s, l) {
+    h = ((h % 360) + 360) % 360;
+    const c = (1 - Math.abs(2*l - 1)) * s;
+    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    const m = l - c / 2;
+    const seg = [[c,x,0],[x,c,0],[0,c,x],[0,x,c],[x,0,c],[c,0,x]][Math.floor(h / 60) % 6];
+    return '#' + seg.map(v => Math.round((v + m) * 255).toString(16).padStart(2, '0')).join('');
+  }
+
+  /* Ramps also vary in kind, not just in hue: analogous / sweeping / more
+     than a full wheel, vivid or muted, few stops or many, and occasionally a
+     LIGHT anchor instead of the dark one — which inverts the whole read. */
+  function randomRamp() {
+    const kind = Math.random();
+    const vivid = Math.random() < .62;
+    const span = kind < .25 ? RND(35, 110) : kind < .80 ? RND(130, 330) : RND(340, 560);
+    const n = kind < .12 ? RNDINT(3, 5) : RNDINT(6, 16);
+    const h0 = RND(0, 360);
+    const dir = Math.random() < .5 ? -1 : 1;
+    const lightAnchor = Math.random() < .25;
+    const anchor = RNDINT(0, n - 1);
+    const sLo = vivid ? .50 : .10, sHi = vivid ? .95 : .45;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const h = h0 + dir * span * (n === 1 ? 0 : i / (n - 1));
+      if (i === anchor)
+        out.push([hsl2hex(h, RND(vivid ? .45 : .08, vivid ? .90 : .35),
+                          lightAnchor ? RND(.86, .97) : RND(.10, .28)), RNDINT(10, 24)]);
+      else if (Math.random() < .22)
+        out.push([hsl2hex(h, RND(.03, .30), RND(.82, .98)), RNDINT(1, 3)]);
+      else
+        out.push([hsl2hex(h, RND(sLo, sHi), RND(.38, .78)), RNDINT(1, 7)]);
+    }
+    return out;
+  }
+
+  function rollValues() {
+    const arch = PICK(ARCHETYPES);
+    const R = Object.assign({}, WIDE, ARCHETYPES[arch]);
+    const v = {};
+    Object.keys(R).forEach(k => { v[k] = RND(R[k][0], R[k][1]); });
+    v.cell = affordableCell(v.cell, v.aspect);
+    v.base = RND(85, 140);        // requested bounds
+    v.edge = 200;                 // true oval, fixed
+    v.irreg = RND(0, 12);
+    return { arch, v };
+  }
+
+  function randomise() {
+    const set = (key, val) => {
+      const el = document.getElementById(CTRL[key].id);
+      el.value = Math.round(val);
+      if (window.HTY) HTY.paintRange(el);
+      refresh(key);
+    };
+    seedIn.value = (Math.random() * 1e6) | 0; readSeed();
+
+    const { v } = rollValues();
+    Object.keys(v).forEach(k => { if (CTRL[k]) set(k, v[k]); });
+
+    setRampRows(randomRamp());
+
+    P.bg = GROUND;                     // ground stays put through the dice
+    bgIn.value = P.bg;
+    frameEl.style.background = P.bg;
+
+    // the ramp is no longer whatever the dropdown says
+    const lbl = document.querySelector('#paletteSelWrap .hty-select-val');
+    if (lbl) lbl.textContent = 'Random';
+    palName.value = '';
+    $('#btn-delpal').disabled = true;
+  }
+  $('#btn-shuffle').addEventListener('click', randomise);
+
+  /* ── saved looks ───────────────────────────────────────────────────────
+     A full snapshot: every control (kept in raw slider units so it restores
+     exactly), the seed, the whole colour ramp and the ground. Artboard size
+     is deliberately left out — that is an output choice, not part of a look. */
+  const LS_LOOKS = 'pebble-loom.looks.v1';
+  let LIB = {};
+
+  const validRamp = r => Array.isArray(r) && r.length &&
+    r.every(p => Array.isArray(p) && /^#[0-9a-fA-F]{6}$/.test(p[0]) && p[1] > 0);
+
+  function loadLib() {
+    if (!storageOK) return;
+    try { LIB = JSON.parse(localStorage.getItem(LS_LOOKS)) || {}; } catch (err) { LIB = {}; }
+    Object.keys(LIB).forEach(k => {
+      const L = LIB[k];
+      if (!L || typeof L !== 'object' || !L.params || typeof L.params !== 'object') delete LIB[k];
+    });
+  }
+  function persistLib() {
+    if (!storageOK) return false;
+    try { localStorage.setItem(LS_LOOKS, JSON.stringify(LIB)); return true; }
+    catch (err) { return false; }
+  }
+  loadLib();
+
+  function snapshot() {
+    const params = {};
+    Object.keys(CTRL).forEach(k => { params[k] = parseFloat(document.getElementById(CTRL[k].id).value); });
+    return { params, seed: P.seed, bg: P.bg, ramp: RAMP.map(p => p.slice()) };
+  }
+  function applySnapshot(L) {
+    Object.entries(L.params || {}).forEach(([k, v]) => {
+      if (!CTRL[k] || !isFinite(v)) return;
+      const el = document.getElementById(CTRL[k].id);
+      el.value = v;
+      if (window.HTY) HTY.paintRange(el);
+      refresh(k);
+    });
+    if (isFinite(L.seed)) { seedIn.value = L.seed; readSeed(); }
+    if (validRamp(L.ramp)) setRampRows(L.ramp);
+    if (typeof L.bg === 'string' && /^#[0-9a-fA-F]{6}$/.test(L.bg)) {
+      P.bg = L.bg; bgIn.value = L.bg; frameEl.style.background = L.bg;
+    }
+    const lbl = document.querySelector('#paletteSelWrap .hty-select-val');
+    if (lbl) lbl.textContent = 'Custom';
+    palName.value = '';
+    $('#btn-delpal').disabled = true;
+  }
+
+  const libList = $('#libList'), libName = $('#libName'), libMsg = $('#libMsg');
+  const LIB_HINT = storageOK
+    ? 'A look stores every control, the seed, the full colour ramp and the ground — everything except the artboard size. Saved in this browser.'
+    : 'Storage is unavailable in this browser, so looks cannot be saved.';
+  let libTimer = 0;
+  function libSay(t) {
+    libMsg.textContent = t;
+    clearTimeout(libTimer);
+    libTimer = setTimeout(() => { libMsg.textContent = LIB_HINT; }, 3200);
+  }
+
+  function renderLib() {
+    const names = Object.keys(LIB).sort((a, b) => a.localeCompare(b));
+    libList.innerHTML = names.length
+      ? names.map(n =>
+          `<div class="lib-row" data-name="${esc(n)}">` +
+          `<span class="nm2" title="${esc(n)}">${esc(n)}</span>` +
+          `<button class="btn ghost lib-load">Load</button>` +
+          `<button class="rowbtn lib-del" title="Delete">&times;</button></div>`).join('')
+      : '<div class="lib-empty">No saved looks yet.</div>';
+  }
+
+  $('#btn-savelook').addEventListener('click', () => {
+    const name = libName.value.trim();
+    if (!name) { libSay('Give the look a name first.'); libName.focus(); return; }
+    if (!storageOK) { libSay('Storage is unavailable, so this look cannot be saved.'); return; }
+    const existed = Object.prototype.hasOwnProperty.call(LIB, name);
+    LIB[name] = snapshot();
+    if (!persistLib()) { delete LIB[name]; libSay('Could not save — browser storage is full.'); return; }
+    renderLib();
+    libName.value = '';
+    libSay(existed ? `Updated “${name}”.` : `Saved “${name}”.`);
+  });
+
+  libList.addEventListener('click', e => {
+    const row = e.target.closest('.lib-row'); if (!row) return;
+    const name = row.dataset.name;
+    if (e.target.closest('.lib-load')) {
+      if (LIB[name]) { applySnapshot(LIB[name]); libSay(`Loaded “${name}”.`); }
+    } else if (e.target.closest('.lib-del')) {
+      delete LIB[name]; persistLib(); renderLib(); libSay(`Deleted “${name}”.`);
+    }
+  });
+
+  renderLib();
+  if (!storageOK) libMsg.textContent = LIB_HINT;
+
+  /* ── export ────────────────────────────────────────────────────────── */
+  const mult = () => {
+    const a = document.querySelector('#ex-res button.active');
+    return a ? (+a.dataset.mult || 1) : 1;
+  };
+  $('#btn-png').addEventListener('click', () => {
+    const k = mult();
+    const off = document.createElement('canvas');
+    off.width = cv.width * k; off.height = cv.height * k;
+    const ox = off.getContext('2d', { alpha: false });
+    paint(ox, off.width, off.height, k);
+    off.toBlob(b => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(b);
+      a.download = `pebble-loom-${Date.now()}.png`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    }, 'image/png');
+  });
+
+  /* ── motion export ─────────────────────────────────────────────────────
+     Frames are rendered offline at a fixed timestep straight into a
+     VideoEncoder, so the clip is exact: real H.264 in a real MP4 container,
+     not a screen capture that drops frames when the grid gets heavy. The
+     render can run slower than realtime without affecting the result. */
+  const clipBtn = $('#btn-clip'), clipNote = $('#clipNote');
+  const CLIP_HINT = clipNote.textContent;
+  const clipFps = () => {
+    const b = document.querySelector('#clip-fps button.active');
+    return b ? (parseInt(b.textContent, 10) || 30) : 30;
+  };
+  // widest-support-first; the browser picks the first profile/level it can do
+  const H264 = ['avc1.640034','avc1.640033','avc1.640032','avc1.640028',
+                'avc1.4d0034','avc1.4d0028','avc1.42e034','avc1.42e028'];
+
+  async function pickCodec(W, H, fps, bitrate) {
+    if (typeof VideoEncoder === 'undefined' || typeof Mp4Muxer === 'undefined') return null;
+    for (const codec of H264) {
+      try {
+        const r = await VideoEncoder.isConfigSupported({ codec, width: W, height: H, bitrate, framerate: fps });
+        if (r && r.supported) return codec;
+      } catch (err) { /* try the next profile */ }
+    }
+    return null;
+  }
+
+  function saveBlob(blob, ext) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `pebble-loom-${Date.now()}.${ext}`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  }
+
+  async function exportMp4() {
+    const fps = clipFps(), total = Math.max(1, Math.round(fps * (P.dur || 6)));
+    const bitrate = Math.round((P.brate || 12) * 1e6);
+    const W = cv.width - (cv.width % 2), H = cv.height - (cv.height % 2);  // encoders want even dims
+    const codec = await pickCodec(W, H, fps, bitrate);
+    if (!codec) return null;
+
+    const muxer = new Mp4Muxer.Muxer({
+      target: new Mp4Muxer.ArrayBufferTarget(),
+      video: { codec: 'avc', width: W, height: H },
+      fastStart: 'in-memory'                       // moov up front, so it streams/plays anywhere
+    });
+    let encErr = null;
+    const enc = new VideoEncoder({
+      output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+      error: e => { encErr = e; }
+    });
+    enc.configure({ codec, width: W, height: H, bitrate, framerate: fps, latencyMode: 'quality' });
+
+    // if the artboard is odd-sized, blit onto an even surface
+    let src = cv, sctx = null;
+    if (W !== cv.width || H !== cv.height) {
+      src = document.createElement('canvas'); src.width = W; src.height = H;
+      sctx = src.getContext('2d', { alpha: false });
+    }
+
+    const wasPlaying = playing, t0 = t;
+    exporting = true; playing = false;
+    try {
+      for (let i = 0; i < total; i++) {
+        t = t0 + (i / fps) * P.tempo;              // same timestep the live loop uses
+        paint(ctx, cv.width, cv.height, 1);
+        if (sctx) sctx.drawImage(cv, 0, 0);
+        const frame = new VideoFrame(src, {
+          timestamp: Math.round(i * 1e6 / fps),
+          duration: Math.round(1e6 / fps)
+        });
+        enc.encode(frame, { keyFrame: i % (fps * 2) === 0 });
+        frame.close();
+        if (encErr) throw encErr;
+        if (enc.encodeQueueSize > 8 || i % 4 === 0) {
+          clipBtn.textContent = `Rendering ${Math.round(i / total * 100)}%`;
+          await new Promise(r => requestAnimationFrame(r));
+        }
+      }
+      await enc.flush();
+      muxer.finalize();
+      return new Blob([muxer.target.buffer], { type: 'video/mp4' });
+    } finally {
+      try { enc.close(); } catch (err) {}
+      t = t0; exporting = false; playing = wasPlaying;
+    }
+  }
+
+  // only used where WebCodecs/MP4 is unavailable — realtime, so it can drop frames
+  function recordWebmFallback(seconds) {
+    return new Promise((resolve, reject) => {
+      if (!cv.captureStream || typeof MediaRecorder === 'undefined') return reject(new Error('no recorder'));
+      const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+        .find(m => MediaRecorder.isTypeSupported(m));
+      if (!mime) return reject(new Error('no webm codec'));
+      const chunks = [];
+      const rec = new MediaRecorder(cv.captureStream(clipFps()),
+        { mimeType: mime, videoBitsPerSecond: (P.brate || 12) * 1e6 });
+      rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+      rec.onstop = () => resolve(new Blob(chunks, { type: 'video/webm' }));
+      rec.onerror = reject;
+      playing = true;
+      rec.start();
+      setTimeout(() => rec.stop(), seconds * 1000);
+    });
+  }
+
+  let busy = false;
+  clipBtn.addEventListener('click', async () => {
+    if (busy) return;
+    busy = true;
+    const label = 'Export MP4';
+    clipBtn.disabled = true;
+    clipBtn.textContent = 'Preparing…';
+    teleStat.textContent = 'Exporting';
+    try {
+      const blob = await exportMp4();
+      if (blob) {
+        saveBlob(blob, 'mp4');
+        clipNote.textContent = `Exported ${(blob.size / 1048576).toFixed(1)} MB of H.264 MP4.`;
+      } else {
+        clipNote.textContent = 'This browser has no H.264 encoder — falling back to a realtime WebM capture.';
+        const wb = await recordWebmFallback(P.dur || 6);
+        saveBlob(wb, 'webm');
+      }
+    } catch (err) {
+      clipNote.textContent = 'Export failed: ' + (err && err.message ? err.message : err);
+    } finally {
+      clipBtn.disabled = false;
+      clipBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>' + label;
+      teleStat.textContent = playing ? 'Playing' : 'Paused';
+      setTimeout(() => { clipNote.textContent = CLIP_HINT; }, 6000);
+      busy = false;
+    }
+  });
+
+  /* ── keys ──────────────────────────────────────────────────────────── */
+  addEventListener('keydown', e => {
+    if (/input|textarea|select/i.test(e.target.tagName)) return;
+    const k = e.key.toLowerCase();
+    // Space is reserved by hty-ui for temporary pan, so play is P
+    if (k === 'p') setPlaying(!playing);
+    else if (k === 'r') randomise();
+    else if (k === 's') $('#btn-png').click();
+  });
+
+  /* hty-ui.js initialises on DOMContentLoaded and repaints every [data-out]
+     from the raw slider value. Our wiring has to land after that or the
+     mapped readouts get clobbered — this script tag precedes ours, so our
+     listener fires second. */
+  function boot() {
+    wireControls();
+    applyPreset('Pebbles');
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) setPlaying(false);
+  }
+  if (document.readyState === 'loading') addEventListener('DOMContentLoaded', boot);
+  else boot();
+  requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>
