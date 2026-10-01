@@ -1,0 +1,114 @@
+/* ── Quadrant · tool-specific styling on top of the HTY system ──────────────
+   Every letter is built from two primitives on a unit grid:
+     • quarter arc   — centre node + radius + quadrant + stroke side
+     • straight line — horizontal or vertical grid line + span + stroke side
+   Weight / gap / spacing are global; the join engine decides every cut.   */
+.hty-frame { background: var(--paper, #1d1d1d); border-color: transparent; }
+.hty #gl { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
+.hty.lit #gl { display: block; }
+.hty.lit #L-bg, .hty.lit #L-ink { display: none; }
+.hty .play-row { display: flex; gap: 8px; align-items: center; }
+.hty .play-row input { flex: 1; }
+.hty .progress { height: 3px; border-radius: 2px; background: var(--track); overflow: hidden; }
+.hty .progress > i { display: block; height: 100%; width: 0; background: var(--ink); transition: width .1s linear; }
+.hty .kf .chip { font-family: var(--mono); font-size: 10px; }
+.hty #seg-render button { padding: 7px 12px; }
+.hty #art { position: absolute; inset: 0; display: block; width: 100%; height: 100%; user-select: none; -webkit-user-select: none; touch-action: none; }
+.hty #art.c-cross { cursor: crosshair; }
+.hty #art.c-move  { cursor: move; }
+.hty #art.c-ew    { cursor: ew-resize; }
+.hty #art.c-point { cursor: pointer; }
+.hty #art.c-ns    { cursor: ns-resize; }
+.hty .kf .chip { font-family: var(--mono); font-size: 10px; }
+.hty .kf-play { display: flex; gap: 8px; align-items: center; }
+.hty .kf-play input { flex: 1; }
+.hty textarea {
+  width: 100%; min-height: 76px; resize: vertical;
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.5; color: var(--ink);
+  background: var(--field); border: 1px solid transparent; border-radius: var(--r-md);
+  padding: 10px 11px; outline: none; transition: border-color .15s;
+}
+.hty textarea:focus { border-color: var(--ink); }
+.hty .hide { display: none !important; }
+.hty button:focus-visible, .hty .chip:focus-visible, .hty .gtile:focus-visible { outline: 1.5px solid var(--ink); outline-offset: 2px; }
+.hty .row { display: flex; gap: 8px; align-items: center; }
+.hty .row > * { flex: 1; }
+.hty .field.dim { opacity: .38; pointer-events: none; }
+.hty .swatch-row { display: flex; gap: 8px; }
+.hty .swatch-row label { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.hty .seg.fill button .k { font-family: var(--mono); font-size: 9px; opacity: .45; margin-left: 5px; font-weight: 500; }
+.hty .seg.fill button.active .k { opacity: .6; }
+.hty .chips.multi .chip { user-select: none; }
+
+/* glyph map */
+.hty .gmap { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 4px; }
+.hty .gtile { position: relative; aspect-ratio: 1; border-radius: 8px; background: var(--field); border: 1px solid transparent; cursor: pointer; padding: 0; display: block; transition: border-color .14s, background .14s; }
+.hty .gtile:hover { border-color: var(--line-2); }
+.hty .gtile.on { border-color: var(--ink); }
+.hty .gtile svg { position: absolute; inset: 3px 3px 9px; width: calc(100% - 6px); height: calc(100% - 12px); fill: var(--ink); }
+.hty .gtile.fb svg { opacity: .2; }
+.hty .gtile .c { position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-family: var(--mono); font-size: 7.5px; line-height: 1; color: var(--ink-3); }
+.hty .gtile .vc { position: absolute; top: 2px; left: 4px; font-family: var(--mono); font-size: 7.5px; color: var(--ink-2); }
+.hty .gtile.mod::after { content: ''; position: absolute; top: 4px; right: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--ink); }
+.hty .gsec { font-family: var(--mono); font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); grid-column: 1 / -1; margin-top: 4px; }
+.hty .ghead { display: flex; align-items: center; gap: 12px; }
+.hty .ghead .big { width: 46px; height: 46px; flex-shrink: 0; border-radius: var(--r-md); background: var(--ink); color: var(--accent-fg); display: grid; place-items: center; font-family: var(--mono); font-size: 20px; }
+.hty .ghead .meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.hty .ghead .meta b { font-size: 12.5px; font-weight: 500; }
+.hty .rad-step { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.hty .rad-step .btn { flex: 0 0 34px; justify-content: center; padding-left: 0; padding-right: 0; font-size: 9px; }
+.hty .rad-step .num { flex: 1; text-align: center; font-family: var(--mono); font-size: 11px; color: var(--ink-2); }
+.hty .insp { display: flex; flex-direction: column; gap: 10px; padding: 11px; border-radius: var(--r-md); border: 1px solid var(--line-2); }
+.hty .insp .top { display: flex; justify-content: space-between; align-items: baseline; }
+
+/* stage HUDs */
+.hty .q-hud { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: none; align-items: center; gap: 14px; padding: 8px 15px; border-radius: var(--r-pill); background: var(--dock); border: 1px solid var(--line); font-family: var(--mono); font-size: 10px; color: var(--ink-2); white-space: nowrap; pointer-events: none; z-index: 5; }
+.hty .q-hud b { color: var(--ink); font-weight: 600; }
+.hty .q-hud .sep { width: 1px; height: 12px; background: var(--line-2); }
+.hty.draw-mode .q-hud { display: flex; }
+.hty .q-hint { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); font-family: var(--mono); font-size: 10px; color: var(--ink-3); pointer-events: none; transition: opacity .3s; }
+.hty.draw-mode .q-hint, .hty.comp-mode .q-hint { opacity: 0; }
+.hty .q-toast { position: absolute; left: 50%; top: 22px; transform: translate(-50%, -6px); padding: 7px 13px; border-radius: var(--r-pill); background: var(--ink); color: var(--accent-fg); font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: -.02em; opacity: 0; pointer-events: none; transition: opacity .2s, transform .25s var(--ease); z-index: 9; }
+.hty .q-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.hty .main-row { display: flex; gap: 8px; align-items: center; }
+.hty .main-row .btn { flex: 1; justify-content: center; }
+.hty .icon-btn[disabled] { opacity: .3; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .hty * { transition: none !important; } }
+/* ── HTY agency skin · components hty-brand.css doesn't cover yet (kept local, so other brand tools are untouched) ── */
+.hty-frame { border-radius: var(--radius-sm); overflow: hidden; box-shadow: 0 0 0 1px var(--border), 0 8px 40px rgba(0,0,0,.6); }
+.hty-tele { position: absolute; top: 20px; right: 24px; display: flex; gap: 20px; align-items: center; pointer-events: none; z-index: 4; }
+.hty-tele .read { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.hty-tele .read .lbl { font-size: .625rem; color: var(--text-subtle); }
+.hty-tele .read b { font-family: var(--font-mono); font-size: .6875rem; font-weight: 400; text-transform: uppercase; letter-spacing: -.02em; color: var(--text); font-variant-numeric: tabular-nums; }
+.hty-live { width: 6px; height: 6px; border-radius: 50%; background: var(--text); position: relative; }
+.hty-live::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 1px solid var(--text); opacity: .35; animation: hty-ping 2.4s ease-out infinite; }
+@keyframes hty-ping { 0% { transform: scale(.6); opacity: .5 } 100% { transform: scale(1.6); opacity: 0 } }
+.hty-zoom { display: flex; align-items: center; gap: 2px; }
+.hty-zoom b { font-family: var(--font-mono); font-size: .625rem; font-weight: 400; min-width: 38px; text-align: center; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.hty .vbtn svg { width: 15px; height: 15px; }
+.hty .tf-row { display: flex; gap: 8px; }
+.hty .tf { flex: 1; display: flex; align-items: center; gap: 8px; background: var(--surface-input); border-radius: var(--radius-sm); clip-path: inset(0 round var(--radius-sm)); padding: 0 12px; }
+.hty .tf > .g, .hty .tf > i { font-family: var(--font-mono); font-size: .625rem; font-style: normal; text-transform: uppercase; color: var(--text-subtle); flex-shrink: 0; }
+.hty .tf input, .hty .tf input:focus { flex: 1; width: 100%; background: transparent; padding: 11px 0; border-radius: 0; clip-path: none; }
+.hty .seg.fill button .k { color: inherit; }
+.hty textarea { font-family: var(--font-mono); background: var(--surface-input); border-radius: var(--radius-sm); color: var(--text); }
+
+/* brand colours */
+.hty .brand-sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 6px; margin-top: 8px; }
+.hty .brand-sw button { position: relative; aspect-ratio: 1; border-radius: 9px; border: 1px solid rgba(255,255,255,.12); padding: 0; cursor: pointer; transition: transform .14s var(--ease); }
+.hty .brand-sw button:hover { transform: scale(1.06); }
+.hty .brand-sw button.is-paper { box-shadow: 0 0 0 2px var(--page-bg), 0 0 0 3.5px #fff; }
+.hty .brand-sw button.is-ink::after { content: ''; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1.5px #000; }
+.hty .brand-pairs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.hty .brand-pairs button { width: 42px; height: 26px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12); cursor: pointer; font: 600 13px/1 var(--sans); padding: 0; }
+.hty .brand-pairs button.active { box-shadow: 0 0 0 2px var(--page-bg), 0 0 0 3.5px #fff; }
+.hty .brand-edit-btn { width: auto; padding: 0 10px; font-family: var(--mono); font-size: 10px; text-transform: uppercase; }
+.hty .brand-editor { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.hty .brand-row { display: flex; align-items: center; gap: 6px; }
+.hty .brand-row input[type=color] { width: 34px; height: 30px; padding: 0; border: 0; border-radius: 8px; background: none; flex: 0 0 34px; cursor: pointer; }
+.hty .brand-row input[type=text] { flex: 1; min-width: 0; }
+.hty .brand-row .hex { font-family: var(--mono); font-size: 10px; color: var(--ink-2); width: 58px; }
+
+/* keep the canvas vector-sharp at every zoom: `will-change: transform` (from the shared kit) makes Chrome
+   rasterise the stage once and scale those pixels, which blurs every arc and line when you zoom in */
+.hty .hty-canvas { will-change: auto; }
