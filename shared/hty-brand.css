@@ -8,8 +8,10 @@
    Dark, black rounded "islands" on a #191919 page, WHITE accent, Suisse Intl
    + Suisse Intl Mono fonts, mono-caps labels, 24px/12px radii, thin sliders.
 
-   Exposes the same class API as the personal hty-ui.css so it is a drop-in
-   stylesheet swap; component wiring (hty-ui.js) is unchanged. Scoped to `.hty`.
+   Exposes the same class API as the personal sheeren-tools.css so it is a
+   drop-in stylesheet swap; component wiring (tool-ui.js) is shared. Scoped to `.hty`.
+   AGENCY WORK ONLY. Source repo: git@github.com:HearTheYouth/dev-hty-tool-components.git
+   Local clone: ~/Documents/GitHub/HTY/dev-hty-tool-components  ·  see shared/STYLES.md
    ════════════════════════════════════════════════════════════════════════ */
 
 /* ── Brand fonts (Suisse) ── */

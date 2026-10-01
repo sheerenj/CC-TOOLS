@@ -282,6 +282,14 @@
       <input type="range" id="dot-var" min="0" max="20" value="2" step="0.5" />
     </div>
     <div class="control">
+      <label>Pebble shape <span class="val" id="pebble-shape-val">55</span></label>
+      <input type="range" id="pebble-shape" min="0" max="100" value="55" step="1" />
+    </div>
+    <div class="control">
+      <label>Pebble variety <span class="val" id="pebble-vary-val">70</span></label>
+      <input type="range" id="pebble-vary" min="0" max="100" value="70" step="1" />
+    </div>
+    <div class="control">
       <label>Target noise <span class="val" id="noise-val">3</span></label>
       <input type="range" id="noise" min="0" max="20" value="3" step="0.5" />
     </div>
@@ -413,7 +421,7 @@ function cssToLogical(e) {
 function getAnchor() { return { x: textX ?? W / 2, y: textY ?? H / 2 }; }
 
 // ── slider sync ──
-['font-size','dot-count','dot-size','dot-var','noise','floater-pct',
+['font-size','dot-count','dot-size','dot-var','pebble-shape','pebble-vary','noise','floater-pct',
  'speed','bounce','stagger','letter-spacing'].forEach(id => {
   const el = document.getElementById(id), vEl = document.getElementById(id + '-val');
   if (!el || !vEl) return;
@@ -591,6 +599,73 @@ document.getElementById('bg-color').addEventListener('input', e => {
   updatePreview();
 });
 
+// ── pebble geometry ──────────────────────────────────────────────
+// Each dot carries a frozen shape seed (`sh`). The actual outline is
+// derived at draw time from the two sliders, so both are live.
+const TAU      = Math.PI * 2;
+const PEB_SEG  = 16;               // outline sample points (smoothed with quads)
+const PEB_HARM = [0.085, 0.05, 0.065, 0.04];  // base amplitude of harmonics k=1..4
+
+function newShape() {
+  return {
+    el:  Math.random(),                                  // ovalness draw
+    rot: Math.random() * TAU,                            // orientation (always random)
+    h:   PEB_HARM.map(() => Math.random()),              // lump strength draws
+    p:   PEB_HARM.map(() => Math.random() * TAU)         // lump phases
+  };
+}
+
+// Current slider state, read once per frame rather than per particle.
+function pebbleSettings() {
+  return { inten: g('pebble-shape') / 100, vary: g('pebble-vary') / 100 };
+}
+
+// Sample the outline of one dot. Returns a flat [x0,y0,x1,y1,...] array.
+function pebblePoints(d, inten, vary) {
+  const s = d.sh;
+  // vary=0 collapses every draw to its mean, so all pebbles share one shape
+  const mix    = v => 0.5 + (v - 0.5) * vary;
+  const aspect = 1 + inten * 0.6 * mix(s.el);
+  const rx     = d.r * Math.sqrt(aspect), ry = d.r / Math.sqrt(aspect);
+  const cr     = Math.cos(s.rot), sr = Math.sin(s.rot);
+  const amp    = PEB_HARM.map((base, i) => base * 2 * mix(s.h[i]) * inten);
+  const out    = new Array(PEB_SEG * 2);
+  for (let i = 0; i < PEB_SEG; i++) {
+    const t = i / PEB_SEG * TAU;
+    let k = 1;
+    for (let n = 0; n < amp.length; n++) k += amp[n] * Math.cos((n + 1) * t + s.p[n] * vary);
+    const ex = Math.cos(t) * rx * k, ey = Math.sin(t) * ry * k;
+    out[i * 2]     = d.x + ex * cr - ey * sr;
+    out[i * 2 + 1] = d.y + ex * sr + ey * cr;
+  }
+  return out;
+}
+
+// Smooth the sampled points into a closed contour on a Path2D.
+function addPebbleTo(path, pts) {
+  const n = pts.length / 2, lx = pts[(n - 1) * 2], ly = pts[(n - 1) * 2 + 1];
+  path.moveTo((lx + pts[0]) / 2, (ly + pts[1]) / 2);
+  for (let i = 0; i < n; i++) {
+    const j = ((i + 1) % n) * 2;
+    path.quadraticCurveTo(pts[i * 2], pts[i * 2 + 1],
+                          (pts[i * 2] + pts[j]) / 2, (pts[i * 2 + 1] + pts[j + 1]) / 2);
+  }
+  path.closePath();
+}
+
+// Same contour as an SVG path `d` string.
+function pebblePathData(pts) {
+  const n = pts.length / 2, lx = pts[(n - 1) * 2], ly = pts[(n - 1) * 2 + 1];
+  const f = v => v.toFixed(2);
+  let out = `M${f((lx + pts[0]) / 2)},${f((ly + pts[1]) / 2)}`;
+  for (let i = 0; i < n; i++) {
+    const j = ((i + 1) % n) * 2;
+    out += `Q${f(pts[i * 2])},${f(pts[i * 2 + 1])} ` +
+           `${f((pts[i * 2] + pts[j]) / 2)},${f((pts[i * 2 + 1] + pts[j + 1]) / 2)}`;
+  }
+  return out + 'Z';
+}
+
 // ── dot factory ──
 function newDot() {
   return {
@@ -598,6 +673,7 @@ function newDot() {
     vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2,
     tx: 0, ty: 0, nx: 0, ny: 0,
     r: g('dot-size') * 0.5 + Math.random() * g('dot-var') * 0.5,
+    sh: newShape(),
     delay: 0, startTime: null, isFloater: false,
     colorIdx: pickColorIdx()
   };
@@ -751,10 +827,16 @@ function sampleGlyph(text, fontSize) {
 // ── batch render dots by color for performance ──
 function renderDots(dotArr) {
   const paths = colors.map(() => new Path2D());
+  const { inten, vary } = pebbleSettings();
   dotArr.forEach(d => {
     const ci = Math.min(d.colorIdx ?? d.ci ?? 0, colors.length - 1);
-    paths[ci].moveTo(d.x + d.r, d.y);
-    paths[ci].arc(d.x, d.y, d.r, 0, Math.PI * 2);
+    // perfect circles when the effect is off, or when the dot is too small to read
+    if (!d.sh || inten <= 0 || d.r < 1.2) {
+      paths[ci].moveTo(d.x + d.r, d.y);
+      paths[ci].arc(d.x, d.y, d.r, 0, TAU);
+    } else {
+      addPebbleTo(paths[ci], pebblePoints(d, inten, vary));
+    }
   });
   colors.forEach((c, ci) => { ctx.fillStyle = c.hex; ctx.fill(paths[ci]); });
 }
@@ -781,7 +863,7 @@ function startLoop() {
 
     if (recording && simMode === 'animate') {
       if (now - lastCapture >= CAPTURE_MS) {
-        frames.push(dots.map(d => ({ x: d.x, y: d.y, r: d.r, ci: d.colorIdx })));
+        frames.push(dots.map(d => ({ x: d.x, y: d.y, r: d.r, ci: d.colorIdx, sh: d.sh })));
         lastCapture = now;
         const slider = document.getElementById('timeline-slider');
         slider.max = frames.length - 1;
@@ -841,6 +923,7 @@ function animate() {
     dots.forEach((d, i) => {
       d.colorIdx  = pickColorIdx();
       d.r         = g('dot-size') * 0.5 + Math.random() * g('dot-var') * 0.5;
+      d.sh        = newShape();
       d.isFloater = floaterSet.has(i);
       if (d.isFloater) { d.startTime = null; return; }
 
@@ -934,7 +1017,7 @@ document.getElementById('btn-resume').addEventListener('click', () => {
     dots.forEach((d, i) => {
       if (!scrubSnap[i]) return;
       d.x = scrubSnap[i].x; d.y = scrubSnap[i].y;
-      d.r = scrubSnap[i].r; d.vx = 0; d.vy = 0;
+      d.r = scrubSnap[i].r; d.sh = scrubSnap[i].sh || d.sh; d.vx = 0; d.vy = 0;
     });
   }
   scrubbing = false; scrubSnap = null;
@@ -952,7 +1035,7 @@ document.getElementById('btn-frame-png').addEventListener('click', () => {
 });
 
 document.getElementById('btn-frame-svg').addEventListener('click', () => {
-  const snap = scrubSnap || dots.map(d => ({ x: d.x, y: d.y, r: d.r, ci: d.colorIdx }));
+  const snap = scrubSnap || dots.map(d => ({ x: d.x, y: d.y, r: d.r, ci: d.colorIdx, sh: d.sh }));
   saveSVG(snap, `particle-frame-${document.getElementById('timeline-slider').value}.svg`);
   setStatus('Frame SVG exported');
 });
@@ -972,9 +1055,12 @@ function saveSVG(dotArr, filename) {
     if (!groups[col]) groups[col] = [];
     groups[col].push(d);
   });
+  const { inten, vary } = pebbleSettings();
   const gEls = Object.entries(groups).map(([col, ds]) => {
-    const circles = ds.map(d => `<circle cx="${d.x.toFixed(2)}" cy="${d.y.toFixed(2)}" r="${d.r.toFixed(2)}"/>`).join('\n    ');
-    return `  <g fill="${col}">\n    ${circles}\n  </g>`;
+    const shapes = ds.map(d => (!d.sh || inten <= 0 || d.r < 1.2)
+      ? `<circle cx="${d.x.toFixed(2)}" cy="${d.y.toFixed(2)}" r="${d.r.toFixed(2)}"/>`
+      : `<path d="${pebblePathData(pebblePoints(d, inten, vary))}"/>`).join('\n    ');
+    return `  <g fill="${col}">\n    ${shapes}\n  </g>`;
   }).join('\n');
   const svg = [
     '<?xml version="1.0" encoding="UTF-8"?>',
@@ -990,7 +1076,7 @@ function saveSVG(dotArr, filename) {
 }
 
 function exportSVG() {
-  saveSVG(dots.map(d => ({ x: d.x, y: d.y, r: d.r, ci: d.colorIdx })), 'particle-typeface.svg');
+  saveSVG(dots.map(d => ({ x: d.x, y: d.y, r: d.r, ci: d.colorIdx, sh: d.sh })), 'particle-typeface.svg');
   setStatus('SVG exported');
 }
 

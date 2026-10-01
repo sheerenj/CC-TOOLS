@@ -1,1 +1,24 @@
 .DS_Store
+
+# ————— 3d/organism-viewer —————
+# Generated + source assets. Scoped to this folder on purpose: CC-TOOLS is a GitHub
+# Pages repo, and GitHub hard-rejects files over 100 MB.
+# NOTE: gitignore only treats # as a comment at the START of a line — never trail one
+# after a pattern, it becomes part of the pattern and silently matches nothing.
+
+# rendered frame sequences + encoded mp4 (~9.2 GB)
+3d/organism-viewer/renders/
+
+# baked splat clouds (~90 MB) — rebuild with bake_splats.py
+3d/organism-viewer/*.splat
+
+# source meshes (~45 MB), incl. anything dragged onto the window to bake
+3d/organism-viewer/*.glb
+3d/organism-viewer/*.gltf
+3d/organism-viewer/*.bin
+
+# local scratch copies of studio.html / serve.py / bake_splats.py
+3d/organism-viewer/*.bak
+
+# Boldly Identity: the live autosave target (rewritten on every edit) — library.js carries the forms
+generators/boldly-identity/library-autosave.json

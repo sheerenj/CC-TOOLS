@@ -1,23 +1,26 @@
 /* ════════════════════════════════════════════════════════════════════════
-   HEAR THE YOUTH · TOOLS UI SYSTEM  —  hty-ui.css   (master, v2 "Bottom Dock")
+   SHEEREN TOOLS · PERSONAL UI SYSTEM  —  sheeren-tools.css
+   Jan Sheeren's own design-practice tools (light grey, hairlines, no shadows).
+   NOT the Hear The Youth agency style — that one is shared/hty-brand.css.
+   (Formerly misnamed hty-ui.css.)
    ────────────────────────────────────────────────────────────────────────
    A grayscale, Apple-grade, high-tech control surface. Canvas on top,
    docked control section at the bottom (never overlaps the canvas).
 
    USAGE
      <head>
-       <link rel="stylesheet" href="../../shared/hty-ui.css">
+       <link rel="stylesheet" href="../../shared/sheeren-tools.css">
      </head>
      <body>
        <div class="hty">                       ← root scope (flex column)
          <div class="hty-stage"> … canvas … </div>
          <div class="hty-dock">  … controls … </div>
        </div>
-       <script src="../../shared/hty-ui.js"></script>
+       <script src="../../shared/tool-ui.js"></script>
      </body>
 
    Everything is scoped under `.hty`, so it will not touch a tool's existing
-   styles until that tool is migrated. Components auto-wire via hty-ui.js.
+   styles until that tool is migrated. Components auto-wire via tool-ui.js.
    No drop-shadows anywhere — depth comes from hairlines and tone only.
    ════════════════════════════════════════════════════════════════════════ */
 
@@ -90,7 +93,7 @@
 /* ── DOCK → left vertical sidebar ────────────────────────────────────────── */
 .hty-dock { position: relative; order: -1; flex-shrink: 0; width: var(--side-w, 312px); margin: var(--m); background: var(--dock); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; display: flex; flex-direction: column; transition: margin-left .32s var(--ease); }
 .hty.collapsed .hty-dock { margin-left: calc(-1 * (var(--side-w, 312px) + var(--m))); }
-/* drag-to-resize grip on the sidebar's right edge (auto-injected by hty-ui.js) */
+/* drag-to-resize grip on the sidebar's right edge (auto-injected by tool-ui.js) */
 .hty-resize { position: absolute; top: 0; bottom: 0; right: 0; width: 10px; cursor: col-resize; z-index: 20; }
 .hty-resize::after { content: ''; position: absolute; top: 50%; right: 3px; width: 3px; height: 34px; transform: translateY(-50%); border-radius: 2px; background: var(--line-2); opacity: 0; transition: opacity .15s; }
 .hty-resize:hover::after, .hty-dock.resizing .hty-resize::after { opacity: 1; }

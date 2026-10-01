@@ -1,8 +1,11 @@
 /* ════════════════════════════════════════════════════════════════════════
-   HEAR THE YOUTH · TOOLS UI SYSTEM  —  hty-ui.js   (master)
+   TOOL UI · shared component wiring  —  tool-ui.js
+   Skin-neutral: drives BOTH skins — sheeren-tools.css (personal practice)
+   and hty-brand.css (Hear The Youth agency). The global is still `HTY`
+   (kept for compatibility), also exposed as `ToolUI`.  (Formerly hty-ui.js.)
    ────────────────────────────────────────────────────────────────────────
    Auto-wires every component from markup. Include once, after the DOM:
-     <script src="../../shared/hty-ui.js"></script>
+     <script src="../../shared/tool-ui.js"></script>
 
    Re-scan after injecting markup dynamically:  HTY.init();
    Conventions (all optional — wire only what you use):
@@ -460,4 +463,5 @@
   else document.addEventListener('DOMContentLoaded', () => init());
 
   global.HTY = { init, paintRange, $, $$, get canvas() { return canvasAPI; } };
+  global.ToolUI = global.HTY;
 })(window);
