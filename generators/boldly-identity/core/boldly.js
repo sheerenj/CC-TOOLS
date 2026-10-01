@@ -1110,8 +1110,14 @@ function orectD(q) {
   const u = [Math.cos(q.ang), Math.sin(q.ang)], v = [-u[1], u[0]], pt = (a, b) => `${f4(q.cx + u[0] * a + v[0] * b)} ${f4(q.cy + u[1] * a + v[1] * b)}`;
   return `M${pt(-q.hx, -q.hy)}L${pt(q.hx, -q.hy)}L${pt(q.hx, q.hy)}L${pt(-q.hx, q.hy)}Z`;
 }
-function cmMarkup(W, H, t) {
-  const R = compMotionPrims(W, H, t); let d = ''; R.P.forEach(q => { d += primD(q); });
+function cmMarkup(W, H, t, forExport) {
+  const R = compMotionPrims(W, H, t);
+  if (forExport) {                           // export: one group, one path per tile, no clip mask
+    const by = new Map(); R.P.forEach(q => by.set(q.obj, (by.get(q.obj) || '') + primD(q)));
+    const attrs = S.outline ? `fill="none" stroke="${S.ink}" stroke-width="1.2"` : `fill="${S.ink}"`;
+    return { svg: `<g ${attrs}>${[...by.values()].filter(Boolean).map(d => `<path d="${d}"/>`).join('')}</g>`, count: R.P.length, R };
+  }
+  let d = ''; R.P.forEach(q => { d += primD(q); });
   const attrs = S.outline ? `fill="none" stroke="${S.ink}" stroke-width="1.2"` : `fill="${S.ink}"`, c = R.clip;
   const cl = c ? `<clipPath id="cm-clip"><rect x="${f4(c.x0)}" y="${f4(c.y0)}" width="${f4(c.x1 - c.x0)}" height="${f4(c.y1 - c.y0)}"/></clipPath>` : '';
   return { svg: `${cl}<g ${attrs}${c ? ' clip-path="url(#cm-clip)"' : ''}><path d="${d}" fill-rule="nonzero"/></g>`, count: R.P.length, R };
@@ -3075,7 +3081,7 @@ function buildSVG() {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${S.xTransparent ? '' : `<rect width="${W}" height="${H}" fill="${S.paper}"/>`}${dataMarkup(sc)}</svg>`;
   }
   if (mode === 'comp') {
-    const W = view.W, H = view.H, r = cmOn() ? cmMarkup(W, H, cmTime) : compMarkup(W, H, false, true);
+    const W = view.W, H = view.H, r = cmOn() ? cmMarkup(W, H, cmTime, true) : compMarkup(W, H, false, true);
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${S.xTransparent ? '' : `<rect width="${W}" height="${H}" fill="${S.paper}"/>`}${r.svg}</svg>`;
   }
   const bg = (W, H) => S.xTransparent ? '' : `<rect width="${W}" height="${H}" fill="${S.paper}"/>`;
