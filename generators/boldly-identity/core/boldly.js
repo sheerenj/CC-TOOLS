@@ -157,7 +157,7 @@ const LOOKS = {
   Hard:    { kinds: 'mixed', count: 6, size: 0.3, soft: 0.12, power: 1.6, travel: 1, depth: 0.9, refract: 2.2, gloss: 1.4, sharp: 24, rim: 0.3, rimW: 1.2, spill: 0.3, sweep: 0.5, sweepW: 0.06, slice: 0.35, expo: 2.2, gamma: 1.5 , bloom: 1.2, bloomThr: 0.7, bloomSize: 1, black: 0.15, white: 0.8, curve: 3.6 },
   Blackout:{ kinds: 'mixed', count: 3, size: 0.3, soft: 0.35, power: 0.8, travel: 1.1, depth: 1, refract: 1.2, gloss: 0.8, sharp: 12, rim: 1, rimW: 1.6, spill: 0.05, sweep: 0.6, sweepW: 0.08, slice: 0.2, expo: 1.3, gamma: 1.9 , bloom: 1.6, bloomThr: 0.45, bloomSize: 1.8, black: 0.22, white: 0.75, curve: 4.2 },
 };
-const ICON0 = { grid: 12, cols: 0, gap: 2, show: 'all' };
+const ICON0 = { grid: 12, cols: 0, gap: 2, show: 'all', lines: false };
 const DATA0 = { v: 3, src: '72\n41\n18\n64\n88', chart: 'columns', res: 10, cuts: true, seed: 7, scale: 'pct', grid: 48, size: 0.8, thick: 0.35, gap: 0.5, radius: 2, trackTone: 0.22, tones: 'ramp', area: true };
 const S = Object.assign({
   text: 'arcs\n+ grids', align: 'c',
@@ -2343,7 +2343,7 @@ function syncUI() {
   $('#sys-note').textContent = S.sys ? 'Strokes sit centred on grid lines. Every gap — stencil cuts, counters, letter spacing — is exactly 1 − weight. Spacing and leading step in whole units.' : 'Free mode: weight, gap, spacing and stroke side are independent.';
   $('#f-unit').classList.toggle('dim', S.fit); $('#f-margin').classList.toggle('dim', !S.fit);
   $$('[data-sw]').forEach(sw => sw.classList.toggle('on', !!S[sw.dataset.sw]));
-  $('#c-paper').value = S.paper; $('#c-ink').value = S.ink; safe(renderBrand, 'brand colours');
+  $('#c-paper').value = S.paper; $('#c-ink').value = S.ink; safe(syncIconExport, 'icon export'); safe(renderBrand, 'brand colours');
   $$('input[type=range][data-ck]').forEach(r => { r.value = S.comp[r.dataset.ck]; HTY.paintRange(r); });
   act('#seg-ctool', S.comp.tool); syncFmt();
   act('#seg-ease', S.mo.ease); act('#seg-loop', S.mo.loop); renderKeys();
@@ -2962,18 +2962,54 @@ $('#icon-new').addEventListener('click', () => {
 });
 $('#icon-name').addEventListener('keydown', e => { if (e.key === 'Enter') $('#icon-new').click(); });
 const curIcon = () => isIcon(S.cur) ? baseOf(S.cur) : iconKeys()[0];
-/* every icon as its own SVG: transparent, viewBox = the icon's grid, ink fill */
+/* icons as LINES: centre-line strokes you can re-weight anywhere (Figma / Illustrator stroke width).
+   Parts that meet end-to-end become one continuous path, so curves and corners join cleanly at any weight;
+   free line ends get square caps (like the system), dots are zero-length square-capped strokes. */
+function iconStrokePaths(g) {
+  const k = (x, y) => `${f4(x)},${f4(y)}`, segs = [];
+  g.parts.forEach(p => {
+    if (p.k === 'a') { const [sx, sy] = qs(p.q); segs.push({ a: [p.cx + sx * p.r, p.cy], b: [p.cx, p.cy + sy * p.r], arc: true, r: p.r, sw: sx * sy > 0 ? 1 : 0 }); }
+    else if (p.k === 'v') segs.push({ a: [p.x, Math.min(p.y0, p.y1)], b: [p.x, Math.max(p.y0, p.y1)] });
+    else segs.push({ a: [Math.min(p.x0, p.x1), p.y], b: [Math.max(p.x0, p.x1), p.y] });
+  });
+  const dots = segs.filter(q => !q.arc && k(...q.a) === k(...q.b)), lines = segs.filter(q => !dots.includes(q));
+  const at = new Map(); lines.forEach((q, i) => [['a', q.a], ['b', q.b]].forEach(([e, pt]) => { const key = k(...pt); if (!at.has(key)) at.set(key, []); at.get(key).push({ i, e }); }));
+  const used = new Set(), out = [];
+  const walk = (i, from) => {                // follow a chain from segment i entering at end `from`
+    let d = '', cur = i, entry = from, ends = [];
+    const first = lines[cur][entry]; d += `M${f4(first[0])} ${f4(first[1])}`; ends.push(!lines[cur].arc);
+    for (;;) {
+      used.add(cur); const q = lines[cur], exit = entry === 'a' ? 'b' : 'a', P = q[exit];
+      d += q.arc ? `A${f4(q.r)} ${f4(q.r)} 0 0 ${entry === 'a' ? q.sw : 1 - q.sw} ${f4(P[0])} ${f4(P[1])}` : `L${f4(P[0])} ${f4(P[1])}`;
+      const nb = (at.get(k(...P)) || []).filter(n => n.i !== cur && !used.has(n.i));
+      if ((at.get(k(...P)) || []).length !== 2 || !nb.length) { ends.push(!q.arc); break; }
+      cur = nb[0].i; entry = nb[0].e;
+    }
+    const closed = d.startsWith('M') && (() => { const m = d.match(/^M([-\d.]+) ([-\d.]+)/), e = d.match(/([-\d.]+) ([-\d.]+)$/); return m && e && m[1] === e[1] && m[2] === e[2]; })();
+    out.push({ d: closed ? d + 'Z' : d, cap: closed ? 'butt' : (ends[0] || ends[1] ? 'square' : 'butt') });
+  };
+  lines.forEach((q, i) => { if (used.has(i)) return; for (const e of ['a', 'b']) { if ((at.get(k(...q[e])) || []).length !== 2) { walk(i, e); return; } } });   // open chains first
+  lines.forEach((q, i) => { if (!used.has(i)) walk(i, 'a'); });                                                                                  // then loops
+  dots.forEach(q => out.push({ d: `M${f4(q.a[0])} ${f4(q.a[1])}h0`, cap: 'square' }));
+  return out;
+}
+const iconLinesSVG = (g, sw) => iconStrokePaths(g).map(p => `<path d="${p.d}"${p.cap === 'square' ? ' stroke-linecap="square"' : ''}/>`).join('');
+const lineAttrs = () => `fill="none" stroke="${S.ink}" stroke-width="${f4(S.t)}" stroke-linejoin="miter"`;
+/* every icon as its own SVG: transparent, viewBox = the icon's grid, ink fill (or lines) */
 async function exportIconFiles() {
   const ks = iconKeys(); if (!ks.length) { toast('No icons yet'); return; }
   for (const k of ks) {
     const v = S.alt[k], g = (v && GLYPHS[vkey(k, v)]) || GLYPHS[k]; if (!g || !g.parts.length) continue;
     const N = Math.max(g.w, iconH(g));
-    download(new Blob([`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${N} ${N}" width="${N * 24}" height="${N * 24}"><path fill="${S.ink}" d="${glyphShapes(g).d}"/></svg>`], { type: 'image/svg+xml' }), `boldly-icon_${fslug(iconName(k))}.svg`);
+    const body = S.icon.lines ? `<g ${lineAttrs()}>${iconLinesSVG(g)}</g>` : `<path fill="${S.ink}" d="${glyphShapes(g).d}"/>`;
+    download(new Blob([`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${N} ${N}" width="${N * 24}" height="${N * 24}">${body}</svg>`], { type: 'image/svg+xml' }), `boldly-icon_${fslug(iconName(k))}${S.icon.lines ? '_lines' : ''}.svg`);
     await new Promise(r => setTimeout(r, 160));
   }
   toast(`${ks.length} icon SVGs saved — allow multiple downloads if Chrome asks`);
 }
 $('#icon-files').addEventListener('click', exportIconFiles);
+$$('#seg-iexport button').forEach(b => b.addEventListener('click', () => { S.icon.lines = b.dataset.v === 'lines'; save(); syncIconExport(); }));
+function syncIconExport() { $$('#seg-iexport button').forEach(b => b.classList.toggle('active', (b.dataset.v === 'lines') === !!S.icon.lines)); const n = $('#iexport-note'); if (n) n.textContent = S.icon.lines ? `Lines: centre-line strokes at weight ${f4(S.t)} (Form) — change the stroke width freely in Figma / Illustrator.` : 'Shapes: filled outlines, exactly as on the canvas (stencil gaps included).'; }
 $('#icon-edit').addEventListener('click', () => { const k = curIcon(); if (k) openGlyph(vkey(k, S.alt[k] || 0)); });
 $('#icon-dup').addEventListener('click', () => { const k = curIcon(); if (!k) return; let nm = iconName(k) + '-copy', n = 2; while (GLYPHS['icon:' + nm]) nm = iconName(k) + '-copy-' + n++;
   pushHist(); GLYPHS['icon:' + nm] = JSON.parse(JSON.stringify(GLYPHS[k])); S.cur = 'icon:' + nm; save(); renderAll(); syncGlyphPanel(); toast(`Duplicated as “${nm}”`); });
@@ -3089,9 +3125,10 @@ function buildSVG() {
     const Lo = iconLayout(), W = view.W, H = view.H; let icons = '';
     Lo.lines.forEach(l => l.items.forEach(it => {
       if (!it.gl || !it.gl.parts.length) return;
-      icons += `<path data-icon="${iconName(it.ch).replace(/[<>&"]/g, '')}" transform="translate(${f4(l.x + it.x)} ${f4(l.y + (it.dy || 0))})" d="${glyphShapes(it.gl).d}"/>`;
+      const nm = iconName(it.ch).replace(/[<>&"]/g, ''), tr = `translate(${f4(l.x + it.x)} ${f4(l.y + (it.dy || 0))})`;
+      icons += S.icon.lines ? `<g data-icon="${nm}" transform="${tr}">${iconLinesSVG(it.gl)}</g>` : `<path data-icon="${nm}" transform="${tr}" d="${glyphShapes(it.gl).d}"/>`;
     }));
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${bg(W, H)}<g transform="translate(${f4(Lo.ox)} ${f4(Lo.oy)}) scale(${f4(Lo.unit)})" fill="${S.ink}">${icons}</g></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${bg(W, H)}<g transform="translate(${f4(Lo.ox)} ${f4(Lo.oy)}) scale(${f4(Lo.unit)})" ${S.icon.lines ? lineAttrs() : `fill="${S.ink}"`}>${icons}</g></svg>`;
   }
   if (mode === 'draw') {                     // the glyph / icon being drawn, as it sits on the canvas
     const g = curGlyph(), W = view.W, H = view.H;
