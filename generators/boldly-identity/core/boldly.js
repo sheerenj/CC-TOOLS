@@ -2655,6 +2655,14 @@ uniform vec4 uF1;   // bloom, black, white, curve
 uniform vec4 uF2;   // grain, tau, has bloom, transparent
 uniform vec4 uF3;   // saturation
 uniform vec3 uPaper, uShadow; out vec4 o;
+/* light over a base colour: on DARK bases it is screened (glows, adds up); on LIGHT bases screen would only
+   wash everything to white, so the base is tinted toward the light's own hue, by the light's strength */
+vec3 lightOver(vec3 base, vec3 x) {
+  vec3 scr = 1. - (1. - base) * (1. - x);
+  float mx = max(max(x.r, x.g), x.b); vec3 hue = x / max(mx, 1e-4);
+  vec3 tint = mix(base, hue, clamp(mx, 0., 1.));
+  return mix(scr, tint, smoothstep(.3, .72, dot(base, vec3(.2126, .7152, .0722))));
+}
 vec3 scurve(vec3 x, float c) { vec3 a = .5 * pow(2. * x, vec3(c)), b = 1. - .5 * pow(2. * (1. - x), vec3(c)); return mix(a, b, step(.5, x)); }
 void main() { vec2 uv = gl_FragCoord.xy / uSize;
   vec4 sc = texture(uScene, uv); vec3 L = sc.rgb; float m = sc.a;
@@ -2664,8 +2672,8 @@ void main() { vec2 uv = gl_FragCoord.xy / uSize;
   float l = dot(x, vec3(.2126, .7152, .0722)); x = clamp(mix(vec3(l), x, uF3.x), 0., 1.);   // saturation
   float n = (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233)) + uF2.y * 61.7) * 43758.5453) - .5) * uF2.x
           + (fract(sin(dot(gl_FragCoord.xy, vec2(39.35, 11.13))) * 24634.63) - .5) / 255.;   // grain + dither
-  vec3 inner = 1. - (1. - uShadow) * (1. - x);                              // light screened over the shadow colour
-  vec3 col = clamp(mix(1. - (1. - uPaper) * (1. - x), inner, m) + n, 0., 1.);
+  vec3 inner = lightOver(uShadow, x);                                       // light over the shapes' base colour
+  vec3 col = clamp(mix(lightOver(uPaper, x), inner, m) + n, 0., 1.);
   if (uF2.w > .5) {                                                         // transparent: shapes opaque, glow/spill as alpha
     float ax = max(max(x.r, x.g), x.b), a = clamp(m + (1. - m) * ax, 0., 1.);
     vec3 rgb = (m * inner + (1. - m) * x) / max(a, 1e-4);
