@@ -17,7 +17,8 @@ $$('.hty-rail [data-tab]').forEach(b => { if (!TOOL.tabs.includes(b.dataset.tab)
 { const h = $('.q-hint'); if (h) { if (TOOL.home === 'icons') h.textContent = 'Double-click an icon to draw it'; else if (TOOL.home !== 'type') h.remove(); } }
 if (TOOL.home !== 'type') { const sg = $('#scenes-group'), hp = $(`[data-tab-panel="${TOOL.home}"]`); if (sg && hp) hp.prepend(sg); }
 const TOOL_ID = (window.BOLDLY && window.BOLDLY.tool) || 'type';
-const PREF_KEYS = ['outline', 'grid', 'metrics', 'constr', 'render', 't', 'g', 'brandTarget', 'icon'];
+const PREF_KEYS = ['outline', 'grid', 'metrics', 'constr', 'render', 't', 'g', 'brandTarget', 'icon', 'gapAA', 'gapAL', 'gapLL', 'gapT'];
+const SOFT_JOINS = TOOL_ID === 'icons';   // icons: lines that end on an arc's end get a square end, so outer corners close cleanly
 const PREFKEY = 'boldly-identity:prefs:' + TOOL_ID;
 const sceneFits = p => { const m = (p && p.S && p.S.mode) || 'set'; return TOOL.modes.includes(m); };
 HTY.init();   // wire the UI kit now, so its toggles run before this tool's click handlers (it would otherwise wait for DOMContentLoaded)
@@ -212,7 +213,7 @@ function writeNow() {
   const d = payload(), str = JSON.stringify(d);
   let ok = true;
   try { localStorage.setItem(KEY, str); } catch (e) { ok = false; }
-  try { localStorage.setItem(PREFKEY, JSON.stringify(Object.assign({ v: 2 }, Object.fromEntries(PREF_KEYS.map(k => [k, S[k]]))))); } catch (e) {}
+  try { localStorage.setItem(PREFKEY, JSON.stringify(Object.assign({ v: 3 }, Object.fromEntries(PREF_KEYS.map(k => [k, S[k]]))))); } catch (e) {}
   idb.set('state', str);
   pushVersion(d, str);
   if (fileHandle && filePerm) fileHandle.createWritable().then(w => w.write(str).then(() => w.close())).catch(() => { filePerm = false; syncStore(); });
@@ -371,7 +372,8 @@ const isCont = (a, b) => a.fo === b.fo && Math.abs(a.c - b.c) < 1e-4 && a.ox ===
      3. tee           (an end lands inside a perpendicular stroke) → the end stops one gap short   */
 function inRing(parts, t, x, y) {
   return parts.some(q => { if (q.k !== 'a') return false; const [sx, sy] = qs(q.q), [ro, ri] = ringR(q, t), lx = (x - q.cx) * sx, ly = (y - q.cy) * sy, r = Math.hypot(lx, ly);
-    return lx >= -EPS && ly >= -EPS && r >= ri - EPS && r <= ro + EPS; });
+    const e = SOFT_JOINS ? 1e-3 : -EPS;   // icons: an end ON the arc's end face is not buried — it keeps its square end
+    return (SOFT_JOINS ? lx > e && ly > e : lx >= e && ly >= e) && r >= ri - EPS && r <= ro + EPS; });
 }
 function solve(parts, t, g) {
   if (parts.pre) return morphCut(parts, t, g);
@@ -506,7 +508,8 @@ const iconH = gl => (gl && (gl.h || gl.w)) || 8;
 function applyPrefs() {               // this tool's own view settings win over the shared state
   let p = null; try { p = JSON.parse(localStorage.getItem(PREFKEY) || 'null'); } catch (e) {}
   if (p) PREF_KEYS.forEach(k => { if (p[k] !== undefined) S[k] = k === 'icon' ? Object.assign(JSON.parse(JSON.stringify(ICON0)), p[k]) : p[k]; });
-  if (!p || p.v !== 2) {                  // first open of this tool (or prefs from before per-tool settings): start clean
+  if (TOOL_ID === 'icons' && (!p || p.v < 3)) Object.assign(S, { gapAA: false, gapAL: false, gapLL: false, gapT: false });   // icons connect without stencil gaps (switchable in Form)
+  if (!p || p.v < 2) {                  // first open of this tool (or prefs from before per-tool settings): start clean
     S.outline = false; S.icon = Object.assign({}, S.icon, { cols: 0 });
   }
   document.body.classList.toggle('lit', S.render === 'lit');
