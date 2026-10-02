@@ -18,7 +18,7 @@ $$('.hty-rail [data-tab]').forEach(b => { if (!TOOL.tabs.includes(b.dataset.tab)
 if (TOOL.home !== 'type') { const sg = $('#scenes-group'), hp = $(`[data-tab-panel="${TOOL.home}"]`); if (sg && hp) hp.prepend(sg); }
 const TOOL_ID = (window.BOLDLY && window.BOLDLY.tool) || 'type';
 const PREF_KEYS = ['outline', 'grid', 'metrics', 'constr', 'render', 't', 'g', 'brandTarget', 'icon', 'gapAA', 'gapAL', 'gapLL', 'gapT'];
-const SOFT_JOINS = TOOL_ID === 'icons';   // icons: lines that end on an arc's end get a square end, so outer corners close cleanly
+const SOFT_JOINS = TOOL_ID === 'icons';   // icons: where an arc ends on a line, the arc runs on straight across it, so outer corners close cleanly
 const PREFKEY = 'boldly-identity:prefs:' + TOOL_ID;
 const sceneFits = p => { const m = (p && p.S && p.S.mode) || 'set'; return TOOL.modes.includes(m); };
 HTY.init();   // wire the UI kit now, so its toggles run before this tool's click handlers (it would otherwise wait for DOMContentLoaded)
@@ -372,8 +372,7 @@ const isCont = (a, b) => a.fo === b.fo && Math.abs(a.c - b.c) < 1e-4 && a.ox ===
      3. tee           (an end lands inside a perpendicular stroke) → the end stops one gap short   */
 function inRing(parts, t, x, y) {
   return parts.some(q => { if (q.k !== 'a') return false; const [sx, sy] = qs(q.q), [ro, ri] = ringR(q, t), lx = (x - q.cx) * sx, ly = (y - q.cy) * sy, r = Math.hypot(lx, ly);
-    const e = SOFT_JOINS ? 1e-3 : -EPS;   // icons: an end ON the arc's end face is not buried — it keeps its square end
-    return (SOFT_JOINS ? lx > e && ly > e : lx >= e && ly >= e) && r >= ri - EPS && r <= ro + EPS; });
+    return lx >= -EPS && ly >= -EPS && r >= ri - EPS && r <= ro + EPS; });
 }
 function solve(parts, t, g) {
   if (parts.pre) return morphCut(parts, t, g);
@@ -431,7 +430,8 @@ function solve(parts, t, g) {
           const near = body > 0 ? b1 : b0;
           cut[i][e.e] = Math.max(cut[i][e.e], (near - e.c) * body + g);
         }
-        if (!hit && S.sys && S.arcCaps) caps[i][e.e] = true;      // arcs end exactly on their axis unless square arc ends are on
+        if (!hit && S.sys && S.arcCaps) caps[i][e.e] = true;
+        else if (hit && SOFT_JOINS && !tee) caps[i][e.e] = true;   // icons: the arc runs on straight across the bar it meets — a flat top that flows into the curve      // arcs end exactly on their axis unless square arc ends are on
       }
     }
   }
