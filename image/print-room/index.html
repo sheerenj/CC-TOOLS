@@ -49,6 +49,9 @@ h2{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.09e
 .ctl{display:grid;gap:2px}
 .ctl-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .ctl label{font-size:12.5px}
+.colorrow{display:flex;gap:6px;align-items:center}
+.colorrow input[type=color]{flex:1;min-width:0;height:28px;padding:2px;border:1px solid var(--line);background:var(--bg);border-radius:2px;cursor:pointer}
+.colorrow .btn:disabled{opacity:.4;cursor:default}
 .ctl output{font-family:var(--f-mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
 input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:18px}
 .swatches{display:flex;flex-wrap:wrap;gap:5px}
@@ -177,6 +180,7 @@ const RECIPES = {
 };
 const FOLDS = {none:{label:'None'}, half:{label:'Half'}, quarter:{label:'Quarter'}};
 const STOCKS = {wove:{label:'Wove'}, cotton:{label:'Cotton rag'}, laid:{label:'Laid'}, cold:{label:'Cold press'}};
+const MARGIN0 = {marginColor:null, marginSides:1, marginBottom:1};
 const PAPER0 = {stock:'wove', relief:.25, breakup:.15, flecks:.12, formation:.5, texScale:1};
 const PAPER_BY = {
   Folio:{stock:'wove', relief:.3, breakup:.15, flecks:.12},
@@ -185,7 +189,7 @@ const PAPER_BY = {
   Keepsake:{stock:'laid', relief:.45, breakup:.25, flecks:.2},
   Heirloom:{stock:'cotton', relief:.6, breakup:.35, flecks:.45, formation:.75},
 };
-for (const k in RECIPES) RECIPES[k] = Object.assign({}, PAPER0, RECIPES[k], PAPER_BY[k] || {});
+for (const k in RECIPES) RECIPES[k] = Object.assign({}, PAPER0, MARGIN0, RECIPES[k], PAPER_BY[k] || {});
 const pct = v => { const p = v*100; return (p < 10 && p > 0 ? p.toFixed(1) : Math.round(p)) + '%'; };
 const GROUPS = [
   {title:'Paper & ink', note:'What the photograph is printed with.', items:[
@@ -218,6 +222,9 @@ const GROUPS = [
     {key:'edgeWidth', label:'Edge reach', min:.05, max:.3, step:.005, fmt:pct},
     {key:'mottle', label:'Ink unevenness', min:0, max:.05, step:.001, fmt:pct},
     {key:'margin', label:'Paper margin', min:0, max:.1, step:.002, fmt:pct},
+    {key:'marginSides', label:'Side margins', min:0, max:3, step:.05, def:1, fmt:v=>v.toFixed(2)+'×'},
+    {key:'marginBottom', label:'Bottom margin', min:0, max:3, step:.05, def:1, fmt:v=>v.toFixed(2)+'×'},
+    {type:'color', key:'marginColor', label:'Margin colour'},
   ]},
   {title:'Recapture', note:'The print photographed again in window light.', items:[
     {key:'lightGrad', label:'Light falloff', min:0, max:.06, step:.001, fmt:pct},
@@ -252,7 +259,7 @@ const store = {
 const saved = store.get();
 const userRecipes = saved.recipes || {};
 const IMG0 = {adjStage:'before', imgBright:0, imgShadows:0, imgHighlights:0};
-let P = Object.assign({}, AGE0, PAPER0, RECIPES.Folio, IMG0, {seed: 7, foxSeed: 11, tideSeed: 5}, saved.params || {});
+let P = Object.assign({}, AGE0, PAPER0, MARGIN0, RECIPES.Folio, IMG0, {seed: 7, foxSeed: 11, tideSeed: 5}, saved.params || {});
 let activeRecipe = saved.active || 'Folio';
 let scan = null;
 let src = null;
@@ -477,9 +484,12 @@ function applyAdjust(lut, rgb){
 }
 
 // ---------- pipeline ----------
+const hexRGB = h => h ? [1,3,5].map(i => parseInt(h.slice(i, i+2), 16)/255) : null;
+const rgbHex = c => '#' + c.map(v => Math.round(v*255).toString(16).padStart(2, '0')).join('');
 function layoutFor(s){
-  const iw = s.w, ih = s.h, m = P.margin * Math.min(iw, ih);
-  return {sw: iw + 2*m, sh: ih + m*2.45, px: m, py: m, pw: iw, ph: ih};
+  // top margin is the unit; sides and bottom are proportions of it (1× = even border)
+  const iw = s.w, ih = s.h, m = P.margin * Math.min(iw, ih), mx = m*P.marginSides, mb = m*P.marginBottom;
+  return {sw: iw + 2*mx, sh: ih + m + mb, px: mx, py: m, pw: iw, ph: ih};
 }
 function toneLUT(){
   const lut = new Float32Array(1025), k = P.contrast*2;
@@ -550,7 +560,7 @@ function renderRegion(L, s, X0, Y0, w, h){
   const wm = aWm > 0 ? waterMark((P.tideSeed|0)*7 + 2, SW/S, SH/S) : null;
   const YT = [1, .952, .835], ET = [.88, .81, .68], FC = [.72, .56, .42], TC = [.84, .76, .63];
 
-  const pp = PAPERS[P.paper].c, ik = INKS[P.ink].c, fadeT = [.34, .29, .23];
+  const pp = PAPERS[P.paper].c, mc = hexRGB(P.marginColor), ik = INKS[P.ink].c, fadeT = [.34, .29, .23];
   const ink = ik.map((v, c) => { v = Math.min(.5, v*P.floor); return v + Math.max(0, fadeT[c] - v)*.8*aI; });
   const lut = toneLUT();
   const ang = P.lightAngle*Math.PI/180, ca = Math.cos(ang), sa = Math.sin(ang);
@@ -577,6 +587,7 @@ function renderRegion(L, s, X0, Y0, w, h){
       const tr = lut[Math.max(0, Math.min(1024, (r*1024)|0))], tg = lut[Math.max(0, Math.min(1024, (g*1024)|0))], tb = lut[Math.max(0, Math.min(1024, (b*1024)|0))];
       let or = ink[0] + (pp[0]-ink[0])*tr, og = ink[1] + (pp[1]-ink[1])*tg, ob = ink[2] + (pp[2]-ink[2])*tb;
       const d = Math.min(X - PX, PX + PW - X, dyp) / S;
+      if (mc && d <= 0){ or = mc[0]; og = mc[1]; ob = mc[2]; }
       if (d > 0){
         let m = 1 - ss(0, eW, d); m *= m;
         let f = 1 - eL*m*(1 + .6*nA[i]) - mot*nB[i];
@@ -741,7 +752,7 @@ function schedule(full){
 function persist(){ store.set({params: P, active: activeRecipe, recipes: userRecipes}); }
 
 // ---------- controls ----------
-const inputs = {}, seedOutputs = [];
+const inputs = {}, seedOutputs = [], colorInputs = [];
 function buildControls(){
   const root = $('#controls'); root.innerHTML = '';
   for (const gdef of GROUPS){
@@ -753,6 +764,14 @@ function buildControls(){
         wrap.innerHTML = `<div class="ctl-top"><label>${it.label}</label><div class="row"><output id="o_${it.key}"></output><button type="button" class="btn ghost seedbtn">Shuffle</button></div></div>`;
         wrap.querySelector('button').addEventListener('click', () => { P[it.key] = 1 + ((Math.random()*9998)|0); $('#o_'+it.key).textContent = '#' + P[it.key]; schedule(true); });
         seedOutputs.push(it.key);
+      } else if (it.type === 'color'){
+        wrap.innerHTML = `<div class="ctl-top"><label for="c_${it.key}">${it.label}</label><output id="o_${it.key}"></output></div>
+          <div class="row colorrow"><input type="color" id="c_${it.key}"><button type="button" class="btn ghost" id="r_${it.key}">Match paper</button></div>`;
+        const inp = wrap.querySelector('input'), rb = wrap.querySelector('button');
+        inp.addEventListener('input', () => { P[it.key] = inp.value; markCustom(); syncUI(); schedule(false); });
+        inp.addEventListener('change', () => schedule(true));
+        rb.addEventListener('click', () => { P[it.key] = null; markCustom(); syncUI(); schedule(true); });
+        colorInputs.push(it.key);
       } else if (it.type === 'swatch'){
         wrap.innerHTML = `<div class="ctl-top"><label>${it.label}</label></div>`;
         const sw = document.createElement('div'); sw.className = 'swatches';
@@ -781,6 +800,11 @@ function buildControls(){
 function syncUI(){
   for (const k in inputs){ const {inp, it} = inputs[k]; inp.value = P[k]; $('#o_'+k).textContent = it.fmt(P[k]); }
   seedOutputs.forEach(k => { $('#o_'+k).textContent = '#' + P[k]; });
+  colorInputs.forEach(k => {
+    $('#c_'+k).value = P[k] || rgbHex(PAPERS[P.paper].c);
+    $('#o_'+k).textContent = P[k] ? P[k].toUpperCase() : 'Same as paper';
+    $('#r_'+k).disabled = !P[k];
+  });
   document.querySelectorAll('.sw').forEach(b => b.setAttribute('aria-pressed', P[b.dataset.key] === b.dataset.val));
   renderRecipes();
 }
